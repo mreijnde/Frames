@@ -90,6 +90,25 @@ classdef DataFrame
         function obj = loc(obj, idxName, colName)
         end
         
+        % ToDo subsref subsasgn
+        % ToDo Index for cols and index
+        % ToDo operations: plus, minus, returns, replace
+        % ToDo add drop columns, index, missing
+        % ToDO missingData value, size
+        % ToDo [] cat
+        % ToDo resample, shift, oneify, bool
+        % ToDo plot, heatmap
+        % ToDo cov corr rolling ewm
+        % ToDo ffill bfill
+        % ToDo start and end valid, fill
+        % ToDo constructors zeros
+        % ToDo max min std sum
+        % ToDO sortby
+        % ToDo split apply
+        % toDo read write
+        
+        
+        
         
         
     end
@@ -99,6 +118,8 @@ classdef DataFrame
             idx = indexForTable(obj.index);
             col = columnsForTable(obj.columns);
             tb = cell2table(num2cell(obj.data),'RowNames',idx,'VariableNames',col);
+        end
+        function other=modify(obj, data, index, columns, fromPosition)
         end
     end
     
