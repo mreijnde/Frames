@@ -25,6 +25,10 @@ classdef Index
         function idx = get.value(obj)
             idx=obj.value_;
         end
+        
+        function pos = positionOf(obj, selector)
+            pos = findPositionIn( selector, obj.value );
+        end
     end
  
 end

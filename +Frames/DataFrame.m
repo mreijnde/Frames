@@ -138,15 +138,14 @@ classdef DataFrame
                 colName {mustBeDFcolumns} = ':'
             end
             if ~iscolon(idxName)
-                assertFoundInIndex(idxName, obj.index_.value);
-                [~,~,idxID] = intersect(idxName, obj.index_.value, 'stable');
+                assertFoundIn(idxName, obj.index_.value);
+                idxID = obj.index_.positionOf(idxName);
                 obj.index_.value_ = obj.index_.value_(idxID);
             else
                 idxID = idxName;
             end
             if ~iscolon(colName)
-                assertFoundInColumns(colName, obj.columns_.value);
-                colID = findPositionInFirstList(obj.columns_.value, colName);
+                colID = obj.columns_.positionOf(colName);
                 obj.columns_.value_ = obj.columns_.value_(colID);
             else
                 colID = colName;
@@ -197,6 +196,26 @@ classdef DataFrame
             end
         end
         
+        function obj = subsasgn(obj, s, b)
+            if length( s ) > 1
+                error( 'cannot assign with multiple references' )
+            end
+            switch s.type
+                case '()'
+                    [idx, col] = getSelectorsFromSubs(s.subs);
+                    obj = modify( obj, b, idx, col );
+                case '{}'
+                    [idx, col] = getSelectorsFromSubs(s.subs);
+                    obj = modify( obj, b, idx, col, true );
+                case '.'
+                    if strcmp(s(1).subs,properties(obj))
+                        obj.( s.subs ) = b;
+                    else
+                         error(('''%s'' is not a public property of the ''%s'' class.'),s(1).subs,class(obj));
+                    end
+            end
+        end
+        
     end
     
     methods (Access=protected)
@@ -217,7 +236,20 @@ classdef DataFrame
         function col = getColumnsObject(~, columns)
             col = frames.Index(columns);
         end
-        function other=modify(obj, data, index, columns, fromPosition)
+        function obj = modify(obj, data, index, columns, fromPosition)
+            if nargin < 5; fromPosition = false; end
+            if ~fromPosition
+                [index, columns] = localizeSelectors(obj, index, columns);
+            end
+            obj.data_(index, columns) = data;
+        end
+        function [index, columns] = localizeSelectors(obj, index, columns)      
+            if ~iscolon(index)
+                index = obj.index_.positionOf(index);
+            end
+            if ~iscolon(columns)
+                columns = obj.columns_.positionOf(columns);
+            end
         end
     end
     
