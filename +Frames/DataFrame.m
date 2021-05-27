@@ -64,8 +64,6 @@ classdef DataFrame
         % Setters and Getters
         
         function obj = set.index(obj, value)
-            % ToDo: turn it into an Index unique
-            % ToDo: test size
             arguments
                 obj, value {mustBeDFindex}
             end
@@ -75,8 +73,6 @@ classdef DataFrame
             obj.index_ = value;
         end
         function obj = set.columns(obj, value)
-            % ToDo: turn it into an Index warning unique
-            % ToDo: test size
             arguments
                 obj, value {mustBeDFcolumns}
             end
