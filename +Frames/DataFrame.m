@@ -173,7 +173,29 @@ classdef DataFrame
         
         
         
-        
+        function varargout = subsref(obj, s)
+            if length(s)>1  % when there are several subsref
+                if strcmp(s(1).type, '.')
+                    [varargout{1:nargout}] = builtin('subsref', obj, s);
+                else  % to handle the () and {} cases (Matlab struggles otherwise).
+                    other = subsref(obj, s(1));
+                    [varargout{1:nargout}] = subsref(other, s(2:end));
+                end
+                return
+            end
+            
+            nargoutchk(0,1)
+            switch s.type
+                case '()'
+                    [idx, col] = getSelectorsFromSubs(s.subs);
+                    varargout{1} = obj.loc(idx, col);
+                case '{}'
+                    [idx, col] = getSelectorsFromSubs(s.subs);
+                    varargout{1} = obj.iloc(idx, col);
+                case '.'
+                    varargout{1} = obj.(s.subs);
+            end
+        end
         
     end
     
@@ -209,7 +231,10 @@ classdef DataFrame
                 details(this);
             end
         end
-            
+        
+        function n = numArgumentsFromSubscript(varargin), n = 1; end
+        function e = end(obj, q, w), e = builtin('end', obj.data_, q, w); end
+        
     end
     
     methods (Hidden, Static, Access=protected)
@@ -222,5 +247,14 @@ classdef DataFrame
         
     end
 end
+
+%--------------------------------------------------------------------------
+function [idx, col] = getSelectorsFromSubs(subs)
+len = length(subs);
+if ~ismember(len, [1,2]); error('Error in reference for index and columns.'); end
+if len == 1; col = ':'; else; col = subs{2}; end
+idx = subs{1};
+end
+
 
 
