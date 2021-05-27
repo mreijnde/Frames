@@ -35,7 +35,7 @@ classdef Index
         end
     end
     
-    methods(Access=protected)
+    methods(Static, Access=protected)
         function value = valueChecker(value)
             if ~isunique(value)
                 warning('index is not unique')

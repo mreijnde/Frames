@@ -15,7 +15,7 @@ classdef UniqueIndex < frames.Index
             [~,~,pos] = intersect(selector, obj.value, 'stable');
         end
     end
-    methods(Access=protected)
+    methods(Static, Access=protected)
         function value = valueChecker(value)
             if ~isunique(value)
                 error('index is not unique')
