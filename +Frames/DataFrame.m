@@ -50,7 +50,7 @@ classdef DataFrame
                 data = repmat(data, 1, length(columns));
             end
             if isrow(data)
-                data = repmat(data, length( index ), 1);
+                data = repmat(data, length(index), 1);
             end
                 
             obj.data_ = data;
@@ -70,7 +70,7 @@ classdef DataFrame
                 obj, value {mustBeDFindex}
             end
             assert(length(value) == size(obj.data,1), ...
-                'columns do not have the same size as data')
+                'index does not have the same size as data')
             value = obj.getIndexObject(value);
             obj.index_ = value;
         end
@@ -98,11 +98,9 @@ classdef DataFrame
         end
         
         function index = get.index(obj)
-            % ToDo obj.index_.value
             index = obj.index_.value;
         end
         function columns = get.columns(obj)
-            % ToDo obj.index_.value
             columns = obj.columns_.value';
         end
         function data = get.data(obj)
@@ -138,7 +136,6 @@ classdef DataFrame
                 colName {mustBeDFcolumns} = ':'
             end
             if ~iscolon(idxName)
-                assertFoundIn(idxName, obj.index_.value);
                 idxID = obj.index_.positionOf(idxName);
                 obj.index_.value_ = obj.index_.value_(idxID);
             else
@@ -153,8 +150,8 @@ classdef DataFrame
             obj.data_ =  obj.data_(idxID, colID);
         end
         
-        % ToDo subsref subsasgn
-        % ToDo Index for cols and index
+        % ToDo subsref subsasgn.
+        % ToDo Index for cols and index.
         % ToDo operations: plus, minus, returns, replace
         % ToDo add drop columns, index, missing
         % ToDO missingData value, size
@@ -203,13 +200,13 @@ classdef DataFrame
             switch s.type
                 case '()'
                     [idx, col] = getSelectorsFromSubs(s.subs);
-                    obj = modify( obj, b, idx, col );
+                    obj = modify(obj, b, idx, col);
                 case '{}'
                     [idx, col] = getSelectorsFromSubs(s.subs);
-                    obj = modify( obj, b, idx, col, true );
+                    obj = modify(obj, b, idx, col, true);
                 case '.'
                     if strcmp(s(1).subs,properties(obj))
-                        obj.( s.subs ) = b;
+                        obj.(s.subs) = b;
                     else
                          error(('''%s'' is not a public property of the ''%s'' class.'),s(1).subs,class(obj));
                     end
@@ -225,9 +222,7 @@ classdef DataFrame
             tb = cell2table(num2cell(obj.data), RowNames=idx, VariableNames=col);
         end
         function d = defaultData(obj, lengthIndex, lengthColumns, type)
-            if nargin < 3
-                type = class(obj.data);
-            end
+            if nargin < 3; type = class(obj.data); end
             d = repmat(missingData(type), lengthIndex, lengthColumns);
         end
         function idx = getIndexObject(~, index)
