@@ -194,7 +194,19 @@ classdef DataFrame
         end
         
         function obj = subsasgn(obj, s, b)
-            if length( s ) > 1
+            if length(s) == 2
+                [islocFct, selectors] = s.subs;
+                if strcmp(islocFct, 'iloc') || strcmp(islocFct, 'loc') 
+                    if strcmp(islocFct, 'iloc') 
+                        fromPosition = true;
+                    else
+                        fromPosition = false;
+                    end
+                    obj = modify(obj, b, selectors{1}, selectors{2}, fromPosition);
+                    return
+                end
+            end
+            if length(s) > 1
                 error( 'cannot assign with multiple references' )
             end
             switch s.type
