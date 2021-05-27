@@ -1,5 +1,5 @@
 function mustBeSorted(x)
-if ~(isunique(x))
+if ~(issorted(x))
     throwAsCaller(MException("frames:validators:mustBeSorted", ...
         "Value must contain sorted elements."))
 end

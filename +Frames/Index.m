@@ -19,15 +19,27 @@ classdef Index
             if isrow(value)
                 value = value';
             end
-            obj.value_ = value;
+            obj.value = value;
         end
         
         function idx = get.value(obj)
             idx=obj.value_;
         end
+        function obj = set.value(obj, value)
+            value = obj.valueChecker(value);
+            obj.value_ = value;
+        end
         
         function pos = positionOf(obj, selector)
             pos = findPositionIn( selector, obj.value );
+        end
+    end
+    
+    methods(Access=protected)
+        function value = valueChecker(value)
+            if ~isunique(value)
+                warning('index is not unique')
+            end
         end
     end
  
