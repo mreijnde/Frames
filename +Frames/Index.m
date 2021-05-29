@@ -58,7 +58,7 @@ classdef Index
             for ii = 1:nargin-1
                 val = [val;varargin{ii}.value_]; %#ok<AGROW>
             end
-            obj.value_ = val;
+            obj.value = val;  % check if properties are respected
         end
             
         function bool = isunique(obj)

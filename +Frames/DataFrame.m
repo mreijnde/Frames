@@ -214,7 +214,7 @@ classdef DataFrame
         end
         function other = resample(obj,index)
         end
-        function other = horzcat(obj,varargin
+        function other = horzcat(obj,varargin)
             
             % compute a merged index, only in case they are not the same
             idx = obj.index_;
@@ -252,7 +252,7 @@ classdef DataFrame
             for ii = 1:nargin-1
                 extendedDF = getExtendedIndexDF(varargin{ii});
                 assert(isa(extendedDF.data_,type), ...
-                    'frames do not have the same data type' )
+                    'frames do not have the same data type')
                 dataH(:,sizeColumns(ii)+1:sizeColumns(ii+1)) = extendedDF.data_;
                 columnsNew = [columnsNew;varargin{ii}.columns_]; %#ok<AGROW>
             end
@@ -261,6 +261,50 @@ classdef DataFrame
             other.name_ = ""; other.description = "";
         end
         function other = vertcat(obj,varargin)
+            
+            % DF must each have unique columns
+            % compute a merged columns, only in case they are not the same
+            col = obj.columns_.value_;
+            sameCols = true;
+            lenIdx = zeros(length(varargin),1);
+            lenIdx(1) = length(obj.index_);
+            for ii = 1:nargin-1
+                lenIdx(ii+1) = length(varargin{ii}.index_);
+                col_ = varargin{ii}.columns_.value_;
+                if sameCols && isequal(col,col_)
+                    continue
+                else
+                    sameCols = false;
+                end
+                col = union(col,col_,'stable');  % requires unique columns
+            end
+            
+            sizeIndex = cumsum(lenIdx);
+            dataV = obj.defaultData(sizeIndex(end),length(col));
+            
+            function df = getExtendedColsDF(df)
+                % Expand DF, keeping the order of col
+                if ~sameCols
+                    df = df.extendColumns(col).loc(':',col);
+                end
+            end
+            
+            other = getExtendedColsDF(obj);
+            dataV(1:lenIdx(1),:) = other.data_;
+            type = class(obj.data_);
+            for ii = 1:nargin-1
+                extendedDF = getExtendedColsDF(varargin{ii});
+                assert(isa(extendedDF.data_,type), ...
+                    'frames do not have the same data type')
+%                 idx = other.index_.union(extendedDF.index);
+                idxConc = [other.index_;extendedDF.index_];
+
+%                 idxID = idx.positionIn(idxConc.value);
+                dataV(sizeIndex(ii)+1:sizeIndex(ii+1),:) = extendedDF.data_;
+            end
+            other.data_ = dataV;
+            other.index_ = idxConc;
+            other.name_ = ""; other.description = "";
         end
         
         function obj=shift(obj,varargin)
