@@ -9,6 +9,6 @@ switch type
     case 'logical'
         d = false;
     otherwise
-        error( 'empty data type not implemented' )
+        error('empty data type not implemented')
 end
 end

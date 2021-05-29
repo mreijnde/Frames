@@ -5,7 +5,7 @@ classdef TimeIndex < frames.OrderedIndex
     %UNTITLED4 Summary of this class goes here
     %   Detailed explanation goes here
     methods
-        function obj = TimeIndex (value, nameValue)
+        function obj = TimeIndex(value,nameValue)
             %UNTITLED4 Construct an instance of this class
             %   Detailed explanation goes here
             arguments
@@ -17,17 +17,16 @@ classdef TimeIndex < frames.OrderedIndex
             obj = obj@frames.OrderedIndex(value,name=nameValue.name);
             obj.format = nameValue.format;
         end
-    end
-    methods (Access = protected)
+
         function value = getValue(obj)
-            value = datetime(obj.value_, ConvertFrom='datenum', Format=obj.format);
+            value = datetime(obj.value_,ConvertFrom='datenum',Format=obj.format);
         end
-        function value_ = getValue_(obj, value_)
-            value_ = getValue_@frames.OrderedIndex(obj, value_);
+        function value_ = getValue_(obj,value_)
+            value_ = getValue_@frames.OrderedIndex(obj,value_);
             switch class(value_)
                 case 'datetime'
                 case {'string','cell'}
-                    value_ = datetime(value_, Format=obj.format);
+                    value_ = datetime(value_,Format=obj.format);
                 case 'double'
                     return
                 otherwise
@@ -35,8 +34,9 @@ classdef TimeIndex < frames.OrderedIndex
             end
             value_ = datenum(value_);
         end
-
-        function value = valueChecker(obj, value)
+    end
+    methods(Access = protected)
+        function value = valueChecker(obj,value)
             if ~isunique(value) || ~issorted(value)
                 error('index is not unique and sorted')
             end

@@ -10,12 +10,12 @@ classdef UniqueIndex < frames.Index
 %             end
 %             obj = obj@frames.Index(value);
 %         end
-        function pos = positionOf(obj, selector)
-            assertFoundIn(selector, obj.value)
-            [~,~,pos] = intersect(selector, obj.value, 'stable');
+        function pos = positionOf(obj,selector)
+            assertFoundIn(selector,obj.value)
+            [~,~,pos] = intersect(selector,obj.value,'stable');
         end
-        function pos = positionIn(obj, target)
-            pos = ismember(obj.value, target);
+        function pos = positionIn(obj,target)
+            pos = ismember(obj.value,target);
         end
         
     function bool = isunique(~)
@@ -24,7 +24,7 @@ classdef UniqueIndex < frames.Index
     end
     
     methods(Access=protected)
-        function value = valueChecker(~, value)
+        function value = valueChecker(~,value)
             if ~isunique(value)
                 error('index is not unique')
             end
@@ -32,8 +32,8 @@ classdef UniqueIndex < frames.Index
     end
     
     methods(Access=protected)
-        function u = unionData(~,v1, v2)
-            u = union(v1, v2, 'stable');
+        function u = unionData(~,v1,v2)
+            u = union(v1,v2,'stable');
         end
     end
 end
