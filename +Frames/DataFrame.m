@@ -201,7 +201,8 @@ classdef DataFrame
             newCols = setdiff(columns,obj.columns_.value);
             newColumns = [obj.columns_.value;newCols];
             newData = obj.defaultData(length(obj.index_),length(newColumns));
-
+            newData(:,1:length(obj.columns_)) = obj.data_;
+            
             other = obj;
             other.data_ = newData;
             other.columns_.value_ = other.columns_.getValue_(newColumns);
@@ -212,10 +213,14 @@ classdef DataFrame
             other = obj.iloc(':',colToKeep);
         end
         
-        % ToDo subsref subsasgn.
-        % ToDo Index for cols and index.
+        function obj=shift(obj,varargin)
+            obj.data_=shift(obj.data_,varargin{:});
+        end
+        
+        %  subsref subsasgn.
+        %  Index for cols and index.
         % ToDo operations: plus, minus, returns, replace
-        % ToDo add drop columns, index, missing
+        %  add drop columns, index, missing.
         % ToDO missingData value, size
         % ToDo [] cat
         % ToDo resample, shift, oneify, bool
