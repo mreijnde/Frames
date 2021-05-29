@@ -17,6 +17,10 @@ classdef UniqueIndex < frames.Index
         function pos = positionIn(obj, target)
             pos = ismember(obj.value, target);
         end
+        
+    function bool = isunique(~)
+            bool = true;
+        end
     end
     
     methods(Access=protected)

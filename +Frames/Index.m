@@ -56,7 +56,15 @@ classdef Index
                 sprintf( 'indexes are of different types: [%s] [%s]', class(index1), class(index2)));
             obj.value_ = obj.unionData(index1, index2);
         end
+            
+        function bool = isunique(obj)
+            bool = isunique(obj.value_);
+        end
+        function bool = issorted(obj)
+            bool = issorted(obj.value_);
+        end
     end
+
     
     methods(Access=protected)
         function value = getValue(obj)
@@ -80,9 +88,6 @@ classdef Index
         function u = unionData(obj,v1, v2)
             u = [v1; v2];
             obj.valueChecker(u);
-        end
-        function bool = isunique(obj)
-            bool = isunique(obj.value_);
         end
         
     end
