@@ -179,6 +179,9 @@ classdef DataFrame
                 df = obj.iloc(':',~drop);
             end
         end
+        function obj = ffill(obj)
+            obj.data_ = fillmissing(obj.data_,'previous');
+        end
         
         function other = extendIndex(obj,index)            
             newIndex = obj.index_.union(index);
@@ -212,7 +215,49 @@ classdef DataFrame
             colToKeep = setdiff(1:length(obj.columns_),colToRemove);
             other = obj.iloc(':',colToKeep);
         end
-        function other = resample(obj,index)
+        function other = resample(obj,index,nameValue)
+            arguments
+                obj, index
+                nameValue.firstValueFilling = "noFfill"
+            end
+            if ~isa(obj.index_, 'frames.OrderedIndex')
+                error('Only use resample with sorted index')
+            end
+            firstValueFilling = nameValue.firstValueFilling;
+            if ~iscell(firstValueFilling)
+                firstValueFilling = {firstValueFilling};
+            end
+            acceptedValues = ["noFfill","ffillLastAvailable","ffillFromInterval"];
+            assert(ismember(firstValueFilling{1}, acceptedValues), ...
+                sprintf("'firstValueFilling' must take a value in [%s]",acceptedValues))
+            
+            if strcmp(firstValueFilling{1},"ffillFromInterval")
+                try
+                    if length(firstValueFilling) == 2
+                        interval = firstValueFilling{2};
+                    else
+                        interval = index(2)-index(1);
+                    end
+                    if isrow(index), index=index'; end
+                    index = [index(1)-interval;index];
+                catch me 
+                    error('The interval is not valid. It must be substractable from the index.')
+                end
+            end
+            other = obj.extendIndex(index);
+            posSelector = other.index_.positionOf(index);
+            noFfill = strcmp(firstValueFilling{1},"noFfill") && ~isempty(posSelector);
+            if noFfill
+                dataStart=other.data_(posSelector(1),:);
+            end
+            hasEntry = intervalHasEntry(other.data,posSelector);
+            other = other.ffill().loc(index);
+            other.data_(~hasEntry)=missingData(class(other.data_));
+            
+            if noFfill, other.data_(1,:) = dataStart; end
+            if strcmp(firstValueFilling{1}, "ffillFromInterval")
+                other = other.iloc(2:length(obj.index_));
+            end
         end
         function other = horzcat(obj,varargin)
             
@@ -456,6 +501,16 @@ len = length(subs);
 if ~ismember(len, [1,2]); error('Error in reference for index and columns.'); end
 if len==1; col = ':'; else; col = subs{2}; end
 idx = subs{1};
+end
+
+%--------------------------------------------------------------------------
+function hasEntry = intervalHasEntry(data,selector)
+hasEntry = true(length(selector),size(data,2));
+
+isValid = ~ismissing(data);
+for ii = 2:length(selector)
+    hasEntry(ii,:) = any(isValid(selector(ii-1)+1:selector(ii),:),1);
+end
 end
 
 
