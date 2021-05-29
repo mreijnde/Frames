@@ -1,4 +1,4 @@
-function idx = findPosition(a, b)
+function idx = findPositionIn(a, b)
     if isdatetime(b) % boosts comparison speed
         a = datenum(a);
         b = datenum(b);

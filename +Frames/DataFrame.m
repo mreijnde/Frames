@@ -69,7 +69,9 @@ classdef DataFrame
             end
             assert(length(value) == size(obj.data,1), ...
                 'index does not have the same size as data')
-            value = obj.getIndexObject(value);
+            if ~isa(value,'frames.Index')
+                value = obj.getIndexObject(value);
+            end
             obj.index_ = value;
         end
         function obj = set.columns(obj, value)
@@ -175,6 +177,18 @@ classdef DataFrame
             end
         end
         
+        function other = extendIndex(obj, index)            
+            newIndex = obj.index_.union(index);
+            newData = obj.defaultData(length(newIndex), length(obj.columns_.value_));
+            
+            idx = obj.index_.positionIn(newIndex.value);
+            newData(idx, :) = obj.data_;
+            
+            other = obj;
+            other.data_ = newData;
+            other.index_ = newIndex; 
+        end
+        
         % ToDo subsref subsasgn.
         % ToDo Index for cols and index.
         % ToDo operations: plus, minus, returns, replace
@@ -259,7 +273,7 @@ classdef DataFrame
             tb = cell2table(num2cell(obj.data), RowNames=idx, VariableNames=col);
         end
         function d = defaultData(obj, lengthIndex, lengthColumns, type)
-            if nargin<3; type = class(obj.data); end
+            if nargin<4; type = class(obj.data); end
             d = repmat(missingData(type), lengthIndex, lengthColumns);
         end
         function idx = getIndexObject(~, index)

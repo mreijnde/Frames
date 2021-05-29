@@ -11,11 +11,17 @@ classdef OrderedIndex < frames.UniqueIndex
 %             obj = obj@frames.UniqueIndex(value);
 %         end
     end
-    methods(Static, Access=protected)
-        function value = valueChecker(value)
+    methods(Access=protected)
+        function value = valueChecker(~, value)
             if ~isunique(value) || ~issorted(value)
                 error('index is not unique and sorted')
             end
         end
+    end
+    methods(Access=protected)
+        function u = unionData(~,v1, v2)
+            u = union(v1,v2,'sorted');  % sorts by default
+        end
+        
     end
 end

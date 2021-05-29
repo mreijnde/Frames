@@ -18,11 +18,18 @@ classdef UniqueIndex < frames.Index
             pos = ismember(obj.value, target);
         end
     end
-    methods(Static, Access=protected)
-        function value = valueChecker(value)
+    
+    methods(Access=protected)
+        function value = valueChecker(~, value)
             if ~isunique(value)
                 error('index is not unique')
             end
+        end
+    end
+    
+    methods(Access=protected)
+        function u = unionData(~,v1, v2)
+            u = union(v1, v2, 'stable');
         end
     end
 end

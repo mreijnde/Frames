@@ -22,23 +22,25 @@ classdef TimeIndex < frames.OrderedIndex
         function value = getValue(obj)
             value = datetime(obj.value_, ConvertFrom='datenum', Format=obj.format);
         end
-    end
-    
-    methods(Access=protected)
-        function value = valueChecker(obj, value)
-            if ~isunique(value) || ~issorted(value)
-                error('index is not unique and sorted')
-            end
-            switch class(value)
+        function value_ = getValue_(obj, value_)
+            value_ = getValue_@frames.OrderedIndex(obj, value_);
+            switch class(value_)
                 case 'datetime'
                 case {'string','cell'}
-                    value = datetime(value, Format=obj.format);
+                    value_ = datetime(value_, Format=obj.format);
                 case 'double'
                     return
                 otherwise
                     error('type of time index not recognized')
             end
-            value = datenum(value);
+            value_ = datenum(value_);
+        end
+
+        function value = valueChecker(obj, value)
+            if ~isunique(value) || ~issorted(value)
+                error('index is not unique and sorted')
+            end
+            value = obj.getValue_(value);
         end
     end
     
