@@ -15,7 +15,7 @@ classdef UniqueIndex < frames.Index
             [~,~,pos] = intersect(selector,obj.value,'stable');
         end
         function pos = positionIn(obj,target)
-            pos = ismember(obj.value,target);
+            pos = ismember(target,obj.value);
         end
         
     function bool = isunique(~)

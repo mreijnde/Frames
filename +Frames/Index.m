@@ -53,6 +53,13 @@ classdef Index
                 sprintf( 'indexes are of different types: [%s] [%s]',class(index1),class(index2)));
             obj.value_ = obj.unionData(index1,index2);
         end
+        function obj = vertcat(obj,varargin)
+            val = obj.value_;
+            for ii = 1:nargin-1
+                val = [val;varargin{ii}.value_]; %#ok<AGROW>
+            end
+            obj.value_ = val;
+        end
             
         function bool = isunique(obj)
             bool = isunique(obj.value_);
@@ -65,7 +72,7 @@ classdef Index
             value = obj.value_;
         end
         function value = getValue_(~,value)
-            if isa(value,'Frames.Index')
+            if isa(value,'frames.Index')
                 value = value.value_;
             end
             if isrow(value)

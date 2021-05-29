@@ -212,10 +212,61 @@ classdef DataFrame
             colToKeep = setdiff(1:length(obj.columns_),colToRemove);
             other = obj.iloc(':',colToKeep);
         end
+        function other = resample(obj,index)
+        end
+        function other = horzcat(obj,varargin
+            
+            % compute a merged index, only in case they are not the same
+            idx = obj.index_;
+            sameIndex = true;
+            lenCols = zeros(length(varargin)+1,1);
+            lenCols(1) = length(obj.columns_);
+            for ii = 1:nargin-1
+                lenCols(ii+1) = length(varargin{ii}.columns_);
+                idx_ = varargin{ii}.index_;
+                if sameIndex && isequal( idx, idx_ )
+                    continue
+                else
+                    sameIndex = false;
+                end
+                idx = idx.union(idx_);
+            end
+            
+            % expand each DF with the new idx, and merge their data_
+            sizeColumns = cumsum(lenCols);
+            dataH = obj.defaultData(length(idx),sizeColumns(end));
+            
+            function df = getExtendedIndexDF(df)
+                % Expand DF, keeping the order of idx
+                if ~sameIndex
+                    df = df.extendIndex(idx);
+                    if ~isa(obj.index_,'frames.OrderedIndex')
+                        df = df.loc(idx.value);
+                    end
+                end
+            end
+            other = getExtendedIndexDF(obj);
+            dataH(:,1:lenCols(1)) = other.data_;
+            columnsNew = obj.columns_;
+            type = class(obj.data_);
+            for ii = 1:nargin-1
+                extendedDF = getExtendedIndexDF(varargin{ii});
+                assert(isa(extendedDF.data_,type), ...
+                    'frames do not have the same data type' )
+                dataH(:,sizeColumns(ii)+1:sizeColumns(ii+1)) = extendedDF.data_;
+                columnsNew = [columnsNew;varargin{ii}.columns_]; %#ok<AGROW>
+            end
+            other.data_ = dataH;
+            other.columns_ = columnsNew;
+            other.name_ = ""; other.description = "";
+        end
+        function other = vertcat(obj,varargin)
+        end
         
         function obj=shift(obj,varargin)
             obj.data_=shift(obj.data_,varargin{:});
         end
+        
         
         %  subsref subsasgn.
         %  Index for cols and index.
