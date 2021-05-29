@@ -182,6 +182,9 @@ classdef DataFrame
         function obj = ffill(obj)
             obj.data_ = fillmissing(obj.data_,'previous');
         end
+        function obj = bfill(obj)
+            obj.data_ = fillmissing(obj.data_,'next');
+        end
         
         function other = extendIndex(obj,index)            
             newIndex = obj.index_.union(index);
@@ -361,12 +364,12 @@ classdef DataFrame
         %  Index for cols and index.
         % ToDo operations: plus, minus, returns, replace
         %  add drop columns, index, missing.
-        % ToDO missingData value, size
-        % ToDo [] cat
-        % ToDo resample, shift, oneify, bool
+        %  missingData value, size.
+        %  [] cat
+        %  resample, shift, oneify, bool
         % ToDo plot, heatmap
         % ToDo cov corr rolling ewm
-        % ToDo ffill bfill
+        %  ffill bfill.
         % ToDo start and end valid, fill
         % ToDo constructors zeros
         % ToDo max min std sum
