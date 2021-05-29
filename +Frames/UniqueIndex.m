@@ -14,6 +14,9 @@ classdef UniqueIndex < frames.Index
             assertFoundIn(selector, obj.value)
             [~,~,pos] = intersect(selector, obj.value, 'stable');
         end
+        function pos = positionIn(obj, target)
+            pos = ismember(obj.value, target);
+        end
     end
     methods(Static, Access=protected)
         function value = valueChecker(value)

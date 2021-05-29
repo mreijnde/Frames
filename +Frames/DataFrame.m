@@ -146,6 +146,35 @@ classdef DataFrame
             obj.data_ =  obj.data_(idxID, colID);
         end
         
+        function obj = replace(obj, valToReplace, valNew)
+            if ismissing(valToReplace)
+                idx = ismissing(obj.data_);
+            else
+                idx = obj.data_==valToReplace;
+            end
+            obj.data_(idx) = valNew;
+        end
+        
+        function df = dropMissing(obj, nameValue)
+            arguments
+                obj
+                nameValue.how {mustBeMember(nameValue.how,["any","all"])} = "all";
+                nameValue.axis {mustBeMember(nameValue.axis,[1,2])} = 1;
+            end
+            
+            axis = abs(nameValue.axis-3);  % if dim = 1 I want to drop rows, where we check if they contain NaNs in the 2. dimension
+            if strcmp(nameValue.how, 'all')
+                drop = all(ismissing(obj.data_), axis);
+            else
+                drop = any(ismissing(obj.data_), axis);
+            end
+            if nameValue.axis==1
+                df = obj.iloc(~drop, ':');
+            else
+                df = obj.iloc(':', ~drop);
+            end
+        end
+        
         % ToDo subsref subsasgn.
         % ToDo Index for cols and index.
         % ToDo operations: plus, minus, returns, replace
@@ -190,7 +219,7 @@ classdef DataFrame
         end
         
         function obj = subsasgn(obj, s, b)
-            if length(s) == 2
+            if length(s)==2
                 [islocFct, selectors] = s.subs;
                 if strcmp(islocFct, 'iloc') || strcmp(islocFct, 'loc') 
                     if strcmp(islocFct, 'iloc') 
@@ -202,8 +231,8 @@ classdef DataFrame
                     return
                 end
             end
-            if length(s) > 1
-                error( 'cannot assign with multiple references' )
+            if length(s)>1
+                error('cannot assign with multiple references')
             end
             switch s.type
                 case '()'
@@ -230,7 +259,7 @@ classdef DataFrame
             tb = cell2table(num2cell(obj.data), RowNames=idx, VariableNames=col);
         end
         function d = defaultData(obj, lengthIndex, lengthColumns, type)
-            if nargin < 3; type = class(obj.data); end
+            if nargin<3; type = class(obj.data); end
             d = repmat(missingData(type), lengthIndex, lengthColumns);
         end
         function idx = getIndexObject(~, index)
@@ -240,7 +269,7 @@ classdef DataFrame
             col = frames.Index(columns);
         end
         function obj = modify(obj, data, index, columns, fromPosition)
-            if nargin < 5; fromPosition = false; end
+            if nargin<5; fromPosition = false; end
             if ~fromPosition
                 [index, columns] = localizeSelectors(obj, index, columns);
             end
@@ -287,7 +316,7 @@ end
 function [idx, col] = getSelectorsFromSubs(subs)
 len = length(subs);
 if ~ismember(len, [1,2]); error('Error in reference for index and columns.'); end
-if len == 1; col = ':'; else; col = subs{2}; end
+if len==1; col = ':'; else; col = subs{2}; end
 idx = subs{1};
 end
 
