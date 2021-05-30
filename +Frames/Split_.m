@@ -5,7 +5,7 @@ classdef Split_ < dynamicprops
     end
     
     methods (Access=?frames.DataFrame)
-        function obj = Split(df,splitter,nameOfProperties)
+        function obj = Split_(df,splitter,nameOfProperties)
             if isa(splitter,'struct')
                 if nargin < 3
                     nameOfProperties = fieldnames(splitter);

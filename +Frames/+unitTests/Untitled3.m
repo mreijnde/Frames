@@ -8,4 +8,5 @@ frames.DataFrame([1 2 3; 2 5 3]', frames.TimeIndex([1 3 65]), [4 1]).sortBy(1)
 
 frames.DataFrame([1 2 3; 2 5 3]', frames.UniqueIndex([6 2 1]), [4 1]).sortByIndex()
 
+df.split({4,1},["d","e"]).apply(@(x) x)
 splitapply b exampl
