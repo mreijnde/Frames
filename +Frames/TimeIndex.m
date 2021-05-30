@@ -10,7 +10,7 @@ classdef TimeIndex < frames.OrderedIndex
             %   Detailed explanation goes here
             arguments
                 value
-                nameValue.name
+                nameValue.name = ""
                 nameValue.format = "dd.MM.yyyy"
             end
             if isdatetime(value); nameValue.format = value.Format; end

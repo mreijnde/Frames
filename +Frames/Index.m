@@ -20,6 +20,10 @@ classdef Index
                 value {mustBeDFvector} = []
                 nameValue.name = ""
             end
+            if isa(value,'frames.Index')
+                nameValue.name = value.name;
+                value = value.value;
+            end
             obj.value = value;
             obj.name = nameValue.name;
         end

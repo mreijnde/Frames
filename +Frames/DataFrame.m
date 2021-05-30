@@ -353,6 +353,20 @@ classdef DataFrame
             other.name_ = ""; other.description = "";
         end
         
+        function other = sortBy(obj,columnName)
+            arguments
+                obj, columnName (1,1)
+            end
+            series = obj.loc(':',columnName);
+            [~,sortedID] = sort(series.data);
+            obj.index_ = frames.UniqueIndex(obj.index_);
+            other = obj.iloc(sortedID);
+        end
+        function obj = sortByIndex(obj)
+            [obj.index_.value_,sortedID] = sort(obj.index_.value_);
+            obj.data_ = obj.data_(sortedID,:);
+        end
+        
         function obj=shift(obj,varargin)
             obj.data_=shift(obj.data_,varargin{:});
         end
@@ -403,6 +417,9 @@ classdef DataFrame
             if nargout == 1, varargout{1} = p; end
         end
         
+        function s = split(obj,varargin)
+            s = Split(obj,varargin{:});
+        end
         
         %  subsref subsasgn.
         %  Index for cols and index.
@@ -411,7 +428,7 @@ classdef DataFrame
         %  missingData value, size.
         %  [] cat
         %  resample, shift, oneify, bool
-        % ToDo plot, heatmap
+        %  plot, heatmap.
         % ToDo cov corr rolling ewm
         %  ffill bfill.
         % ToDo start and end valid, fill

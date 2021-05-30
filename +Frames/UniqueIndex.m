@@ -18,7 +18,7 @@ classdef UniqueIndex < frames.Index
             pos = ismember(target,obj.value);
         end
         
-    function bool = isunique(~)
+        function bool = isunique(~)
             bool = true;
         end
     end
