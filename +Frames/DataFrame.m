@@ -396,6 +396,13 @@ classdef DataFrame
             if nargout == 1, varargout{1} = p; end
         end
         
+        function varargout = heatmap(obj,varargin)
+            figure()
+            p = heatmap(obj.columns,obj.index,obj.data,varargin{:});
+            title(obj.name);
+            if nargout == 1, varargout{1} = p; end
+        end
+        
         
         %  subsref subsasgn.
         %  Index for cols and index.
