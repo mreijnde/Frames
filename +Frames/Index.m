@@ -89,7 +89,7 @@ classdef Index
     methods(Access=protected)
         function value = valueChecker(~,value)
             if ~isunique(value)
-                warning('index is not unique')
+                warning('frames:Index:notUnique','index is not unique')
             end
         end
     end

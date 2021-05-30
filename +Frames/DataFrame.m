@@ -418,7 +418,7 @@ classdef DataFrame
         end
         
         function s = split(obj,varargin)
-            s = Split(obj,varargin{:});
+            s = frames.Split_(obj,varargin{:});
         end
         
         %  subsref subsasgn.
@@ -489,7 +489,7 @@ classdef DataFrame
                     [idx,col] = getSelectorsFromSubs(s.subs);
                     obj = modify(obj,b,idx,col,true);
                 case '.'
-                    if strcmp(s(1).subs,properties(obj))
+                    if ismember(s(1).subs,properties(obj))
                         obj.(s.subs) = b;
                     else
                          error(('''%s'' is not a public property of the ''%s'' class.'),s(1).subs,class(obj));
