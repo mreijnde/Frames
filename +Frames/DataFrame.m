@@ -344,10 +344,8 @@ classdef DataFrame
                 extendedDF = getExtendedColsDF(varargin{ii});
                 assert(isa(extendedDF.data_,type), ...
                     'frames do not have the same data type')
-%                 idx = other.index_.union(extendedDF.index);
                 idxConc = [other.index_;extendedDF.index_];
 
-%                 idxID = idx.positionIn(idxConc.value);
                 dataV(sizeIndex(ii)+1:sizeIndex(ii+1),:) = extendedDF.data_;
             end
             other.data_ = dataV;
@@ -357,6 +355,40 @@ classdef DataFrame
         
         function obj=shift(obj,varargin)
             obj.data_=shift(obj.data_,varargin{:});
+        end
+        
+        function varargout = plot(obj,params)
+            arguments
+                obj
+                params.Title {mustBeTextScalar} = obj.name
+                params.Legend (1,1) logical = true
+                params.Log (1,1) logical = false
+                params.WholeIndex (1,1) logical = false
+            end
+            
+            % interpolate NaNs, if ordered and not sparse
+            
+            figure()
+            if obj.index_.issorted()
+                args = {obj.index, obj.data};
+            else
+                args = {obj.data};
+            end
+            if params.Log
+                p = semilogy(args{:});
+            else
+                p = plot(args{:});
+            end
+            grid on
+            title(params.Title)
+            if params.Legend
+                cols = string(obj.columns);
+                legend(cols,Location='Best');
+            end
+            if params.WholeIndex
+                xlim(obj.index(1),obj.index(end))
+            end
+            if nargout == 1, varargout{1} = p; end
         end
         
         
@@ -483,7 +515,7 @@ classdef DataFrame
         end
         
         function n = numArgumentsFromSubscript(varargin), n = 1; end
-        function e = end(obj, q, w), e = builtin('end', obj.data_, q, w); end
+        function e = end(obj,q,w), e = builtin('end',obj.data_,q,w); end
         
     end
     
