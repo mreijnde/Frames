@@ -421,6 +421,8 @@ classdef DataFrame
             s = frames.Split_(obj,varargin{:});
         end
         
+        
+        
         %  subsref subsasgn.
         %  Index for cols and index.
         % ToDo operations: plus, minus, returns, replace
@@ -434,8 +436,8 @@ classdef DataFrame
         % ToDo start and end valid, fill
         % ToDo constructors zeros
         % ToDo max min std sum
-        % ToDO sortby
-        % ToDo split apply
+        %  sortby.
+        %  split apply.
         % toDo read write
         % ToDo setIndexType, setIndexName, setColumnsType, Name
         
@@ -529,6 +531,24 @@ classdef DataFrame
             if ~iscolon(columns)
                 columns = obj.columns_.positionOf(columns);
             end
+        end
+    end
+    
+    methods(Static)
+        function df = fromFile(filePath, varargin)
+            tb = readtable(filePath,...
+                'TreatAsEmpty',{'N/A','NA'},'ReadRowNames',true,varargin{:});
+            df = frames.DataFrame.fromTable(tb);
+        end
+        function df = fromTable(t,nameValue)
+            arguments
+                t {mustBeA(t,'table')}
+                nameValue.keepCellstr (1,1) logical = false
+            end
+            cols = t.Properties.VariableNames;
+            if ~nameValue.keepCellstr, cols = string(cols); end
+            df = frames.DataFrame(t.Variables,t.Properties.RowNames,cols);
+            df.index_.name = t.Properties.DimensionNames{1};
         end
     end
     
