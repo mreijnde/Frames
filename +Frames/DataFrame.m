@@ -366,11 +366,15 @@ classdef DataFrame
                 params.WholeIndex (1,1) logical = false
             end
             
-            % interpolate NaNs, if ordered and not sparse
+            if issorted(obj.index_)
+                obj.data_ = interpMissing(obj.data_);
+            end
             
+            useIndex = obj.index_.issorted() && ...
+                (isnumeric(obj.index) || isdatetime(ob.index));  % any type that can be shown on the x axis
             figure()
-            if obj.index_.issorted()
-                args = {obj.index, obj.data};
+            if useIndex
+                args = {obj.index,obj.data};
             else
                 args = {obj.data};
             end
@@ -379,6 +383,7 @@ classdef DataFrame
             else
                 p = plot(args{:});
             end
+            if ~useIndex, xtick([]); end
             grid on
             title(params.Title)
             if params.Legend
