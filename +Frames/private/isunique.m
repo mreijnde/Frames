@@ -1,3 +1,3 @@
 function bool = isunique(x)
-bool = numel(x)==numel(unique(x));
+bool = frames.internal.isunique(x);
 end

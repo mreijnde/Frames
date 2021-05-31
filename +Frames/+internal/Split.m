@@ -1,11 +1,11 @@
-classdef Split_ < dynamicprops
+classdef Split < dynamicprops
 
     properties(Access=private)
         nameOfProperties_
     end
     
     methods (Access=?frames.DataFrame)
-        function obj = Split_(df,splitter,nameOfProperties)
+        function obj = Split(df,splitter,nameOfProperties)
             if isa(splitter,'struct')
                 if nargin < 3
                     nameOfProperties = fieldnames(splitter);
@@ -32,7 +32,7 @@ classdef Split_ < dynamicprops
             end
             
             splitterData = [splitter{:}];
-            if ~isunique(splitterData)
+            if ~frames.internal.isunique(splitterData)
                 warning('frames:SplitOverlap','There are overlaps in Split')
             end
             if any(~ismember(df.columns,splitterData))
