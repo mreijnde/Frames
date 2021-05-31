@@ -8,5 +8,8 @@ frames.DataFrame([1 2 3; 2 5 3]', frames.TimeIndex([1 3 65]), [4 1]).sortBy(1)
 
 frames.DataFrame([1 2 3; 2 5 3]', frames.UniqueIndex([6 2 1]), [4 1]).sortByIndex()
 
-df.split({4,1},["d","e"]).apply(@(x) x)
-splitapply b exampl
+df=frames.DataFrame([1 2 3; 2 5 3;5 0 1]', [6 2 1], [4 1 3])
+df.split({[4,3],1},["d","e"]).apply(@(x) x)
+ceiler.d = {2.5,4.5};
+ceiler.e = {2.6};
+df.split({[4,3],1},["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))
