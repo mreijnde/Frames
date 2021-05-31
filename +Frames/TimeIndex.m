@@ -1,4 +1,4 @@
-classdef TimeIndex < frames.OrderedIndex
+classdef TimeIndex < frames.SortedIndex
     properties
         format {mustBeTextScalar} = "dd.MM.yyyy"
     end
@@ -14,7 +14,7 @@ classdef TimeIndex < frames.OrderedIndex
                 nameValue.format = "dd.MM.yyyy"
             end
             if isdatetime(value); nameValue.format = value.Format; end
-            obj = obj@frames.OrderedIndex(value,name=nameValue.name);
+            obj = obj@frames.SortedIndex(value,name=nameValue.name);
             obj.format = nameValue.format;
         end
 
@@ -22,7 +22,7 @@ classdef TimeIndex < frames.OrderedIndex
             value = datetime(obj.value_,ConvertFrom='datenum',Format=obj.format);
         end
         function value_ = getValue_(obj,value_)
-            value_ = getValue_@frames.OrderedIndex(obj,value_);
+            value_ = getValue_@frames.SortedIndex(obj,value_);
             switch class(value_)
                 case 'datetime'
                 case {'string','cell'}

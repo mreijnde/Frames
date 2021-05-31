@@ -110,11 +110,27 @@ classdef DataFrame
         function t = get.t(obj)
             t = obj.getTable();
         end
+        function c = get.constructor(obj) 
+            c = str2func(class(obj));
+        end
         function idx = getIndex_(obj)
             idx = obj.index_;
         end
         function col = getColumns_(obj)
             col = obj.columns_;
+        end
+        function obj = setIndexType(obj,type)
+            % ToDo in TImeframe do type is format
+            arguments
+                obj, type (1,1) {mustBeMember(type,["unsorted","sorted","time"])}
+            end
+            if strcmp(type,"unsorted")
+                obj.index_ = frames.UniqueIndex(obj.index_);
+            elseif strcmp(type,"sorted")
+                obj.index_ = frames.SortedIndex(obj.index_);
+            elseif strcmp(type,"time")
+                obj.index_ = frames.TimeIndex(obj.index_);
+            end
         end
         
         function t = head(obj, varargin); t = head(obj.t,varargin{:}); end
@@ -148,7 +164,7 @@ classdef DataFrame
             else
                 colID = colName;
             end
-            obj.data_ =  obj.data_(idxID,colID);
+            obj.data_ = obj.data_(idxID,colID);
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -163,8 +179,8 @@ classdef DataFrame
         function df = dropMissing(obj,nameValue)
             arguments
                 obj
-                nameValue.how {mustBeMember(nameValue.how,["any","all"])} = "all";
-                nameValue.axis {mustBeMember(nameValue.axis,[1,2])} = 1;
+                nameValue.how (1,1) {mustBeMember(nameValue.how,["any","all"])} = "all";
+                nameValue.axis (1,1) {mustBeMember(nameValue.axis,[1,2])} = 1;
             end
             
             axis = abs(nameValue.axis-3);  % if dim = 1 I want to drop rows, where we check if they contain NaNs in the 2. dimension
@@ -362,7 +378,7 @@ classdef DataFrame
             obj.index_ = frames.UniqueIndex(obj.index_);
             other = obj.iloc(sortedID);
         end
-        function obj = sortByIndex(obj)
+        function obj = sortIndex(obj)
             [obj.index_.value_,sortedID] = sort(obj.index_.value_);
             obj.data_ = obj.data_(sortedID,:);
         end
@@ -437,7 +453,7 @@ classdef DataFrame
         % ToDo operations: plus, minus, returns, replace
         %  add drop columns, index, missing.
         %  missingData value, size.
-        %  [] cat
+        %  [] cat.
         %  resample, shift, oneify, bool
         %  plot, heatmap.
         % ToDo cov corr rolling ewm
