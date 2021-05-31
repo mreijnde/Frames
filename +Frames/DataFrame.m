@@ -120,17 +120,17 @@ classdef DataFrame
             col = obj.columns_;
         end
         function obj = setIndexType(obj,type)
-            % ToDo in TImeframe do type is format
-            arguments
-                obj, type (1,1) {mustBeMember(type,["unsorted","sorted","time"])}
-            end
-            if strcmp(type,"unsorted")
-                obj.index_ = frames.UniqueIndex(obj.index_);
-            elseif strcmp(type,"sorted")
-                obj.index_ = frames.SortedIndex(obj.index_);
-            elseif strcmp(type,"time")
-                obj.index_ = frames.TimeIndex(obj.index_);
-            end
+            % ToDo in Timeframe do type is format
+            obj.index_ = transformIndex(obj.index_,type);
+        end
+        function obj = setColumnsType(obj,type)
+            obj.columns_ = transformIndex(obj.columns_,type);
+        end
+        function obj = setIndexName(obj,name)
+            obj.index_.name = name;
+        end
+        function obj = setColumnsName(obj,name)
+            obj.columns_.name = name;
         end
         
         function t = head(obj, varargin); t = head(obj.t,varargin{:}); end
@@ -179,7 +179,7 @@ classdef DataFrame
         function df = dropMissing(obj,nameValue)
             arguments
                 obj
-                nameValue.how (1,1) {mustBeMember(nameValue.how,["any","all"])} = "all";
+                nameValue.how {mustBeTextScalar,mustBeMember(nameValue.how,["any","all"])} = "all";
                 nameValue.axis (1,1) {mustBeMember(nameValue.axis,[1,2])} = 1;
             end
             
@@ -447,10 +447,25 @@ classdef DataFrame
         end
         
         
-        
+        function obj = relChg(obj,varargin)
+            obj.data_ = relativeChange(obj.data_,varargin{:});
+        end
+        function obj = compoundChange(obj,varargin)
+            obj.data_ = relativeChange(obj.data_,varargin{:});
+        end
+        function idx = firstCommonIndex(obj)
+            % returns the first index where data are "all" not missing
+            idx = obj.dropMissing(how='any').index(1);
+        end
+        function idx = firstValidIndex(obj)
+            % returns the first index where data are not "all missing"
+            idx = obj.dropMissing(how='all').index(1);
+        end
+
         %  subsref subsasgn.
         %  Index for cols and index.
-        % ToDo operations: plus, minus, returns, replace
+        % ToDo operations: plus, minus
+        % ToDo returns, replace
         %  add drop columns, index, missing.
         %  missingData value, size.
         %  [] cat.
@@ -464,7 +479,7 @@ classdef DataFrame
         %  sortby.
         %  split apply.
         %  read write.
-        % ToDo setIndexType, setIndexName, setColumnsType, Name
+        %  setIndexType, setIndexName, setColumnsType, Name
         
         
         
