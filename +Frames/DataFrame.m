@@ -367,8 +367,17 @@ classdef DataFrame
             obj.data_ = obj.data_(sortedID,:);
         end
         
-        function obj=shift(obj,varargin)
-            obj.data_=shift(obj.data_,varargin{:});
+        function obj = shift(obj,varargin)
+            obj.data_ = shift(obj.data_,varargin{:});
+        end
+        
+        function obj = clip(obj,floorVal,ceilVal)
+            if nargin < 3
+                ceilVal = floorVal;
+                floorVal = -inf;
+            end
+            obj.data_(obj.data_ > ceilVal) = ceilVal;
+            obj.data_(obj.data_ < floorVal) = floorVal;
         end
         
         function varargout = plot(obj,params)
@@ -418,7 +427,7 @@ classdef DataFrame
         end
         
         function s = split(obj,varargin)
-            s = frames.Split_(obj,varargin{:});
+            s = frames.internal.Split(obj,varargin{:});
         end
         
         
