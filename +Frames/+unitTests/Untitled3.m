@@ -13,3 +13,7 @@ df.split({[4,3],1},["d","e"]).apply(@(x) x)
 ceiler.d = {2.5,4.5};
 ceiler.e = {2.6};
 df.split({[4,3],1},["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))
+s.d = [4 3]; s.e = 1;
+df.split(s,["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))
+g = frames.Groups([1 3 4], s)
+df.split(g,["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))

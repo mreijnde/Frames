@@ -6,16 +6,16 @@ classdef Split < dynamicprops
     
     methods (Access=?frames.DataFrame)
         function obj = Split(df,splitter,nameOfProperties)
-            if isa(splitter,'struct')
+            if isa(splitter, 'frames.Groups') || isa(splitter,'struct')
                 if nargin < 3
                     nameOfProperties = fieldnames(splitter);
                 else
                     assert(all(ismember(nameOfProperties,fieldnames(splitter))), ...
                         'The names of the properties must be found in the splitter');
                 end
-                splitter_ = splitter;  % turn it into a cell
+                splitter_ = {};  % turn it into a cell
                 for ii=1:length(nameOfProperties)
-                    splitter_{ii} = splitter(nameOfProperties{ii});
+                    splitter_{ii} = splitter.(string(nameOfProperties(ii))); %#ok<AGROW>
                 end
                 splitter = splitter_;
             end
