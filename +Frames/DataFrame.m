@@ -239,7 +239,7 @@ classdef DataFrame
                 obj, index
                 nameValue.firstValueFilling = "noFfill"
             end
-            if ~isa(obj.index_, 'frames.OrderedIndex')
+            if ~isa(obj.index_, 'frames.SortedIndex')
                 error('Only use resample with sorted index')
             end
             firstValueFilling = nameValue.firstValueFilling;
@@ -304,7 +304,7 @@ classdef DataFrame
                 % Expand DF, keeping the order of idx
                 if ~sameIndex
                     df = df.extendIndex(idx);
-                    if ~isa(obj.index_,'frames.OrderedIndex')
+                    if ~isa(obj.index_,'frames.SortedIndex')
                         df = df.loc(idx.value);
                     end
                 end
