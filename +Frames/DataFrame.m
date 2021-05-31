@@ -447,7 +447,7 @@ classdef DataFrame
         % ToDo max min std sum
         %  sortby.
         %  split apply.
-        % toDo read write
+        %  read write.
         % ToDo setIndexType, setIndexName, setColumnsType, Name
         
         
@@ -508,6 +508,12 @@ classdef DataFrame
             end
         end
         
+        
+        function toFile(obj,filePath,varargin)
+            writetable(obj.t,filePath, ...
+            'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
+        end
+        
     end
     
     methods(Access=protected)
@@ -546,7 +552,9 @@ classdef DataFrame
     methods(Static)
         function df = fromFile(filePath, varargin)
             tb = readtable(filePath,...
-                'TreatAsEmpty',{'N/A','NA'},'ReadRowNames',true,varargin{:});
+                'TreatAsEmpty',{'N/A','NA'}, ...
+                'ReadRowNames',true,'ReadVariableNames',true, ...
+                varargin{:});
             df = frames.DataFrame.fromTable(tb);
         end
         function df = fromTable(t,nameValue)
