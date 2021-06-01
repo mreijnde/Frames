@@ -85,7 +85,7 @@ classdef DataFrame
         end
         function obj = set.data(obj, value)
             assert(all(size(value)==size(obj.data_)), ...
-                'data is not of the correct size' )
+                'data is not of the correct size')
             obj.data_ = value;
         end
         function obj = set.name(obj, value)
@@ -288,7 +288,7 @@ classdef DataFrame
             for ii = 1:nargin-1
                 lenCols(ii+1) = length(varargin{ii}.columns_);
                 idx_ = varargin{ii}.index_;
-                if sameIndex && isequal( idx, idx_ )
+                if sameIndex && isequal(idx,idx_)
                     continue
                 else
                     sameIndex = false;
@@ -371,7 +371,7 @@ classdef DataFrame
         
         function other = sortBy(obj,columnName)
             arguments
-                obj, columnName (1,1)
+                obj, columnName {mustBeTextScalar}
             end
             series = obj.loc(':',columnName);
             [~,sortedID] = sort(series.data);
@@ -543,9 +543,19 @@ classdef DataFrame
         function obj = transpose(obj)
             obj = frames.DataFrame(obj.data_.',obj.columns,obj.index,obj.name_);
         end
+        
+        % these function overloads are to make chaining possible
+        % e.g. df.abs().sqrt()
         function obj = uminus(obj), obj.data_ = uminus(obj.data_); end
         function obj = uplus(obj), obj.data_ = uplus(obj.data_); end
         function obj = abs(obj), obj.data_ = abs(obj.data_); end
+        function obj = exp(obj), obj.data_ = exp(obj.data_); end
+        function obj = log(obj), obj.data_ = log(obj.data_); end
+        function obj = tanh(obj), obj.data_ = tanh(obj.data_); end
+        function obj = floor(obj), obj.data_ = floor(obj.data_); end
+        function obj = ceil(obj), obj.data_ = ceil(obj.data_); end
+        function obj = sign(obj), obj.data_ = sign(obj.data_); end
+        function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
 
         %  subsref subsasgn.
         %  Index for cols and index.
