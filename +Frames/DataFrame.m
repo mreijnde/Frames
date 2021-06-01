@@ -52,7 +52,7 @@ classdef DataFrame
             if isrow(data)
                 data = repmat(data,length(index),1);
             end
-                
+            
             obj.data_ = data;
             obj.index = index;
             obj.columns = columns;
@@ -110,7 +110,7 @@ classdef DataFrame
         function t = get.t(obj)
             t = obj.getTable();
         end
-        function c = get.constructor(obj) 
+        function c = get.constructor(obj)
             c = str2func(class(obj));
         end
         function idx = getIndex_(obj)
@@ -183,7 +183,7 @@ classdef DataFrame
                 nameValue.axis (1,1) {mustBeMember(nameValue.axis,[1,2])} = 1;
             end
             
-            axis = abs(nameValue.axis-3);  % if dim = 1 I want to drop rows, where we check if they contain NaNs in the 2. dimension
+            axis = abs(nameValue.axis-3);  % if dim = 1 I want to drop rows, where we check if they contain missings in the 2. dimension
             if strcmp(nameValue.how,'all')
                 drop = all(ismissing(obj.data_),axis);
             else
@@ -202,7 +202,7 @@ classdef DataFrame
             obj.data_ = fillmissing(obj.data_,'next');
         end
         
-        function other = extendIndex(obj,index)            
+        function other = extendIndex(obj,index)
             newIndex = obj.index_.union(index);
             newData = obj.defaultData(length(newIndex),length(obj.columns_));
             
@@ -211,7 +211,7 @@ classdef DataFrame
             
             other = obj;
             other.data_ = newData;
-            other.index_ = newIndex; 
+            other.index_ = newIndex;
         end
         function other = dropIndex(obj,index)
             idxToRemove = obj.index_.positionOf(index);
@@ -259,7 +259,7 @@ classdef DataFrame
                     end
                     if isrow(index), index=index'; end
                     index = [index(1)-interval;index];
-                catch me 
+                catch me
                     error('The interval is not valid. It must be substractable from the index.')
                 end
             end
@@ -361,7 +361,7 @@ classdef DataFrame
                 assert(isa(extendedDF.data_,type), ...
                     'frames do not have the same data type')
                 idxConc = [other.index_;extendedDF.index_];
-
+                
                 dataV(sizeIndex(ii)+1:sizeIndex(ii+1),:) = extendedDF.data_;
             end
             other.data_ = dataV;
@@ -390,10 +390,10 @@ classdef DataFrame
         function obj = clip(obj,floorVal,ceilVal)
             if nargin < 3
                 ceilVal = floorVal;
-                floorVal = -inf;
+            else
+                obj.data_(obj.data_ < floorVal) = floorVal;
             end
             obj.data_(obj.data_ > ceilVal) = ceilVal;
-            obj.data_(obj.data_ < floorVal) = floorVal;
         end
         
         function varargout = plot(obj,params)
@@ -451,35 +451,68 @@ classdef DataFrame
             obj.data_ = relativeChange(obj.data_,varargin{:});
         end
         function obj = compoundChange(obj,varargin)
-            obj.data_ = relativeChange(obj.data_,varargin{:});
+            obj.data_ = compoundChange(obj.data_,varargin{:});
+        end
+        function obj = replaceStartBy(obj,varargin)
+            obj.data_ = replaceStartBy(obj.data_,varargin{:});
+        end
+        function obj = emptyStart(obj,window)
+            obj.data_ = replaceStartBy(obj.data_,window);
         end
         function idx = firstCommonIndex(obj)
             % returns the first index where data are "all" not missing
-            idx = obj.dropMissing(how='any').index(1);
+            ix = find(all(~ismissing(obj.data_),2),1);
+            idx = obj.index(ix);
         end
         function idx = firstValidIndex(obj)
             % returns the first index where data are not "all missing"
-            idx = obj.dropMissing(how='all').index(1);
+            ix = find(any(~ismissing(obj.data_),2),1);
+            idx = obj.index(ix);
         end
-
+        
+        function varargout = size(obj,varargin)
+            [varargout{1:nargout}] = size(obj.data_,varargin{:});
+        end
+        function bool = isempty(obj), bool = isempty(obj.data_); end
+        function obj = cumsum(obj), obj.data_ = cumsum(obj.data_); end
+        function obj = cumprod(obj), obj.data_ = cumprod(obj.data_); end
+        
+        function other = plus(df1,df2)
+            other = operator(@plus,@elementWiseHandler,df1,df2);
+        end
+        
+        function other = mtimes(df1,df2)
+            other = operator(@mtimes,@matrixOpHandler,df1,df2);
+        end
+        
+        function obj = ctranspose(obj)
+            obj = frames.DataFrame(obj.data_',obj.columns,obj.index,obj.name_);
+        end
+        function obj = transpose(obj)
+            obj = frames.DataFrame(obj.data_.',obj.columns,obj.index,obj.name_);
+        end
+        
+        
+        % col1 == index2 (dot) -> index1, col2
+        % idx1>1 & idx2>1 idx1 == idx2, col1 col2 (sum) -> idx1 if len(idx2)>len(idx1) idx2, col
+        
         %  subsref subsasgn.
         %  Index for cols and index.
         % ToDo operations: plus, minus
-        % ToDo returns, replace
+        %  returns, replace.
         %  add drop columns, index, missing.
         %  missingData value, size.
         %  [] cat.
-        %  resample, shift, oneify, bool
+        %  resample, shift, oneify, bool.
         %  plot, heatmap.
         % ToDo cov corr rolling ewm
         %  ffill bfill.
-        % ToDo start and end valid, fill
-        % ToDo constructors zeros
+        %  start and end valid, fill.
         % ToDo max min std sum
         %  sortby.
         %  split apply.
         %  read write.
-        %  setIndexType, setIndexName, setColumnsType, Name
+        %  setIndexType, setIndexName, setColumnsType, Name.
         
         
         
@@ -510,8 +543,8 @@ classdef DataFrame
         function obj = subsasgn(obj,s,b)
             if length(s)==2
                 [islocFct,selectors] = s.subs;
-                if strcmp(islocFct,'iloc') || strcmp(islocFct,'loc') 
-                    if strcmp(islocFct,'iloc') 
+                if strcmp(islocFct,'iloc') || strcmp(islocFct,'loc')
+                    if strcmp(islocFct,'iloc')
                         fromPosition = true;
                     else
                         fromPosition = false;
@@ -534,7 +567,7 @@ classdef DataFrame
                     if ismember(s(1).subs,properties(obj))
                         obj.(s.subs) = b;
                     else
-                         error(('''%s'' is not a public property of the ''%s'' class.'),s(1).subs,class(obj));
+                        error(('''%s'' is not a public property of the ''%s'' class.'),s(1).subs,class(obj));
                     end
             end
         end
@@ -542,7 +575,7 @@ classdef DataFrame
         
         function toFile(obj,filePath,varargin)
             writetable(obj.t,filePath, ...
-            'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
+                'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
         end
         
     end
@@ -570,7 +603,7 @@ classdef DataFrame
             end
             obj.data_(index,columns) = data;
         end
-        function [index,columns] = localizeSelectors(obj,index,columns)      
+        function [index,columns] = localizeSelectors(obj,index,columns)
             if ~iscolon(index)
                 index = obj.index_.positionOf(index);
             end
@@ -579,6 +612,7 @@ classdef DataFrame
             end
         end
     end
+    
     
     methods(Static)
         function df = fromFile(filePath, varargin)
@@ -645,5 +679,68 @@ for ii = 2:length(selector)
 end
 end
 
+function varargout = getData_(varargin)
+for ii = 1:nargout
+    v = varargin{ii};
+    if isa(v,'frames.DataFrame'), v=v.data_; end
+    varargout{ii} = v; %#ok<AGROW>
+end
+end
 
 
+%--------------------------------------------------------------------------
+function [idx_,col_,df] = matrixOpHandler(df1,df2)
+df = df1;
+if isa(df2,'frames.DataFrame')
+    if isa(df1,'frames.DataFrame')
+        assert(isequal(df1.columns_.value_,df2.index_.value_), ...
+                'Frames are not aligned!')
+        idx_ = df1.index_;
+        col_ = df2.columns_;
+    else
+        idx_ = frames.UniqueIndex(1:size(df1,1));
+        col_ = df2.columns_;
+        df = df2;
+    end
+else
+    idx_ = df1.index_;
+    col_ = frames.Index(1:size(df2,2));
+end
+end
+
+%--------------------------------------------------------------------------
+function [idx_,col_,df] = elementWiseHandler(df1,df2)
+df = df1;
+if isa(df2,'frames.DataFrame')
+    if isa(df1,'frames.DataFrame')
+        if size(df1,1)>1 && size(df2,1)>1
+            assert(isequal(df1.index_.value_,df2.index_.value_), ...
+                'Frames have different indices!')
+        end
+        if size(df1,2)>1 && size(df2,2)>1
+            assert(isequal(df1.columns_.value_,df2.columns_.value_), ...
+                'Frames have different columns!')
+        end
+        idx_ = df1.index_;
+        if size(df2,1)>size(df1,1), idx_ = df2.index_; end
+        col_ = df1.columns_;
+        if size(df2,1)>size(df1,1), col_ = df2.columns_; end
+    else
+        idx_ = df2.index_;
+        col_ = df2.columns_;
+        df = df2;
+    end
+else
+    idx_ = df1.index_;
+    col_ = df1.columns_;
+end
+end
+
+%--------------------------------------------------------------------------
+function other = operator(fun,handler,df1,df2)
+[idx_,col_,other] = handler(df1,df2);
+[v1,v2]=getData_(df1,df2);
+d = fun(v1,v2);
+other.data_ = d; other.index_ = idx_; other.columns_ = col_;
+other.description = "";
+end

@@ -17,3 +17,22 @@ s.d = [4 3]; s.e = 1;
 df.split(s,["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))
 g = frames.Groups([1 3 4], s)
 df.split(g,["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))
+
+mat = [NaN 1 NaN; NaN 2 3; NaN NaN 4];
+idx = findIxColumnStart(mat);
+getElementIDShift(idx,size(mat,1),size(mat,2),-1);
+
+data = [ 1 2 3 4 NaN 6;NaN NaN NaN NaN NaN NaN ; NaN NaN 33 44 55 66]'
+replaceStartBy(data,0)
+emptyStart(data,2)
+
+df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1 ; NaN NaN 33 44 55 66]');
+df.firstCommonIndex()
+df.firstValidIndex()
+
+df=frames.DataFrame([1 2 3; 2 5 3;5 1 1]', [6 2 1], [4 1 3])
+df.relChg('log').compoundChange('log',[1 2 5])
+df.relChg().compoundChange('simple',[1 2 5])
+
+df' * df
+df + df
