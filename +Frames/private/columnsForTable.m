@@ -1,4 +1,7 @@
-function columnsOut = columnsForTable(columns)
+function columns = columnsForTable(columns)
 %ToDo handle duplicates
-columnsOut=cellstr(string(columns));
+if ~istext(columns)
+    columns = "Var" + columns;
+end
+columns = validVariableName(columns);
 end
