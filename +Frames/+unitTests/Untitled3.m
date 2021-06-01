@@ -36,3 +36,7 @@ df.relChg().compoundChange('simple',[1 2 5])
 
 df' * df
 df + df
+df + df.data
+1 + df
+df.data' * df
+df' \ df

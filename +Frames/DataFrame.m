@@ -480,9 +480,61 @@ classdef DataFrame
         function other = plus(df1,df2)
             other = operator(@plus,@elementWiseHandler,df1,df2);
         end
-        
         function other = mtimes(df1,df2)
             other = operator(@mtimes,@matrixOpHandler,df1,df2);
+        end
+        function other = times(df1,df2)
+            other = operator(@times,@elementWiseHandler,df1,df2);
+        end
+        function other = minus(df1,df2)
+            other = operator(@minus,@elementWiseHandler,df1,df2);
+        end
+        function other = mrdivide(df1,df2)
+            other = operator(@mrdivide,@matrixOpHandler,df1,df2);
+        end
+        function other = rdivide(df1,df2)
+            other = operator(@rdivide,@elementWiseHandler,df1,df2);
+        end
+        function other = mldivide(df1,df2)
+            other = operator(@mldivide,@matrixOpHandler,df1,df2);
+        end
+        function this = ldivide(df1,df2)
+            this = operator(@ldivide,@elementWiseHandler,df1,df2);
+        end
+        function this = power(df1,df2)
+            this = operator(@power,@elementWiseHandler,df1,df2);
+        end
+        function this = mpower(df1,df2)
+            this = operator(@mpower,@matrixOpHandler,df1,df2);
+        end
+        
+        function this = lt(df1,df2)
+            this = operator(@lt,@elementWiseHandler,df1,df2);
+        end
+        function this = gt(df1,df2)
+            this = operator(@gt,@elementWiseHandler,df1,df2);
+        end
+        function this = le(df1,df2)
+            this = operator(@le,@elementWiseHandler,df1,df2);
+        end
+        function this = ge(df1,df2)
+            this = operator(@ge,@elementWiseHandler,df1,df2);
+        end
+        function bool = equals(df1,df2,tol)
+            if nargin<3, tol=eps; end
+            try
+                diff = df1-df2;
+                iseq = diff.abs().data <= tol;
+                bool = all(iseq(:));
+            catch
+                bool = false;
+            end  
+        end
+        function bool = eq(df1,df2)
+            bool = df1.equals(df2,0);
+        end
+        function bool = ne(df1,df2)
+            bool = ~df1.eq(df2);
         end
         
         function obj = ctranspose(obj)
@@ -491,11 +543,10 @@ classdef DataFrame
         function obj = transpose(obj)
             obj = frames.DataFrame(obj.data_.',obj.columns,obj.index,obj.name_);
         end
-        
-        
-        % col1 == index2 (dot) -> index1, col2
-        % idx1>1 & idx2>1 idx1 == idx2, col1 col2 (sum) -> idx1 if len(idx2)>len(idx1) idx2, col
-        
+        function obj = uminus(obj), obj.data_ = uminus(obj.data_); end
+        function obj = uplus(obj), obj.data_ = uplus(obj.data_); end
+        function obj = abs(obj), obj.data_ = abs(obj.data_); end
+
         %  subsref subsasgn.
         %  Index for cols and index.
         % ToDo operations: plus, minus
