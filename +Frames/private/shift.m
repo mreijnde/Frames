@@ -13,6 +13,8 @@ function s = shift(x,lag)
             s(lag+1:end,:) = x(1:end-lag,:);
     elseif lag < 0
             s(1:end+lag,:) = x(-lag+1:end,:);
+    else
+        s = x;
     end
     if xIsRow
         s = s';
