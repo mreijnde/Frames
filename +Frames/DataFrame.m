@@ -121,7 +121,6 @@ classdef DataFrame
             col = obj.columns_;
         end
         function obj = setIndexType(obj,type)
-            % ToDo in Timeframe do type is format
             obj.index_ = transformIndex(obj.index_,type);
         end
         function obj = setColumnsType(obj,type)

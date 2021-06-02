@@ -3,7 +3,9 @@ classdef TimeFrame < frames.DataFrame
     %   Detailed explanation goes here
     
     methods
-
+        function obj = setIndexType(obj,type)
+            obj.index_.format = type;
+        end
     end
     
     methods(Access=protected)
