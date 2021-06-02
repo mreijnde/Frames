@@ -5,5 +5,11 @@ classdef TimeFrame < frames.DataFrame
     methods
 
     end
+    
+    methods(Access=protected)
+        function idx = getIndexObject(~,index)
+            idx = frames.TimeIndex(index);
+        end
+    end
 end
 
