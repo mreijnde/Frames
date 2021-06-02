@@ -17,7 +17,7 @@ classdef Index
             %UNTITLED4 Construct an instance of this class
             %   Detailed explanation goes here
             arguments
-                value {mustBeDFvector} = []
+                value {mustBeDFcolumns} = []
                 nameValue.name = ""
             end
             name = nameValue.name;
