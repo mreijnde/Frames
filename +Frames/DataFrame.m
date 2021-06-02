@@ -37,10 +37,10 @@ classdef DataFrame
                 columns {mustBeDFcolumns} = []
                 name {mustBeTextScalar} = ""
             end
-            if isempty(index)
+            if isequal(index,[])
                 index = obj.defaultIndex(size(data,1));
             end
-            if isempty(columns)
+            if isequal(columns,[])
                 columns = obj.defaultColumns(size(data,2));
             end
             if isempty(data)
@@ -725,6 +725,20 @@ classdef DataFrame
     end
  
     methods(Static)
+        function df = empty(type)
+            arguments
+                type {mustBeTextScalar, mustBeMember(type,["double","string","datetime"])} = 'double'
+            end
+            switch type
+                case 'double'
+                    idx = double.empty(0,1);
+                case 'string'
+                    idx = string.empty(0,1);
+                case 'datetime'
+                    idx = datetime.empty(0,1); 
+            end
+            df = frames.DataFrame([],idx);
+        end
         function df = fromFile(filePath, varargin)
             tb = readtable(filePath,...
                 'TreatAsEmpty',{'N/A','NA'}, ...

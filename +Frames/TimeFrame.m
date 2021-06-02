@@ -6,6 +6,15 @@ classdef TimeFrame < frames.DataFrame
         function obj = setIndexType(obj,type)
             obj.index_.format = type;
         end
+        function varargout = plot(obj,varargin)
+            duration = obj.index(end)-obj.index(1);
+            obj = obj.extendIndex(obj.index(end) + 0.02*duration); % add 2% of width at the end of the plot to be able to see the end well
+            [varargout{1:nargout}] = plot@frames.DataFrame(obj,'WholeIndex',true,varargin{:});
+        end
+    end
+    
+    methods(Static)
+        function tf = empty(), tf = frames.TimeFrame(); end
     end
     
     methods(Access=protected)
