@@ -39,21 +39,26 @@ classdef Index
             end
             obj.value_ = value;
         end
+        function v = getValue_(obj)
+            v = obj.value_;
+        end
         
         function len = length(obj)
             len = length(obj.value_);
         end
         
         function pos = positionOf(obj,selector)
-            pos = findPositionIn(selector,obj.value);
+            selector = obj.getValue_from(selector);
+            pos = findPositionIn(selector,obj.value_);
         end
         function pos = positionIn(obj,target)
-            pos = findPositionIn(obj.value,target);
+            target = obj.getValue_from(target);
+            pos = findPositionIn(obj.value_,target);
         end
         
         function obj = union(obj,index2)
-            index1 = obj.getValue_(obj.value);
-            index2 = obj.getValue_(index2);
+            index1 = obj.value_;
+            index2 = obj.getValue_from(index2);
             assert(isequal(class(index1),class(index2)), ...
                 sprintf( 'indexes are of different types: [%s] [%s]',class(index1),class(index2)));
             obj.value_ = obj.unionData(index1,index2);
@@ -73,17 +78,7 @@ classdef Index
             bool = issorted(obj.value_);
         end
 
-        function value = getValue(obj)
-            value = obj.value_;
-        end
-        function value = getValue_(~,value)
-            if isa(value,'frames.Index')
-                value = value.value_;
-            end
-            if isrow(value)
-                value = value';
-            end
-        end
+
     end
 
     
@@ -93,11 +88,21 @@ classdef Index
                 warning('frames:Index:notUnique','index is not unique')
             end
         end
-    end
-    methods(Access=protected)
         function u = unionData(obj,v1,v2)
             u = [v1; v2];
             obj.valueChecker(u);
+        end
+        
+        function value = getValue(obj)
+            value = obj.value_;
+        end
+        function value = getValue_from(~,value)
+            if isa(value,'frames.Index')
+                value = value.value_;
+            end
+            if isrow(value)
+                value = value';
+            end
         end
         
     end
