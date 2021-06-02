@@ -496,27 +496,27 @@ classdef DataFrame
         function other = mldivide(df1,df2)
             other = operator(@mldivide,@matrixOpHandler,df1,df2);
         end
-        function this = ldivide(df1,df2)
-            this = operator(@ldivide,@elementWiseHandler,df1,df2);
+        function other = ldivide(df1,df2)
+            other = operator(@ldivide,@elementWiseHandler,df1,df2);
         end
-        function this = power(df1,df2)
-            this = operator(@power,@elementWiseHandler,df1,df2);
+        function other = power(df1,df2)
+            other = operator(@power,@elementWiseHandler,df1,df2);
         end
-        function this = mpower(df1,df2)
-            this = operator(@mpower,@matrixOpHandler,df1,df2);
+        function other = mpower(df1,df2)
+            other = operator(@mpower,@matrixOpHandler,df1,df2);
         end
         
-        function this = lt(df1,df2)
-            this = operator(@lt,@elementWiseHandler,df1,df2);
+        function other = lt(df1,df2)
+            other = operator(@lt,@elementWiseHandler,df1,df2);
         end
-        function this = gt(df1,df2)
-            this = operator(@gt,@elementWiseHandler,df1,df2);
+        function other = gt(df1,df2)
+            other = operator(@gt,@elementWiseHandler,df1,df2);
         end
-        function this = le(df1,df2)
-            this = operator(@le,@elementWiseHandler,df1,df2);
+        function other = le(df1,df2)
+            other = operator(@le,@elementWiseHandler,df1,df2);
         end
-        function this = ge(df1,df2)
-            this = operator(@ge,@elementWiseHandler,df1,df2);
+        function other = ge(df1,df2)
+            other = operator(@ge,@elementWiseHandler,df1,df2);
         end
         function bool = equals(df1,df2,tol)
             if nargin<3, tol=eps; end
@@ -526,7 +526,7 @@ classdef DataFrame
                 bool = all(iseq(:));
             catch
                 bool = false;
-            end  
+            end
         end
         function bool = eq(df1,df2)
             bool = df1.equals(df2,0);
@@ -535,11 +535,11 @@ classdef DataFrame
             bool = ~df1.eq(df2);
         end
         
-        function obj = ctranspose(obj)
-            obj = frames.DataFrame(obj.data_',obj.columns,obj.index,obj.name_);
+        function other = ctranspose(obj)
+            other = frames.DataFrame(obj.data_',obj.columns,obj.index,obj.name_);
         end
-        function obj = transpose(obj)
-            obj = frames.DataFrame(obj.data_.',obj.columns,obj.index,obj.name_);
+        function other = transpose(obj)
+            other = frames.DataFrame(obj.data_.',obj.columns,obj.index,obj.name_);
         end
         
         % these function overloads are to make chaining possible
@@ -554,7 +554,17 @@ classdef DataFrame
         function obj = ceil(obj), obj.data_ = ceil(obj.data_); end
         function obj = sign(obj), obj.data_ = sign(obj.data_); end
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
-
+        
+        function other = sum(obj,varargin), other=obj.matrix2series(@sum,varargin{:}); end
+        function other = mean(obj,varargin), other=obj.matrix2series(@mean,varargin{:}); end
+        function other = median(obj,varargin), other=obj.matrix2series(@median,varargin{:}); end
+        function other = std(obj,varargin), other=obj.matrix2series(@std,[],varargin{:}); end
+        
+        function other = max(obj,varargin), other=obj.maxmin(@max,varargin{:}); end
+        function other = min(obj,varargin), other=obj.maxmin(@min,varargin{:}); end
+        function other = maxOf(df1,df2), other=operator(@max,@elementWiseHandler,df1,df2); end
+        function other = minOf(df1,df2), other=operator(@min,@elementWiseHandler,df1,df2); end
+        
         %  subsref subsasgn.
         %  Index for cols and index.
         %  operations: plus, minus.
@@ -567,7 +577,7 @@ classdef DataFrame
         % ToDo cov corr rolling ewm
         %  ffill bfill.
         %  start and end valid, fill.
-        % ToDo max min std sum
+        %  max min std sum.
         %  sortby.
         %  split apply.
         %  read write.
@@ -674,9 +684,47 @@ classdef DataFrame
                 columns = obj.columns_.positionOf(columns);
             end
         end
+        
+        function series = matrix2series(obj,fun,varargin)
+            if ~isempty(varargin) && ~isempty(varargin{end})
+                dim = varargin{end};  % end because std takes dimension value as argument after the weighting scheme, cf doc std versus doc sum
+            else
+                dim = 1;
+            end
+            assert(ismember(dim,[1,2]),'dimension value must be in [1,2]')
+            res = fun(obj.data_,varargin{:},'omitnan');
+            res(all(isnan(obj.data_),dim)) = NaN;  % puts NaN instead of zero when all entries are NaNs
+            series = obj.df2series(res,dim);
+        end
+        
+        function obj = df2series(obj,data,dim)
+            if dim == 1
+                indexValue = obj.defaultIndex(1);
+                obj = frames.DataFrame(data,indexValue,obj.columns,obj.name);
+            else
+                obj.data_ = data;
+                obj.columns_.value = obj.defaultIndex(1);
+            end
+        end
+        
+        function series = maxmin(obj,fun,dim)
+            if nargin < 3, dim = 1; end
+            d = fun(obj.data_,[],dim);
+            series = df2series(obj,d,dim);
+            if numel( d ) == 1
+                if dim == 1
+                    loc = obj.index_.value_(obj.data_ == d);
+                    loc = loc(1);
+                    series.index_.value_ = loc;
+                else
+                    loc = obj.columns_.value_(obj.data_ == d);
+                    loc = loc(1);
+                    series.columns_.value_ = loc;
+                end
+            end
+        end
     end
-    
-    
+ 
     methods(Static)
         function df = fromFile(filePath, varargin)
             tb = readtable(filePath,...
@@ -757,7 +805,7 @@ df = df1;
 if isa(df2,'frames.DataFrame')
     if isa(df1,'frames.DataFrame')
         assert(isequal(df1.columns_.value_,df2.index_.value_), ...
-                'Frames are not aligned!')
+            'Frames are not aligned!')
         idx_ = df1.index_;
         col_ = df2.columns_;
     else
@@ -807,3 +855,4 @@ d = fun(v1,v2);
 other.data_ = d; other.index_ = idx_; other.columns_ = col_;
 other.description = "";
 end
+
