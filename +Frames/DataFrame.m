@@ -67,8 +67,7 @@ classdef DataFrame
             arguments
                 obj, value {mustBeDFindex}
             end
-            assert(length(value) == size(obj.data,1), ...
-                'index does not have the same size as data')
+            obj.indexValidation(value);
             if ~isa(value,'frames.Index')
                 value = obj.getIndexObject(value);
             end
@@ -80,7 +79,9 @@ classdef DataFrame
             end
             assert(length(value) == size(obj.data,2), ...
                 'columns do not have the same size as data')
-            value = obj.getColumnsObject(value);
+            if ~isa(value,'frames.Index')
+                value = obj.getColumnsObject(value);
+            end
             obj.columns_ = value;
         end
         function obj = set.data(obj, value)
@@ -240,7 +241,7 @@ classdef DataFrame
                 nameValue.firstValueFilling = "noFfill"
             end
             if ~isa(obj.index_, 'frames.SortedIndex')
-                error('Only use resample with SortedIndex')
+                error('Only use resample with SortedIndex (set obj.setIndexType("sorted"))')
             end
             firstValueFilling = nameValue.firstValueFilling;
             if ~iscell(firstValueFilling)
@@ -647,6 +648,10 @@ classdef DataFrame
         function d = defaultData(obj,lengthIndex,lengthColumns,type)
             if nargin<4; type = class(obj.data); end
             d = repmat(missingData(type),lengthIndex,lengthColumns);
+        end
+        function indexValidation(obj,value)
+            assert(length(value) == size(obj.data,1), ...
+                'index does not have the same size as data')
         end
         function idx = getIndexObject(~,index)
             idx = frames.UniqueIndex(index);

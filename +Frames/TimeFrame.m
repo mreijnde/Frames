@@ -7,6 +7,12 @@ classdef TimeFrame < frames.DataFrame
     end
     
     methods(Access=protected)
+        function indexValidation(obj,value)
+            if isa(value,'frames.Index') && ~isa(value,'frames.TimeIndex')
+                error('TimeFrame can only accept a TimeIndex as index.')
+            end
+            indexValidation@frames.DataFrame(obj,value);
+        end
         function idx = getIndexObject(~,index)
             idx = frames.TimeIndex(index);
         end
