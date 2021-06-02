@@ -51,3 +51,6 @@ df.sum()
 df.maxOf(3)
 df.maxOf(df+1)
 df.max(2).min()
+
+tf=frames.TimeFrame(1,1:10,[])
+tf('02.01.0000:04.01.0000:dd.MM.uuuu')
