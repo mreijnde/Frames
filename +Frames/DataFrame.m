@@ -227,7 +227,7 @@ classdef DataFrame
             
             other = obj;
             other.data_ = newData;
-            other.columns_.value_ = other.columns_.getValue_(newColumns);
+            other.columns_.value = newColumns;
         end
         function other = dropColumns(obj,columns)
             colToRemove = obj.columns_.positionOf(columns);
@@ -240,7 +240,7 @@ classdef DataFrame
                 nameValue.firstValueFilling = "noFfill"
             end
             if ~isa(obj.index_, 'frames.SortedIndex')
-                error('Only use resample with sorted index')
+                error('Only use resample with SortedIndex')
             end
             firstValueFilling = nameValue.firstValueFilling;
             if ~iscell(firstValueFilling)
@@ -370,9 +370,6 @@ classdef DataFrame
         end
         
         function other = sortBy(obj,columnName)
-            arguments
-                obj, columnName {mustBeTextScalar}
-            end
             series = obj.loc(':',columnName);
             [~,sortedID] = sort(series.data);
             obj.index_ = frames.UniqueIndex(obj.index_);
@@ -559,7 +556,7 @@ classdef DataFrame
 
         %  subsref subsasgn.
         %  Index for cols and index.
-        % ToDo operations: plus, minus
+        %  operations: plus, minus.
         %  returns, replace.
         %  add drop columns, index, missing.
         %  missingData value, size.
