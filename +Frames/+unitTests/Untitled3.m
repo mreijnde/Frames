@@ -58,3 +58,11 @@ tf('02.01.0000:04.01.0000:dd.MM.uuuu')
 
 frames.TimeFrame().index
 frames.DataFrame.empty("datetime").index
+
+frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),format='yyyy')).toFile('y')
+frames.TimeFrame.fromFile('y',timeFormat='yyyy')
+
+df.corr()
+df.cov()
+
+df.rolling(2).sum()

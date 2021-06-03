@@ -152,17 +152,14 @@ classdef DataFrame
                 idxName {mustBeDFindex}
                 colName {mustBeDFcolumns} = ':'
             end
+            idxID = ':'; colID = ':';
             if ~iscolon(idxName)
                 idxID = obj.index_.positionOf(idxName);
                 obj.index_.value_ = obj.index_.value_(idxID);
-            else
-                idxID = idxName;
             end
             if ~iscolon(colName)
                 colID = obj.columns_.positionOf(colName);
                 obj.columns_.value_ = obj.columns_.value_(colID);
-            else
-                colID = colName;
             end
             obj.data_ = obj.data_(idxID,colID);
         end
@@ -564,6 +561,13 @@ classdef DataFrame
         function other = maxOf(df1,df2), other=operator(@max,@elementWiseHandler,df1,df2); end
         function other = minOf(df1,df2), other=operator(@min,@elementWiseHandler,df1,df2); end
         
+        function other = corr(obj), other=corrcov(obj,@corrcoef,Rows='pairwise'); end
+        function other = cov(obj), other= corrcov(obj,@cov,'partialRows'); end
+        
+        % ToDo put this in internal
+        function obj = rolling(obj,window); obj=frames.Rolling(obj,window); end
+        function obj = ewm(obj,type,value); obj=frames.Ewm(obj,type,value); end
+        
         %  subsref subsasgn.
         %  Index for cols and index.
         %  operations: plus, minus.
@@ -723,6 +727,11 @@ classdef DataFrame
                     series.columns_.value_ = loc;
                 end
             end
+        end
+        
+        function other = corrcov(obj,fun,varargin)
+            d = fun(obj.data_,varargin{:});
+            other = frames.DataFrame(d,obj.columns,obj.columns,obj.name_);
         end
     end
  
