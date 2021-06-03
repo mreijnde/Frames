@@ -622,7 +622,9 @@ classdef DataFrame
                 end
             end
             if length(s)>1
-                error('cannot assign with multiple references')
+                obj = builtin('subsasgn',obj,s,b);
+                return
+%                 error('cannot assign with multiple references')
             end
             switch s.type
                 case '()'
@@ -652,7 +654,7 @@ classdef DataFrame
         function tb = getTable(obj)
             idx = indexForTable(obj.index);
             col = columnsForTable(obj.columns);
-            tb = cell2table(num2cell(obj.data),RowNames=idx,VariableNames=col);
+            tb = array2table(obj.data,RowNames=idx,VariableNames=col);
         end
         function d = defaultData(obj,lengthIndex,lengthColumns,type)
             if nargin<4; type = class(obj.data); end
