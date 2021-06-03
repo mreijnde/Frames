@@ -18,9 +18,9 @@ classdef Index
             %   Detailed explanation goes here
             arguments
                 value {mustBeDFcolumns} = []
-                nameValue.name = ""
+                nameValue.Name = ""
             end
-            name = nameValue.name;
+            name = nameValue.Name;
             if isa(value,'frames.Index')
                 name = value.name;
                 value = value.value;

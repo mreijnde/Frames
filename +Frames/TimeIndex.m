@@ -1,6 +1,6 @@
 classdef TimeIndex < frames.SortedIndex
     properties
-        format {mustBeTextScalar} = "dd-MMM-yyyy"
+        format {mustBeTextScalar} = string(missing)
     end
     %UNTITLED4 Summary of this class goes here
     %   Detailed explanation goes here
@@ -10,12 +10,21 @@ classdef TimeIndex < frames.SortedIndex
             %   Detailed explanation goes here
             arguments
                 value
-                nameValue.name = ""
-                nameValue.format = "dd-MMM-yyyy"
+                nameValue.Name = ""
+                nameValue.Format = "dd-MMM-yyyy"
             end
-            if isdatetime(value); nameValue.format = value.Format; end
-            obj = obj@frames.SortedIndex(value,name=nameValue.name);
-            obj.format = nameValue.format;
+            if isdatetime(value); nameValue.Format = value.Format; end
+            
+            obj = obj@frames.SortedIndex(value,Name=nameValue.Name);
+            obj.format = nameValue.Format;
+            obj.value = value;
+        end
+        
+        function obj=set.format(obj,format)
+            arguments
+                obj, format {mustBeNonempty,mustBeNonmissing}
+            end
+            obj.format = format;
         end
         
         function pos = positionOf(obj,selector)
@@ -46,17 +55,18 @@ classdef TimeIndex < frames.SortedIndex
             value = datetime(obj.value_,ConvertFrom='datenum',Format=obj.format);
         end
         function value = getValue_from(obj,value)
+            if ismissing(obj.format), return; end  % only the case when constructing the object
             value = getValue_from@frames.SortedIndex(obj,value);
             switch class(value)
                 case 'datetime'
+                    value = datenum(value);
                 case {'string','cell'}
-                    value = datetime(value,Format=obj.format);
+                    value = datenum(value,obj.format);
                 case 'double'
                     return
                 otherwise
                     error('type of time index not recognized')
             end
-            value = datenum(value);
         end
         function selector = getTimerange(obj,selector)
             splitted = split(selector,':');
