@@ -40,11 +40,42 @@ classdef Rolling
     
     methods(Access=protected)
         function frameOut = commonArgsAndNan(obj,fun)
-            dataOut = fun(obj.df.data,[obj.window-1, 0],'omitnan');
+            dataOut = fun(obj.df.data,[obj.window-1,0],'omitnan');
             dataOut(isnan(obj.df.data)) = NaN;
             dataOut = nanifyStart(dataOut,obj.windowNaN);
             frameOut = obj.df;
             frameOut.data = dataOut;
+        end
+        
+        function [dataOut,foundNaN] = covariance(obj,data)
+            foundNaN = any(isnan(data),2);
+            data(foundNaN,:) = NaN;
+            x = data(:,1);
+            y = data(:,2);
+            xy = x .* y;
+            xyRolling = movsum(xy,[obj.window-1,0],'omitnan');
+            xm = movmean(x,[obj.window-1,0],'omitnan');
+            ym = movmean(y,[obj.window-1,0],'omitnan');
+            dataOut = (xyRolling - obj.window .* xm .* ym) ./ (obj.window-1);
+            dataOut = nanifyStart(dataOut,obj.windowNaN);
+            dataOut(foundNaN,:) = NaN;
+        end
+        function dataOut = correlation(obj,data)
+            [covariance,foundNaN] = obj.covariance(data);
+            data(foundNaN,:) = NaN;
+            std1 = movstd(data(:,1),[obj.window-1,0],'omitnan');
+            std2 = movstd(data(:,2),[obj.window-1,0],'omitnan');
+            dataOut = covariance ./ std1 ./ std2;
+            dataOut = nanifyStart(dataOut,obj.windowNaN);
+            dataOut(foundNaN,:) = NaN;
+            
+        end
+        function dataOut = betaXY_(obj,data)
+            [covariance,foundNaN] = obj.covariance(data);
+            stdX = movvar(data(:,1),[obj.window-1,0],'omitnan');
+            dataOut = covariance ./ stdX;
+            dataOut = nanifyStart(dataOut,obj.windowNaN);
+            dataOut(foundNaN,:) = NaN;
         end
     end
 end
