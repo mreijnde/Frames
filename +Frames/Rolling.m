@@ -105,11 +105,12 @@ classdef Rolling
         end
         function dataOut = betaXY_M(obj,x,y)
             [covariance,foundNaN] = obj.covarianceM(x,y);
-            x(foundNaN,:) = NaN;
+            x = repmat(x,1,size(y,2));
+            x(foundNaN) = NaN;
             stdX = movvar(x,[obj.window-1,0],'omitnan');
             dataOut = covariance ./ stdX;
             dataOut = nanifyStart(dataOut,obj.windowNaN);
-            dataOut(foundNaN,:) = NaN;
+            dataOut(foundNaN) = NaN;
         end
     end
 end
