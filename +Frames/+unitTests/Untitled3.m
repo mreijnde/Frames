@@ -66,3 +66,13 @@ df.corr()
 df.cov()
 
 df.rolling(2).sum()
+
+
+df=frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]')
+df.rolling(6).covariance(df.data(:,[2,3]))
+cov(df.data(:,[2,3]),'partialrows')
+df.rolling(6).covarianceM(df.data(:,2),df.data(:,[1,3]))
+
+df.rolling(6).correlationM(df.data(:,2),df.data(:,[1,3]))
+df.rolling(6).correlation(df.data(:,[2,3]))
+corrcoef(df.data(:,[2,3]),Rows='pairwise')
