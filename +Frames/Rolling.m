@@ -39,15 +39,18 @@ classdef Rolling
         
         function df = cov(obj,series)
             % covariance with a series
+            assert(areAligned(obj.df,series),'frames are not aligned')
             df = obj.df;
             df.data = obj.covarianceM(series.data,obj.df.data);
         end
         function df = corr(obj,series)
             % correlation with a series
+            assert(areAligned(obj.df,series),'frames are not aligned')
             df = obj.df;
             df.data = obj.correlationM(series.data,obj.df.data);
         end
         function df = betaXY(obj,dfOrSeries)
+            assert(areAligned(obj.df,dfOrSeries),'frames are not aligned')
             % univariate beta of dfOrSeries being Y (the dependant variable)
             % on obj.df being X (the independent variable)
             if size(obj.df,2) == 1
@@ -61,7 +64,7 @@ classdef Rolling
         end
     end
     
-    methods(Access=public)
+    methods(Access=protected)
         function frameOut = commonArgsAndNan(obj,fun)
             dataOut = fun(obj.df.data,[obj.window-1,0],'omitnan');
             dataOut(isnan(obj.df.data)) = NaN;
@@ -70,20 +73,6 @@ classdef Rolling
             frameOut.data = dataOut;
         end
         
-%         function [dataOut,foundNaN] = covariance(obj,data)
-%             foundNaN = any(isnan(data),2);
-%             data(foundNaN,:) = NaN;
-%             x = data(:,1);
-%             y = data(:,2);
-%             xy = conj(x) .* y;
-%             xyRolling = movsum(xy,[obj.window-1,0],'omitnan');
-%             xm = movmean(x,[obj.window-1,0],'omitnan');
-%             ym = movmean(y,[obj.window-1,0],'omitnan');
-%             windowNotNaN = movsum(~foundNaN,[obj.window-1,0],'omitnan');
-%             dataOut = (xyRolling - windowNotNaN .* xm .* ym) ./ (windowNotNaN-1);
-%             dataOut = nanifyStart(dataOut,obj.windowNaN);
-%             dataOut(foundNaN,:) = NaN;
-%         end
         function [dataOut,foundNaN] = covarianceM(obj,x,y)
             foundNaN = isnan(x) | isnan(y);
             x = repmat(x,1,size(y,2));
@@ -98,15 +87,7 @@ classdef Rolling
             dataOut = nanifyStart(dataOut,obj.windowNaN);
             dataOut(foundNaN) = NaN;
         end
-%         function dataOut = correlation(obj,data)
-%             [covariance,foundNaN] = obj.covariance(data);
-%             data(foundNaN,:) = NaN;
-%             std1 = movstd(data(:,1),[obj.window-1,0],'omitnan');
-%             std2 = movstd(data(:,2),[obj.window-1,0],'omitnan');
-%             dataOut = covariance ./ std1 ./ std2;
-%             dataOut = nanifyStart(dataOut,obj.windowNaN);
-%             dataOut(foundNaN,:) = NaN;
-%         end
+
         function dataOut = correlationM(obj,x,y)
             [covariance,foundNaN] = obj.covarianceM(x,y);
             x = repmat(x,1,size(y,2));
@@ -118,13 +99,7 @@ classdef Rolling
             dataOut = nanifyStart(dataOut,obj.windowNaN);
             dataOut(foundNaN) = NaN;
         end
-%         function dataOut = betaXY_(obj,data)
-%             [covariance,foundNaN] = obj.covariance(data);
-%             varX = movvar(data(:,1),[obj.window-1,0],'omitnan');
-%             dataOut = covariance ./ varX;
-%             dataOut = nanifyStart(dataOut,obj.windowNaN);
-%             dataOut(foundNaN,:) = NaN;
-%         end
+
         function dataOut = betaXY_M(obj,x,y)
             if size(x,2) == 1
                 [covariance,foundNaN] = obj.covarianceM(x,y);
