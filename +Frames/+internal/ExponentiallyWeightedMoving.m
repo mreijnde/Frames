@@ -1,6 +1,6 @@
 classdef ExponentiallyWeightedMoving
     
-    properties(Access=protected)
+    properties(SetAccess=protected)
         df
         alpha
     end
