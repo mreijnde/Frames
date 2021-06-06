@@ -380,6 +380,17 @@ classdef DataFrame
         function obj = shift(obj,varargin)
             obj.data_ = shift(obj.data_,varargin{:});
         end
+        function obj = diff(obj,dim)
+            arguments
+                obj, dim {mustBeMember(dim,[1,2])} = 1
+            end
+            d = diff(obj.data_,1,dim);
+            if dim == 1
+                obj.data_ = [NaN(1,length(obj.columns_.value_));d];
+            else
+                obj.data_ = [NaN(length(obj.index_.value_),1),d];
+            end
+        end
         
         function obj = clip(obj,floorVal,ceilVal)
             if nargin < 3
@@ -564,7 +575,6 @@ classdef DataFrame
         function other = corr(obj), other=corrcov(obj,@corrcoef,Rows='pairwise'); end
         function other = cov(obj), other= corrcov(obj,@cov,'partialRows'); end
         
-        % ToDo put this in internal
         function obj = rolling(obj,window); obj=frames.internal.Rolling(obj,window); end
         function obj = ewm(obj,type,value); obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value); end
         
@@ -577,7 +587,7 @@ classdef DataFrame
         %  [] cat.
         %  resample, shift, oneify, bool.
         %  plot, heatmap.
-        % ToDo cov corr rolling ewm
+        % cov corr rolling ewm.
         %  ffill bfill.
         %  start and end valid, fill.
         %  max min std sum.
@@ -585,6 +595,11 @@ classdef DataFrame
         %  split apply.
         %  read write.
         %  setIndexType, setIndexName, setColumnsType, Name.
+        % Todo comments
+        % ToDo unittests
+        % ToDo demo
+        % toDo readme
+        % ToDo license
         
         
         
