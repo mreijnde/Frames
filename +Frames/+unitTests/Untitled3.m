@@ -79,6 +79,14 @@ corrcoef(df.data(:,[2,3]),Rows='pairwise')
 
 df.dropMissing(how='any')
 
-cov(df.dropMissing(how='any').data(:,[2,3]),'partialrows') ./var(df.dropMissing(how='any').data(:,[2,3]))
-df.rolling(6).betaXY_M(df.data(:,2),df.data(:,[1,3]))
-df.rolling(6).betaXY_M(df.data(:,3),df.data(:,[1,2]))
+cov(df.dropMissing(how='any').data(:,[2,3]),'partialrows') ./ var(df.dropMissing(how='any').data(:,[2,3]))
+df{:,2}.rolling(6).betaXY(df{:,[1,3]})
+df{:,3}.rolling(6).betaXY(df{:,[1,2]})
+df{:,[1,2]}.rolling(6).betaXY(df{:,3})
+
+df.rolling(6).cov(df{:,2})
+df.rolling(6).corr(df{:,2})
+
+df.rolling(6).betaXY(df{:,3})
+df.rolling(6).betaXY(df{:,3})
+df{:,3}.rolling(6).betaXY(df)

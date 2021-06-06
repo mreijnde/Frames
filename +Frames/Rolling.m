@@ -36,9 +36,32 @@ classdef Rolling
         function df = min(obj)
             df = obj.commonArgsAndNan(@movmin);
         end
+        
+        function df = cov(obj,series)
+            % covariance with a series
+            df = obj.df;
+            df.data = obj.covarianceM(series.data,obj.df.data);
+        end
+        function df = corr(obj,series)
+            % correlation with a series
+            df = obj.df;
+            df.data = obj.correlationM(series.data,obj.df.data);
+        end
+        function df = betaXY(obj,dfOrSeries)
+            % univariate beta of dfOrSeries being Y (the dependant variable)
+            % on obj.df being X (the independent variable)
+            if size(obj.df,2) == 1
+                df = dfOrSeries;
+            elseif size(dfOrSeries,2) == 1
+                df = obj.df;
+            else
+                error('One of the frames must be a series.')
+            end
+            df.data = obj.betaXY_M(obj.df.data,dfOrSeries.data);
+        end
     end
     
-    methods(Access=public)
+    methods(Access=protected)
         function frameOut = commonArgsAndNan(obj,fun)
             dataOut = fun(obj.df.data,[obj.window-1,0],'omitnan');
             dataOut(isnan(obj.df.data)) = NaN;
@@ -104,8 +127,12 @@ classdef Rolling
             dataOut(foundNaN,:) = NaN;
         end
         function dataOut = betaXY_M(obj,x,y)
-            [covariance,foundNaN] = obj.covarianceM(x,y);
-            x = repmat(x,1,size(y,2));
+            if size(x,2) == 1
+                [covariance,foundNaN] = obj.covarianceM(x,y);
+                x = repmat(x,1,size(y,2));
+            else
+                [covariance,foundNaN] = obj.covarianceM(y,x);
+            end
             x(foundNaN) = NaN;
             varX = movvar(x,[obj.window-1,0],'omitnan');
             dataOut = covariance ./ varX;
