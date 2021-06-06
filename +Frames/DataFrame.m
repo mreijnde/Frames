@@ -139,7 +139,7 @@ classdef DataFrame
         function obj = iloc(obj,idxPosition,colPosition)
             arguments
                 obj
-                idxPosition {mustBeDFindex}
+                idxPosition {mustBeDFindexSelector}
                 colPosition {mustBeDFcolumns} = ':'
             end
             obj.data_ = obj.data_(idxPosition,colPosition);
