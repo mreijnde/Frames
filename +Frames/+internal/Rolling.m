@@ -39,18 +39,18 @@ classdef Rolling
         
         function df = cov(obj,series)
             % covariance with a series
-            assert(areAligned(obj.df,series),'frames are not aligned')
+            assert(frames.internal.areAligned(obj.df,series),'frames are not aligned')
             df = obj.df;
             df.data = obj.covarianceM(series.data,obj.df.data);
         end
         function df = corr(obj,series)
             % correlation with a series
-            assert(areAligned(obj.df,series),'frames are not aligned')
+            assert(frames.internal.areAligned(obj.df,series),'frames are not aligned')
             df = obj.df;
             df.data = obj.correlationM(series.data,obj.df.data);
         end
         function df = betaXY(obj,dfOrSeries)
-            assert(areAligned(obj.df,dfOrSeries),'frames are not aligned')
+            assert(frames.internal.areAligned(obj.df,dfOrSeries),'frames are not aligned')
             % univariate beta of dfOrSeries being Y (the dependant variable)
             % on obj.df being X (the independent variable)
             if size(obj.df,2) == 1
@@ -117,7 +117,7 @@ classdef Rolling
 end
 
 function data = nanifyStart(data,windowNaN)
-ixs = findIxStartLastMissing(shift(data));
+ixs = frames.internal.findIxStartLastMissing(frames.internal.shift(data));
 ixc = ixs + windowNaN - 1;
 [t,n] = size(data);
 ixc = min(ixc',1:t:n*t);

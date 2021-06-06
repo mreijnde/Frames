@@ -8,7 +8,6 @@ q = arrayfun(@(x) emvar_(data(:,x),alpha),1:size(data,2),UniformOutput=false);
 q = cell2mat(q);
 end
 
-
 function out = emvar_(data,alpha)
 minWindow = ceil(1./alpha-1);  % center of mass
 isvalid = ~isnan(data);
@@ -19,8 +18,8 @@ initialData = data(1:minWindow);
 data(1:minWindow) = mean(initialData);
 emvar0 = var(initialData,1);  % one could choose the unbiased version, but it can be large if alpha is large. Wikipedia starts with emvar0 = 0.
 
-ema = ewma(data,alpha);
-d1 = data - shift(ema,1);
+ema = frames.internal.ewma(data,alpha);
+d1 = data - frames.internal.shift(ema,1);
 d1 = d1(minWindow+1:end);
 d2 = d1 .^ 2;
 

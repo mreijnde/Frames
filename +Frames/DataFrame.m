@@ -176,17 +176,17 @@ classdef DataFrame
         function df = dropMissing(obj,nameValue)
             arguments
                 obj
-                nameValue.how {mustBeTextScalar,mustBeMember(nameValue.how,["any","all"])} = "all";
-                nameValue.axis (1,1) {mustBeMember(nameValue.axis,[1,2])} = 1;
+                nameValue.How {mustBeTextScalar,mustBeMember(nameValue.How,["any","all"])} = "all";
+                nameValue.Axis (1,1) {mustBeMember(nameValue.Axis,[1,2])} = 1;
             end
             
-            axis = abs(nameValue.axis-3);  % if dim = 1 I want to drop rows, where we check if they contain missings in the 2. dimension
-            if strcmp(nameValue.how,'all')
+            axis = abs(nameValue.Axis-3);  % if dim = 1 I want to drop rows, where we check if they contain missings in the 2. dimension
+            if strcmp(nameValue.How,'all')
                 drop = all(ismissing(obj.data_),axis);
             else
                 drop = any(ismissing(obj.data_),axis);
             end
-            if nameValue.axis==1
+            if nameValue.Axis==1
                 df = obj.iloc(~drop,':');
             else
                 df = obj.iloc(':',~drop);
@@ -565,8 +565,8 @@ classdef DataFrame
         function other = cov(obj), other= corrcov(obj,@cov,'partialRows'); end
         
         % ToDo put this in internal
-        function obj = rolling(obj,window); obj=frames.Rolling(obj,window); end
-        function obj = ewm(obj,type,value); obj=frames.Ewm(obj,type,value); end
+        function obj = rolling(obj,window); obj=frames.internal.Rolling(obj,window); end
+        function obj = ewm(obj,type,value); obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value); end
         
         %  subsref subsasgn.
         %  Index for cols and index.
