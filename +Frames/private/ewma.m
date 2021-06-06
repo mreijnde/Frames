@@ -1,5 +1,5 @@
 function y = ewma(data,alpha)
-%Compute ewma.
+%Compute the exponentially weighted moving average.
 % Formula:
 % y_0 = data_0
 % y_i = alpha .* data_i + (1-alpha) .* y_(i-1)
@@ -14,6 +14,6 @@ isvalid = ~isnan(data);
 data = data(isvalid);
 ema = filter(alpha,[1,alpha-1],data(2:end),(1-alpha).*data(1));
 ema = [data(1);ema];
-y = NaN(size(isvalid));
+y = NaN(size(data));
 y(isvalid) = ema;
 end
