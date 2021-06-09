@@ -20,6 +20,20 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyTrue(isdatetime(emptyDF.index))
             t.verifyTrue(isa(emptyDF.index_,'frames.Index'))
             
+            %from unique data
+            t.verifyEqual(frames.DataFrame(1,[1 2]).data,[1;1])
+            
+            %from empty data
+            t.verifyEqual(frames.DataFrame([],[1 2]).data,[NaN;NaN])
+            
+            %from empty index
+            t.verifyEqual(frames.DataFrame([1;2],[]).index,[1;2])
+            
+            % timeframe index
+            t.verifyEqual(frames.TimeFrame(1,738316).index,datetime(2021,6,9))
+            t.verifyEqual(frames.TimeFrame(1,"09-Jun-2021").index,datetime(2021,6,9))
+            t.verifyEqual(frames.TimeFrame(1,frames.TimeIndex("09.06.2021",Format="dd.MM.yyyy")).index,datetime(2021,6,9))
+            
             % from file
             pathfile = t.dataPath+"f.txt";
             tf1 = frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),format='yyyy'));

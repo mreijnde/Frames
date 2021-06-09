@@ -1,6 +1,6 @@
 classdef TimeIndex < frames.SortedIndex
     properties
-        format {mustBeTextScalar} = string(missing)
+        format {mustBeTextScalar} = string(missing)  % datetime format
     end
     %UNTITLED4 Summary of this class goes here
     %   Detailed explanation goes here
@@ -55,13 +55,15 @@ classdef TimeIndex < frames.SortedIndex
             value = datetime(obj.value_,ConvertFrom='datenum',Format=obj.format);
         end
         function value = getValue_from(obj,value)
+            % the internal value_ is stored as a datenum for performance
+            % reasons
             if ismissing(obj.format), return; end  % only the case when constructing the object
             value = getValue_from@frames.SortedIndex(obj,value);
             switch class(value)
                 case 'datetime'
                     value = datenum(value);
                 case {'string','cell'}
-                    value = datenum(value,obj.format);
+                    value = datenum(datetime(value,Format=obj.format));
                 case 'double'
                     return
                 otherwise
