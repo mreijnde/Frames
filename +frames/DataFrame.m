@@ -765,8 +765,12 @@ classdef DataFrame
                 nameValue.keepCellstr (1,1) logical = false
             end
             cols = t.Properties.VariableNames;
-            if ~nameValue.keepCellstr, cols = string(cols); end
-            df = frames.DataFrame(t.Variables,t.Properties.RowNames,cols);
+            idx = t.Properties.RowNames;
+            if ~nameValue.keepCellstr
+                cols = string(cols);
+                idx = string(idx);
+            end
+            df = frames.DataFrame(t.Variables,idx,cols);
             df.index_.name = t.Properties.DimensionNames{1};
         end
     end

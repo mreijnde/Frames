@@ -34,6 +34,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(frames.TimeFrame(1,"09-Jun-2021").index,datetime(2021,6,9))
             t.verifyEqual(frames.TimeFrame(1,frames.TimeIndex("09.06.2021",Format="dd.MM.yyyy")).index,datetime(2021,6,9))
             
+            % from table
+            tb = array2table([1 2; 3 4],RowNames=["r1","r2"],VariableNames=["a","b"]);
+            t.verifyEqual(frames.DataFrame.fromTable(tb).columns,["a","b"])
+            
             % from file
             pathfile = t.dataPath+"f.txt";
             tf1 = frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),format='yyyy'));
@@ -42,6 +46,12 @@ classdef dataframeTest < matlab.unittest.TestCase
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             
+            pathfile = t.dataPath+"g.txt";
+            tf1 = frames.TimeFrame(1,738316);
+            tf1.toFile(pathfile);
+            tf2 = frames.TimeFrame.fromFile(pathfile);
+            delete(pathfile)
+            t.verifyEqual(tf1,tf2)            
             
         end
         
