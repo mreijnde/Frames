@@ -623,7 +623,7 @@ classdef DataFrame
                     else
                         fromPosition = false;
                     end
-                    obj = modify(obj,b,selectors{1},selectors{2},fromPosition);
+                    obj = obj.modify(b,selectors{1},selectors{2},fromPosition);
                     return
                 end
             end
@@ -635,10 +635,10 @@ classdef DataFrame
             switch s.type
                 case '()'
                     [idx,col] = getSelectorsFromSubs(s.subs);
-                    obj = modify(obj,b,idx,col);
+                    obj = obj.modify(b,idx,col);
                 case '{}'
                     [idx,col] = getSelectorsFromSubs(s.subs);
-                    obj = modify(obj,b,idx,col,true);
+                    obj = obj.modify(b,idx,col,true);
                 case '.'
                     if ismember(s(1).subs,properties(obj))
                         obj.(s.subs) = b;
@@ -682,6 +682,14 @@ classdef DataFrame
                 [index,columns] = localizeSelectors(obj,index,columns);
             end
             obj.data_(index,columns) = data;
+            if isequal(data,[])
+                if ~iscolon(index)
+                    obj.index_.value_ = obj.index_.value_(setdiff(1:length(obj.index_.value_),index));
+                end
+                if ~iscolon(columns)
+                    obj.columns_.value_ = obj.columns_.value_(setdiff(1:length(obj.columns_.value_),columns));
+                end
+            end
         end
         function [index,columns] = localizeSelectors(obj,index,columns)
             if ~iscolon(index)

@@ -55,6 +55,29 @@ classdef dataframeTest < matlab.unittest.TestCase
             
         end
         
+        function subsasgnTest(t)
+            df=frames.DataFrame([1 2 3 4 5 6; 2 5 NaN 1 3 2]');
+            % test removal
+            df{:,2} = [];
+            df([1 3],:) = [];
+            df.iloc(4,:) = [];
+            t.verifyEqual(df,frames.DataFrame([2 4 5]',[2 4 5]))
+            % test loc iloc
+            df.loc([2 5],:) = [22 55]';
+            df.iloc(2,:) = 44;
+            t.verifyEqual(df.data,[22 44 55]')
+            df.iloc(:,1) = 100;
+            t.verifyEqual(df.data,[100 100 100]')
+            % test (), {}
+            df(2) = 20;
+            t.verifyEqual(df.data,[20 100 100]')
+            df{2:end,:} = 80;
+            t.verifyEqual(df.data,[20 80 80]')
+            df=frames.DataFrame([1 2 3; 2 5 NaN],[1 2], [11,22,33]);
+            df(2,[22,33]) = 3.14;
+            t.verifyEqual(df.data,[1 2 3; 2 3.14 3.14])
+        end
+        
         function setIndexTest(t)
             df=frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]')
             df.setIndex("Var3")
