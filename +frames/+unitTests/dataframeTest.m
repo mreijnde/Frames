@@ -3,19 +3,30 @@ classdef dataframeTest < matlab.unittest.TestCase
     properties
         dfNoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', [6 2 1], [4 1 3]);
         dfMissing1 = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]');
-
+        dataPath = "+frames\+unitTests\"
     end
     
     methods(Test)
         
         function constructorTest(t)
             
+            % empty
+            emptyTT = frames.TimeFrame();
+            t.verifyTrue(isempty(emptyTT.data)&&isempty(emptyTT.index)&&isempty(emptyTT.columns))
+            t.verifyTrue(isdatetime(emptyTT.index_.value))
+            t.verifyTrue(isa(emptyTT.index_,'frames.TimeIndex'))
             
-            frames.TimeFrame().index
-            frames.DataFrame.empty("datetime").index
+            emptyDF = frames.DataFrame.empty("datetime");
+            t.verifyTrue(isdatetime(emptyDF.index))
+            t.verifyTrue(isa(emptyDF.index_,'frames.Index'))
             
-            frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),format='yyyy')).toFile('y')
-            frames.TimeFrame.fromFile('y',timeFormat='yyyy')
+            % from file
+            pathfile = t.dataPath+"f.txt";
+            tf1 = frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),format='yyyy'));
+            tf1.toFile(pathfile);
+            tf2 = frames.TimeFrame.fromFile(pathfile,timeFormat='yyyy');
+            delete(pathfile)
+            t.verifyEqual(tf1,tf2)
             
             
         end
