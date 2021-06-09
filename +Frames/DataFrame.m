@@ -132,6 +132,10 @@ classdef DataFrame
         function obj = setColumnsName(obj,name)
             obj.columns_.name = name;
         end
+        function obj = setIndex(obj,colName)
+            obj.index = obj.data(:,findPositionIn(colName,obj.columns));
+            obj = obj.dropColumns(colName);
+        end
         
         function t = head(obj, varargin); t = head(obj.t,varargin{:}); end
         function t = tail(obj, varargin); t = tail(obj.t,varargin{:}); end
@@ -578,23 +582,6 @@ classdef DataFrame
         function obj = rolling(obj,window); obj=frames.internal.Rolling(obj,window); end
         function obj = ewm(obj,type,value); obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value); end
         
-        %  subsref subsasgn.
-        %  Index for cols and index.
-        %  operations: plus, minus.
-        %  returns, replace.
-        %  add drop columns, index, missing.
-        %  missingData value, size.
-        %  [] cat.
-        %  resample, shift, oneify, bool.
-        %  plot, heatmap.
-        % cov corr rolling ewm.
-        %  ffill bfill.
-        %  start and end valid, fill.
-        %  max min std sum.
-        %  sortby.
-        %  split apply.
-        %  read write.
-        %  setIndexType, setIndexName, setColumnsType, Name.
         % Todo comments
         % ToDo unittests
         % ToDo demo
