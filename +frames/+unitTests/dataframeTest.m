@@ -76,6 +76,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             df=frames.DataFrame([1 2 3; 2 5 NaN],[1 2], [11,22,33]);
             df(2,[22,33]) = 3.14;
             t.verifyEqual(df.data,[1 2 3; 2 3.14 3.14])
+            
+            % empty all keeps the index type
+            tf=frames.TimeFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
+            tf{:,1:3} = [];
+            t.verifyEqual(tf.index,datetime.empty(0,1))
         end
         
         function setIndexTest(t)

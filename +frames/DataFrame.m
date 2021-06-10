@@ -684,10 +684,10 @@ classdef DataFrame
             obj.data_(index,columns) = data;
             if isequal(data,[])
                 if ~iscolon(index)
-                    obj.index_.value_ = obj.index_.value_(setdiff(1:length(obj.index_.value_),index));
+                    obj.index_.value_(index) = [];
                 end
                 if ~iscolon(columns)
-                    obj.columns_.value_ = obj.columns_.value_(setdiff(1:length(obj.columns_.value_),columns));
+                    obj.columns_.value_(columns) = [];
                 end
             end
         end
