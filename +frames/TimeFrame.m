@@ -41,15 +41,17 @@ classdef TimeFrame < frames.DataFrame
                 tf = frames.TimeFrame(df.data,ti,df.columns,df.name);
             end
         end
-        function df = fromTable(t,nameValue)
+        function tf = fromTable(t,nameValue)
             arguments
                 t {mustBeA(t,'timetable')}
                 nameValue.keepCellstr (1,1) logical = false
             end
             cols = t.Properties.VariableNames;
             if ~nameValue.keepCellstr, cols = string(cols); end
-            df = frames.DataFrame(t.Variables,t.Properties.RowTimes,cols);
-            df.index_.name = t.Properties.DimensionNames{1};
+            idx = t.Properties.RowTimes;
+            idx.Format = string(idx.Format).replace('u','y');
+            tf = frames.TimeFrame(t.Variables,idx,cols);
+            tf.index_.name = string(t.Properties.DimensionNames{1});
         end
     end
     

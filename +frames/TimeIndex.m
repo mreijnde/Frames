@@ -10,10 +10,10 @@ classdef TimeIndex < frames.SortedIndex
             %   Detailed explanation goes here
             arguments
                 value
-                nameValue.Name = ""
+                nameValue.Name = "Time"
                 nameValue.Format = "dd-MMM-yyyy"
             end
-            if isdatetime(value); nameValue.Format = value.Format; end
+            if isdatetime(value); nameValue.Format = string(value.Format); end
             
             obj = obj@frames.SortedIndex(value,Name=nameValue.Name);
             obj.format = nameValue.Format;

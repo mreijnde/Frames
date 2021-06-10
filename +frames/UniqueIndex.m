@@ -2,14 +2,6 @@ classdef UniqueIndex < frames.Index
     %UNTITLED4 Summary of this class goes here
     %   Detailed explanation goes here
     methods
-%         function obj = UniqueIndex(value)
-%             %UNTITLED4 Construct an instance of this class
-%             %   Detailed explanation goes here
-%             arguments
-%                 value {mustBeUnique} = []
-%             end
-%             obj = obj@frames.Index(value);
-%         end
         function pos = positionOf(obj,selector)
             selector = obj.getValue_from(selector);
             assertFoundIn(selector,obj.value_)

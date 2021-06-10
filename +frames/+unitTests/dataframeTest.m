@@ -3,6 +3,7 @@ classdef dataframeTest < matlab.unittest.TestCase
     properties
         dfNoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', [6 2 1], [4 1 3]);
         dfMissing1 = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]');
+        tfMissing1 = frames.TimeFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]');
         dataPath = "+frames\+unitTests\"
     end
     
@@ -24,7 +25,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(frames.DataFrame(1,[1 2]).data,[1;1])
             
             %from empty data
-            t.verifyEqual(frames.DataFrame([],[1 2]).data,[NaN;NaN])
+            t.verifyEqual(frames.DataFrame([],[1 2],1).data,[NaN;NaN])
+            t.verifyEqual(frames.DataFrame([],[1 2]).data,double.empty(2,0))
             
             %from empty index
             t.verifyEqual(frames.DataFrame([1;2],[]).index,[1;2])
@@ -51,8 +53,14 @@ classdef dataframeTest < matlab.unittest.TestCase
             tf1.toFile(pathfile);
             tf2 = frames.TimeFrame.fromFile(pathfile);
             delete(pathfile)
-            t.verifyEqual(tf1,tf2)            
+            t.verifyEqual(tf1,tf2)
             
+            pathfile = t.dataPath+"h.txt";
+            df1 = frames.DataFrame(1,string(1));
+            df1.toFile(pathfile);
+            df2 = frames.DataFrame.fromFile(pathfile);
+            delete(pathfile)
+            t.verifyEqual(df1,df2)
         end
         
         function subsasgnTest(t)
@@ -78,14 +86,16 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df.data,[1 2 3; 2 3.14 3.14])
             
             % empty all keeps the index type
-            tf=frames.TimeFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
-            tf{:,1:3} = [];
+            tf=t.tfMissing1;
+            tf{1:length(tf.index),:} = [];
             t.verifyEqual(tf.index,datetime.empty(0,1))
         end
         
         function setIndexTest(t)
-            df=frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]')
-            df.setIndex("Var3")
+            df=frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
+            df = df.setIndex("Var3");
+            expected = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2]',[5 0 4 1 3 2]);
+            t.verifyEqual(df,expected)
         end
         
         function horzcatTest(t)

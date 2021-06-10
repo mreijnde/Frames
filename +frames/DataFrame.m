@@ -672,6 +672,7 @@ classdef DataFrame
         end
         function idx = getIndexObject(~,index)
             idx = frames.UniqueIndex(index);
+            idx.name = "Row";  % to be consistent with 'table' in which the default name of the index is 'Row'
         end
         function col = getColumnsObject(~,columns)
             col = frames.Index(columns);
@@ -779,7 +780,7 @@ classdef DataFrame
                 idx = string(idx);
             end
             df = frames.DataFrame(t.Variables,idx,cols);
-            df.index_.name = t.Properties.DimensionNames{1};
+            df.index_.name = string(t.Properties.DimensionNames{1});
         end
     end
     
