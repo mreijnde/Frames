@@ -143,15 +143,26 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function splitapplyTest(t)
-            df=frames.DataFrame([1 2 3; 2 5 3;5 0 1]', [6 2 1], [4 1 3])
-            df.split({[4,3],1},["d","e"]).apply(@(x) x)
+            % simple split with cell
+            df=frames.DataFrame([1 2 3;2 5 3;5 0 1]', [6 2 1], [4 1 3]);
+            x1 = df.split({[4,3],1},["d","e"]).apply(@(x) x);
+            t.verifyEqual(x1,frames.DataFrame([1 2 3;5 0 1;2 5 3]',[6 2 1],[4 3 1]))
+            % apply function using group names
             ceiler.d = {2.5,4.5};
             ceiler.e = {2.6};
-            df.split({[4,3],1},["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))
+            x2 = df.split({[4,3],1},["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}));
+            % split with structure
             s.d = [4 3]; s.e = 1;
-            df.split(s,["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))
-            g = frames.Groups([1 3 4], s)
-            df.split(g,["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}))
+            x3 = df.split(s,["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}));
+            % split with a Group
+            g = frames.Groups([1 4 3],s);
+            x4 = df.split(g,["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}));
+            expected = frames.DataFrame([2.5 2.5 3;4.5 2.5 2.5;2 2.6 2.6]',[6,2,1],[4 3 1]);
+            t.verifyEqual(x2,expected)
+            t.verifyEqual(x3,expected)
+            t.verifyEqual(x4,expected)
+            x5 = df.split(g,["d","e"]).apply(@(x) x.sum(2));
+            t.verifyEqual(x5,frames.DataFrame([6 2 4;2 5 3]',[6 2 1],["d","e"]))
         end
         
         function firstIndexTest(t)
