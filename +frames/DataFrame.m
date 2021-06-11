@@ -276,7 +276,7 @@ classdef DataFrame
             
             if noFfill, other.data_(1,:) = dataStart; end
             if strcmp(firstValueFilling{1}, "ffillFromInterval")
-                other = other.iloc(2:length(obj.index_));
+                other = other.iloc(2:length(other.index_));
             end
         end
         function other = horzcat(obj,varargin)

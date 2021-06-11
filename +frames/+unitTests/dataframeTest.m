@@ -3,8 +3,9 @@ classdef dataframeTest < matlab.unittest.TestCase
     properties
         dfNoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', [6 2 1], [4 1 3]);
         dfMissing1 = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]');
-        tfMissing1 = frames.TimeFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]');
+        tfMissing1 = frames.TimeFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]',[],["a","b","c"]);
         dataPath = "+frames\+unitTests\"
+        tol = 1e-10;
     end
     
     methods(Test)
@@ -99,18 +100,36 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function horzcatTest(t)
-            [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 2]), [23 3]);frames.DataFrame([4 2;1 1],frames.SortedIndex([3 4]), [3 44])]
-            
-            [frames.DataFrame([4 2;1 1],[1 2], [23 3]),frames.DataFrame([4 2;1 1],[1 3], [4 2])]
-            
+            solUnsorted = [frames.DataFrame([4 2;1 1],[1 3], [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
+            expectedUnsorted = frames.DataFrame([4 2 4 2;1 1 NaN NaN;NaN NaN NaN 1],[1 3 2],[23 3 4 2]);
+            t.verifyEqual(solUnsorted,expectedUnsorted)
+            solSorted = [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 3]), [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
+            expectedSorted = frames.DataFrame([4 2 4 2;NaN NaN NaN 1;1 1 NaN NaN],frames.SortedIndex([1 2 3]),[23 3 4 2]);
+            t.verifyEqual(solSorted,expectedSorted)
         end
         
         function vertcatTest(t)
+            sol = [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 2]),[23 3]);frames.DataFrame([4 2;1 1],[3 4],[3 44])];
+            expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.SortedIndex([1 2 3 4]),[23 3 44]);
+            t.verifyEqual(sol,expected)
+            t.verifyError(@f,'SortedIndex:valueCheckFail')
+            function f()
+                [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 2]),[23 3]);frames.DataFrame([4 2;1 1],[4 3],[3 44])]; %#ok<VUNUS>
+            end
         end
         
         function resampleTest(t)
-            frames.DataFrame([4 2;1 NaN;NaN 4],[1 2 4], [23 3]).setIndexType("sorted").resample([2 5],firstValueFilling='ffillFromInterval')
-            
+            sortedframe = frames.DataFrame([4 1 NaN 3; 2 NaN 4 NaN]',[1 4 10 20]).setIndexType("sorted");
+            ffi = sortedframe.resample([2 5],firstValueFilling='ffillFromInterval');
+            t.verifyEqual(ffi, frames.DataFrame([4 1; 2 NaN]',[2 5]).setIndexType("sorted"));
+            ffi1 = sortedframe.resample([3 11],firstValueFilling={'ffillFromInterval',1});
+            t.verifyEqual(ffi1, frames.DataFrame([NaN 1; NaN 4]',[3 11]).setIndexType("sorted"));
+            ffla = sortedframe.resample([13 14 15],firstValueFilling='ffillLastAvailable');
+            t.verifyEqual(ffla, frames.DataFrame([1 NaN NaN;4 NaN NaN]',[13 14 15]).setIndexType("sorted"));
+            noff = sortedframe.resample([13 14 15],firstValueFilling='noFfill');
+            t.verifyEqual(noff, frames.DataFrame([NaN NaN NaN;NaN NaN NaN]',[13 14 15]).setIndexType("sorted"));
+            noff2 = sortedframe.resample([4 14 15],firstValueFilling='noFfill');
+            t.verifyEqual(noff2, frames.DataFrame([1 NaN NaN;NaN 4 NaN]',[4 14 15]).setIndexType("sorted"));
         end
         
         function sortByTest(t)
