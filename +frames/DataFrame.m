@@ -1,9 +1,77 @@
 classdef DataFrame
-    %DATAFRAME Summary of this class goes here
-    %   Detailed explanation goes here
+%DATAFRAME handles common operations on data matrices referenced by column and index identifiers.
+%   Handy way to do operations on homogeneous matrices (more intuitive than Matlab's table).
+%   $Author: Benjamin Gaudin $
+%   Constructor:
+%   df = Frames.DataFrame(data,index,columns,name)
+%   If an argument is not specified, it will take a default value, so it
+%   is possible to define only some of the arguments.
+%   df = Frames.DataFrame(data)  
+%   df = Frames.DataFrame(data,[],columns)
+%
+%   DATAFRAME properties:
+%     data                   - Data      TxN  (homogeneous data)
+%     index                  - Index     Tx1
+%     columns                - Columns   1xN
+%     t                      - Table built on the properties above.
+%     name                   - Name of the frame
+%     description            - Description of the frame
+%
+%
+%   Short overwiew of methods available:
+%
+%   - Selection and modification based on index/columns with () or the loc method:
+%     df(index,columns)
+%     df.loc(index,columns)
+%     df(index,columns) = newData
+%     df.loc(index,columns) = newData
+%
+%   - Selection and modification based on position with {} or the iloc method:
+%     df{indexPosition,columnsPosition}
+%     df.iloc(indexPosition,columnsPosition)
+%     df{indexPosition,columnsPosition} = newData
+%     df.iloc(indexPosition,columnsPosition) = newData
+%
+%   - Operations between frames while checking that the two frames
+%     are aligned (handy to be sure to compare apples to apples):
+%     df1 + df2
+%     1 + df
+%     df1' * df2, etc.
+%
+%   - Chaining of methods:
+%     df.relChange().std(),  computes the standard deviation of the
+%     relative change of df
+%     df{5:end,:}.log().diff(),  computes the difference of the log of df
+%     from lines 5 to end
+%
+%   - Visualisation methods:
+%     df.plot(), df.heatmap()
+%
+%   - Setting properties is checked to insure the coherence of the frame.
+%     df.index = newIndex,  will give an error if length(newIndex) ~= size(df.data,1)
+%
+%   - Concatenation of frames:
+%     newDF = [df1,df2] concatenates two frames horizontally, and will
+%     expand (unify) their index if they are not equal, inserting missing
+%     values in the expansion
+%
+%   - Split a frame into groups based on its columns, and apply a function:
+%     df.split(groups).apply(@(x) x.sum(2))  sums the data on the dimention
+%     2, group by group, so the result is a Txlength(group) frame
+%
+%   - Rolling window methods:
+%     df.rolling(30).mean() computes the rolling mean with a 30 step
+%     lookback period
+%     df.ewm(Halflife=30).std() computes the exponentially weighted moving
+%     standard deviation with a halflife of 30
+%
+%
+% For more details, see the list of available methods below.
+%
+% Copyright 2021 Benjamin Gaudin
     
     properties(Dependent)
-        % Provide the interface. Includes tests in the getters and setters.
+        % Provide the interface. Include tests in the getters and setters.
         
         data
         index
