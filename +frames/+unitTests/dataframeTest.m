@@ -133,13 +133,13 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function sortByTest(t)
-            frames.DataFrame([1 2 3; 2 5 3]', frames.TimeIndex([1 3 65]), [4 1]).sortBy(1)
-            
+            sol = frames.DataFrame([1 2 3; 2 5 3]',[1 3 65],[4 3]).setIndexType("sorted").sortBy(3);
+            t.verifyEqual(sol,frames.DataFrame([1 3 2;2 3 5]',[1 65 3],[4 3]))
         end
         
         function sortIndexTest(t)
-            frames.DataFrame([1 2 3; 2 5 3]', frames.UniqueIndex([6 2 1]), [4 1]).sortIndex()
-            
+            sol = frames.DataFrame([1 2 3; 2 5 3]', frames.UniqueIndex([2 6 1],Name="Row")).sortIndex();
+            t.verifyEqual(sol,frames.DataFrame([3 1 2;3 2 5]',[1 2 6]))
         end
         
         function splitapplyTest(t)
