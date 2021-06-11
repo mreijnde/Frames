@@ -96,8 +96,6 @@ classdef Rolling
             std1 = movstd(x,[obj.window-1,0],'omitnan');
             std2 = movstd(y,[obj.window-1,0],'omitnan');
             dataOut = covariance ./ std1 ./ std2;
-            dataOut = nanifyStart(dataOut,obj.windowNaN);
-            dataOut(foundNaN) = NaN;
         end
 
         function dataOut = betaXY_M(obj,x,y)
@@ -110,8 +108,6 @@ classdef Rolling
             x(foundNaN) = NaN;
             varX = movvar(x,[obj.window-1,0],'omitnan');
             dataOut = covariance ./ varX;
-            dataOut = nanifyStart(dataOut,obj.windowNaN);
-            dataOut(foundNaN) = NaN;
         end
     end
 end
@@ -120,7 +116,7 @@ function data = nanifyStart(data,windowNaN)
 ixs = frames.internal.findIxStartLastMissing(frames.internal.shift(data));
 ixc = ixs + windowNaN - 1;
 [t,n] = size(data);
-ixc = min(ixc',1:t:n*t);
+ixc = min(ixc',t:t:n*t);
 idToNaN = [];
 for ii = 1:n
     idToNaN = [idToNaN,ixs(ii):ixc(ii)]; %#ok<AGROW>

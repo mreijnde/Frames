@@ -234,42 +234,46 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function covcorrTest(t)
-            df = t.dfNoMissing;
-            df.corr()
-            df.cov()
+            df = t.dfMissing1;
+            cor = df.corr();
+            cov = df.cov();
+            t.verifyEqual(cor.index,cov.columns')
         end
         
         function dropMissingTest(t)
-            t.dfMissing1.dropMissing(How='any')
-            
+            df = frames.DataFrame([NaN NaN; NaN 1],string([1 2]),["a","b"]);
+            dany = df.dropMissing(How='any');
+            t.verifyEqual(dany,frames.DataFrame(double.empty(0,2),string.empty(0,1),["a","b"]));
+            dall = df.dropMissing(How='all');
+            t.verifyEqual(dall,frames.DataFrame([NaN 1],string(2),["a","b"]));
+            dall2 = df.dropMissing(How='all',Axis=2);
+            t.verifyEqual(dall2,frames.DataFrame([NaN 1]',string([1 2]),"b"));
         end
         
         function rollingEwmTest(t)
             
-            df=frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]')
-            df.rolling(2).sum()
+            df = frames.DataFrame([1 2 3 3 2 1;2 5 NaN 1 3 2;5 0 1 1 3 2]');
+            t.verifyEqual(df.rolling(4).sum().data,[NaN NaN 6 9 10 9;NaN NaN NaN 8 9 6;NaN NaN 6 7 5 7]');
             
-            df{:,[1,2]}.rolling(6).cov(df{:,3})
-            cov(df.data(:,[2,3]),'partialrows')
+            covdf = df.rolling(6).cov(df{:,3});
+            covVal = cov(df.data(:,[2,3]),'partialrows');
+            t.verifyEqual(covdf.data(end,2),covVal(1,2),AbsTol=t.tol)
             
-            df{:,[1,3]}.rolling(6).corr(df{:,2})
-            corrcoef(df.data(:,[2,3]),Rows='pairwise')
+            cordf = df.rolling(6).corr(df{:,2});
+            corVal = corrcoef(df.data(:,[2,3]),Rows='pairwise');
+            t.verifyEqual(cordf.data(end,3),corVal(1,2),AbsTol=t.tol)
             
-            cov(df.dropMissing(How='any').data(:,[2,3]),'partialrows') ./ var(df.dropMissing(How='any').data(:,[2,3]))
-            df{:,2}.rolling(6).betaXY(df{:,[1,3]})
-            df{:,3}.rolling(6).betaXY(df{:,[1,2]})
-            df{:,[1,2]}.rolling(6).betaXY(df{:,3})
+            beta23 = cov(df.dropMissing(How='any').data(2:end,[2,3]),'partialrows') ./ var(df.dropMissing(How='any').data(2:end,[2,3]));
+            beta2y = df{:,2}.rolling(5).betaXY(df);
+            beta3y = df{:,3}.rolling(5).betaXY(df);
+            betax3 = df.rolling(5).betaXY(df{:,3});
             
-            df.rolling(6).cov(df{:,2})
-            df.rolling(6).corr(df{:,2})
+            t.verifyEqual(beta2y.data(end,3),beta23(2,1),AbsTol=t.tol)
+            t.verifyEqual(beta3y.data(end,2),beta23(1,2),AbsTol=t.tol)
+            t.verifyEqual(betax3.data(end,2),beta23(2,1),AbsTol=t.tol)
             
-            df.rolling(6).betaXY(df{:,3})
-            df.rolling(6).betaXY(df{:,3})
-            df{:,3}.rolling(6).betaXY(df)
-            
-            df.ewm(Alpha=0.3).var()
-            df.ewm(Alpha=0.3).mean()
-            df.ewm(Window=2/0.3-1).mean()
+            t.verifyEqual(df.ewm(Alpha=0.3).var().data(1,:),[NaN NaN NaN])
+            t.verifyEqual(df.ewm(Alpha=0.3).mean().data,df.ewm(Window=2/0.3-1).mean().data,AbsTol=t.tol)
         end
         
     end
