@@ -153,7 +153,7 @@ classdef DataFrame
         function obj = loc(obj,idxName,colName)
             arguments
                 obj
-                idxName {mustBeDFindex}
+                idxName {mustBeDFindexSelector}
                 colName {mustBeDFcolumns} = ':'
             end
             idxID = ':'; colID = ':';
@@ -719,7 +719,7 @@ classdef DataFrame
                 obj = frames.DataFrame(data,indexValue,obj.columns,obj.name);
             else
                 obj.data_ = data;
-                obj.columns_.value = obj.defaultIndex(1);
+                obj.columns_.value = obj.defaultColumns(1);
             end
         end
         

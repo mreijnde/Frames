@@ -204,28 +204,33 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function selectFromTimeRangeTest(t)
-            a = datetime(1:10,'ConvertFrom','datenum')
-            b=timerange('02.01.0000','03.01.0000')
-            frames.TimeIndex(a).positionOf(a(3:end))
-            frames.TimeIndex(a).positionOf('02-Jan-0000:03-Jan-0000:dd-MMM-uuuu')
-            
-            tf=frames.TimeFrame(1,1:10,[])
-            tf('02.01.0000:04.01.0000:dd.MM.uuuu')
-            
+            tf = frames.TimeFrame(1,738318:738318+10); % 11 June 2021 to 21 June 2021
+            sel1 = tf("09.06.2021:14.06.2021:dd.MM.yyyy");
+            tr = timerange("09-Jun-2021","14-Jun-2021",'closed');
+            sel2 = tf(tr);
+            sel3 = tf("-inf:14-Jun-2021");
+            expected = frames.TimeFrame(1,738318:738318+3);  % 11 June 2021 to 21 June 2021
+            t.verifyEqual(sel1,expected)
+            t.verifyEqual(sel2,expected)
+            t.verifyEqual(sel3,expected)
         end
         
         function matrix2seriesTest(t)
-            df = t.dfNoMissing;
-            df.std(2)
-            df.sum()
-            
+            tf = t.tfMissing1;
+            t.verifyEqual(tf.sum(),frames.DataFrame([12 13 12],[],tf.columns))
+            t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.index_,[]))
         end
         
         function maxminTest(t)
-            df = t.dfNoMissing;
-            df.maxOf(3)
-            df.maxOf(df+1)
-            df.max(2).min()
+            df = frames.DataFrame([4 NaN;3 1]);
+            t.verifyEqual(df.maxOf(3).data,[4 3;3 3])
+            t.verifyEqual(df.maxOf(df+1),df+1)
+            t.verifyEqual(df.max().min(2).columns,"Var2")
+            t.verifyEqual(df.max(2).min().index,2)
+            df2 = df;
+            df2.index(end) = 7;
+            t.verifyError(@misaligned,'frames:elementWiseHandler:differentIndex')
+            function misaligned(), df.maxOf(df2); end
         end
         
         function covcorrTest(t)
