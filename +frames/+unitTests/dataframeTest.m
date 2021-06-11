@@ -166,25 +166,41 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function firstIndexTest(t)
-            df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1 ; NaN NaN 33 44 55 66]');
-            df.firstCommonIndex()
-            df.firstValidIndex()
+            df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1;NaN NaN 33 44 55 66]');
+            t.verifyEqual(df.firstCommonIndex(),4)
+            t.verifyEqual(df.firstValidIndex(),2)
+            noCommon = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonIndex();
+            t.verifyEqual(noCommon,string.empty(0,1));
         end
         
         function relChangeTest(t)
-            df=frames.DataFrame([1 2 3; 2 5 3;5 1 1]', [6 2 1], [4 1 3])
-            df.relChg('log').compoundChange('log',[1 2 5])
-            df.relChg().compoundChange('simple',[1 2 5])
+            dfp = frames.DataFrame([1 NaN 3; NaN 2 3;5 1 NaN]');
+            exp = frames.DataFrame([NaN 1 3; NaN 2 3;5 1 NaN]');
+            t.verifyEqual(dfp.relChg('log').compoundChange('log',[1 2 5]).data,exp.data,'AbsTol',t.tol)
+            t.verifyEqual(dfp.relChg().compoundChange('simple',[1 2 5]).data,exp.data,'AbsTol',t.tol)
+            df2 = frames.DataFrame([1 2]');
+            t.verifyEqual(df2.relChg('log').data,[NaN log(2)]')
+            t.verifyEqual(df2.relChg().data,[NaN 1]')
         end
         
         function mathOperationsTest(t)
-            df = t.dfNoMissing;
-            df' * df
-            df + df
-            df + df.data
-            1 + df
-            df.data' * df
-            df' \ df
+            mat1 = frames.DataFrame([1 2;3 4]);
+            mat2 = frames.DataFrame([10 20;30 40],[],["a","b"]);
+            vecV = frames.DataFrame([6 7]');
+            vecV2 = frames.DataFrame([6 7]',[],"a");
+            vecH = frames.DataFrame([6 7]');
+            mtimesM = mat1' * mat2;
+            t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.columns,mat2.columns))
+            mtimesV = mat1' * vecV2;
+            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.columns,vecV2.columns))
+            times = mat1 .* vecV;
+            t.verifyEqual(times,frames.DataFrame([6 12;21 28],mat1.index,mat1.columns))
+            plus = mat1 + vecH;
+            t.verifyEqual(plus,frames.DataFrame([7 8;10 11],mat1.index,mat1.columns))
+            t.verifyError(@notAligned,'frames:matrixOpHandler:notAligned')
+            function notAligned(), mat1*mat2; end %#ok<VUNUS>
+            t.verifyError(@notSameColumns,'frames:elementWiseHandler:differentColumns')
+            function notSameColumns(), mat1-mat2; end %#ok<VUNUS>
         end
         
         function selectFromTimeRangeTest(t)

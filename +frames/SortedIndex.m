@@ -9,7 +9,7 @@ classdef SortedIndex < frames.UniqueIndex
     methods(Access=protected)
         function value = valueChecker(~,value)
             if ~isunique(value) || ~issorted(value)
-                error('index is not unique and sorted')
+                error('SortedIndex:valueCheckFail','Index is not unique and sorted.')
             end
         end
         function u = unionData(~,v1,v2)

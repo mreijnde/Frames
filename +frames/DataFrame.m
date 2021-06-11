@@ -844,7 +844,7 @@ df = df1;
 if isa(df2,'frames.DataFrame')
     if isa(df1,'frames.DataFrame')
         assert(isequal(df1.columns_.value_,df2.index_.value_), ...
-            'Frames are not aligned!')
+            'frames:matrixOpHandler:notAligned','Frames are not aligned!')
         idx_ = df1.index_;
         col_ = df2.columns_;
     else
@@ -865,11 +865,11 @@ if isa(df2,'frames.DataFrame')
     if isa(df1,'frames.DataFrame')
         if size(df1,1)>1 && size(df2,1)>1
             assert(isequal(df1.index_.value_,df2.index_.value_), ...
-                'Frames have different indices!')
+                'frames:elementWiseHandler:differentIndex','Frames have different indices!')
         end
         if size(df1,2)>1 && size(df2,2)>1
             assert(isequal(df1.columns_.value_,df2.columns_.value_), ...
-                'Frames have different columns!')
+                'frames:elementWiseHandler:differentColumns','Frames have different columns!')
         end
         idx_ = df1.index_;
         if size(df2,1)>size(df1,1), idx_ = df2.index_; end
