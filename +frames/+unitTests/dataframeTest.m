@@ -15,12 +15,12 @@ classdef dataframeTest < matlab.unittest.TestCase
             % empty
             emptyTT = frames.TimeFrame();
             t.verifyTrue(isempty(emptyTT.data)&&isempty(emptyTT.index)&&isempty(emptyTT.columns))
-            t.verifyTrue(isdatetime(emptyTT.index_.value))
-            t.verifyTrue(isa(emptyTT.index_,'frames.TimeIndex'))
+            t.verifyTrue(isdatetime(emptyTT.getIndex_().value))
+            t.verifyTrue(isa(emptyTT.getIndex_(),'frames.TimeIndex'))
             
             emptyDF = frames.DataFrame.empty("datetime");
             t.verifyTrue(isdatetime(emptyDF.index))
-            t.verifyTrue(isa(emptyDF.index_,'frames.Index'))
+            t.verifyTrue(isa(emptyDF.getIndex_(),'frames.Index'))
             
             %from unique data
             t.verifyEqual(frames.DataFrame(1,[1 2]).data,[1;1])
@@ -299,7 +299,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         function matrix2seriesTest(t)
             tf = t.tfMissing1;
             t.verifyEqual(tf.sum(),frames.DataFrame([12 13 12],[],tf.columns))
-            t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.index_,[]))
+            t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.getIndex_(),[]))
         end
         
         function maxminTest(t)
