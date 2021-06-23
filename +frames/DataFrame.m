@@ -534,7 +534,7 @@ classdef DataFrame
             obj.data_ = replaceStartBy(obj.data_,varargin{:});
         end
         function obj = emptyStart(obj,window)
-            obj.data_ = replaceStartBy(obj.data_,window);
+            obj.data_ = emptyStart(obj.data_,window);
         end
         function idx = firstCommonIndex(obj)
             % returns the first index where data are "all" not missing

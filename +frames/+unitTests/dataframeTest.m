@@ -65,7 +65,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function subsasgnTest(t)
-            df=frames.DataFrame([1 2 3 4 5 6; 2 5 NaN 1 3 2]');
+            df = frames.DataFrame([1 2 3 4 5 6; 2 5 NaN 1 3 2]');
             % test removal
             df{:,2} = [];
             df([1 3],:) = [];
@@ -90,14 +90,92 @@ classdef dataframeTest < matlab.unittest.TestCase
             tf=t.tfMissing1;
             tf{1:length(tf.index),:} = [];
             t.verifyEqual(tf.index,datetime.empty(0,1))
+            
+            % repeating columns
+            warning('off','frames:Index:notUnique')
+            df = frames.DataFrame([1 2 3; 2 5 NaN],[],["a","b","a"]);
+            df(:,"a") = 100;
+            expected = frames.DataFrame([100 2 100; 100 5 100],[],["a","b","a"]);
+            t.verifyEqual(df,expected)
+            warning('on','frames:Index:notUnique')
+            
+            % shuffled identifiers
+            df = frames.DataFrame([1 2 3; 2 5 NaN],[1 2],[1 2 3]);
+            df([2 1],[3 1 2]) = [1 2 3; 4 5 6];
+            expected = frames.DataFrame([5 6 4; 2 3 1],[1 2],[1 2 3]);
+            t.verifyEqual(df,expected)
+        end
+        
+        function subsrefTest(t)
+            warning('off','frames:Index:notUnique')
+            % repeating columns
+            df = frames.DataFrame([1 2 3; 2 5 NaN],[],["a","b","a"]);
+            sol = df(:,"a");
+            expected = frames.DataFrame([1 3; 2 NaN],[],["a","a"]);
+            t.verifyEqual(sol,expected)
+            
+            % simple selection
+            sol = df(2,"b");
+            expected = frames.DataFrame(5,2,"b");
+            t.verifyEqual(sol,expected)
+            
+            % index only selection
+            sol = df(2);
+            expected = frames.DataFrame([2 5 NaN],2,["a","b","a"]);
+            t.verifyEqual(sol,expected)
+            
+            % selection while repeating columns exist
+            sol = df(1,["b","a"]);
+            expected = frames.DataFrame([2 1 3],1,["b","a","a"]);
+            t.verifyEqual(sol,expected)
+            warning('on','frames:Index:notUnique')
         end
         
         function setIndexTest(t)
-            df=frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
+            df = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
             df = df.setIndex("Var3");
             expected = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2]',[5 0 4 1 3 2]);
             t.verifyEqual(df,expected)
         end
+        
+        function indexSetterTest(t)
+        end
+        
+        function columnsSetterTest(t)
+        end
+        
+        function dataSetterTest(t)
+        end
+        
+        function extendIndexTest(t)
+        end
+        
+        function dropIndexTest(t)
+        end
+        
+        function extendColumnsTest(t)
+        end
+        
+        function dropColumnsTest(t)
+        end
+        
+        function shiftTest(t)
+        end
+        
+        function replaceStartByTest(t)
+        end
+        
+        function emptyStart(t)
+        end
+        
+        function cumsumTest(t)
+        end
+        
+        function cumprodTest(t)
+        end
+        
+        
+        
         
         function horzcatTest(t)
             solUnsorted = [frames.DataFrame([4 2;1 1],[1 3], [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
@@ -203,6 +281,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             function notSameColumns(), mat1-mat2; end %#ok<VUNUS>
         end
         
+        function equalTest(t)
+        end
+        
         function selectFromTimeRangeTest(t)
             tf = frames.TimeFrame(1,738318:738318+10); % 11 June 2021 to 21 June 2021
             sel1 = tf("09.06.2021:14.06.2021:dd.MM.yyyy");
@@ -251,7 +332,6 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function rollingEwmTest(t)
-            
             df = frames.DataFrame([1 2 3 3 2 1;2 5 NaN 1 3 2;5 0 1 1 3 2]');
             t.verifyEqual(df.rolling(4).sum().data,[NaN NaN 6 9 10 9;NaN NaN NaN 8 9 6;NaN NaN 6 7 5 7]');
             
