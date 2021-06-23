@@ -1,13 +1,13 @@
 classdef DataFrame
-%DATAFRAME handles common operations on data matrices referenced by column and index identifiers.
-%   Handy way to do operations on homogeneous matrices (more intuitive than Matlab's table).
-%   $Author: Benjamin Gaudin $
+%DATAFRAME handles common operations on homogeneous data matrices referenced by column and index identifiers.
+%   They are a handy way to carry operations on labeled matrices (more intuitive than Matlab's table).
+%
 %   Constructor:
-%   df = Frames.DataFrame(data,index,columns,name)
+%   df = frames.DataFrame(data,index,columns,name)
 %   If an argument is not specified, it will take a default value, so it
-%   is possible to define only some of the arguments.
-%   df = Frames.DataFrame(data)  
-%   df = Frames.DataFrame(data,[],columns)
+%   is possible to define only some of the arguments:
+%   df = frames.DataFrame(data)  
+%   df = frames.DataFrame(data,[],columns)
 %
 %   DATAFRAME properties:
 %     data                   - Data      TxN  (homogeneous data)
