@@ -297,15 +297,17 @@ classdef DataFrame
             other = obj.iloc(idxToKeep);
         end
         function other = extendColumns(obj,columns)
-            if isrow(columns), columns=columns'; end
-            newCols = setdiff(columns,obj.columns_.value);
-            newColumns = [obj.columns_.value;newCols];
+            valuesToAdd = columns(~ismember(columns,obj.columns));
+            newColumns = obj.columns_.union(valuesToAdd);
             newData = obj.defaultData(length(obj.index_),length(newColumns));
-            newData(:,1:length(obj.columns_)) = obj.data_;
+            
+            col = obj.columns_.positionIn(newColumns.value);
+            if ~islogical(col), col = unique(col); end
+            newData(:,col) = obj.data_;
             
             other = obj;
             other.data_ = newData;
-            other.columns_.value = newColumns;
+            other.columns_ = newColumns;
         end
         function other = dropColumns(obj,columns)
             colToRemove = obj.columns_.positionOf(columns);
