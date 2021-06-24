@@ -10,7 +10,7 @@ classdef UniqueIndex < frames.Index
         function pos = positionIn(obj,target)
             target = obj.getValue_from(target);
             assertFoundIn(obj.value_,target)
-            pos = ismember(target,obj.value_);
+            [~,~,pos] = intersect(obj.value_,target,'stable');
         end
         
         function bool = isunique(~)
