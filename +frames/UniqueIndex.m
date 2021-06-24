@@ -21,7 +21,7 @@ classdef UniqueIndex < frames.Index
     methods(Access=protected)
         function value = valueChecker(~,value)
             if ~isunique(value)
-                error('index is not unique')
+                error('frames:UniqueIndex:valueCheckFail','index is not unique')
             end
         end
 

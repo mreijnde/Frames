@@ -139,12 +139,46 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function indexSetterTest(t)
+            df = frames.DataFrame([1 2; 2 5]);
+            df.index = frames.SortedIndex([3 5]);
+            t.verifyEqual(df.index,[3 5]')
+            
+            t.verifyError(@idxNotSorted,'frames:SortedIndex:valueCheckFail')
+            function idxNotSorted(), df.index=[6 3]; end
+            
+            t.verifyError(@wrongSize,'frames:indexValidation:wrongSize')
+            function wrongSize(), df.index=3; end
+            
+            df.index = [3 6];
+            t.verifyEqual(df.index,[3 6]')   
         end
         
         function columnsSetterTest(t)
+            df = frames.DataFrame([1 2; 2 5]);
+            
+            t.verifyWarning(@colsNotUniqueWarning,'frames:Index:notUnique')
+            function colsNotUniqueWarning(), df.columns=[6 6]; end
+            
+            df.columns = frames.UniqueIndex([3 5]);
+            t.verifyEqual(df.columns,[3 5])
+            
+            t.verifyError(@colsNotUnique,'frames:UniqueIndex:valueCheckFail')
+            function colsNotUnique(), df.columns=[6 6]; end
+            
+            t.verifyError(@wrongSize,'frames:columnsValidation:wrongSize')
+            function wrongSize(), df.columns=3; end
+            
+            df.columns = [3 6];
+            t.verifyEqual(df.columns,[3 6]) 
         end
         
         function dataSetterTest(t)
+            df = frames.DataFrame([1 2; 2 5]);
+            t.verifyError(@wrongSize,'frames:dataValidation:wrongSize')
+            function wrongSize(), df.data=3; end
+            
+            df.data = [1 2;3 4];
+            t.verifyEqual(df.data,[1 2;3 4]) 
         end
         
         function extendIndexTest(t)
@@ -169,13 +203,14 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function cumsumTest(t)
+            df = frames.DataFrame([1 2 3 4; NaN 5 NaN 2;NaN NaN NaN NaN]');
+            t.verifyEqual(df.cumsum().data, [1 3 6 10; NaN 5 NaN 7;NaN NaN NaN NaN]');
         end
         
         function cumprodTest(t)
+            df = frames.DataFrame([1 2 3 4; NaN 5 NaN 2;NaN NaN NaN NaN]');
+            t.verifyEqual(df.cumprod().data, [1 2 6 24; NaN 5 NaN 10;NaN NaN NaN NaN]');
         end
-        
-        
-        
         
         function horzcatTest(t)
             solUnsorted = [frames.DataFrame([4 2;1 1],[1 3], [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
@@ -190,7 +225,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             sol = [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 2]),[23 3]);frames.DataFrame([4 2;1 1],[3 4],[3 44])];
             expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.SortedIndex([1 2 3 4]),[23 3 44]);
             t.verifyEqual(sol,expected)
-            t.verifyError(@f,'SortedIndex:valueCheckFail')
+            t.verifyError(@f,'frames:SortedIndex:valueCheckFail')
             function f()
                 [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 2]),[23 3]);frames.DataFrame([4 2;1 1],[4 3],[3 44])]; %#ok<VUNUS>
             end

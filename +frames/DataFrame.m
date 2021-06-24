@@ -137,7 +137,12 @@ classdef DataFrame
             end
             obj.indexValidation(value);
             if ~isa(value,'frames.Index')
-                value = obj.getIndexObject(value);
+                if ~isequal(obj.index_,[])
+                    obj.index_.value = value;
+                    return
+                else
+                    value = obj.getIndexObject(value);
+                end
             end
             obj.index_ = value;
         end
@@ -145,15 +150,19 @@ classdef DataFrame
             arguments
                 obj, value {mustBeDFcolumns}
             end
-            assert(length(value) == size(obj.data,2), ...
-                'columns do not have the same size as data')
+            obj.columnsValidation(value);
             if ~isa(value,'frames.Index')
-                value = obj.getColumnsObject(value);
+                if ~isequal(obj.columns_,[])
+                    obj.columns_.value = value;
+                    return
+                else
+                    value = obj.getColumnsObject(value);
+                end
             end
             obj.columns_ = value;
         end
         function obj = set.data(obj, value)
-            assert(all(size(value)==size(obj.data_)), ...
+            assert(all(size(value)==size(obj.data_)), 'frames:dataValidation:wrongSize', ...
                 'data is not of the correct size')
             obj.data_ = value;
         end
@@ -551,8 +560,8 @@ classdef DataFrame
             [varargout{1:nargout}] = size(obj.data_,varargin{:});
         end
         function bool = isempty(obj), bool = isempty(obj.data_); end
-        function obj = cumsum(obj), obj.data_ = cumsum(obj.data_); end
-        function obj = cumprod(obj), obj.data_ = cumprod(obj.data_); end
+        function obj = cumsum(obj), obj.data_ = nancumsum(obj.data_); end
+        function obj = cumprod(obj), obj.data_ = nancumprod(obj.data_); end
         
         function other = plus(df1,df2)
             other = operator(@plus,@elementWiseHandler,df1,df2);
@@ -735,8 +744,12 @@ classdef DataFrame
             d = repmat(missingData(type),lengthIndex,lengthColumns);
         end
         function indexValidation(obj,value)
-            assert(length(value) == size(obj.data,1), ...
+            assert(length(value) == size(obj.data,1), 'frames:indexValidation:wrongSize', ...
                 'index does not have the same size as data')
+        end
+        function columnsValidation(obj,value)
+            assert(length(value) == size(obj.data,2), 'frames:columnsValidation:wrongSize', ...
+                'columns do not have the same size as data')
         end
         function idx = getIndexObject(~,index)
             idx = frames.UniqueIndex(index);
