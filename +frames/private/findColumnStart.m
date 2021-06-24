@@ -7,6 +7,6 @@ idx = getElementIDShift(idx,xi,xc,1);
 colsStart = 1:xi:xi*xc;
 allFull = setdiff(1:xc,c);
 colsStart = colsStart(allFull);
-colsStart = [colsStart idx];
+colsStart = [colsStart idx'];
 end
 

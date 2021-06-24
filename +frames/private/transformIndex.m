@@ -1,7 +1,7 @@
 function index = transformIndex(index,type)
 arguments
     index  % only occurences are when index is a frames.Index
-    type (1,1) {mustBeMember(type,["unsorted","sorted","time"])}
+    type {mustBeTextScalar,mustBeMember(type,["unsorted","sorted","time"])}
 end
 switch type
     case "unsorted"

@@ -1,3 +1,3 @@
-function bool = findIxStartLastMissing(varargin)
-bool = frames.internal.findIxStartLastMissing(varargin{:});
+function [ix,c] = findIxStartLastMissing(varargin)
+[ix,c] = frames.internal.findIxStartLastMissing(varargin{:});
 end
