@@ -182,24 +182,57 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function extendIndexTest(t)
+            df = frames.DataFrame([1 1;2 2],[1 2]);
+            ext = df.extendIndex([3 2 0]);
+            t.verifyEqual(ext.data, [1 1;2 2;NaN NaN;NaN NaN]);
+            t.verifyEqual(ext.index, [1 2 3 0]');
+            
+            df = df.setIndexType('sorted');
+            ext = df.extendIndex([3 2 0]);
+            t.verifyEqual(ext.data, [NaN NaN;1 1;2 2;NaN NaN]);
+            t.verifyEqual(ext.index, [0 1 2 3]');
         end
         
         function dropIndexTest(t)
+            df = frames.DataFrame([1 1;2 2;3 3;4 4],[1 2 3 4]);
+            t.verifyEqual(df.dropIndex([2 3]).data, [1 1;4 4]);
         end
         
         function extendColumnsTest(t)
+            df = frames.DataFrame([1 1;2 2]',[],[1 2]);
+            t.verifyEqual(df.extendColumns([3 1]).data, [1 1;2 2;NaN NaN]');
+            
+            warning('off','frames:Index:notUnique')
+            wDuplicates = frames.DataFrame([1 2 3 4 5 6],[],[1 3 1 4 5 4]).extendColumns([1 2 4 2]);
+            t.verifyEqual(wDuplicates.data, [1 2 3 4 5 6 NaN NaN]);
+            t.verifyEqual(wDuplicates.columns, [1 3 1 4 5 4 2 2]);
+            warning('on','frames:Index:notUnique')
+            sorted = frames.DataFrame([1 3 4 5],[],frames.SortedIndex([1 3 4 5])).extendColumns([1 2 4]);
+            t.verifyEqual(sorted.data, [1 NaN 3 4 5]);
+            t.verifyEqual(sorted.columns, [1 2 3 4 5]);
         end
         
         function dropColumnsTest(t)
+            warning('off','frames:Index:notUnique')
+            df = frames.DataFrame([1 1;2 2;3 3;4 4;5 5]',[],[1 2 4 2 5]);
+            t.verifyEqual(df.dropColumns([2 5]).data, [1 1;3 3]');
+            warning('on','frames:Index:notUnique')
         end
         
         function shiftTest(t)
+            df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1]');
+            t.verifyEqual(df.shift().data, [NaN 1 1 3; NaN NaN 1 NaN]');
+            t.verifyEqual(df.shift(-2).data, [3 1 NaN NaN; NaN 1 NaN NaN]');
         end
         
         function replaceStartByTest(t)
+            df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1;NaN 2 2 4]');
+            t.verifyEqual(df.replaceStartBy(10).data, [10 10 3 1; 10 1 NaN 1;10 2 2 4]');
         end
         
         function emptyStart(t)
+            df = frames.DataFrame([1 2 3 4; NaN NaN NaN 1;NaN 2 3 4]');
+            t.verifyEqual(df.emptyStart(2).data, [NaN NaN 3 4; NaN NaN NaN NaN;NaN NaN NaN 4]');
         end
         
         function cumsumTest(t)
