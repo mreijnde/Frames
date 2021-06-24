@@ -137,7 +137,7 @@ classdef DataFrame
             end
             obj.indexValidation(value);
             if ~isa(value,'frames.Index')
-                if ~isequal(obj.index_,[])
+                if ~isequal(obj.index_,[])  % ToDo: this is always true unless it is called from a constructor
                     obj.index_.value = value;
                     return
                 else
@@ -661,14 +661,14 @@ classdef DataFrame
         function obj = rolling(obj,window); obj=frames.internal.Rolling(obj,window); end
         function obj = ewm(obj,type,value); obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value); end
         
-        % Todo comments
-        % ToDo unittests
+        % Todo comments, doc
         % ToDo demo
         % toDo readme
         % ToDo license
         
         
-        
+        % ToDo rewrite subsref and subsasgn using the new tools when Matlab
+        % release them
         function varargout = subsref(obj,s)
             if length(s)>1  % when there are several subsref
                 if strcmp(s(1).type,'.')
@@ -709,7 +709,6 @@ classdef DataFrame
             if length(s)>1
                 obj = builtin('subsasgn',obj,s,b);
                 return
-%                 error('cannot assign with multiple references')
             end
             switch s.type
                 case '()'

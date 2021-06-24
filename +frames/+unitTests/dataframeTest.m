@@ -4,7 +4,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         dfNoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', [6 2 1], [4 1 3]);
         dfMissing1 = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]');
         tfMissing1 = frames.TimeFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 1 1 3 2]',[],["a","b","c"]);
-        dataPath = "+frames\+unitTests\"
+        dataPath = string(fileparts(mfilename('fullpath')))
         tol = 1e-10;
     end
     
