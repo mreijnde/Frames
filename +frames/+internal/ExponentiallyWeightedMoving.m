@@ -6,8 +6,13 @@ classdef ExponentiallyWeightedMoving
     end
     
     methods
-        function obj = ExponentiallyWeightedMoving(df,type,val)
-            obj.alpha = exponentialWeight(type,val);
+        function obj = ExponentiallyWeightedMoving(df,typeVal)
+            arguments
+                df
+                typeVal.Alpha, typeVal.Com, typeVal.Window, typeVal.Span, typeVal.Halflife
+            end
+            args = namedargs2cell(typeVal);
+            obj.alpha = exponentialWeight(args{:});
             obj.df = df;
         end
         

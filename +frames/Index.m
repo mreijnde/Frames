@@ -1,6 +1,13 @@
 classdef Index
-    %UNTITLED4 Summary of this class goes here
-    %   Detailed explanation goes here
+% INDEX is the object that supports index and columns in a DataFrame.
+% It contains operations of selection and merging, and constrains.
+%
+% An INDEX is expected to have unique values.
+% INDEX allows duplicates, but throw an error whenever it is modified.
+% UniqueIndex only allows unique entries.
+% SortedIndex only allows unique entries that are sorted.
+% TimeIndex only allows unique chronological time entries.
+% See also: UNIQUEINDEX, SORTEDINDEX, TIMEINDEX
     
     properties
         name {mustBeTextScalar} = ""
@@ -14,8 +21,7 @@ classdef Index
     
     methods
         function obj = Index(value,nameValue)
-            %UNTITLED4 Construct an instance of this class
-            %   Detailed explanation goes here
+            % INDEX Index(value[,Name=name])
             arguments
                 value {mustBeDFcolumns} = []
                 nameValue.Name = ""
@@ -48,15 +54,18 @@ classdef Index
         end
         
         function pos = positionOf(obj,selector)
+            % find position of 'selector' in the Index
             selector = obj.getValue_from(selector);
             pos = findPositionIn(selector,obj.value_);
         end
         function pos = positionIn(obj,target)
+            % find position of the Index into the target
             target = obj.getValue_from(target);
             pos = findPositionIn(obj.value_,target);
         end
         
         function obj = union(obj,index2)
+            % unify two indices
             index1 = obj.value_;
             index2 = obj.getValue_from(index2);
             assert(isequal(class(index1),class(index2)), ...
@@ -64,6 +73,7 @@ classdef Index
             obj.value_ = obj.unionData(index1,index2);
         end
         function obj = vertcat(obj,varargin)
+            % concatenation
             val = obj.value_;
             for ii = 1:nargin-1
                 val = [val;varargin{ii}.value_]; %#ok<AGROW>

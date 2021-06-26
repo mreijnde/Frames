@@ -1,11 +1,11 @@
 classdef DataFrame
 %DATAFRAME handles common operations on homogeneous data matrices referenced by column and index identifiers.
-%   They are a handy way to carry operations on labeled matrices (more intuitive than Matlab's table).
+%   It is a convenient way to perform operations on labeled matrices (more intuitive than Matlab's table).
 %
 %   Constructor:
-%   df = frames.DataFrame(data,index,columns,name)
+%   df = frames.DataFrame([data,index,columns,name])
 %   If an argument is not specified, it will take a default value, so it
-%   is possible to define only some of the arguments:
+%   is possible to only define some of the arguments:
 %   df = frames.DataFrame(data)  
 %   df = frames.DataFrame(data,[],columns)
 %
@@ -20,11 +20,11 @@ classdef DataFrame
 %
 %   Short overwiew of methods available:
 %
-%   - Selection and modification based on index/columns with () or the loc method:
-%     df(index,columns)
-%     df.loc(index,columns)
-%     df(index,columns) = newData
-%     df.loc(index,columns) = newData
+%   - Selection and modification based on index/column names with () or the loc method:
+%     df(indexNames,columnsNames)
+%     df.loc(indexNames,columnsNames)
+%     df(indexNames,columnsNames) = newData
+%     df.loc(indexNames,columnsNames) = newData
 %
 %   - Selection and modification based on position with {} or the iloc method:
 %     df{indexPosition,columnsPosition}
@@ -33,7 +33,7 @@ classdef DataFrame
 %     df.iloc(indexPosition,columnsPosition) = newData
 %
 %   - Operations between frames while checking that the two frames
-%     are aligned (handy to be sure to compare apples to apples):
+%     are aligned (to be sure to compare apples to apples):
 %     df1 + df2
 %     1 + df
 %     df1' * df2, etc.
@@ -56,7 +56,7 @@ classdef DataFrame
 %     values in the expansion
 %
 %   - Split a frame into groups based on its columns, and apply a function:
-%     df.split(groups).apply(@(x) x.sum(2))  sums the data on the dimention
+%     df.split(groups).apply(@(x) x.sum(2))  sums the data on the dimension
 %     2, group by group, so the result is a Txlength(group) frame
 %
 %   - Rolling window methods:
@@ -69,36 +69,37 @@ classdef DataFrame
 % For more details, see the list of available methods below.
 %
 % Copyright 2021 Benjamin Gaudin
+%
+% See also: frames.TimeFrame
     
     properties(Dependent)
         % Provide the interface. Include tests in the getters and setters.
         
-        data
-        index
-        columns
-        name
-        t
+        data  % TxN matrix of homogeneous data
+        index  % Tx1 vector
+        columns  % 1xN vector
+        name  % textscalar, name of the frame 
+        t  % table, dependent and built on data, index, columns
     end
     properties
-        description {mustBeText} = ""
+        description {mustBeText} = ""  % text description of the object
     end
     properties(Hidden, Access=protected)
         % Encapsulation. Internal use, there are no tests in the getters
         % and setters.
         
-        data_
-        index_
-        columns_
-        name_
+        data_  % TxN matrix of homogeneous data
+        index_  % Tx1 frames.UniqueIndex or its child classes
+        columns_  % Nx1 frames.Index or its child classes
+        name_  % textscalar, name of the frame
     end
     properties(Hidden, Dependent)
-        constructor
+        constructor  % constructor of the class (here a @frames.DataFrame)
     end
     
     methods
         function obj = DataFrame(data,index,columns,name)
-            %DATAFRAME Construct an instance of this class
-            %   Detailed explanation goes here
+            %DATAFRAME frames.DataFrame([data,index,columns,name])
             arguments
                 data (:,:) = []
                 index {mustBeDFindex} = []
@@ -125,7 +126,6 @@ classdef DataFrame
             obj.index = index;
             obj.columns = columns;
             obj.name_ = name;
-            
         end
         
         %------------------------------------------------------------------
@@ -192,32 +192,47 @@ classdef DataFrame
             c = str2func(class(obj));
         end
         function idx = getIndex_(obj)
+            % get the Index object underlying index
             idx = obj.index_;
         end
         function col = getColumns_(obj)
+            % get the Index object underlying columns
             col = obj.columns_;
         end
         function obj = setIndexType(obj,type)
+            % type can be "unsorted", "sorted", or "time"
+            if strcmp(type,"duplicate")
+                error('frames:setIndexType:duplicate','index cannot have duplicate values')
+            end
             obj.index_ = transformIndex(obj.index_,type);
         end
         function obj = setColumnsType(obj,type)
+            % type can be "unsorted", "sorted", "time", or "duplicate"
             obj.columns_ = transformIndex(obj.columns_,type);
         end
         function obj = setIndexName(obj,name)
+            % the index name will appear as the the first of the
+            % DimensionNames in the table .t
             obj.index_.name = name;
         end
         function obj = setColumnsName(obj,name)
             obj.columns_.name = name;
         end
         function obj = setIndex(obj,colName)
+            % set the index value from the value of a column
             obj.index = obj.data(:,findPositionIn(colName,obj.columns));
             obj = obj.dropColumns(colName);
         end
         
         function t = head(obj, varargin); t = head(obj.t,varargin{:}); end
+        % returns the first rows of the table
         function t = tail(obj, varargin); t = tail(obj.t,varargin{:}); end
-        
+        % returns the last rows of the table
         function obj = iloc(obj,idxPosition,colPosition)
+            % selection based on position: df.iloc(indexPosition[,columnsPosition])
+            % df.iloc([5 9], [1 4]) returns the 5th and 9th rows of the 1st and 4th columns
+            % df.iloc(:,4) returns the 4th column
+            % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             arguments
                 obj
                 idxPosition {mustBeDFindexSelector}
@@ -228,6 +243,10 @@ classdef DataFrame
             obj.columns_.value_ = obj.columns_.value_(colPosition);
         end
         function obj = loc(obj,idxName,colName)
+            % selection based on names: df.loc(indexNames[,columnsNames])
+            % df.loc([2 4], ["a" "b"]) returns the rows named 2 and 4 of the columns named "a" and "b"
+            % df.loc(:,"a") returns the column named "a"
+            % df.loc(2,:) or df.loc(2) returns the row named 2
             arguments
                 obj
                 idxName {mustBeDFindexSelector}
@@ -246,6 +265,7 @@ classdef DataFrame
         end
         
         function obj = replace(obj,valToReplace,valNew)
+            % REPLACE replace the a value in the data with another one
             if ismissing(valToReplace)
                 idx = ismissing(obj.data_);
             else
@@ -255,13 +275,20 @@ classdef DataFrame
         end
         
         function df = dropMissing(obj,nameValue)
+            % remove index or columns with missing data
+            % ----------------
+            % Parameters:
+            % * How   : ["all", "any"], default "all"
+            %           drop the line if "all" or "any" elements are missing
+            % * Axis  : [1 2], default 1
+            %           the dimension on which we drop (dimension 1 are rows)
             arguments
                 obj
                 nameValue.How {mustBeTextScalar,mustBeMember(nameValue.How,["any","all"])} = "all";
                 nameValue.Axis (1,1) {mustBeMember(nameValue.Axis,[1,2])} = 1;
             end
             
-            axis = abs(nameValue.Axis-3);  % if dim = 1 I want to drop rows, where we check if they contain missings in the 2. dimension
+            axis = abs(nameValue.Axis-3);  % if axis=1, we want to drop rows, where we check if they contain missings in the 2. dimension
             if strcmp(nameValue.How,'all')
                 drop = all(ismissing(obj.data_),axis);
             else
@@ -274,13 +301,16 @@ classdef DataFrame
             end
         end
         function obj = ffill(obj)
+            % forward fill
             obj.data_ = fillmissing(obj.data_,'previous');
         end
         function obj = bfill(obj)
+            % backward fill
             obj.data_ = fillmissing(obj.data_,'next');
         end
         
         function other = extendIndex(obj,index)
+            % extend the index with the new values
             newIndex = obj.index_.union(index);
             newData = obj.defaultData(length(newIndex),length(obj.columns_));
             
@@ -292,11 +322,13 @@ classdef DataFrame
             other.index_ = newIndex;
         end
         function other = dropIndex(obj,index)
+            % drop the specified index values
             idxToRemove = obj.index_.positionOf(index);
             idxToKeep = setdiff(1:length(obj.index_),idxToRemove);
             other = obj.iloc(idxToKeep);
         end
         function other = extendColumns(obj,columns)
+            % extend the columns with the new values
             valuesToAdd = columns(~ismember(columns,obj.columns));
             newColumns = obj.columns_.union(valuesToAdd);
             newData = obj.defaultData(length(obj.index_),length(newColumns));
@@ -310,30 +342,49 @@ classdef DataFrame
             other.columns_ = newColumns;
         end
         function other = dropColumns(obj,columns)
+            % drop the specified column values
             colToRemove = obj.columns_.positionOf(columns);
             colToKeep = setdiff(1:length(obj.columns_),colToRemove);
             other = obj.iloc(':',colToKeep);
         end
         function other = resample(obj,index,nameValue)
+            % RESAMPLE resample the frame with the new index and propagates the data if there are missing values.
+            % It propagates the last valid data between two consecutive
+            % index values. If all data are missing, it propagates the
+            % missing value. Only works with a sorted index.
+            % ----------------
+            % Parameters:
+            % * index               : target index
+            % * FirstValueFilling   : ["noFfill","ffillLastAvailable","ffillFromInterval"], default "noFfill"
+            %           specifies how the data for the first index value is propagated.
+            %           - "noFill" takes the value of the original frame
+            %           - "ffillLastAvailable" takes the last available value
+            %           - "ffillFromInterval" takes the last available value in a specified interval
+            %             By default, the interval is index(2)-index(1) but
+            %             can be specified with FirstValueFilling={"ffillFromInterval",specificInterval}
+            %
+            % Example (see also UnitTests):
+            % sortedframe = frames.DataFrame([4 1 NaN 3; 2 NaN 4 NaN]',[1 4 10 20]).setIndexType("sorted");
+            % ffi = sortedframe.resample([2 5],FirstValueFilling='ffillFromInterval');
             arguments
                 obj, index
-                nameValue.firstValueFilling = "noFfill"
+                nameValue.FirstValueFilling = "noFfill"
             end
             if ~isa(obj.index_, 'frames.SortedIndex')
                 error('Only use resample with SortedIndex (set obj.setIndexType("sorted"))')
             end
-            firstValueFilling = nameValue.firstValueFilling;
-            if ~iscell(firstValueFilling)
-                firstValueFilling = {firstValueFilling};
+            FirstValueFilling = nameValue.FirstValueFilling;
+            if ~iscell(FirstValueFilling)
+                FirstValueFilling = {FirstValueFilling};
             end
             acceptedValues = ["noFfill","ffillLastAvailable","ffillFromInterval"];
-            assert(ismember(firstValueFilling{1}, acceptedValues), ...
-                sprintf("'firstValueFilling' must take a value in [%s]",acceptedValues))
+            assert(ismember(FirstValueFilling{1}, acceptedValues), ...
+                sprintf("'FirstValueFilling' must take a value in [%s]",acceptedValues))
             
-            if strcmp(firstValueFilling{1},"ffillFromInterval")
+            if strcmp(FirstValueFilling{1},"ffillFromInterval")
                 try
-                    if length(firstValueFilling) == 2
-                        interval = firstValueFilling{2};
+                    if length(FirstValueFilling) == 2
+                        interval = FirstValueFilling{2};
                     else
                         interval = index(2)-index(1);
                     end
@@ -345,7 +396,7 @@ classdef DataFrame
             end
             other = obj.extendIndex(index);
             posSelector = other.index_.positionOf(index);
-            noFfill = strcmp(firstValueFilling{1},"noFfill") && ~isempty(posSelector);
+            noFfill = strcmp(FirstValueFilling{1},"noFfill") && ~isempty(posSelector);
             if noFfill
                 dataStart=other.data_(posSelector(1),:);
             end
@@ -354,15 +405,14 @@ classdef DataFrame
             other.data_(~hasEntry)=missingData(class(other.data_));
             
             if noFfill, other.data_(1,:) = dataStart; end
-            if strcmp(firstValueFilling{1}, "ffillFromInterval")
+            if strcmp(FirstValueFilling{1}, "ffillFromInterval")
                 other = other.iloc(2:length(other.index_));
             end
         end
         function other = horzcat(obj,varargin)
-            
-            % compute a merged index, only in case they are not the same
+            % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
             idx = obj.index_;
-            sameIndex = true;
+            sameIndex = true;  % compute a merged index, only in case they are not the same
             lenCols = zeros(length(varargin)+1,1);
             lenCols(1) = length(obj.columns_);
             for ii = 1:nargin-1
@@ -405,11 +455,10 @@ classdef DataFrame
             other.name_ = ""; other.description = "";
         end
         function other = vertcat(obj,varargin)
-            
-            % DF must each have unique columns
-            % compute a merged columns, only in case they are not the same
+            % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
+            % frames must each have unique columns
             col = obj.columns_.value_;
-            sameCols = true;
+            sameCols = true;  % compute a merged columns, only in case they are not the same
             lenIdx = zeros(length(varargin),1);
             lenIdx(1) = length(obj.index_);
             for ii = 1:nargin-1
@@ -450,20 +499,34 @@ classdef DataFrame
         end
         
         function other = sortBy(obj,columnName)
+            % sort frame from a column
             series = obj.loc(':',columnName);
             [~,sortedID] = sort(series.data);
             obj.index_ = frames.UniqueIndex(obj.index_);
             other = obj.iloc(sortedID);
         end
         function obj = sortIndex(obj)
+            % sort frame from the index
             [obj.index_.value_,sortedID] = sort(obj.index_.value_);
             obj.data_ = obj.data_(sortedID,:);
         end
         
         function obj = shift(obj,varargin)
+            % SHIFT shift the data vertically
+            % ----------------
+            % Parameters:
+            % * shift   : (integer), default 1
+            %       the number of steps to shift the data
+            % Example: .shift(2) shifts the data by 2 steps forwards and adds two
+            % rows of missing values at the top
             obj.data_ = shift(obj.data_,varargin{:});
         end
         function obj = diff(obj,dim)
+            % compute the difference of two consecutive rows
+            % ----------------
+            % Parameters:
+            % * dim   : [1 2], default 1
+            %       the dimension on which to compute the difference
             arguments
                 obj, dim {mustBeMember(dim,[1,2])} = 1
             end
@@ -476,6 +539,9 @@ classdef DataFrame
         end
         
         function obj = clip(obj,floorVal,ceilVal)
+            % put caps and floors to the data
+            % .clip(cap) will make all values greater than 'cap' equal to 'cap'
+            % .clip(floor,cap) will also make all values smaller than 'floor' equal to 'floor'
             if nargin < 3
                 ceilVal = floorVal;
             else
@@ -485,6 +551,18 @@ classdef DataFrame
         end
         
         function varargout = plot(obj,params)
+            % PLOT plot the frame
+            % ----------------
+            % Parameters:
+            % * Title      : (textScalar), default obj.name
+            %       the plot's title
+            % * Legend     : logical, default true
+            %       if true, the legend is the column names
+            % * Log        : logical, default false
+            %       if true, plot the semilogy
+            % * WholeIndex : logical, default false
+            %       if true, plot the whole index, even when data is missing
+            %       otherwise, plot only when data is valid
             arguments
                 obj
                 params.Title {mustBeTextScalar} = obj.name
@@ -524,6 +602,7 @@ classdef DataFrame
         end
         
         function varargout = heatmap(obj,varargin)
+            % plot a heatmap of the frame
             figure()
             p = heatmap(obj.columns,obj.index,obj.data,varargin{:});
             title(obj.name);
@@ -531,20 +610,57 @@ classdef DataFrame
         end
         
         function s = split(obj,varargin)
+            % SPLIT split the frame into column-based groups to apply a function separately
+            % Use: .split(groups,groupNames).apply(@fun)
+            % Examples (see also unitTests):
+            %   - simple split with cell
+            %       df=frames.DataFrame([1 2 3;2 5 3;5 0 1]', [6 2 1], [4 1 3]);
+            %       df.split({[4,3],1},["d","e"]).apply(@(x) x);
+            %   - apply function using group names
+            %       ceiler.d = {2.5,4.5};
+            %       ceiler.e = {2.6};
+            %       x2 = df.split({[4,3],1},["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}));
+            %   - split with structure
+            %       s.d = [4 3]; s.e = 1;
+            %       x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name){:}));
+            %   - split with a Group
+            %       g = frames.Groups([1 4 3],s);
+            %       x4 = df.split(g).apply(@(x) x.clip(ceiler.(x.name){:}));
+            % See also: frames.Groups
             s = frames.internal.Split(obj,varargin{:});
         end
         
         
         function obj = relChg(obj,varargin)
+            % compute the relative change
+            % ----------------
+            % Parameters:
+            % * changeType  : ["simple","log"], default "simple"
+            %       computes the simple relative change d(i+1)./d(i)-1 or the log change log(d(i+1)./d(i))
+            % * lag         : (integer), default 1
+            %       the lag to compute the change as in d(i+lag)./d(i)-1
+            % * overlapping : (logical), default true
+            %       whether to return the frame with all the indices (true) or only the indices at n*lag (false)
             obj.data_ = relativeChange(obj.data_,varargin{:});
         end
         function obj = compoundChange(obj,varargin)
+            % compound relative changes
+            % relative changes must be non-overlapping changes
+            % ----------------
+            % Parameters:
+            % * changeType  : ["simple","log"], default "simple"
+            %       type of the relative change
+            % * base        :  1x1 or 1xN array, default 1
+            %       starting value from which to compound
             obj.data_ = compoundChange(obj.data_,varargin{:});
         end
         function obj = replaceStartBy(obj,varargin)
+            % replace start values by 'valNew', if start values equal 'valToReplace' (optional)
+            % .replaceStartBy(valNew,valToReplace)
             obj.data_ = replaceStartBy(obj.data_,varargin{:});
         end
         function obj = emptyStart(obj,window)
+            % replace the first 'window' valid data by a missing value
             obj.data_ = emptyStart(obj.data_,window);
         end
         function idx = firstCommonIndex(obj)
@@ -563,7 +679,9 @@ classdef DataFrame
         end
         function bool = isempty(obj), bool = isempty(obj.data_); end
         function obj = cumsum(obj), obj.data_ = nancumsum(obj.data_); end
+        % cumulative sum, takes care of missing values
         function obj = cumprod(obj), obj.data_ = nancumprod(obj.data_); end
+        % cumulative product, takes care of missing values
         
         function other = plus(df1,df2)
             other = operator(@plus,@elementWiseHandler,df1,df2);
@@ -609,8 +727,11 @@ classdef DataFrame
             other = operator(@ge,@elementWiseHandler,df1,df2);
         end
         function bool = equals(df1,df2,tol)
+            % .equals(df1,df2,tolerance) returns true if the index. columns
+            % are the same, and if the data are equal in the tolerance range
             if nargin<3, tol=eps; end
             try
+                assert(isequal(df1.index,df2.index)&&isequal(df1.columns,df2.columns))
                 diff = df1-df2;
                 iseq = diff.abs().data <= tol;
                 bool = all(iseq(:));
@@ -646,20 +767,40 @@ classdef DataFrame
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
         
         function other = sum(obj,varargin), other=obj.matrix2series(@sum,varargin{:}); end
+        % SUM sum through the desired dimension
         function other = mean(obj,varargin), other=obj.matrix2series(@mean,varargin{:}); end
+        % MEAN mean through the desired dimension
         function other = median(obj,varargin), other=obj.matrix2series(@median,varargin{:}); end
+        % MEDIAN median through the desired dimension
         function other = std(obj,varargin), other=obj.matrix2series(@std,[],varargin{:}); end
+        % STD standard deviation through the desired dimension
+        function other = var(obj,varargin), other=obj.matrix2series(@var,[],varargin{:}); end
+        % VAR variance through the desired dimension
         
         function other = max(obj,varargin), other=obj.maxmin(@max,varargin{:}); end
+        % MAX maximum through the desired dimension
         function other = min(obj,varargin), other=obj.maxmin(@min,varargin{:}); end
+        % MIN minimum through the desired dimension
         function other = maxOf(df1,df2), other=operator(@max,@elementWiseHandler,df1,df2); end
+        % maximum of the elements of the two input arguments
+        % maxOf(df1,df2), where df2 can be a frame or a matrix
         function other = minOf(df1,df2), other=operator(@min,@elementWiseHandler,df1,df2); end
+        % minimum of the elements of the two input arguments
+        % minOf(df1,df2), where df2 can be a frame or a matrix
         
         function other = corr(obj), other=corrcov(obj,@corrcoef,Rows='pairwise'); end
+        % correlation matrix (pairwise)
         function other = cov(obj), other= corrcov(obj,@cov,'partialRows'); end
+        % covariance matrix (pairwise)
         
         function obj = rolling(obj,window); obj=frames.internal.Rolling(obj,window); end
+        % provide rolling window calculations
+        % .rolling(window[,windowNaN]).<method>
+        % For a full description, see frames.internal.Rolling
         function obj = ewm(obj,type,value); obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value); end
+        % provide exponential weighted functions
+        % .ewm(<DecayType>=value).<method>
+        % For a full description, see frames.internal.ExponentiallyWeightedMoving
         
         % Todo comments, doc
         % ToDo demo
@@ -726,8 +867,8 @@ classdef DataFrame
             end
         end
         
-        
         function toFile(obj,filePath,varargin)
+            % write the frame into a file
             writetable(obj.t,filePath, ...
                 'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
         end
@@ -739,6 +880,9 @@ classdef DataFrame
             idx = indexForTable(obj.index);
             col = columnsForTable(obj.columns);
             tb = array2table(obj.data,RowNames=idx,VariableNames=col);
+            if ~isempty(obj.index_.name)
+                tb.Properties.DimensionNames{1} = char(obj.index_.name);
+            end
         end
         function d = defaultData(obj,lengthIndex,lengthColumns,type)
             if nargin<4; type = class(obj.data); end
@@ -830,6 +974,8 @@ classdef DataFrame
  
     methods(Static)
         function df = empty(type)
+            % constructor for an empty frame, specifying the data type of
+            % the index. 'type' takes a value in ["double","string","datetime"]
             arguments
                 type {mustBeTextScalar, mustBeMember(type,["double","string","datetime"])} = 'double'
             end
@@ -844,13 +990,19 @@ classdef DataFrame
             df = frames.DataFrame([],idx);
         end
         function df = fromFile(filePath, varargin)
+            % construct a frame from reading a table from a file
             tb = readtable(filePath,...
                 'TreatAsEmpty',{'N/A','NA'}, ...
                 'ReadRowNames',true,'ReadVariableNames',true, ...
                 varargin{:});
             df = frames.DataFrame.fromTable(tb);
+            df.index_.name = string(tb.Properties.DimensionNames{1});
         end
         function df = fromTable(t,nameValue)
+            % construct a frame from a table
+            % by default, row and columns names in Matlab's table are
+            % cellstr, while in frames they are strings.
+            % keepCellstr=false (default) will turn cellstr into strings
             arguments
                 t {mustBeA(t,'table')}
                 nameValue.keepCellstr (1,1) logical = false
@@ -869,7 +1021,7 @@ classdef DataFrame
     methods(Hidden)
         function disp(obj)
             maxRows = 100;
-            maxCols = 50;  % Matlab is struggles to show many columns
+            maxCols = 50;  % Matlab struggles to show many columns
             if all(size(obj) < [maxRows,maxCols])
                 disp(obj.t);
             else
@@ -945,7 +1097,7 @@ function [idx_,col_,df] = elementWiseHandler(df1,df2)
 df = df1;
 if isa(df2,'frames.DataFrame')
     if isa(df1,'frames.DataFrame')
-        if size(df1,1)>1 && size(df2,1)>1
+        if size(df1,1)>1 && size(df2,1)>1  % ToDo we allow computation with a series without looking at its Index value (how to make it more robust for the cases we do want to check the Index, i.e. when working with two vector Frames? a SingletonIndex, a property in DF or Index?)
             assert(isequal(df1.index_.value_,df2.index_.value_), ...
                 'frames:elementWiseHandler:differentIndex','Frames have different indices!')
         end
@@ -956,7 +1108,7 @@ if isa(df2,'frames.DataFrame')
         idx_ = df1.index_;
         if size(df2,1)>size(df1,1), idx_ = df2.index_; end
         col_ = df1.columns_;
-        if size(df2,1)>size(df1,1), col_ = df2.columns_; end
+        if size(df2,2)>size(df1,2), col_ = df2.columns_; end
     else
         idx_ = df2.index_;
         col_ = df2.columns_;
@@ -971,7 +1123,7 @@ end
 %--------------------------------------------------------------------------
 function other = operator(fun,handler,df1,df2)
 [idx_,col_,other] = handler(df1,df2);
-[v1,v2]=getData_(df1,df2);
+[v1,v2] = getData_(df1,df2);
 d = fun(v1,v2);
 other.data_ = d; other.index_ = idx_; other.columns_ = col_;
 other.description = "";

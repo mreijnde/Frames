@@ -1,6 +1,12 @@
 classdef SortedIndex < frames.UniqueIndex
-    %UNTITLED4 Summary of this class goes here
-    %   Detailed explanation goes here
+% SORTEDINDEX is the object that supports index and columns in a DataFrame.
+% It contains operations of selection and merging, and constrains.
+%
+% A SORTEDINDEX has unique sorted values.
+% Index allows duplicates, but throw a warning.
+% UniqueIndex only allows unique entries.
+% TimeIndex only allows unique chronological time entries.
+% See also: UNIQUEINDEX, INDEX, TIMEINDEX
     methods
         function pos = positionIn(obj,target)
             target = obj.getValue_from(target);

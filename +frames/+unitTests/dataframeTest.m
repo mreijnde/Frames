@@ -266,15 +266,15 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function resampleTest(t)
             sortedframe = frames.DataFrame([4 1 NaN 3; 2 NaN 4 NaN]',[1 4 10 20]).setIndexType("sorted");
-            ffi = sortedframe.resample([2 5],firstValueFilling='ffillFromInterval');
+            ffi = sortedframe.resample([2 5],FirstValueFilling='ffillFromInterval');
             t.verifyEqual(ffi, frames.DataFrame([4 1; 2 NaN]',[2 5]).setIndexType("sorted"));
-            ffi1 = sortedframe.resample([3 11],firstValueFilling={'ffillFromInterval',1});
+            ffi1 = sortedframe.resample([3 11],FirstValueFilling={'ffillFromInterval',1});
             t.verifyEqual(ffi1, frames.DataFrame([NaN 1; NaN 4]',[3 11]).setIndexType("sorted"));
-            ffla = sortedframe.resample([13 14 15],firstValueFilling='ffillLastAvailable');
+            ffla = sortedframe.resample([13 14 15],FirstValueFilling='ffillLastAvailable');
             t.verifyEqual(ffla, frames.DataFrame([1 NaN NaN;4 NaN NaN]',[13 14 15]).setIndexType("sorted"));
-            noff = sortedframe.resample([13 14 15],firstValueFilling='noFfill');
+            noff = sortedframe.resample([13 14 15],FirstValueFilling='noFfill');
             t.verifyEqual(noff, frames.DataFrame([NaN NaN NaN;NaN NaN NaN]',[13 14 15]).setIndexType("sorted"));
-            noff2 = sortedframe.resample([4 14 15],firstValueFilling='noFfill');
+            noff2 = sortedframe.resample([4 14 15],FirstValueFilling='noFfill');
             t.verifyEqual(noff2, frames.DataFrame([1 NaN NaN;NaN 4 NaN]',[4 14 15]).setIndexType("sorted"));
         end
         
@@ -341,8 +341,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.columns,vecV2.columns))
             times = mat1 .* vecV;
             t.verifyEqual(times,frames.DataFrame([6 12;21 28],mat1.index,mat1.columns))
-            plus = mat1 + vecH;
-            t.verifyEqual(plus,frames.DataFrame([7 8;10 11],mat1.index,mat1.columns))
+            plus1 = mat1 + vecH;
+            t.verifyEqual(plus1,frames.DataFrame([7 8;10 11],mat1.index,mat1.columns))
+            plus2 = vecH + mat1;
+            t.verifyEqual(plus2,frames.DataFrame([7 8;10 11],mat1.index,mat1.columns))
             t.verifyError(@notAligned,'frames:matrixOpHandler:notAligned')
             function notAligned(), mat1*mat2; end %#ok<VUNUS>
             t.verifyError(@notSameColumns,'frames:elementWiseHandler:differentColumns')

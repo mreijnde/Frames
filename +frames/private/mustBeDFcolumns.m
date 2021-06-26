@@ -1,5 +1,5 @@
 function mustBeDFcolumns(x)
-if ~isa(x, 'frames.UniqueIndex')
+if ~isa(x, 'frames.Index')
     if ~isempty(x)
         if ~(isvector(x) && ~any(ismissing(x)))
     throwAsCaller(MException("frames:validators:mustBeDFcolumns", ...

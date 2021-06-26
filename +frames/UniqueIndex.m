@@ -1,6 +1,12 @@
 classdef UniqueIndex < frames.Index
-    %UNTITLED4 Summary of this class goes here
-    %   Detailed explanation goes here
+% UNIQUEINDEX is the object that supports index and columns in a DataFrame.
+% It contains operations of selection and merging, and constrains.
+%
+% A UNIQUEINDEX has unique values.
+% Index allows duplicates, but throw a warning.
+% SortedIndex only allows unique sorted entries.
+% TimeIndex only allows unique chronological time entries.
+% See also: SORTEDINDEX, INDEX, TIMEINDEX
     methods
         function pos = positionOf(obj,selector)
             selector = obj.getValue_from(selector);

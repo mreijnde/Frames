@@ -1,6 +1,5 @@
 function varargout = align(dfs)
-%UNTITLED7 Summary of this function goes here
-%   Detailed explanation goes here
+%ALIGN align frames to each others and ouputs each of them aligned
 arguments(Repeating)
     dfs frames.DataFrame
 end

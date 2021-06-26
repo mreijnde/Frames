@@ -1,13 +1,18 @@
 classdef TimeIndex < frames.SortedIndex
+% TIMEINDEX is the object that supports index and columns in a DataFrame.
+% It contains operations of selection and merging, and constrains.
+%
+% A TIMEINDEX has unique chronnological values.
+% Index allows duplicates, but throw a warning.
+% UniqueIndex only allows unique entries.
+% SortedIndex only allows unique entries that are sorted.
+% See also: UNIQUEINDEX, INDEX, SORTEDINDEX
     properties
         format {mustBeTextScalar} = string(missing)  % datetime format
     end
-    %UNTITLED4 Summary of this class goes here
-    %   Detailed explanation goes here
     methods
         function obj = TimeIndex(value,nameValue)
-            %UNTITLED4 Construct an instance of this class
-            %   Detailed explanation goes here
+            % INDEX Index(value[,Name=name,Format=format])
             arguments
                 value
                 nameValue.Name = "Time"
@@ -28,6 +33,10 @@ classdef TimeIndex < frames.SortedIndex
         end
         
         function pos = positionOf(obj,selector)
+            % find position of 'selector' in the Index
+            % On can use a timerange to specify which values to select
+            % .positionOf(timerange)
+            % .positionOf("dateStart:dateEnd:dateFormat")
             if isTextScalar(selector) && contains(selector,':')
                 selector = obj.getTimerange(selector);
             end
