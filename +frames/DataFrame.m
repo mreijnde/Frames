@@ -130,7 +130,6 @@ classdef DataFrame
         
         %------------------------------------------------------------------
         % Setters and Getters
-        
         function obj = set.index(obj, value)
             arguments
                 obj, value {mustBeDFindex}
@@ -191,6 +190,7 @@ classdef DataFrame
         function c = get.constructor(obj)
             c = str2func(class(obj));
         end
+        
         function idx = getIndex_(obj)
             % get the Index object underlying index
             idx = obj.index_;
@@ -228,6 +228,9 @@ classdef DataFrame
         % returns the first rows of the table
         function t = tail(obj, varargin); t = tail(obj.t,varargin{:}); end
         % returns the last rows of the table
+        
+        %------------------------------------------------------------------
+        % Selection
         function obj = iloc(obj,idxPosition,colPosition)
             % selection based on position: df.iloc(indexPosition[,columnsPosition])
             % df.iloc([5 9], [1 4]) returns the 5th and 9th rows of the 1st and 4th columns
@@ -264,6 +267,7 @@ classdef DataFrame
             obj.data_ = obj.data_(idxID,colID);
         end
         
+
         function obj = replace(obj,valToReplace,valNew)
             % REPLACE replace the a value in the data with another one
             if ismissing(valToReplace)
@@ -600,7 +604,6 @@ classdef DataFrame
             end
             if nargout == 1, varargout{1} = p; end
         end
-        
         function varargout = heatmap(obj,varargin)
             % plot a heatmap of the frame
             figure()
@@ -778,7 +781,6 @@ classdef DataFrame
             % See also frames.internal.Rolling
             obj=frames.internal.Rolling(obj,window);
         end
-
         function obj = ewm(obj,type,value)
             % provide exponential weighted functions
             % .ewm(<DecayType>=value).<method>
@@ -800,8 +802,7 @@ classdef DataFrame
             obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value);
         end
         
-        % Todo comments, doc
-        % ToDo demo
+        % ToDo demo mlx, html
         % toDo readme
         % ToDo license
         
@@ -901,6 +902,7 @@ classdef DataFrame
         function col = getColumnsObject(~,columns)
             col = frames.Index(columns);
         end
+        
         function obj = modify(obj,data,index,columns,fromPosition)
             if nargin<5; fromPosition = false; end
             if ~fromPosition
@@ -1099,7 +1101,6 @@ classdef DataFrame
         function col = defaultColumns(len)
             col = "Var" + (1:len);
         end
-        
     end
 end
 
@@ -1121,6 +1122,7 @@ for ii = 2:length(selector)
 end
 end
 
+%--------------------------------------------------------------------------
 function varargout = getData_(varargin)
 for ii = 1:nargout
     v = varargin{ii};
@@ -1128,7 +1130,6 @@ for ii = 1:nargout
     varargout{ii} = v; %#ok<AGROW>
 end
 end
-
 
 %--------------------------------------------------------------------------
 function [idx_,col_,df] = matrixOpHandler(df1,df2)
@@ -1151,11 +1152,12 @@ end
 end
 
 %--------------------------------------------------------------------------
+% ToDo we allow computation with a series without looking at its Index value (how to make it more robust for the cases we do want to check the Index, i.e. when working with two vector Frames? a SingletonIndex, a property in DF or Index?)
 function [idx_,col_,df] = elementWiseHandler(df1,df2)
 df = df1;
 if isa(df2,'frames.DataFrame')
     if isa(df1,'frames.DataFrame')
-        if size(df1,1)>1 && size(df2,1)>1  % ToDo we allow computation with a series without looking at its Index value (how to make it more robust for the cases we do want to check the Index, i.e. when working with two vector Frames? a SingletonIndex, a property in DF or Index?)
+        if size(df1,1)>1 && size(df2,1)>1
             assert(isequal(df1.index_.value_,df2.index_.value_), ...
                 'frames:elementWiseHandler:differentIndex','Frames have different indices!')
         end
