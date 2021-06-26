@@ -648,8 +648,7 @@ classdef DataFrame
             % See also: frames.Groups, frames.internal.Split
             s = frames.internal.Split(obj,varargin{:});
         end
-        
-        
+                
         function obj = relChg(obj,varargin)
             % compute the relative change
             % ----------------
@@ -754,47 +753,52 @@ classdef DataFrame
         function other = cov(obj), other= corrcov(obj,@cov,'partialRows'); end
         % covariance matrix (pairwise)
         
-        function obj = rolling(obj,window); obj=frames.internal.Rolling(obj,window); end
-        % provide rolling window calculations
-        % .rolling(window[,windowNaN]).<method>
-        %
-        % rolling methods:
-        %   mean    - rolling moving mean
-        %   std     - rolling standard deviation
-        %   var     - rolling variance
-        %   sum     - rolling sum
-        %   median  - rolling median
-        %   max     - rolling max
-        %   min     - rolling min
-        %   cov     - rolling univariate covariance with a series
-        %   corr    - rolling univariate correlation with a series
-        %   betaXY  - rolling univariate beta of/with a series
-        %
-        % Parameters:
-        %   window:    (integer, or the string "expanding")
-        %       Window on which to compute the rolling method
-        %   windowNaN: (integer), default ceil(window/3)
-        %       Minimum number of observations at the start required to have a value (otherwise result is NaN).
-        %
-        % See also frames.internal.Rolling
-        function obj = ewm(obj,type,value); obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value); end
-        % provide exponential weighted functions
-        % .ewm(<DecayType>=value).<method>
-        %
-        % ewm methods:
-        %   mean    - exponentially weighted moving mean
-        %   std     - exponentially weighted moving standard deviation
-        %   var     - exponentially weighted moving variance
-        %
-        % Parameters:
-        % The decay type is to be specified using one of the following:
-        %   - Alpha: specify the smoothing factor directy
-        %   - Com: specify the center of mass, alpha=1./(com+1)
-        %   - Window: specify the window related to a SMA, alpha=2./(window+1)
-        %   - Span: specify decay in terms of span, alpha=2./(span+1)
-        %   - Halflife: specify decay in terms of half-life, alpha=1-exp(-log(0.5)./halflife);
-        %
-        % See also frames.internal.ExponentiallyWeightedMoving
+        function obj = rolling(obj,window)
+            % provide rolling window calculations
+            % .rolling(window[,windowNaN]).<method>
+            %
+            % rolling methods:
+            %   mean    - rolling moving mean
+            %   std     - rolling standard deviation
+            %   var     - rolling variance
+            %   sum     - rolling sum
+            %   median  - rolling median
+            %   max     - rolling max
+            %   min     - rolling min
+            %   cov     - rolling univariate covariance with a series
+            %   corr    - rolling univariate correlation with a series
+            %   betaXY  - rolling univariate beta of/with a series
+            %
+            % Parameters:
+            %   window:    (integer, or the string "expanding")
+            %       Window on which to compute the rolling method
+            %   windowNaN: (integer), default ceil(window/3)
+            %       Minimum number of observations at the start required to have a value (otherwise result is NaN).
+            %
+            % See also frames.internal.Rolling
+            obj=frames.internal.Rolling(obj,window);
+        end
+
+        function obj = ewm(obj,type,value)
+            % provide exponential weighted functions
+            % .ewm(<DecayType>=value).<method>
+            %
+            % ewm methods:
+            %   mean    - exponentially weighted moving mean
+            %   std     - exponentially weighted moving standard deviation
+            %   var     - exponentially weighted moving variance
+            %
+            % Parameters:
+            % The decay type is to be specified using one of the following:
+            %   - Alpha: specify the smoothing factor directy
+            %   - Com: specify the center of mass, alpha=1./(com+1)
+            %   - Window: specify the window related to a SMA, alpha=2./(window+1)
+            %   - Span: specify decay in terms of span, alpha=2./(span+1)
+            %   - Halflife: specify decay in terms of half-life, alpha=1-exp(-log(0.5)./halflife);
+            %
+            % See also frames.internal.ExponentiallyWeightedMoving
+            obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value);
+        end
         
         % Todo comments, doc
         % ToDo demo
