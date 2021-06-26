@@ -702,49 +702,6 @@ classdef DataFrame
         function obj = cumprod(obj), obj.data_ = nancumprod(obj.data_); end
         % cumulative product, takes care of missing values
         
-        function other = plus(df1,df2)
-            other = operator(@plus,@elementWiseHandler,df1,df2);
-        end
-        function other = mtimes(df1,df2)
-            other = operator(@mtimes,@matrixOpHandler,df1,df2);
-        end
-        function other = times(df1,df2)
-            other = operator(@times,@elementWiseHandler,df1,df2);
-        end
-        function other = minus(df1,df2)
-            other = operator(@minus,@elementWiseHandler,df1,df2);
-        end
-        function other = mrdivide(df1,df2)
-            other = operator(@mrdivide,@matrixOpHandler,df1,df2);
-        end
-        function other = rdivide(df1,df2)
-            other = operator(@rdivide,@elementWiseHandler,df1,df2);
-        end
-        function other = mldivide(df1,df2)
-            other = operator(@mldivide,@matrixOpHandler,df1,df2);
-        end
-        function other = ldivide(df1,df2)
-            other = operator(@ldivide,@elementWiseHandler,df1,df2);
-        end
-        function other = power(df1,df2)
-            other = operator(@power,@elementWiseHandler,df1,df2);
-        end
-        function other = mpower(df1,df2)
-            other = operator(@mpower,@matrixOpHandler,df1,df2);
-        end
-        
-        function other = lt(df1,df2)
-            other = operator(@lt,@elementWiseHandler,df1,df2);
-        end
-        function other = gt(df1,df2)
-            other = operator(@gt,@elementWiseHandler,df1,df2);
-        end
-        function other = le(df1,df2)
-            other = operator(@le,@elementWiseHandler,df1,df2);
-        end
-        function other = ge(df1,df2)
-            other = operator(@ge,@elementWiseHandler,df1,df2);
-        end
         function bool = equals(df1,df2,tol)
             % .equals(df1,df2,tolerance) returns true if the index. columns
             % are the same, and if the data are equal in the tolerance range
@@ -758,24 +715,9 @@ classdef DataFrame
                 bool = false;
             end
         end
-        function bool = eq(df1,df2)
-            bool = df1.equals(df2,0);
-        end
-        function bool = ne(df1,df2)
-            bool = ~df1.eq(df2);
-        end
-        
-        function other = ctranspose(obj)
-            other = frames.DataFrame(obj.data_',obj.columns,obj.index,obj.name_);
-        end
-        function other = transpose(obj)
-            other = frames.DataFrame(obj.data_.',obj.columns,obj.index,obj.name_);
-        end
         
         % these function overloads are to make chaining possible
         % e.g. df.abs().sqrt()
-        function obj = uminus(obj), obj.data_ = uminus(obj.data_); end
-        function obj = uplus(obj), obj.data_ = uplus(obj.data_); end
         function obj = abs(obj), obj.data_ = abs(obj.data_); end
         function obj = exp(obj), obj.data_ = exp(obj.data_); end
         function obj = log(obj), obj.data_ = log(obj.data_); end
@@ -1083,6 +1025,66 @@ classdef DataFrame
         
         function n = numArgumentsFromSubscript(varargin), n = 1; end
         function e = end(obj,q,w), e = builtin('end',obj.data_,q,w); end
+        
+        function other = plus(df1,df2)
+            other = operator(@plus,@elementWiseHandler,df1,df2);
+        end
+        function other = mtimes(df1,df2)
+            other = operator(@mtimes,@matrixOpHandler,df1,df2);
+        end
+        function other = times(df1,df2)
+            other = operator(@times,@elementWiseHandler,df1,df2);
+        end
+        function other = minus(df1,df2)
+            other = operator(@minus,@elementWiseHandler,df1,df2);
+        end
+        function other = mrdivide(df1,df2)
+            other = operator(@mrdivide,@matrixOpHandler,df1,df2);
+        end
+        function other = rdivide(df1,df2)
+            other = operator(@rdivide,@elementWiseHandler,df1,df2);
+        end
+        function other = mldivide(df1,df2)
+            other = operator(@mldivide,@matrixOpHandler,df1,df2);
+        end
+        function other = ldivide(df1,df2)
+            other = operator(@ldivide,@elementWiseHandler,df1,df2);
+        end
+        function other = power(df1,df2)
+            other = operator(@power,@elementWiseHandler,df1,df2);
+        end
+        function other = mpower(df1,df2)
+            other = operator(@mpower,@matrixOpHandler,df1,df2);
+        end
+        
+        function other = lt(df1,df2)
+            other = operator(@lt,@elementWiseHandler,df1,df2);
+        end
+        function other = gt(df1,df2)
+            other = operator(@gt,@elementWiseHandler,df1,df2);
+        end
+        function other = le(df1,df2)
+            other = operator(@le,@elementWiseHandler,df1,df2);
+        end
+        function other = ge(df1,df2)
+            other = operator(@ge,@elementWiseHandler,df1,df2);
+        end
+        function bool = eq(df1,df2)
+            bool = df1.equals(df2,0);
+        end
+        function bool = ne(df1,df2)
+            bool = ~df1.eq(df2);
+        end
+        
+        function other = ctranspose(obj)
+            other = frames.DataFrame(obj.data_',obj.columns,obj.index,obj.name_);
+        end
+        function other = transpose(obj)
+            other = frames.DataFrame(obj.data_.',obj.columns,obj.index,obj.name_);
+        end
+        
+        function obj = uminus(obj), obj.data_ = uminus(obj.data_); end
+        function obj = uplus(obj), obj.data_ = uplus(obj.data_); end
         
     end
     
