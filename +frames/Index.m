@@ -14,36 +14,58 @@ classdef Index
     end
     properties(Dependent)
         value
+        singleton
     end
     properties(Access={?frames.UniqueIndex,?frames.DataFrame})
         value_
+        singleton_
     end
     
     methods
         function obj = Index(value,nameValue)
-            % INDEX Index(value[,Name=name])
+            % INDEX Index(value[,Name=name,Singleton=logical])
             arguments
                 value {mustBeDFcolumns} = []
                 nameValue.Name = ""
+                nameValue.Singleton {mustBeA(nameValue.Singleton,'logical')} = false
             end
             name = nameValue.Name;
+            singleton = nameValue.Singleton;
             if isa(value,'frames.Index')
+                singleton = value.singleton;
                 name = value.name;
                 value = value.value;
             end
             obj.value = value;
             obj.name = name;
+            obj.singleton_ = singleton;
         end
         
         function idx = get.value(obj)
             idx = obj.getValue();
         end
+        function idx = get.singleton(obj)
+            idx = obj.singleton_;
+        end
         function obj = set.value(obj,value)
+            arguments
+                obj, value {mustBeDFcolumns} = []
+            end
             value = obj.valueChecker(value);
             if isrow(value)
                 value = value';
             end
             obj.value_ = value;
+        end
+        function obj = set.singleton(obj,tf)
+            arguments
+                obj, tf {mustBeA(tf,'logical')}
+            end
+            if tf && length(obj.value_) > 1
+                error('frames:Index:setSingleton',...
+                    'Index must contain 0 or 1 element to be a singleton')
+            end
+            obj.singleton_ = tf;
         end
         function v = getValue_(obj)
             v = obj.value_;
@@ -71,6 +93,7 @@ classdef Index
             assert(isequal(class(index1),class(index2)), ...
                 sprintf( 'indexes are of different types: [%s] [%s]',class(index1),class(index2)));
             obj.value_ = obj.unionData(index1,index2);
+            obj.singleton_ = false;
         end
         function obj = vertcat(obj,varargin)
             % concatenation
@@ -79,6 +102,7 @@ classdef Index
                 val = [val;varargin{ii}.value_]; %#ok<AGROW>
             end
             obj.value = val;  % check if properties are respected
+            obj.singleton_ = false;
         end
             
         function bool = isunique(obj)

@@ -3,7 +3,7 @@ classdef TimeFrame < frames.DataFrame
 %   It is a convenient way to perform operations on time series (more intuitive than Matlab's timetable).
 %
 %   Constructor:
-%   df = frames.TimeFrame([data,index,columns,name])
+%   df = frames.TimeFrame([data,index,columns,,Name=name,Series=logical])
 %   If an argument is not specified, it will take a default value, so it
 %   is possible to only define some of the arguments:
 %   df = frames.TimeFrame(data)  
@@ -16,6 +16,9 @@ classdef TimeFrame < frames.DataFrame
 %     t                      - Timetable built on the properties above.
 %     name                   - Name of the frame
 %     description            - Description of the frame
+%     series                 - logical, whether the Frame is treated as a
+%                              series (ie not considering the value of the
+%                              1-dimension index for operations)
 %
 %
 %   Short overwiew of methods available:
@@ -114,7 +117,7 @@ classdef TimeFrame < frames.DataFrame
             else
                 df = fromFile@frames.DataFrame(filePath,unmatched{:});
                 ti = frames.TimeIndex(df.index_,Format=namedArgs.TimeFormat);
-                tf = frames.TimeFrame(df.data,ti,df.columns,df.name);
+                tf = frames.TimeFrame(df.data,ti,df.columns,Name=df.name);
             end
         end
         function tf = fromTable(t,nameValue)

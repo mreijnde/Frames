@@ -116,17 +116,17 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             % simple selection
             sol = df(2,"b");
-            expected = frames.DataFrame(5,2,"b");
+            expected = frames.DataFrame(5,2,"b",Series=true);
             t.verifyEqual(sol,expected)
             
             % index only selection
             sol = df(2);
-            expected = frames.DataFrame([2 5 NaN],2,["a","b","a"]);
+            expected = frames.DataFrame([2 5 NaN],2,["a","b","a"],Series=true);
             t.verifyEqual(sol,expected)
             
             % selection while repeating columns exist
             sol = df(1,["b","a"]);
-            expected = frames.DataFrame([2 1 3],1,["b","a","a"]);
+            expected = frames.DataFrame([2 1 3],1,["b","a","a"],Series=true);
             t.verifyEqual(sol,expected)
             warning('on','frames:Index:notUnique')
         end
@@ -332,19 +332,21 @@ classdef dataframeTest < matlab.unittest.TestCase
         function mathOperationsTest(t)
             mat1 = frames.DataFrame([1 2;3 4]);
             mat2 = frames.DataFrame([10 20;30 40],[],["a","b"]);
-            vecV = frames.DataFrame([6 7]');
-            vecV2 = frames.DataFrame([6 7]',[],"a");
-            vecH = frames.DataFrame([6 7]');
+            vecV = frames.DataFrame([6 7]',Series=true);
+            vecV2 = frames.DataFrame([6 7]',[],"a",Series=true);
+            vecH = frames.DataFrame([6 7]',Series=true);
             mtimesM = mat1' * mat2;
             t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.columns,mat2.columns))
             mtimesV = mat1' * vecV2;
-            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.columns,vecV2.columns))
+            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.columns,vecV2.columns,Series=true))
             times = mat1 .* vecV;
             t.verifyEqual(times,frames.DataFrame([6 12;21 28],mat1.index,mat1.columns))
             plus1 = mat1 + vecH;
             t.verifyEqual(plus1,frames.DataFrame([7 8;10 11],mat1.index,mat1.columns))
             plus2 = vecH + mat1;
             t.verifyEqual(plus2,frames.DataFrame([7 8;10 11],mat1.index,mat1.columns))
+            plusSeries = vecV2 + vecV;
+            t.verifyEqual(plusSeries,frames.DataFrame([12;14],vecV2.index,vecV2.columns,Series=true))
             t.verifyError(@notAligned,'frames:matrixOpHandler:notAligned')
             function notAligned(), mat1*mat2; end %#ok<VUNUS>
             t.verifyError(@notSameColumns,'frames:elementWiseHandler:differentColumns')
@@ -360,7 +362,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             tr = timerange("09-Jun-2021","14-Jun-2021",'closed');
             sel2 = tf(tr);
             sel3 = tf("-inf:14-Jun-2021");
-            expected = frames.TimeFrame(1,738318:738318+3);  % 11 June 2021 to 21 June 2021
+            expected = frames.TimeFrame(1,738318:738318+3,Series=true);  % 11 June 2021 to 21 June 2021
             t.verifyEqual(sel1,expected)
             t.verifyEqual(sel2,expected)
             t.verifyEqual(sel3,expected)
@@ -368,8 +370,8 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function matrix2seriesTest(t)
             tf = t.tfMissing1;
-            t.verifyEqual(tf.sum(),frames.DataFrame([12 13 12],[],tf.columns))
-            t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.getIndex_(),[]))
+            t.verifyEqual(tf.sum(),frames.DataFrame([12 13 12],[],tf.columns,Series=true))
+            t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.getIndex_(),[],Series=true))
         end
         
         function maxminTest(t)

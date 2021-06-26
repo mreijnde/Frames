@@ -3,11 +3,15 @@ classdef DataFrame
 %   It is a convenient way to perform operations on labeled matrices (more intuitive than Matlab's table).
 %
 %   Constructor:
-%   df = frames.DataFrame([data,index,columns,name])
+%   df = frames.DataFrame([data,index,columns,Name=name,Series=logical])
 %   If an argument is not specified, it will take a default value, so it
 %   is possible to only define some of the arguments:
 %   df = frames.DataFrame(data)  
 %   df = frames.DataFrame(data,[],columns)
+%
+%   NameValueArgs possible keys are
+%   Name: (textScalar) the name of the Frame
+%   Series: (logical) whether the Frame is treated like a series (see below)
 %
 %   DATAFRAME properties:
 %     data                   - Data      TxN  (homogeneous data)
@@ -16,6 +20,9 @@ classdef DataFrame
 %     t                      - Table built on the properties above.
 %     name                   - Name of the frame
 %     description            - Description of the frame
+%     series                 - logical, whether the Frame is treated as a
+%                              series (ie not considering the value of the
+%                              1-dimension index for operations)
 %
 %
 %   Short overwiew of methods available:
@@ -80,6 +87,7 @@ classdef DataFrame
         columns  % 1xN vector
         name  % textscalar, name of the frame 
         t  % table, dependent and built on data, index, columns
+        series  % logical, whether the Frame is to be considered as a series
     end
     properties
         description {mustBeText} = ""  % text description of the object
@@ -98,13 +106,14 @@ classdef DataFrame
     end
     
     methods
-        function obj = DataFrame(data,index,columns,name)
-            %DATAFRAME frames.DataFrame([data,index,columns,name])
+        function obj = DataFrame(data,index,columns,NameValueArgs)
+            %DATAFRAME frames.DataFrame([data,index,columns,,Name=name,Series=logical])
             arguments
                 data (:,:) = []
                 index {mustBeDFindex} = []
                 columns {mustBeDFcolumns} = []
-                name {mustBeTextScalar} = ""
+                NameValueArgs.Name {mustBeTextScalar} = ""
+                NameValueArgs.Series {mustBeA(NameValueArgs.Series,'logical')} = false
             end
             if isequal(index,[])
                 index = obj.defaultIndex(size(data,1));
@@ -125,7 +134,8 @@ classdef DataFrame
             obj.data_ = data;
             obj.index = index;
             obj.columns = columns;
-            obj.name_ = name;
+            obj.name_ = NameValueArgs.Name;
+            obj.series = NameValueArgs.Series;
         end
         
         %------------------------------------------------------------------
@@ -171,6 +181,25 @@ classdef DataFrame
             end
             obj.name_ = value;
         end
+        function obj = set.series(obj, bool)
+            if ~bool
+                obj.columns_.singleton_ = bool;
+                obj.index_.singleton_ = bool;
+            else
+                canBeSeries = false;
+                if length(obj.columns_) <= 1
+                    obj.columns_.singleton_ = bool;
+                    canBeSeries = true;
+                end
+                if length(obj.index_) <= 1
+                    obj.index_.singleton_ = bool;
+                    canBeSeries = true;
+                end
+                if ~canBeSeries
+                    error('frames:setSeries','Frame cannot be a series')
+                end
+            end
+        end
         
         function index = get.index(obj)
             index = obj.index_.value;
@@ -183,6 +212,9 @@ classdef DataFrame
         end
         function name = get.name(obj)
             name = obj.name_;
+        end
+        function bool = get.series(obj)
+            bool = obj.index_.singleton_ || obj.columns_.singleton_;
         end
         function t = get.t(obj)
             t = obj.getTable();
@@ -236,38 +268,34 @@ classdef DataFrame
             % df.iloc([5 9], [1 4]) returns the 5th and 9th rows of the 1st and 4th columns
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
+            %
+            % If the resulting frame is a vector, then its property
+            % 'series' become true.
             arguments
                 obj
                 idxPosition {mustBeDFindexSelector}
                 colPosition {mustBeDFcolumns} = ':'
             end
-            obj.data_ = obj.data_(idxPosition,colPosition);
-            obj.index_.value_ = obj.index_.value_(idxPosition);
-            obj.columns_.value_ = obj.columns_.value_(colPosition);
+            obj = obj.iloc_(idxPosition,colPosition);
+            obj = obj.allowSeries();
         end
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
             % df.loc([2 4], ["a" "b"]) returns the rows named 2 and 4 of the columns named "a" and "b"
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
+            %
+            % If the resulting frame is a vector, then its property
+            % 'series' become true.
             arguments
                 obj
                 idxName {mustBeDFindexSelector}
                 colName {mustBeDFcolumns} = ':'
             end
-            idxID = ':'; colID = ':';
-            if ~iscolon(idxName)
-                idxID = obj.index_.positionOf(idxName);
-                obj.index_.value_ = obj.index_.value_(idxID);
-            end
-            if ~iscolon(colName)
-                colID = obj.columns_.positionOf(colName);
-                obj.columns_.value_ = obj.columns_.value_(colID);
-            end
-            obj.data_ = obj.data_(idxID,colID);
+            obj = obj.loc_(idxName,colName);
+            obj = obj.allowSeries();
         end
         
-
         function obj = replace(obj,valToReplace,valNew)
             % REPLACE replace the a value in the data with another one
             if ismissing(valToReplace)
@@ -299,9 +327,9 @@ classdef DataFrame
                 drop = any(ismissing(obj.data_),axis);
             end
             if nameValue.Axis==1
-                df = obj.iloc(~drop,':');
+                df = obj.iloc_(~drop,':');
             else
-                df = obj.iloc(':',~drop);
+                df = obj.iloc_(':',~drop);
             end
         end
         function obj = ffill(obj)
@@ -329,7 +357,7 @@ classdef DataFrame
             % drop the specified index values
             idxToRemove = obj.index_.positionOf(index);
             idxToKeep = setdiff(1:length(obj.index_),idxToRemove);
-            other = obj.iloc(idxToKeep);
+            other = obj.iloc_(idxToKeep,':');
         end
         function other = extendColumns(obj,columns)
             % extend the columns with the new values
@@ -349,7 +377,7 @@ classdef DataFrame
             % drop the specified column values
             colToRemove = obj.columns_.positionOf(columns);
             colToKeep = setdiff(1:length(obj.columns_),colToRemove);
-            other = obj.iloc(':',colToKeep);
+            other = obj.iloc_(':',colToKeep);
         end
         function other = resample(obj,index,nameValue)
             % RESAMPLE resample the frame with the new index and propagates the data if there are missing values.
@@ -405,12 +433,12 @@ classdef DataFrame
                 dataStart=other.data_(posSelector(1),:);
             end
             hasEntry = intervalHasEntry(other.data,posSelector);
-            other = other.ffill().loc(index);
+            other = other.ffill().loc_(index,':');
             other.data_(~hasEntry)=missingData(class(other.data_));
             
             if noFfill, other.data_(1,:) = dataStart; end
             if strcmp(FirstValueFilling{1}, "ffillFromInterval")
-                other = other.iloc(2:length(other.index_));
+                other = other.iloc_(2:length(other.index_),':');
             end
         end
         function other = horzcat(obj,varargin)
@@ -439,7 +467,7 @@ classdef DataFrame
                 if ~sameIndex
                     df = df.extendIndex(idx);
                     if ~isa(obj.index_,'frames.SortedIndex')
-                        df = df.loc(idx.value);
+                        df = df.loc_(idx.value,':');
                     end
                 end
             end
@@ -482,7 +510,7 @@ classdef DataFrame
             function df = getExtendedColsDF(df)
                 % Expand DF, keeping the order of col
                 if ~sameCols
-                    df = df.extendColumns(col).loc(':',col);
+                    df = df.extendColumns(col).loc_(':',col);
                 end
             end
             
@@ -504,10 +532,10 @@ classdef DataFrame
         
         function other = sortBy(obj,columnName)
             % sort frame from a column
-            series = obj.loc(':',columnName);
-            [~,sortedID] = sort(series.data);
+            col = obj.loc_(':',columnName);
+            [~,sortedID] = sort(col.data);
             obj.index_ = frames.UniqueIndex(obj.index_);
-            other = obj.iloc(sortedID);
+            other = obj.iloc_(sortedID,':');
         end
         function obj = sortIndex(obj)
             % sort frame from the index
@@ -875,6 +903,25 @@ classdef DataFrame
     end
     
     methods(Access=protected)
+        
+        function obj = iloc_(obj,idxPosition,colPosition)
+            obj.data_ = obj.data_(idxPosition,colPosition);
+            obj.index_.value_ = obj.index_.value_(idxPosition);
+            obj.columns_.value_ = obj.columns_.value_(colPosition);
+        end
+        function obj = loc_(obj,idxName,colName)
+            idxID = ':'; colID = ':';
+            if ~iscolon(idxName)
+                idxID = obj.index_.positionOf(idxName);
+                obj.index_.value_ = obj.index_.value_(idxID);
+            end
+            if ~iscolon(colName)
+                colID = obj.columns_.positionOf(colName);
+                obj.columns_.value_ = obj.columns_.value_(colID);
+            end
+            obj.data_ = obj.data_(idxID,colID);
+        end
+        
         function tb = getTable(obj)
             idx = indexForTable(obj.index);
             col = columnsForTable(obj.columns);
@@ -942,11 +989,19 @@ classdef DataFrame
         function obj = df2series(obj,data,dim)
             if dim == 1
                 indexValue = obj.defaultIndex(1);
-                obj = frames.DataFrame(data,indexValue,obj.columns,obj.name);
+                obj = frames.DataFrame(data,indexValue,obj.columns,Name=obj.name);
+                obj.index_.singleton_ = true;
             else
                 obj.data_ = data;
                 obj.columns_.value = obj.defaultColumns(1);
+                obj.columns_.singleton_ = true;
             end
+        end
+        
+        function obj = allowSeries(obj)
+            [sizeIndex,sizeColumns] = size(obj.data_);
+            if sizeIndex <= 1, obj.index_.singleton_ = true; end
+            if sizeColumns <= 1, obj.columns_.singleton_ = true; end
         end
         
         function series = maxmin(obj,fun,dim)
@@ -968,7 +1023,7 @@ classdef DataFrame
         
         function other = corrcov(obj,fun,varargin)
             d = fun(obj.data_,varargin{:});
-            other = frames.DataFrame(d,obj.columns,obj.columns,obj.name_);
+            other = frames.DataFrame(d,obj.columns,obj.columns,Name=obj.name_);
         end
     end
  
@@ -1083,10 +1138,10 @@ classdef DataFrame
         end
         
         function other = ctranspose(obj)
-            other = frames.DataFrame(obj.data_',obj.columns,obj.index,obj.name_);
+            other = frames.DataFrame(obj.data_',obj.columns,obj.index,Name=obj.name_);
         end
         function other = transpose(obj)
-            other = frames.DataFrame(obj.data_.',obj.columns,obj.index,obj.name_);
+            other = frames.DataFrame(obj.data_.',obj.columns,obj.index,Name=obj.name_);
         end
         
         function obj = uminus(obj), obj.data_ = uminus(obj.data_); end
@@ -1152,16 +1207,15 @@ end
 end
 
 %--------------------------------------------------------------------------
-% ToDo we allow computation with a series without looking at its Index value (how to make it more robust for the cases we do want to check the Index, i.e. when working with two vector Frames? a SingletonIndex, a property in DF or Index?)
 function [idx_,col_,df] = elementWiseHandler(df1,df2)
 df = df1;
 if isa(df2,'frames.DataFrame')
     if isa(df1,'frames.DataFrame')
-        if size(df1,1)>1 && size(df2,1)>1
+        if ~df1.index_.singleton_ && ~df2.index_.singleton_
             assert(isequal(df1.index_.value_,df2.index_.value_), ...
                 'frames:elementWiseHandler:differentIndex','Frames have different indices!')
         end
-        if size(df1,2)>1 && size(df2,2)>1
+        if ~df1.columns_.singleton_ && ~df2.columns_.singleton_
             assert(isequal(df1.columns_.value_,df2.columns_.value_), ...
                 'frames:elementWiseHandler:differentColumns','Frames have different columns!')
         end
