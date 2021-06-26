@@ -1,4 +1,25 @@
 classdef Rolling
+    % Provide rolling window calculations
+    %
+    % Rolling methods:
+    %   mean    - rolling moving mean
+    %   std     - rolling standard deviation
+    %   var     - rolling variance
+    %   sum     - rolling sum
+    %   median  - rolling median
+    %   max     - rolling max
+    %   min     - rolling min
+    %   cov     - rolling univariate covariance with a series
+    %   corr    - rolling univariate correlation with a series
+    %   betaXY  - rolling univariate beta of/with a series
+    %
+    % Constructor:
+    % Rolling(df,window[,windowNaN])
+    %   window:    (integer, or the string "expanding")
+    %       Window on which to compute the rolling method
+    %   windowNaN: (integer), default ceil(window/3)
+    %       Minimum number of observations at the start required to have a value (otherwise result is NaN).
+    
     properties(SetAccess=protected)
         df
         window
@@ -6,6 +27,7 @@ classdef Rolling
     end
     methods
         function obj = Rolling(df,window,windowNaN)
+            % Rolling(df,window[,windowNaN])
             if nargin<3, windowNaN=ceil(window/3); end
             if ~isa(window,'double')
                 assert(strcmp(window,"expanding"), 'window must be a double or the string "expanding"')
@@ -16,43 +38,49 @@ classdef Rolling
             obj.windowNaN = windowNaN;
         end
         function df = mean(obj)
+            % rolling mean
             df = obj.commonArgsAndNan(@movmean);
         end
         function df = std(obj)
+            % rolling std
             df = obj.commonArgsAndNan(@movstd);
         end
         function df = var(obj)
+            % rolling var
             df = obj.commonArgsAndNan(@movar);
         end
         function df = sum(obj)
+            % rolling sum
             df = obj.commonArgsAndNan(@movsum);
         end
         function df = median(obj)
+            % rolling median
             df = obj.commonArgsAndNan(@movmedian);
         end
         function df = max(obj)
+            % rolling max
             df = obj.commonArgsAndNan(@movmax);
         end
         function df = min(obj)
+            % rolling min
             df = obj.commonArgsAndNan(@movmin);
         end
         
         function df = cov(obj,series)
-            % covariance with a series
+            % rolling univariate covariance with a series
             assert(frames.internal.areAligned(obj.df,series),'frames are not aligned')
             df = obj.df;
             df.data = obj.covarianceM(series.data,obj.df.data);
         end
         function df = corr(obj,series)
-            % correlation with a series
+            % rolling univariate correlation with a series
             assert(frames.internal.areAligned(obj.df,series),'frames are not aligned')
             df = obj.df;
             df.data = obj.correlationM(series.data,obj.df.data);
         end
         function df = betaXY(obj,dfOrSeries)
+            % univariate beta of dfOrSeries being Y (the dependant variable) on obj.df being X (the independent variable)
             assert(frames.internal.areAligned(obj.df,dfOrSeries),'frames are not aligned')
-            % univariate beta of dfOrSeries being Y (the dependant variable)
-            % on obj.df being X (the independent variable)
             if size(obj.df,2) == 1
                 df = dfOrSeries;
             elseif size(dfOrSeries,2) == 1
