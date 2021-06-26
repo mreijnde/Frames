@@ -1,16 +1,36 @@
 classdef Groups < dynamicprops
-    
+ % GROUPS split a list by assigning its elements to predefined groups.
+ % Use: groups = frames.Groups(listToSplit[,groupStructure])
+ % The properties of groups are the fields of the groupStructure.
+ %
+ % Use a Groups in df.split(groups[,desiredGroups]) to split df into
+ % groups, column-wise.
+ %
+ % ----------------
+ % Parameters:
+ %     * listOfElements: (string)
+ %          List of elements we want to split into groups
+ %     * groupStructure: (structure) 
+ %          Structure a the groups. Fields are group names, values are the
+ %          elements belonging to each group: s.groupName = listOfelementsInGroup.
+ %          One can derive a class from Groups to directly specify the
+ %          groupStructure by overriding the method 'defineGroups'. In such
+ %          a case, 'groupStructure' is not required.
+ % See also: frames.internal.Split
     properties(Access=protected)
         protectedStructure_
     end
     methods(Access=protected, Static)
         function s = defineGroups(varargin)
             % group structure can be defined in a subclass
+            % Must return a struct with group names as fields and a list of
+            % the elements in a group as values: : s.groupName = listOfelementsInGroup
             s = varargin{:};
         end
     end
     methods
         function obj=Groups(listOfElements,varargin)
+            % Groups(listOfElements[,groupStructure])
             narginchk(1,2)
             obj.protectedStructure_ = obj.getGroupStructure(varargin{:});
             
@@ -44,6 +64,4 @@ classdef Groups < dynamicprops
             li = listOfElements(belongsTo);
         end
     end
-    
-    
 end

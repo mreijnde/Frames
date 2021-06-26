@@ -611,7 +611,26 @@ classdef DataFrame
         
         function s = split(obj,varargin)
             % SPLIT split the frame into column-based groups to apply a function separately
-            % Use: .split(groups,groupNames).apply(@fun)
+            % Use: .split(groups[,groupNames]).apply(@fun)
+            %
+            % ----------------
+            % Parameters:
+            %     * groups: (cell array,struct,frames.Group) 
+            %          Contain the list of elements in each group. Can be of different types:
+            %          - cell array: cell array of lists of elements in groups
+            %              In this case, groupNames is required.
+            %              e.g. groups={list1,list2}; groupNames=["name1","name2"]
+            %          - struct: structure whose fields are group names and values are
+            %              elements in each group. If groupNames is not specified, 
+            %              the split use all fields of the structure as groupNames.
+            %          - frames.Group: Group whose property names are group names and
+            %              property values are elements in each group. If groupNames
+            %              is not specified, the split use all properties of the 
+            %              Group as groupNames.
+            %     * groupNames: (string array) 
+            %          group names into which we want to split the Frame
+            %
+            % ----------------
             % Examples (see also unitTests):
             %   - simple split with cell
             %       df=frames.DataFrame([1 2 3;2 5 3;5 0 1]', [6 2 1], [4 1 3]);
@@ -626,7 +645,7 @@ classdef DataFrame
             %   - split with a Group
             %       g = frames.Groups([1 4 3],s);
             %       x4 = df.split(g).apply(@(x) x.clip(ceiler.(x.name){:}));
-            % See also: frames.Groups
+            % See also: frames.Groups, frames.internal.Split
             s = frames.internal.Split(obj,varargin{:});
         end
         

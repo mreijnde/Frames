@@ -1,27 +1,55 @@
 classdef Split < dynamicprops
-
+ % SPLIT split a Frame into column-based groups to apply a function separately
+ % Use: split = frames.Split(df,splitter[,namesOfGroups])
+ % The properties of split are the elements in namesOfGroups, or the 
+ % fields of the splitter if namesOfGroups is not provided.
+ %
+ % ----------------
+ % Parameters:
+ %     * df: (Frame)
+ %     * splitter: (cell array,struct,frames.Group) 
+ %          Contain the list of elements in each group. Can be of different
+ %          types:
+ %          - cell array: cell array of lists of elements in groups
+ %              In this case, namesOfGroups is required
+ %              e.g. splitter={list1,list2}; namesOfGroups=["name1","name2"]
+ %          - struct: structure whose fields are group names and values are
+ %              elements in each group. If namesOfGroups is not specified, 
+ %              the split use all fields of the structure as namesOfGroups.
+ %          - frames.Group: Group whose property names are group names and
+ %              property values are elements in each group. If namesOfGroups
+ %              is not specified, the split use all properties of the 
+ %              Group as namesOfGroups.
+ %     * namesOfGroups: (string array) 
+ %          group names into which we want to split the Frame
+ %
+ % SPLIT method:
+ %  apply   - apply a function to each sub-Frame, and returns a single Frame
+ %
+ % See also: frames.Groups
     properties(Access=private)
         nameOfProperties_
     end
     
     methods (Access=?frames.DataFrame)
-        function obj = Split(df,splitter,nameOfProperties)
+        function obj = Split(df,splitter,namesOfGroups)
+            % Split(df,splitter[,namesOfGroups])
             if isa(splitter, 'frames.Groups') || isa(splitter,'struct')
                 if nargin < 3
-                    nameOfProperties = fieldnames(splitter);
+                    namesOfGroups = fieldnames(splitter);
                 else
-                    assert(all(ismember(nameOfProperties,fieldnames(splitter))), ...
+                    assert(all(ismember(namesOfGroups,fieldnames(splitter))), ...
                         'The names of the properties must be found in the splitter');
                 end
                 splitter_ = {};  % turn it into a cell
-                for ii=1:length(nameOfProperties)
-                    splitter_{ii} = splitter.(string(nameOfProperties(ii))); %#ok<AGROW>
+                for ii=1:length(namesOfGroups)
+                    splitter_{ii} = splitter.(string(namesOfGroups(ii))); %#ok<AGROW>
                 end
                 splitter = splitter_;
             end
-            assert(length(nameOfProperties) == length(splitter), ...
+            assert(length(namesOfGroups) == length(splitter), ...
                 'The names of the properties are not of the same length as the splitter')
-            obj.nameOfProperties_ = nameOfProperties;
+            obj.nameOfProperties_ = namesOfGroups;
             for ii = 1:length(splitter)  % groups df into properties
                 cols = splitter{ii};
                 propName = obj.nameOfProperties_{ii};
@@ -41,6 +69,7 @@ classdef Split < dynamicprops
         end
 
         function res = apply(obj,fun,varargin)
+            % APPLY apply a function to each sub-Frame, and returns a single Frame
             props = obj.nameOfProperties_;
             isVectorOutput = true;  % if the output of fun returns a vector
             for ii = 1:length(props)
