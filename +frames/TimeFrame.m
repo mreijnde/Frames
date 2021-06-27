@@ -10,9 +10,9 @@ classdef TimeFrame < frames.DataFrame
 %   df = frames.TimeFrame(data,[],columns)
 %
 %   TIMEFRAME properties:
-%     data                   - Data      TxN  (homogeneous data)
+%     data                   - Data                  TxN  (homogeneous data)
 %     index                  - Sorted Time Index     Tx1
-%     columns                - Columns   1xN
+%     columns                - Columns               1xN
 %     t                      - Timetable built on the properties above.
 %     name                   - Name of the frame
 %     description            - Description of the frame
