@@ -3,7 +3,7 @@ classdef DataFrame
 %   It is a convenient way to perform operations on labeled matrices (more intuitive than Matlab's table).
 %
 %   Constructor:
-%   df = frames.DataFrame([data,index,columns,Name=name,Series=logical])
+%   df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
 %   If an argument is not specified, it will take a default value, so it
 %   is possible to only define some of the arguments:
 %   df = frames.DataFrame(data)  
@@ -11,7 +11,8 @@ classdef DataFrame
 %
 %   NameValueArgs possible keys are
 %   Name: (textScalar) the name of the Frame
-%   Series: (logical) whether the Frame is treated like a series (see below)
+%   RowSeries: (logical) whether the Frame is treated like a row series (see below)
+%   ColSeries: (logical) whether the Frame is treated like a column series (see below)
 %
 %   DATAFRAME properties:
 %     data                   - Data      TxN  (homogeneous data)
@@ -20,9 +21,12 @@ classdef DataFrame
 %     t                      - Table built on the properties above.
 %     name                   - Name of the frame
 %     description            - Description of the frame
-%     series                 - logical, whether the Frame is treated as a
-%                              series (ie not considering the value of the
-%                              1-dimension index for operations)
+%     rowseries              - logical, whether the Frame is treated as a
+%                              row series (ie not considering the value of
+%                              the 1-dimension index for operations)
+%     colseries              - logical, whether the Frame is treated as a
+%                              column series (ie not considering the value of
+%                              the 1-dimension column for operations)
 %
 %
 %   Short overwiew of methods available:
@@ -87,7 +91,8 @@ classdef DataFrame
         columns  % 1xN vector
         name  % textscalar, name of the frame 
         t  % table, dependent and built on data, index, columns
-        series  % logical, whether the Frame is to be considered as a series
+        rowseries  % logical, whether the Frame is to be considered as a row series
+        colseries  % logical, whether the Frame is to be considered as a column series
     end
     properties
         description {mustBeText} = ""  % text description of the object
@@ -107,13 +112,14 @@ classdef DataFrame
     
     methods
         function obj = DataFrame(data,index,columns,NameValueArgs)
-            %DATAFRAME frames.DataFrame([data,index,columns,,Name=name,Series=logical])
+            %DATAFRAME frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
             arguments
                 data (:,:) = []
                 index {mustBeDFindex} = []
                 columns {mustBeDFcolumns} = []
                 NameValueArgs.Name {mustBeTextScalar} = ""
-                NameValueArgs.Series {mustBeA(NameValueArgs.Series,'logical')} = false
+                NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
+                NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
             end
             if isequal(index,[])
                 index = obj.defaultIndex(size(data,1));
@@ -135,7 +141,8 @@ classdef DataFrame
             obj.index = index;
             obj.columns = columns;
             obj.name_ = NameValueArgs.Name;
-            obj.series = NameValueArgs.Series;
+            obj.rowseries = NameValueArgs.RowSeries;
+            obj.colseries = NameValueArgs.ColSeries;
         end
         
         %------------------------------------------------------------------
@@ -181,24 +188,11 @@ classdef DataFrame
             end
             obj.name_ = value;
         end
-        function obj = set.series(obj, bool)
-            if ~bool
-                obj.columns_.singleton_ = bool;
-                obj.index_.singleton_ = bool;
-            else
-                canBeSeries = false;
-                if length(obj.columns_) <= 1
-                    obj.columns_.singleton_ = bool;
-                    canBeSeries = true;
-                end
-                if length(obj.index_) <= 1
-                    obj.index_.singleton_ = bool;
-                    canBeSeries = true;
-                end
-                if ~canBeSeries
-                    error('frames:setSeries','Frame cannot be a series')
-                end
-            end
+        function obj = set.rowseries(obj, bool)
+            obj.index_.singleton = bool;
+        end
+        function obj = set.colseries(obj, bool)
+            obj.columns_.singleton = bool;
         end
         
         function index = get.index(obj)
@@ -213,8 +207,11 @@ classdef DataFrame
         function name = get.name(obj)
             name = obj.name_;
         end
-        function bool = get.series(obj)
-            bool = obj.index_.singleton_ || obj.columns_.singleton_;
+        function bool = get.rowseries(obj)
+            bool = obj.index_.singleton_;
+        end
+	function bool = get.colseries(obj)
+            bool = obj.columns_.singleton_;
         end
         function t = get.t(obj)
             t = obj.getTable();
