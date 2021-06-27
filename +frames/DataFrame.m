@@ -269,15 +269,15 @@ classdef DataFrame
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             %
-            % If the resulting frame is a vector, then its property
-            % 'series' become true.
+            % If the user select one specific row or column, then its property
+            % 'series' becomes true.
             arguments
                 obj
                 idxPosition {mustBeDFindexSelector}
                 colPosition {mustBeDFcolumns} = ':'
             end
             obj = obj.iloc_(idxPosition,colPosition);
-            obj = obj.allowSeries();
+            obj = obj.allowSeries(idxPosition,colPosition);
         end
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
@@ -285,15 +285,15 @@ classdef DataFrame
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             %
-            % If the resulting frame is a vector, then its property
-            % 'series' become true.
+            % If the user select one specific row or column, then its property
+            % 'series' becomes true.
             arguments
                 obj
                 idxName {mustBeDFindexSelector}
                 colName {mustBeDFcolumns} = ':'
             end
             obj = obj.loc_(idxName,colName);
-            obj = obj.allowSeries();
+            obj = obj.allowSeries(idxName,colName);
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -998,10 +998,9 @@ classdef DataFrame
             end
         end
         
-        function obj = allowSeries(obj)
-            [sizeIndex,sizeColumns] = size(obj.data_);
-            if sizeIndex <= 1, obj.index_.singleton_ = true; end
-            if sizeColumns <= 1, obj.columns_.singleton_ = true; end
+        function obj = allowSeries(obj,idx,col)
+            if length(obj.index_)<=1 && ~iscolon(idx), obj.index_.singleton_ = true; end
+            if length(obj.columns_)<=1 && ~iscolon(col), obj.columns_.singleton_ = true; end
         end
         
         function series = maxmin(obj,fun,dim)
