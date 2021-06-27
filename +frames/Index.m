@@ -7,14 +7,19 @@ classdef Index
 % UniqueIndex only allows unique entries.
 % SortedIndex only allows unique entries that are sorted.
 % TimeIndex only allows unique chronological time entries.
+%
+% If the length is lower than or equal to 1, the Index can be a
+% 'singleton', ie representing the index of a series, which will allow
+% operations between Frames with different indices (see DataFrame.series)
+%
 % See also: UNIQUEINDEX, SORTEDINDEX, TIMEINDEX
     
     properties
-        name {mustBeTextScalar} = ""
+        name {mustBeTextScalar} = ""  % (textScalar) name of the Index
     end
     properties(Dependent)
-        value
-        singleton
+        value  % Tx1 array
+        singleton  % (logical, default false) set it to true if the Index represents a series, cf DataFrame.series
     end
     properties(Access={?frames.UniqueIndex,?frames.DataFrame})
         value_

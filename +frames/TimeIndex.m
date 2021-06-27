@@ -1,8 +1,9 @@
 classdef TimeIndex < frames.SortedIndex
-% TIMEINDEX is the object that supports index and columns in a DataFrame.
+% TIMEINDEX is the object that supports index and columns in a DataFrame,
+% and in particular is the only possible Index for TimeFrame.
 % It contains operations of selection and merging, and constrains.
 %
-% A TIMEINDEX has unique chronnological values.
+% A TIMEINDEX has unique chronological values.
 % Index allows duplicates, but throw a warning.
 % UniqueIndex only allows unique entries.
 % SortedIndex only allows unique entries that are sorted.
