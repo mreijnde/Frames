@@ -927,6 +927,9 @@ classdef DataFrame
             end
             if ~iscolon(colName)
                 colID = obj.columns_.positionOf(colName);
+%                 if length( colID ) ~= length( colName )
+%                     error( 'frames:loc:duplicate', 'You are trying to select a duplicate column.' )
+%                 end
                 obj.columns_.value_ = obj.columns_.value_(colID);
             end
             obj.data_ = obj.data_(idxID,colID);
