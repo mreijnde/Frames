@@ -162,7 +162,7 @@ classdef DataFrame
             end
             obj.index_ = value;
         end
-        function obj = set.columns(obj, value)
+        function obj = set.columns(obj,value)
             arguments
                 obj, value {mustBeDFcolumns}
             end
@@ -177,22 +177,32 @@ classdef DataFrame
             end
             obj.columns_ = value;
         end
-        function obj = set.data(obj, value)
+        function obj = set.data(obj,value)
             assert(all(size(value)==size(obj.data_)), 'frames:dataValidation:wrongSize', ...
                 'data is not of the correct size')
             obj.data_ = value;
         end
-        function obj = set.name(obj, value)
+        function obj = set.name(obj,value)
             arguments
                 obj, value {mustBeTextScalar}
             end
             obj.name_ = value;
         end
-        function obj = set.rowseries(obj, bool)
+        function obj = set.rowseries(obj,bool)
             obj.index_.singleton = bool;
         end
-        function obj = set.colseries(obj, bool)
+        function obj = set.colseries(obj,bool)
             obj.columns_.singleton = bool;
+        end
+        function obj = asColSeries(obj,bool)
+            % Sets .colseries to true if the Frame is a column series
+            if nargin<2, bool=true; end
+            obj.columns_.singleton = bool;
+        end
+        function obj = asRowSeries(obj,bool)
+            % Sets .rowseries to true if the Frame is a row series
+            if nargin<2, bool=true; end
+            obj.index_.singleton = bool;
         end
         
         function index = get.index(obj)
@@ -210,7 +220,7 @@ classdef DataFrame
         function bool = get.rowseries(obj)
             bool = obj.index_.singleton_;
         end
-	function bool = get.colseries(obj)
+        function bool = get.colseries(obj)
             bool = obj.columns_.singleton_;
         end
         function t = get.t(obj)
@@ -274,7 +284,8 @@ classdef DataFrame
                 colPosition {mustBeDFcolumns} = ':'
             end
             obj = obj.iloc_(idxPosition,colPosition);
-            obj = obj.allowSeries(idxPosition,colPosition);
+            if length(obj.index_)<=1 && ~iscolon(idxPosition), obj.index_.singleton_ = true; end
+            if length(obj.columns_)<=1 && ~iscolon(colPosition), obj.columns_.singleton_ = true; end
         end
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
@@ -290,7 +301,8 @@ classdef DataFrame
                 colName {mustBeDFcolumns} = ':'
             end
             obj = obj.loc_(idxName,colName);
-            obj = obj.allowSeries(idxName,colName);
+            if length(obj.index_)<=1 && isa(idxName,class(obj.index)) && isequal(obj.index,idxName), obj.index_.singleton_ = true; end
+            if length(obj.columns_)<=1 && isa(colName,class(obj.columns)) && isequal(obj.columns,colName), obj.columns_.singleton_ = true; end
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -730,11 +742,12 @@ classdef DataFrame
         % cumulative product, takes care of missing values
         
         function bool = equals(df1,df2,tol)
-            % .equals(df1,df2,tolerance) returns true if the index. columns
+            % .equals(df1,df2,tolerance) returns true if the index_ and columns_
             % are the same, and if the data are equal in the tolerance range
             if nargin<3, tol=eps; end
             try
-                assert(isequal(df1.index,df2.index)&&isequal(df1.columns,df2.columns))
+                assert(isequal(df1.index_,df2.index_)&&isequal(df1.columns_,df2.columns_))
+                assert(isequal(df1.name_,df2.name_)&&isequal(df1.description,df2.description))
                 diff = df1-df2;
                 iseq = diff.abs().data <= tol;
                 bool = all(iseq(:));
@@ -980,7 +993,12 @@ classdef DataFrame
             assert(ismember(dim,[1,2]),'dimension value must be in [1,2]')
             res = fun(obj.data_,varargin{:},'omitnan');
             res(all(isnan(obj.data_),dim)) = NaN;  % puts NaN instead of zero when all entries are NaNs
-            series = obj.df2series(res,dim);
+            if (dim==1 && obj.columns_.singleton_) || (dim==2 && obj.index_.singleton_)
+                % returns a scalar if the operation is done on a series
+                series = res;
+            else
+                series = obj.df2series(res,dim);
+            end
         end
         
         function obj = df2series(obj,data,dim)
@@ -993,11 +1011,6 @@ classdef DataFrame
                 obj.columns_.value = obj.defaultColumns(1);
                 obj.columns_.singleton_ = true;
             end
-        end
-        
-        function obj = allowSeries(obj,idx,col)
-            if length(obj.index_)<=1 && ~iscolon(idx), obj.index_.singleton_ = true; end
-            if length(obj.columns_)<=1 && ~iscolon(col), obj.columns_.singleton_ = true; end
         end
         
         function series = maxmin(obj,fun,dim)

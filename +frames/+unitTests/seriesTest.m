@@ -48,5 +48,15 @@ classdef seriesTest < matlab.unittest.TestCase
             idx3.singleton = true;
             t.verifyTrue(idx3.singleton)
         end
+        function assignTest(t)
+            t.verifyError(@frameFailProp,'frames:Index:setSingleton')
+            function frameFailProp(), t.df.colseries = true; end
+            t.verifyError(@frameFailFun,'frames:Index:setSingleton')
+            function frameFailFun(), t.df.asColSeries(); end
+            t.verifyEqual(t.df.asColSeries(false).colseries,false)
+            t.verifyEqual(t.colseries.asColSeries(false).colseries,false)
+            t.noSeries = frames.DataFrame([1;3]);
+            t.verifyEqual(t.noSeries.asColSeries(true).colseries,true)
+        end
     end
 end

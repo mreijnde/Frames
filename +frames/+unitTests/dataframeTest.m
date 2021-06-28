@@ -372,6 +372,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             tf = t.tfMissing1;
             t.verifyEqual(tf.sum(),frames.DataFrame([12 13 12],[],tf.columns,RowSeries=true))
             t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.getIndex_(),[],ColSeries=true))
+            t.verifyEqual(tf.sum().sum(2),37)
         end
         
         function maxminTest(t)
