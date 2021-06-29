@@ -1,5 +1,5 @@
 function mustBeDFindex(x)
-% ToDo must also be a UniqueIndex
+% ToDo unique is expensive
 if ~isa(x, 'frames.UniqueIndex')
     if isa(x,'frames.Index') || ...
             (~isempty(x) && ~isTextScalar(x) && ~(isvector(x) && isunique(x) && ~any(ismissing(x))))

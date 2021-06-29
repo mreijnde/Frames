@@ -30,8 +30,8 @@ classdef seriesTest < matlab.unittest.TestCase
             t.verifyEqual(plusU.data,[2 3;4 5])
         end
         function locTest(t)
-            t.verifyTrue(t.df(1,:).rowseries)
-            t.verifyTrue(t.df{:,2}.colseries)
+            t.verifyFalse(t.df(1,:).rowseries)
+            t.verifyFalse(t.df{:,2}.colseries)
             t.verifyFalse(t.df{:,:}.rowseries)
             t.verifyFalse(t.df{:,:}.colseries)
         end

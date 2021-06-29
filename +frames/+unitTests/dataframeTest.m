@@ -116,17 +116,17 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             % simple selection
             sol = df(2,"b");
-            expected = frames.DataFrame(5,2,"b",RowSeries=true,ColSeries=true);
+            expected = frames.DataFrame(5,2,"b");
             t.verifyEqual(sol,expected)
             
             % index only selection
             sol = df(2);
-            expected = frames.DataFrame([2 5 NaN],2,["a","b","a"],RowSeries=true);
+            expected = frames.DataFrame([2 5 NaN],2,["a","b","a"]);
             t.verifyEqual(sol,expected)
             
             % selection while repeating columns exist
             sol = df(1,["b","a"]);
-            expected = frames.DataFrame([2 1 3],1,["b","a","a"],RowSeries=true);
+            expected = frames.DataFrame([2 1 3],1,["b","a","a"]);
             t.verifyEqual(sol,expected)
             warning('on','frames:Index:notUnique')
         end
@@ -351,6 +351,16 @@ classdef dataframeTest < matlab.unittest.TestCase
             function notAligned(), mat1*mat2; end %#ok<VUNUS>
             t.verifyError(@notSameColumns,'frames:elementWiseHandler:differentColumns')
             function notSameColumns(), mat1-mat2; end %#ok<VUNUS>
+            
+            t.verifyError(@seriesError,'frames:elementWiseHandler:differentIndex')
+            function seriesError(), mat1.*mat1(1); end %#ok<VUNUS>
+            loc = mat1 .* mat1(1).asRowSeries();
+            t.verifyEqual(loc,frames.DataFrame([1 4;3 8],mat1.index,mat1.columns))
+            summing = mat1 .* mat1.sum();
+            t.verifyEqual(summing,frames.DataFrame([4 12;12 24],mat1.index,mat1.columns))
+            iloc = -mat1 - mat1{:,1}.asColSeries();
+            t.verifyEqual(iloc,frames.DataFrame([-2 -3;-6 -7],mat1.index,mat1.columns))
+
         end
         
         function equalTest(t)

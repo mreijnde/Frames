@@ -275,34 +275,24 @@ classdef DataFrame
             % df.iloc([5 9], [1 4]) returns the 5th and 9th rows of the 1st and 4th columns
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
-            %
-            % If the user select one specific row or column, then its property
-            % 'series' becomes true.
             arguments
                 obj
                 idxPosition {mustBeDFindexSelector}
                 colPosition {mustBeDFcolumns} = ':'
             end
             obj = obj.iloc_(idxPosition,colPosition);
-            if length(obj.index_)<=1 && ~iscolon(idxPosition), obj.index_.singleton_ = true; end
-            if length(obj.columns_)<=1 && ~iscolon(colPosition), obj.columns_.singleton_ = true; end
         end
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
             % df.loc([2 4], ["a" "b"]) returns the rows named 2 and 4 of the columns named "a" and "b"
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
-            %
-            % If the user select one specific row or column, then its property
-            % 'series' becomes true.
             arguments
                 obj
                 idxName {mustBeDFindexSelector}
                 colName {mustBeDFcolumns} = ':'
             end
             obj = obj.loc_(idxName,colName);
-            if length(obj.index_)<=1 && isa(idxName,class(obj.index)) && isequal(obj.index,idxName), obj.index_.singleton_ = true; end
-            if length(obj.columns_)<=1 && isa(colName,class(obj.columns)) && isequal(obj.columns,colName), obj.columns_.singleton_ = true; end
         end
         
         function obj = replace(obj,valToReplace,valNew)
