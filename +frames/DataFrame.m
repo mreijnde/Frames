@@ -275,24 +275,24 @@ classdef DataFrame
             % df.iloc([5 9], [1 4]) returns the 5th and 9th rows of the 1st and 4th columns
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
-            arguments
+            arguments % ToDo replace by if nargin col=':'
                 obj
                 idxPosition {mustBeDFindexSelector}
                 colPosition {mustBeDFcolumns} = ':'
             end
-            obj = obj.iloc_(idxPosition,colPosition);
+            obj = obj.iloc_(idxPosition,colPosition,false);
         end
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
             % df.loc([2 4], ["a" "b"]) returns the rows named 2 and 4 of the columns named "a" and "b"
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
-            arguments
+            arguments  % ToDo replace by if nargin col=':'
                 obj
                 idxName {mustBeDFindexSelector}
                 colName {mustBeDFcolumns} = ':'
             end
-            obj = obj.loc_(idxName,colName);
+            obj = obj.loc_(idxName,colName,false);
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -904,23 +904,38 @@ classdef DataFrame
     
     methods(Access=protected)
         
-        function obj = iloc_(obj,idxPosition,colPosition)
+        function obj = iloc_(obj,idxPosition,colPosition,internalCall)
+            if nargin < 4, internalCall=true; end
             obj.data_ = obj.data_(idxPosition,colPosition);
-            obj.index_.value_ = obj.index_.value_(idxPosition);
-            obj.columns_.value_ = obj.columns_.value_(colPosition);
+            if internalCall
+                obj.index_.value_ = obj.index_.value_(idxPosition);
+                obj.columns_.value_ = obj.columns_.value_(colPosition);
+            else
+                obj.index_.value = obj.index_.value_(idxPosition);
+                obj.columns_.value = obj.columns_.value_(colPosition);
+            end
         end
-        function obj = loc_(obj,idxName,colName)
+        function obj = loc_(obj,idxName,colName,internalCall)
+            if nargin < 4, internalCall=true; end
             idxID = ':'; colID = ':';
             if ~iscolon(idxName)
                 idxID = obj.index_.positionOf(idxName);
-                obj.index_.value_ = obj.index_.value_(idxID);
+                if internalCall
+                    obj.index_.value_ = obj.index_.value_(idxID);
+                else
+                    obj.index_.value = obj.index_.value_(idxID);
+                end
             end
             if ~iscolon(colName)
                 colID = obj.columns_.positionOf(colName);
 %                 if length( colID ) ~= length( colName )
 %                     error( 'frames:loc:duplicate', 'You are trying to select a duplicate column.' )
 %                 end
-                obj.columns_.value_ = obj.columns_.value_(colID);
+                if internalCall
+                    obj.columns_.value_ = obj.columns_.value_(colID);
+                else
+                    obj.columns_.value = obj.columns_.value_(colID);
+                end
             end
             obj.data_ = obj.data_(idxID,colID);
         end

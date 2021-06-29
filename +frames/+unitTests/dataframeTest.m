@@ -104,6 +104,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             df([2 1],[3 1 2]) = [1 2 3; 4 5 6];
             expected = frames.DataFrame([5 6 4; 2 3 1],[1 2],[1 2 3]);
             t.verifyEqual(df,expected)
+            
         end
         
         function subsrefTest(t)
@@ -149,8 +150,13 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@wrongSize,'frames:indexValidation:wrongSize')
             function wrongSize(), df.index=3; end
             
+            t.verifyError(@idxNotSorted2,'frames:SortedIndex:valueCheckFail')
+            function idxNotSorted2(), df.index(1)=33; end
+            
             df.index = [3 6];
             t.verifyEqual(df.index,[3 6]')   
+            
+            
         end
         
         function columnsSetterTest(t)
