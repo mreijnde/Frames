@@ -41,7 +41,7 @@ doc frames.TimeFrame
 df = frames.DataFrame([1 2;3 4],[1 2],["col1","col2"])
 %%
 % or with a TimeFrame
-tf = frames.TimeFrame([1 2;3 4],[737970,737971],["ts1","ts2"])
+tf = frames.TimeFrame([1 2;3 4],[738336,738337],["ts1","ts2"])
 %%
 % To view the properties of the object, type
 details(df)
@@ -154,11 +154,11 @@ df .* series
 % The concatenation can be horizontal or vertical. The operation will
 % align the Frames by expanding (unifying) their index or columns if they 
 % are not equal, inserting missing values in the expansion.
-tf1 = frames.TimeFrame(1,frames.TimeIndex(["25.06.2021","27.06.2021","28.06.2021"]),["ts1","ts2"]);
-tf2 = frames.TimeFrame(2,frames.TimeIndex(["26.06.2021","27.06.2021","30.06.2021"]),"ts3");
+tf1 = frames.TimeFrame(1,frames.TimeIndex(["25-Jun-2021","27-Jun-2021","28-Jun-2021"]),["ts1","ts2"]);
+tf2 = frames.TimeFrame(2,frames.TimeIndex(["26-Jun-2021","27-Jun-2021","30-Jun-2021"]),"ts3");
 [tf1, tf2]
 %%
-tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"]),["ts2","ts3"]);
+tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"],Format="dd.MM.yyyy"),["ts2","ts3"]);
 [tf1; tf3]
 %% Particular use of Index
 % The type of _index_ can be specified, as one may have noticed in the
@@ -174,6 +174,8 @@ tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"]),["ts2","t
 %
 % The distinction between the different Index impacts the operations of
 % selection, modification, and alignment/concatenation.
+
+% Selection
 df.getIndex_()  % gets the underlying Index object
 df([2 1])
 %%
@@ -184,10 +186,79 @@ try
 catch me
     disp(me.message)
 end
-%%
-% TimeIndex can read several kinds of arguments: datenum, datetime, and
-% strings/cell together with a Format
-frames.TimeIndex(737971)
-frames.TimeIndex(datetime(737970,'ConvertFrom','datenum'))
-frames.TimeIndex("28-Jun-2020",Format="dd-MMM-yyyy")
 
+% Alignment
+df1 = frames.DataFrame([1 3]',[1 3],1);
+df2 = frames.DataFrame([2 3]',[2 3],2);
+unsortedConcatenation = [df1,df2]
+df1 = frames.DataFrame([1 3]',frames.SortedIndex([1 3]),1);
+df2 = frames.DataFrame([2 3]',frames.SortedIndex([2 3]),2);
+sortedConcatenation = [df1,df2]
+%%
+% *TimeIndex* can read several kinds of arguments: datenum, datetime, and
+% strings/cell together with a Format
+frames.TimeIndex(738336)
+frames.TimeIndex(datetime(738336,'ConvertFrom','datenum',Format='dd-MMM-yyyy'));
+frames.TimeIndex("29-Jun-2021",Format="dd-MMM-yyyy");
+%%
+% When used in a Frame (used by default in a TimeFrame), one can select a
+% sub-Frame using a _timerange_
+tf = frames.TimeFrame((738331:738336)',738331:738336)  % turns 738331:738336 into a TimeIndex
+tf(timerange(-inf,datetime(738333,'ConvertFrom','datenum'),'closed'));
+% This can also be easily written using a string as follows
+% tf("dateStart:dateEnd:dateFormat")
+tf("-inf:26*06*2021:dd*MM*yyyy")
+%% Methods Chaining
+% Several methods are available. Again, please refer to the documentation
+% for the full list
+doc frames.DataFrame
+doc frames.TimeFrame
+%%
+% Methods can be chained to apply them one after the other.
+
+% Example: build random data and apply functions to the TimeFrame.
+s = rng(2021);
+nObs = 1000;
+nVar = 3;
+[randomRotationMatrix,~] = qr(randn(nVar));
+randomEigenValues = rand(1,nVar);
+covariance = randomRotationMatrix * diag(randomEigenValues) * randomRotationMatrix';
+correlation = diag(diag(covariance).^-0.5) * covariance * diag(diag(covariance).^-0.5);
+upper = chol(correlation);
+randomData = randn(nObs,nVar)./100 + 1./3000;
+correlatedData = randomData*upper;
+tf = frames.TimeFrame(correlatedData,738336-nObs+1:738336,1:nVar);
+%%
+tf.cumsum().plot()  % applies a cumulative sum and then plot the result
+tf.corr().heatmap()
+%% Rolling and Ewm
+% Computation on a rolling basis are available with the _.rolling()_ and the
+% _.ewm()_ methods. _.rolling()_ carries computations on a rolling window
+% basis. _.ewm()_ carries computations by weighting observations with
+% exponentially decaying weights.
+%
+%  Use:
+%   * .rolling(window[,windowNaN]).<method>
+%   * .ewm(<DecayType>=value).<method>
+%
+% Please refer to the documentation for details on arguments and methods.
+doc frames.DataFrame.rolling
+% or 
+doc frames.internal.Rolling
+%%
+doc frames.DataFrame.ewm
+% or
+doc frames.internal.Ewm
+%%
+% Below, we give a few example on how these methods can be used, using our
+% previous TimeFrame.
+price = tf.compoundChange('log');  % assume tf contains log returns and compound them
+rollingMean = price.rolling(30).mean();  % 30-day moving average
+exponentialMean = price.ewm(Span=30).mean();  % 30-day exponentially moving average
+priceSmoothers = [price{:,1}, rollingMean{:,1}, exponentialMean{:,1}];  % group the first series
+priceSmoothers.columns = ["original", "rolling", "smooth"];  % assign new column names
+priceSmoothers.name = "smoothers";  % assign the name (it appears as the plot title)
+priceSmoothers.plot(Log=true)
+%%
+tf.ewm(Halflife=10).std().plot()  % exponentially weighted moving standard deviation
+%% Split Apply
