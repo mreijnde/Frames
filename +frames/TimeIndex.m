@@ -33,7 +33,7 @@ classdef TimeIndex < frames.SortedIndex
             obj.format = format;
         end
         
-        function pos = positionOf(obj,selector)
+        function pos = positionOf(obj,selector,varargin)
             % find position of 'selector' in the Index
             % On can use a timerange to specify which values to select
             % .positionOf(timerange)
@@ -48,17 +48,15 @@ classdef TimeIndex < frames.SortedIndex
                 pos = ids(whichRows);
                 return
             end
-            pos = positionOf@frames.SortedIndex(obj,selector);
+            pos = positionOf@frames.SortedIndex(obj,selector,varargin{:});
         end
         
         
     end
     methods(Access = protected)
         function value = valueChecker(obj,value)
-            if ~isunique(value) || ~issorted(value)
-                error('index is not unique and sorted')
-            end
-            value = obj.getValue_from(value);
+            value_ = obj.getValue_from(value);
+            valueChecker@frames.SortedIndex(obj,value_);
         end
         
         function value = getValue(obj)

@@ -43,7 +43,8 @@ classdef indexTest < matlab.unittest.TestCase
             
             t.verifyEqual(index.positionIn([40,50,30,20,10]),[3 5 4 3]')
             t.verifyEqual(uniqueindex.positionIn([40,50,30,20,10]),[3 5 4]')
-            t.verifyEqual(sortedindex.positionIn([40,50,30,20,10]),[false false true true true]')
+            t.verifyEqual(sortedindex.positionIn([10,20,30,40,50]),[true true true false false]')
+            t.verifyEqual(sortedindex.positionIn([10,20,30,40,50]),[true true true false false]')
             warning('on','frames:Index:notUnique')
         end
         

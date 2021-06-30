@@ -8,8 +8,8 @@ classdef SortedIndex < frames.UniqueIndex
 % TimeIndex only allows unique chronological time entries.
 % See also: UNIQUEINDEX, INDEX, TIMEINDEX
     methods
-        function pos = positionIn(obj,target)
-            target = obj.getValue_from(target);
+        function pos = positionIn(obj,target,varargin)
+            target = obj.getValue_andCheck(target,varargin{:});
             assertFoundIn(obj.value_,target)
             pos = ismember(target,obj.value_);
         end
@@ -18,10 +18,12 @@ classdef SortedIndex < frames.UniqueIndex
         end
     end
     methods(Access=protected)
-        function value = valueChecker(~,value)
-            if ~isunique(value) || ~issorted(value)
-                error('frames:SortedIndex:valueCheckFail','Index is not unique and sorted.')
+        function valueChecker(obj,value)
+            if ~issorted(value)
+                error('frames:SortedIndex:valueCheckFail','Index is not sorted.')
             end
+            valueChecker@frames.UniqueIndex(obj,value);
+            
         end
         function u = unionData(~,v1,v2)
             u = union(v1,v2,'sorted');  % sorts by default

@@ -119,7 +119,7 @@ classdef TimeFrame < frames.DataFrame
                 tf = frames.TimeFrame.fromTable(tb);
             else
                 df = fromFile@frames.DataFrame(filePath,unmatched{:});
-                ti = frames.TimeIndex(df.index_,Format=namedArgs.TimeFormat);
+                ti = frames.TimeIndex(df.index_.value_,Format=namedArgs.TimeFormat);
                 tf = frames.TimeFrame(df.data,ti,df.columns,Name=df.name);
             end
         end
@@ -150,7 +150,7 @@ classdef TimeFrame < frames.DataFrame
         function tb = getTable(obj)
             col = columnsForTable(obj.columns);
             tb = array2timetable(obj.data,RowTimes=obj.index,VariableNames=col);
-            if ~isempty(obj.index_.name)
+            if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.index_.name);
             end
         end

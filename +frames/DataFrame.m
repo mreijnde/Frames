@@ -275,24 +275,16 @@ classdef DataFrame
             % df.iloc([5 9], [1 4]) returns the 5th and 9th rows of the 1st and 4th columns
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
-            arguments % ToDo replace by if nargin col=':'
-                obj
-                idxPosition {mustBeDFindexSelector}
-                colPosition {mustBeDFcolumns} = ':'
-            end
-            obj = obj.iloc_(idxPosition,colPosition,false);
+            if nargin<3, colPosition=':'; end
+            obj = obj.iloc_(idxPosition,colPosition,true);
         end
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
             % df.loc([2 4], ["a" "b"]) returns the rows named 2 and 4 of the columns named "a" and "b"
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
-            arguments  % ToDo replace by if nargin col=':'
-                obj
-                idxName {mustBeDFindexSelector}
-                colName {mustBeDFcolumns} = ':'
-            end
-            obj = obj.loc_(idxName,colName,false);
+            if nargin<3, colName=':'; end
+            obj = obj.loc_(idxName,colName,true);
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -607,7 +599,7 @@ classdef DataFrame
             end
             
             useIndex = obj.index_.issorted() && ...
-                (isnumeric(obj.index) || isdatetime(ob.index));  % any type that can be shown on the x axis
+                (isnumeric(obj.index) || isdatetime(obj.index));  % any type that can be shown on the x axis
             figure()
             if useIndex
                 args = {obj.index,obj.data};
@@ -627,7 +619,7 @@ classdef DataFrame
                 legend(cols,Location='Best');
             end
             if params.WholeIndex
-                xlim(obj.index(1),obj.index(end))
+                xlim([obj.index(1),obj.index(end)])
             end
             if nargout == 1, varargout{1} = p; end
         end
@@ -758,20 +750,20 @@ classdef DataFrame
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
         
         function other = sum(obj,varargin), other=obj.matrix2series(@sum,varargin{:}); end
-        % SUM sum through the desired dimension
+        % SUM sum through the desired dimension, returns a series
         function other = mean(obj,varargin), other=obj.matrix2series(@mean,varargin{:}); end
-        % MEAN mean through the desired dimension
+        % MEAN mean through the desired dimension, returns a series
         function other = median(obj,varargin), other=obj.matrix2series(@median,varargin{:}); end
-        % MEDIAN median through the desired dimension
+        % MEDIAN median through the desired dimension, returns a series
         function other = std(obj,varargin), other=obj.matrix2series(@std,[],varargin{:}); end
-        % STD standard deviation through the desired dimension
+        % STD standard deviation through the desired dimension, returns a series
         function other = var(obj,varargin), other=obj.matrix2series(@var,[],varargin{:}); end
-        % VAR variance through the desired dimension
+        % VAR variance through the desired dimension, returns a series
         
         function other = max(obj,varargin), other=obj.maxmin(@max,varargin{:}); end
-        % MAX maximum through the desired dimension
+        % MAX maximum through the desired dimension, returns a series
         function other = min(obj,varargin), other=obj.maxmin(@min,varargin{:}); end
-        % MIN minimum through the desired dimension
+        % MIN minimum through the desired dimension, returns a series
         function other = maxOf(df1,df2), other=operator(@max,@elementWiseHandler,df1,df2); end
         % maximum of the elements of the two input arguments
         % maxOf(df1,df2), where df2 can be a frame or a matrix
@@ -824,7 +816,7 @@ classdef DataFrame
             %   - Com: specify the center of mass, alpha=1./(com+1)
             %   - Window: specify the window related to a SMA, alpha=2./(window+1)
             %   - Span: specify decay in terms of span, alpha=2./(span+1)
-            %   - Halflife: specify decay in terms of half-life, alpha=1-exp(-log(0.5)./halflife);
+            %   - Halflife: specify decay in terms of half-life, alpha=1-exp(log(0.5)./halflife);
             %
             % See also frames.internal.ExponentiallyWeightedMoving
             obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value);
@@ -904,38 +896,34 @@ classdef DataFrame
     
     methods(Access=protected)
         
-        function obj = iloc_(obj,idxPosition,colPosition,internalCall)
-            if nargin < 4, internalCall=true; end
-            obj.data_ = obj.data_(idxPosition,colPosition);
-            if internalCall
-                obj.index_.value_ = obj.index_.value_(idxPosition);
-                obj.columns_.value_ = obj.columns_.value_(colPosition);
-            else
-                obj.index_.value = obj.index_.value_(idxPosition);
-                obj.columns_.value = obj.columns_.value_(colPosition);
+        function obj = iloc_(obj,idxPosition,colPosition,userCall)
+            if nargin < 4, userCall=false; end
+            if ~iscolon(idxPosition)
+                if ~userCall || islogical(idxPosition)
+                    obj.index_.value_ = obj.index_.value_(idxPosition);
+                else
+                    obj.index_.value = obj.index_.value_(idxPosition);
+                end
             end
+            if ~iscolon(colPosition)
+                if ~userCall || islogical(colPosition)
+                    obj.columns_.value_ = obj.columns_.value_(colPosition);
+                else
+                    obj.columns_.value = obj.columns_.value_(colPosition);
+                end
+            end
+            obj.data_ = obj.data_(idxPosition,colPosition);
         end
-        function obj = loc_(obj,idxName,colName,internalCall)
-            if nargin < 4, internalCall=true; end
+        function obj = loc_(obj,idxName,colName,userCall)
+            if nargin < 4, userCall=false; end
             idxID = ':'; colID = ':';
             if ~iscolon(idxName)
-                idxID = obj.index_.positionOf(idxName);
-                if internalCall
-                    obj.index_.value_ = obj.index_.value_(idxID);
-                else
-                    obj.index_.value = obj.index_.value_(idxID);
-                end
+                idxID = obj.index_.positionOf(idxName,userCall);
+                obj.index_.value_ = obj.index_.value_(idxID);
             end
             if ~iscolon(colName)
-                colID = obj.columns_.positionOf(colName);
-%                 if length( colID ) ~= length( colName )
-%                     error( 'frames:loc:duplicate', 'You are trying to select a duplicate column.' )
-%                 end
-                if internalCall
-                    obj.columns_.value_ = obj.columns_.value_(colID);
-                else
-                    obj.columns_.value = obj.columns_.value_(colID);
-                end
+                colID = obj.columns_.positionOf(colName,userCall);
+                obj.columns_.value_ = obj.columns_.value_(colID);
             end
             obj.data_ = obj.data_(idxID,colID);
         end
@@ -944,7 +932,7 @@ classdef DataFrame
             idx = indexForTable(obj.index);
             col = columnsForTable(obj.columns);
             tb = array2table(obj.data,RowNames=idx,VariableNames=col);
-            if ~isempty(obj.index_.name)
+            if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.index_.name);
             end
         end
@@ -975,10 +963,16 @@ classdef DataFrame
             end
             obj.data_(index,columns) = data;
             if isequal(data,[])
-                if ~iscolon(index)
+                if iscolon(columns)
+                    % matrix(:,:)=[] returns a 0xN matrix, so if both index
+                    % and columns are empty, keep the columns
+                    if iscolon(index)
+                        % vector(1:end) returns an 0x1 empty vector of the
+                        % same class, while vector(:) returns []
+                        index = true(length(obj.index_),1);
+                    end
                     obj.index_.value_(index) = [];
-                end
-                if ~iscolon(columns)
+                else
                     obj.columns_.value_(columns) = [];
                 end
             end
@@ -1095,9 +1089,14 @@ classdef DataFrame
             maxRows = 100;
             maxCols = 50;  % Matlab struggles to show many columns
             if all(size(obj) < [maxRows,maxCols])
-                disp(obj.t);
+                try
+                    disp(obj.t);
+                catch
+                    warning('Table cannot be displayed')
+                    details(obj);
+                end
             else
-                details(this);
+                details(obj);
             end
         end
         
@@ -1208,18 +1207,26 @@ function [idx_,col_,df] = matrixOpHandler(df1,df2)
 df = df1;
 if isa(df2,'frames.DataFrame')
     if isa(df1,'frames.DataFrame')
-        assert(isequal(df1.columns_.value_,df2.index_.value_), ...
+        assert(isequal(df1.columns_.value,df2.index_.value), ...
             'frames:matrixOpHandler:notAligned','Frames are not aligned!')
         idx_ = df1.index_;
         col_ = df2.columns_;
     else
-        idx_ = frames.UniqueIndex(1:size(df1,1));
+        if size(df1,2)>1 && size(df1,2) == length(df2.index_)
+            idx_ = df2.getIndexObject(df2.defaultIndex(size(df1,1)));  % frames.UniqueIndex(1:size(df1,1),Name="Row");
+        else
+            idx_ = df2.index_;
+        end
         col_ = df2.columns_;
         df = df2;
     end
 else
     idx_ = df1.index_;
-    col_ = frames.Index(1:size(df2,2));
+    if size(df2,1)>1 && size(df2,1) == length(df1.columns_)
+        col_ = df1.getColumnsObject(df1.defaultColumns(size(df2,2)));  % frames.Index(1:size(df2,2));
+    else
+        col_ = df1.columns_;
+    end
 end
 end
 

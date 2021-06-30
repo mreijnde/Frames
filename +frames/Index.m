@@ -56,7 +56,10 @@ classdef Index
             arguments
                 obj, value {mustBeDFcolumns} = []
             end
-            value = obj.valueChecker(value);
+            if isa(value,'frames.Index')
+                error('frames:index:setvalue','value of Index cannot be an Index')
+            end
+            value = obj.getValue_andCheck(value,true);
             if isrow(value)
                 value = value';
             end
@@ -80,14 +83,14 @@ classdef Index
             len = length(obj.value_);
         end
         
-        function pos = positionOf(obj,selector)
+        function pos = positionOf(obj,selector,varargin)
             % find position of 'selector' in the Index
-            selector = obj.getValue_from(selector);
+            selector = obj.getValue_andCheck(selector,varargin{:});
             pos = findPositionIn(selector,obj.value_);
         end
-        function pos = positionIn(obj,target)
+        function pos = positionIn(obj,target,varargin)
             % find position of the Index into the target
-            target = obj.getValue_from(target);
+            target = obj.getValue_andCheck(target,varargin{:});
             pos = findPositionIn(obj.value_,target);
         end
         
@@ -122,7 +125,10 @@ classdef Index
 
     
     methods(Access=protected)
-        function value = valueChecker(~,value)
+        function valueChecker(~,value)
+            if ~isvector(value)
+                error('frames:Index:notVector','index must be a vector')
+            end
             if ~isunique(value)
                 warning('frames:Index:notUnique','index is not unique')
             end
@@ -142,6 +148,11 @@ classdef Index
             if isrow(value)
                 value = value';
             end
+        end
+        function valueOut = getValue_andCheck(obj,value,userCall)
+            if nargin<3, userCall=false; end
+            valueOut = obj.getValue_from(value);
+            if userCall, obj.valueChecker(valueOut); end
         end
         
     end
