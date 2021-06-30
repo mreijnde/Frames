@@ -230,7 +230,8 @@ correlatedData = randomData*upper;
 tf = frames.TimeFrame(correlatedData,738336-nObs+1:738336,1:nVar);
 %%
 tf.cumsum().plot()  % applies a cumulative sum and then plot the result
-tf.corr().heatmap()
+%%
+tf.corr().heatmap()  % computes the correlation matrix and plot it as a heatmap
 %% Rolling and Ewm
 % Computation on a rolling basis are available with the _.rolling()_ and the
 % _.ewm()_ methods. _.rolling()_ carries computations on a rolling window
@@ -260,5 +261,5 @@ priceSmoothers.columns = ["original", "rolling", "smooth"];  % assign new column
 priceSmoothers.name = "smoothers";  % assign the name (it appears as the plot title)
 priceSmoothers.plot(Log=true)
 %%
-tf.ewm(Halflife=10).std().plot()  % exponentially weighted moving standard deviation
+tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
