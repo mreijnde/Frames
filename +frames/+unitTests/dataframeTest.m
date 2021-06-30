@@ -105,6 +105,16 @@ classdef dataframeTest < matlab.unittest.TestCase
             expected = frames.DataFrame([5 6 4; 2 3 1],[1 2],[1 2 3]);
             t.verifyEqual(df,expected)
             
+            % assign []
+            df = frames.DataFrame([1 2 3; 2 5 NaN],[1 2],[1 2 3]);
+            df1 = df; df2 = df;
+            df1(1,:) = [];
+            expected = frames.DataFrame([2 5 NaN],2,[1 2 3]);
+            t.verifyEqual(df1,expected)
+            df2{:,:} = [];
+            expected = frames.DataFrame([],[],[1 2 3]);
+            t.verifyEqual(df2,expected)
+            
         end
         
         function subsrefTest(t)
@@ -341,6 +351,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             vecV = frames.DataFrame([6 7]',ColSeries=true);
             vecV2 = frames.DataFrame([6 7]',[],"a",ColSeries=true);
             vecH = frames.DataFrame([6 7]',ColSeries=true);
+            tf = frames.TimeFrame([738331:738336;1:6]',738331:738336);
+            
+            tfOp = tf' * tf;
+            t.verifyEqual(tfOp,frames.DataFrame(tf.data'*tf.data,tf.columns,tf.columns))
             mtimesM = mat1' * mat2;
             t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.columns,mat2.columns))
             mtimesV = mat1' * vecV2;
@@ -366,6 +380,13 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(summing,frames.DataFrame([4 12;12 24],mat1.index,mat1.columns))
             iloc = -mat1 - mat1{:,1}.asColSeries();
             t.verifyEqual(iloc,frames.DataFrame([-2 -3;-6 -7],mat1.index,mat1.columns))
+
+            % with arrays
+            df = frames.DataFrame([1 2;3 4],["a" "b"],["one" "two"]);
+            t.verifyEqual(df*2,frames.DataFrame(2*[1 2;3 4],["a" "b"],["one" "two"]))
+            t.verifyEqual(2*df,df*2)
+            t.verifyEqual([1 2]*df,frames.DataFrame([7 10],1,df.columns))
+            t.verifyEqual(df*[1;2],frames.DataFrame([5;11],df.index))
 
         end
         
