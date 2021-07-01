@@ -57,6 +57,15 @@ classdef seriesTest < matlab.unittest.TestCase
             t.verifyEqual(t.colseries.asColSeries(false).colseries,false)
             t.noSeries = frames.DataFrame([1;3]);
             t.verifyEqual(t.noSeries.asColSeries(true).colseries,true)
+            
+            % limit case empty
+            t.verifyEqual(frames.DataFrame([],[],1).asColSeries().columns,1)
+            t.verifyError(@() frames.DataFrame([],[],1).asRowSeries(),'frames:Index:setSingleton')
+        end
+        
+        function testOperation(t)
+            t.verifyEqual(t.df-t.df.iloc(1).asRowSeries(),frames.DataFrame([0 0;2 2]))
+            t.verifyError(@() t.df-t.df.iloc(1),'frames:elementWiseHandler:differentIndex')
         end
     end
 end

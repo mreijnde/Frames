@@ -69,9 +69,9 @@ classdef Index
             arguments
                 obj, tf {mustBeA(tf,'logical')}
             end
-            if tf && length(obj.value_) > 1
+            if tf && length(obj.value_) ~= 1
                 error('frames:Index:setSingleton',...
-                    'Index must contain 0 or 1 element to be a singleton')
+                    'Index must contain 1 element to be a singleton')
             end
             obj.singleton_ = tf;
         end
@@ -119,10 +119,8 @@ classdef Index
         function bool = issorted(obj)
             bool = issorted(obj.value_);
         end
-
-
+        
     end
-
     
     methods(Access=protected)
         function valueChecker(~,value)

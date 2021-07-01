@@ -387,7 +387,19 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(2*df,df*2)
             t.verifyEqual([1 2]*df,frames.DataFrame([7 10],1,df.columns))
             t.verifyEqual(df*[1;2],frames.DataFrame([5;11],df.index))
-
+            
+            % element-wise with a 1x1
+            oneone = frames.DataFrame(2);
+            oneoneSeries = oneone.asRowSeries().asColSeries();
+            matr = frames.DataFrame([1 2; 3 4],[],[2 3]);
+            t.verifyEqual(oneoneSeries.*matr,matr.*oneoneSeries)
+            t.verifyError(@cantMatOp,'frames:matrixOpHandler:notAligned')
+            function cantMatOp(), oneoneSeries*matr; end %#ok<VUNUS>
+            
+            % col mtimes row
+            res = frames.DataFrame([1 2 3]',2:4,"u")*frames.DataFrame([1 2 3],"u",["a" "b" "c"]);
+            t.verifyEqual(res.index,(2:4)')
+            t.verifyEqual(res.columns,["a" "b" "c"])
         end
         
         function equalTest(t)
