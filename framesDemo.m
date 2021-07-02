@@ -37,7 +37,7 @@ doc frames.TimeFrame
 % 
 % Construct a Frame as follows:
 %
-%   df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
+%  df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
 
 % Example:
 df = frames.DataFrame([1 2;3 4],[1 2],["col1","col2"])
