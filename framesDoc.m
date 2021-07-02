@@ -1,5 +1,5 @@
-%% frames package
-% The frames package contains classes to handle operations on homogeneous 
+%% _frames_ package
+% The *frames* package contains classes to handle operations on homogeneous 
 % data matrices that are referenced by column and index identifiers.
 %
 % There are currently no tool in Matlab to do that.
@@ -12,10 +12,10 @@
 %% Frame classes
 %
 % The class *frames.DataFrame* and its child class *frames.TimeFrame* aim to 
-% give a solution to working with this kind of data (homogeneous and with column and 
-% row names), to make operations on and between Frames simple and robust.
+% give a solution to working with data sets that are _homogeneous and with column and 
+% row names_, to make operations on and between Frames simple and robust.
 %
-% Their main properties are:
+% The main properties of these classes are:
 %
 % * data:       TxN,  homogeneous data
 % * index:      Tx1
@@ -38,6 +38,8 @@ doc frames.TimeFrame
 % Construct a Frame as follows:
 %
 %   df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
+
+% Example:
 df = frames.DataFrame([1 2;3 4],[1 2],["col1","col2"])
 %%
 % or with a TimeFrame
@@ -81,12 +83,16 @@ end
 %   * df.loc(indexNames,columnsNames)
 %   * df(indexNames,columnsNames) = newData
 %   * df.loc(indexNames,columnsNames) = newData
+
+% Selection
 df(1,:)
 % same as
 df.loc(1,:);
 df(1);
 df.loc(1);
 %%
+
+% Modification
 df(1,:) = 10
 % Or df.loc(1,:) = 10
 %%
@@ -106,6 +112,7 @@ df.iloc(:,2);
 %%
 df{2,1} = 20
 % or df.iloc(2,1) = 20
+%%
 df.data = [1 2;3 4];  % reset data to original example
 %% Operations
 % Frames can be used like matrices for operations.
@@ -118,6 +125,7 @@ df + df
 %%
 % transpose and matrix operation
 df' * df
+%%
 vector = frames.DataFrame([1;2],["a","b"],"vectorColumn");
 df * vector
 %%
@@ -144,6 +152,7 @@ catch me
     disp(me.message)
 end
 %%
+% Make it work by make the Frame a Series
 series = seriesBad.asColSeries();
 % or series = frames.DataFrame([1;2],[1 2],"seriesColumn",ColSeries=true);
 details(series)
@@ -186,7 +195,7 @@ try
 catch me
     disp(me.message)
 end
-
+%%
 % Alignment
 df1 = frames.DataFrame([1 3]',[1 3],1);
 df2 = frames.DataFrame([2 3]',[2 3],2);
@@ -203,7 +212,7 @@ frames.TimeIndex("29-Jun-2021",Format="dd-MMM-yyyy");
 %%
 % When used in a Frame (used by default in a TimeFrame), one can select a
 % sub-Frame using a _timerange_
-tf = frames.TimeFrame((738331:738336)',738331:738336)  % turns 738331:738336 into a TimeIndex
+tf = frames.TimeFrame((1:6)',738331:738336)  % turns 738331:738336 into a TimeIndex
 tf(timerange(-inf,datetime(738333,'ConvertFrom','datenum'),'closed'));
 % This can also be easily written using a string as follows
 % tf("dateStart:dateEnd:dateFormat")
@@ -216,14 +225,14 @@ doc frames.TimeFrame
 %%
 % Methods can be chained to apply them one after the other.
 
-% Example: build random data and apply functions to the TimeFrame.
+% Example: build random correlated data and apply functions to the TimeFrame.
 s = rng(2021);
 nObs = 1000;
 nVar = 3;
 [randomRotationMatrix,~] = qr(randn(nVar));
 randomEigenValues = rand(1,nVar);
 covariance = randomRotationMatrix * diag(randomEigenValues) * randomRotationMatrix';
-correlation = diag(diag(covariance).^-0.5) * covariance * diag(diag(covariance).^-0.5);
+correlation = diag(diag(covariance).^-0.5) * covariance * diag(diag(covariance).^-0.5)
 upper = chol(correlation);
 randomData = randn(nObs,nVar)./100 + 1./3000;
 correlatedData = randomData*upper;
@@ -234,8 +243,8 @@ tf.cumsum().plot()  % applies a cumulative sum and then plot the result
 tf.corr().heatmap()  % computes the correlation matrix and plot it as a heatmap
 %% Rolling and Ewm
 % Computation on a rolling basis are available with the _.rolling()_ and the
-% _.ewm()_ methods. _.rolling()_ carries computations on a rolling window
-% basis. _.ewm()_ carries computations by weighting observations with
+% _.ewm()_ methods. _.rolling()_ applies computations on a rolling window
+% basis. _.ewm()_ applies computations by weighting observations with
 % exponentially decaying weights.
 %
 %  Use:
@@ -249,9 +258,9 @@ doc frames.internal.Rolling
 %%
 doc frames.DataFrame.ewm
 % or
-doc frames.internal.Ewm
+doc frames.internal.ExponentiallyWeightedMoving
 %%
-% Below, we give a few example on how these methods can be used, using our
+% Below, we give a few examples on how these methods can be used, using our
 % previous TimeFrame.
 price = tf.compoundChange('log');  % assume tf contains log returns and compound them
 rollingMean = price.rolling(30).mean();  % 30-day moving average
@@ -263,3 +272,44 @@ priceSmoothers.plot(Log=true)
 %%
 tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
+% One can apply a function to groups of columns in a Frame using the method
+% _.split(groups).apply(@<function>)_.
+%
+%  The _groups_ of columns can be expressed in different ways.
+%   * (cellArrayOfGroupLists,groupNames)
+%   * structure: fields are group names and values are elements in each group
+%   * frames.Group: Group whose property  are group names and property
+%       values are elements in each group. See 'doc frames.Group' for more
+%       details.
+
+df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],["a" "b" "c"])
+%%
+
+% simple example with cell
+% apply a sum horizontally in each group
+x1 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.sum(2))
+%%
+
+% apply function using group names
+% multiply each group by 10 and 1 respectively
+multiplier.group1 = 10;
+multiplier.group2 = 1;
+x2 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.*multiplier.(x.name))
+%%
+
+% split with a structure
+% cap each group at 1.5 and 2.5 respectively
+s = struct();
+s.group1 = ["a" "c"];
+s.group2 = "b";
+ceiler.group1 = 1.5;
+ceiler.group2 = 2.5;
+x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
+%%
+
+% split with a Group
+% take the maximum of each groups at each row
+g = frames.Groups(df.columns,s);
+x4 = df.split(g).apply(@(x) x.max(2))
+
+

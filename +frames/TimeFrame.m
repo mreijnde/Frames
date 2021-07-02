@@ -3,11 +3,16 @@ classdef TimeFrame < frames.DataFrame
 %   It is a convenient way to perform operations on time series (more intuitive than Matlab's timetable).
 %
 %   Constructor:
-%   df = frames.TimeFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
+%   tf = frames.TimeFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
 %   If an argument is not specified, it will take a default value, so it
 %   is possible to only define some of the arguments:
-%   df = frames.TimeFrame(data)  
-%   df = frames.TimeFrame(data,[],columns)
+%   tf = frames.TimeFrame(data)  
+%   tf = frames.TimeFrame(data,[],columns)
+%
+%   NameValueArgs possible keys are
+%   Name: (textScalar) the name of the Frame
+%   RowSeries: (logical) whether the Frame is treated like a row series (see below)
+%   ColSeries: (logical) whether the Frame is treated like a column series (see below)
 %
 %   TIMEFRAME properties:
 %     data                   - Data                  TxN  (homogeneous data)

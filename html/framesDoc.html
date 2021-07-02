@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-07-01"><meta name="DC.source" content="framesDoc.m"><style type="text/css">
+      --><title>frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-07-02"><meta name="DC.source" content="framesDoc.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -67,10 +67,11 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h1>frames package</h1><!--introduction--><p>The frames package contains classes to handle operations on homogeneous data matrices that are referenced by column and index identifiers.</p><p>There are currently no tool in Matlab to do that. Matlab's (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible). Matlab's native matrices are not aware of row and column names. When data represents observations of variables, it is always tricky to make sure the data is not misaligned.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frame classes</a></li><li><a href="#3">Constructor</a></li><li><a href="#7">Properties Access and Modification</a></li><li><a href="#11">Sub-Frame Access and Modification</a></li><li><a href="#17">Operations</a></li><li><a href="#24">Concatenation</a></li><li><a href="#26">Particular use of Index</a></li><li><a href="#30">Methods Chaining</a></li><li><a href="#33">Rolling and Ewm</a></li><li><a href="#37">Split Apply</a></li></ul></div><h2 id="1">Frame classes</h2><p>The class <b>frames.DataFrame</b> and its child class <b>frames.TimeFrame</b> aim to give a solution to working with this kind of data (homogeneous and with column and row names), to make operations on and between Frames simple and robust.</p><p>Their main properties are:</p><div><ul><li>data:       TxN,  homogeneous data</li><li>index:      Tx1</li><li>columns:    1xN</li><li>t: dependent table built on the properties above.</li></ul></div><p><i>columns</i> and <i>index</i> are expected to have unique elements. <i>columns</i> allows duplicates but issues a warning if it is the case. <i>index</i> does not accept duplicates. Moreover, for TimeFrame, <i>index</i> is a chronological datetime array.</p><p>The Frames are displayed as a table (DataFrame) and as a timetable (TimeFrame).</p><p>For the documentation, run</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
+  </style></head><body><div class="content"><h1><i>frames</i> package</h1><!--introduction--><p>The <b>frames</b> package contains classes to handle operations on homogeneous data matrices that are referenced by column and index identifiers.</p><p>There are currently no tool in Matlab to do that. Matlab's (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible). Matlab's native matrices are not aware of row and column names. When data represents observations of variables, it is always tricky to make sure the data is not misaligned.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frame classes</a></li><li><a href="#3">Constructor</a></li><li><a href="#7">Properties Access and Modification</a></li><li><a href="#11">Sub-Frame Access and Modification</a></li><li><a href="#18">Operations</a></li><li><a href="#26">Concatenation</a></li><li><a href="#28">Particular use of Index</a></li><li><a href="#33">Methods Chaining</a></li><li><a href="#37">Rolling and Ewm</a></li><li><a href="#41">Split Apply</a></li></ul></div><h2 id="1">Frame classes</h2><p>The class <b>frames.DataFrame</b> and its child class <b>frames.TimeFrame</b> aim to give a solution to working with data sets that are <i>homogeneous and with column and row names</i>, to make operations on and between Frames simple and robust.</p><p>The main properties of these classes are:</p><div><ul><li>data:       TxN,  homogeneous data</li><li>index:      Tx1</li><li>columns:    1xN</li><li>t: dependent table built on the properties above.</li></ul></div><p><i>columns</i> and <i>index</i> are expected to have unique elements. <i>columns</i> allows duplicates but issues a warning if it is the case. <i>index</i> does not accept duplicates. Moreover, for TimeFrame, <i>index</i> is a chronological datetime array.</p><p>The Frames are displayed as a table (DataFrame) and as a timetable (TimeFrame).</p><p>For the documentation, run</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
 doc <span class="string">frames.TimeFrame</span>
 </pre><h2 id="3">Constructor</h2><p>Construct a Frame as follows:</p><pre class="language-matlab">df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
-</pre><pre class="codeinput">df = frames.DataFrame([1 2;3 4],[1 2],[<span class="string">"col1"</span>,<span class="string">"col2"</span>])
+</pre><pre class="codeinput"><span class="comment">% Example:</span>
+df = frames.DataFrame([1 2;3 4],[1 2],[<span class="string">"col1"</span>,<span class="string">"col2"</span>])
 </pre><pre class="codeoutput">
 df = 
 
@@ -146,7 +147,8 @@ df =
  * df(indexNames,columnsNames)
  * df.loc(indexNames,columnsNames)
  * df(indexNames,columnsNames) = newData
- * df.loc(indexNames,columnsNames) = newData</pre><pre class="codeinput">df(1,:)
+ * df.loc(indexNames,columnsNames) = newData</pre><pre class="codeinput"><span class="comment">% Selection</span>
+df(1,:)
 <span class="comment">% same as</span>
 df.loc(1,:);
 df(1);
@@ -159,7 +161,8 @@ ans =
 
     1    10    2
 
-</pre><pre class="codeinput">df(1,:) = 10
+</pre><pre class="codeinput"><span class="comment">% Modification</span>
+df(1,:) = 10
 <span class="comment">% Or df.loc(1,:) = 10</span>
 </pre><pre class="codeoutput">
 df = 
@@ -200,7 +203,6 @@ ans =
 
 </pre><pre class="codeinput">df{2,1} = 20
 <span class="comment">% or df.iloc(2,1) = 20</span>
-df.data = [1 2;3 4];  <span class="comment">% reset data to original example</span>
 </pre><pre class="codeoutput">
 df = 
 
@@ -210,7 +212,8 @@ df =
     1    10    10
     2    20     4
 
-</pre><h2 id="17">Operations</h2><p>Frames can be used like matrices for operations.</p><p>element-wise operation</p><pre class="codeinput">df + df
+</pre><pre class="codeinput">df.data = [1 2;3 4];  <span class="comment">% reset data to original example</span>
+</pre><h2 id="18">Operations</h2><p>Frames can be used like matrices for operations.</p><p>element-wise operation</p><pre class="codeinput">df + df
 </pre><pre class="codeoutput">
 ans = 
 
@@ -231,8 +234,6 @@ ans =
     2    4    5
 
 </pre><p>transpose and matrix operation</p><pre class="codeinput">df' * df
-vector = frames.DataFrame([1;2],[<span class="string">"a"</span>,<span class="string">"b"</span>],<span class="string">"vectorColumn"</span>);
-df * vector
 </pre><pre class="codeoutput">
 ans = 
 
@@ -242,7 +243,9 @@ ans =
     a    10    14
     b    14    20
 
-
+</pre><pre class="codeinput">vector = frames.DataFrame([1;2],[<span class="string">"a"</span>,<span class="string">"b"</span>],<span class="string">"vectorColumn"</span>);
+df * vector
+</pre><pre class="codeoutput">
 ans = 
 
          vectorColumn
@@ -265,7 +268,7 @@ ans =
     disp(me.message)
 <span class="keyword">end</span>
 </pre><pre class="codeoutput">Frames have different columns!
-</pre><pre class="codeinput">series = seriesBad.asColSeries();
+</pre><p>Make it work by make the Frame a Series</p><pre class="codeinput">series = seriesBad.asColSeries();
 <span class="comment">% or series = frames.DataFrame([1;2],[1 2],"seriesColumn",ColSeries=true);</span>
 details(series)
 df .* series
@@ -291,7 +294,7 @@ ans =
     1    1    2
     2    6    8
 
-</pre><h2 id="24">Concatenation</h2><p>One can concatenate different Frames into one with the operator [].</p><p>The concatenation can be horizontal or vertical. The operation will align the Frames by expanding (unifying) their index or columns if they are not equal, inserting missing values in the expansion.</p><pre class="codeinput">tf1 = frames.TimeFrame(1,frames.TimeIndex([<span class="string">"25-Jun-2021"</span>,<span class="string">"27-Jun-2021"</span>,<span class="string">"28-Jun-2021"</span>]),[<span class="string">"ts1"</span>,<span class="string">"ts2"</span>]);
+</pre><h2 id="26">Concatenation</h2><p>One can concatenate different Frames into one with the operator [].</p><p>The concatenation can be horizontal or vertical. The operation will align the Frames by expanding (unifying) their index or columns if they are not equal, inserting missing values in the expansion.</p><pre class="codeinput">tf1 = frames.TimeFrame(1,frames.TimeIndex([<span class="string">"25-Jun-2021"</span>,<span class="string">"27-Jun-2021"</span>,<span class="string">"28-Jun-2021"</span>]),[<span class="string">"ts1"</span>,<span class="string">"ts2"</span>]);
 tf2 = frames.TimeFrame(2,frames.TimeIndex([<span class="string">"26-Jun-2021"</span>,<span class="string">"27-Jun-2021"</span>,<span class="string">"30-Jun-2021"</span>]),<span class="string">"ts3"</span>);
 [tf1, tf2]
 </pre><pre class="codeoutput">
@@ -320,7 +323,7 @@ ans =
     29-Jun-2021    NaN     2       2
     30-Jun-2021    NaN     2       2
 
-</pre><h2 id="26">Particular use of Index</h2><p>The type of <i>index</i> can be specified, as one may have noticed in the example above.</p><p>By default, in DataFrame, the object underlying the index is a <i>frames.UniqueIndex</i>, and in TimeFrame, it is a <i>frames.TimeIndex</i>. The former requires unique elements, while the latter requires chronological unique time elements.</p><p>TimeFrame only accepts a TimeIndex, while DataFrame accepts UniqueIndex, TimeIndex, and SortedIndex (unique and sorted).</p><p>The distinction between the different Index impacts the operations of selection, modification, and alignment/concatenation.</p><pre class="codeinput"><span class="comment">% Selection</span>
+</pre><h2 id="28">Particular use of Index</h2><p>The type of <i>index</i> can be specified, as one may have noticed in the example above.</p><p>By default, in DataFrame, the object underlying the index is a <i>frames.UniqueIndex</i>, and in TimeFrame, it is a <i>frames.TimeIndex</i>. The former requires unique elements, while the latter requires chronological unique time elements.</p><p>TimeFrame only accepts a TimeIndex, while DataFrame accepts UniqueIndex, TimeIndex, and SortedIndex (unique and sorted).</p><p>The distinction between the different Index impacts the operations of selection, modification, and alignment/concatenation.</p><pre class="codeinput"><span class="comment">% Selection</span>
 df.getIndex_()  <span class="comment">% gets the underlying Index object</span>
 df([2 1])
 </pre><pre class="codeoutput">
@@ -348,14 +351,6 @@ dfSorted.getIndex_()
 <span class="keyword">catch</span> me
     disp(me.message)
 <span class="keyword">end</span>
-
-<span class="comment">% Alignment</span>
-df1 = frames.DataFrame([1 3]',[1 3],1);
-df2 = frames.DataFrame([2 3]',[2 3],2);
-unsortedConcatenation = [df1,df2]
-df1 = frames.DataFrame([1 3]',frames.SortedIndex([1 3]),1);
-df2 = frames.DataFrame([2 3]',frames.SortedIndex([2 3]),2);
-sortedConcatenation = [df1,df2]
 </pre><pre class="codeoutput">
 ans = 
 
@@ -366,7 +361,13 @@ ans =
     singleton: 0
 
 Index is not sorted.
-
+</pre><p>Alignment</p><pre class="codeinput">df1 = frames.DataFrame([1 3]',[1 3],1);
+df2 = frames.DataFrame([2 3]',[2 3],2);
+unsortedConcatenation = [df1,df2]
+df1 = frames.DataFrame([1 3]',frames.SortedIndex([1 3]),1);
+df2 = frames.DataFrame([2 3]',frames.SortedIndex([2 3]),2);
+sortedConcatenation = [df1,df2]
+</pre><pre class="codeoutput">
 unsortedConcatenation = 
 
          Var1    Var2
@@ -399,7 +400,7 @@ ans =
         value: 29-Jun-2021
     singleton: 0
 
-</pre><p>When used in a Frame (used by default in a TimeFrame), one can select a sub-Frame using a <i>timerange</i></p><pre class="codeinput">tf = frames.TimeFrame((738331:738336)',738331:738336)  <span class="comment">% turns 738331:738336 into a TimeIndex</span>
+</pre><p>When used in a Frame (used by default in a TimeFrame), one can select a sub-Frame using a <i>timerange</i></p><pre class="codeinput">tf = frames.TimeFrame((1:6)',738331:738336)  <span class="comment">% turns 738331:738336 into a TimeIndex</span>
 tf(timerange(-inf,datetime(738333,<span class="string">'ConvertFrom'</span>,<span class="string">'datenum'</span>),<span class="string">'closed'</span>));
 <span class="comment">% This can also be easily written using a string as follows</span>
 <span class="comment">% tf("dateStart:dateEnd:dateFormat")</span>
@@ -407,51 +408,58 @@ tf(<span class="string">"-inf:26*06*2021:dd*MM*yyyy"</span>)
 </pre><pre class="codeoutput">
 tf = 
 
-       Time           Var1   
-    ___________    __________
+       Time        Var1
+    ___________    ____
 
-    24-Jun-2021    7.3833e+05
-    25-Jun-2021    7.3833e+05
-    26-Jun-2021    7.3833e+05
-    27-Jun-2021    7.3833e+05
-    28-Jun-2021    7.3834e+05
-    29-Jun-2021    7.3834e+05
+    24-Jun-2021     1  
+    25-Jun-2021     2  
+    26-Jun-2021     3  
+    27-Jun-2021     4  
+    28-Jun-2021     5  
+    29-Jun-2021     6  
 
 
 ans = 
 
-       Time           Var1   
-    ___________    __________
+       Time        Var1
+    ___________    ____
 
-    24-Jun-2021    7.3833e+05
-    25-Jun-2021    7.3833e+05
-    26-Jun-2021    7.3833e+05
+    24-Jun-2021     1  
+    25-Jun-2021     2  
+    26-Jun-2021     3  
 
-</pre><h2 id="30">Methods Chaining</h2><p>Several methods are available. Again, please refer to the documentation for the full list</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
+</pre><h2 id="33">Methods Chaining</h2><p>Several methods are available. Again, please refer to the documentation for the full list</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
 doc <span class="string">frames.TimeFrame</span>
-</pre><p>Methods can be chained to apply them one after the other.</p><pre class="codeinput"><span class="comment">% Example: build random data and apply functions to the TimeFrame.</span>
+</pre><p>Methods can be chained to apply them one after the other.</p><pre class="codeinput"><span class="comment">% Example: build random correlated data and apply functions to the TimeFrame.</span>
 s = rng(2021);
 nObs = 1000;
 nVar = 3;
 [randomRotationMatrix,~] = qr(randn(nVar));
 randomEigenValues = rand(1,nVar);
 covariance = randomRotationMatrix * diag(randomEigenValues) * randomRotationMatrix';
-correlation = diag(diag(covariance).^-0.5) * covariance * diag(diag(covariance).^-0.5);
+correlation = diag(diag(covariance).^-0.5) * covariance * diag(diag(covariance).^-0.5)
 upper = chol(correlation);
 randomData = randn(nObs,nVar)./100 + 1./3000;
 correlatedData = randomData*upper;
 tf = frames.TimeFrame(correlatedData,738336-nObs+1:738336,1:nVar);
+</pre><pre class="codeoutput">
+correlation =
+
+    1.0000    0.4277   -0.5917
+    0.4277    1.0000   -0.7770
+   -0.5917   -0.7770    1.0000
+
 </pre><pre class="codeinput">tf.cumsum().plot()  <span class="comment">% applies a cumulative sum and then plot the result</span>
-tf.corr().heatmap()
-</pre><img vspace="5" hspace="5" src="framesDoc_01.png" alt=""> <img vspace="5" hspace="5" src="framesDoc_02.png" alt=""> <h2 id="33">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> carries computations on a rolling window basis. <i>.ewm()</i> carries computations by weighting observations with exponentially decaying weights.</p><pre>Use:
+</pre><img vspace="5" hspace="5" src="framesDoc_01.png" alt=""> <pre class="codeinput">tf.corr().heatmap()  <span class="comment">% computes the correlation matrix and plot it as a heatmap</span>
+</pre><img vspace="5" hspace="5" src="framesDoc_02.png" alt=""> <h2 id="37">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
  * .rolling(window[,windowNaN]).&lt;method&gt;
  * .ewm(&lt;DecayType&gt;=value).&lt;method&gt;</pre><p>Please refer to the documentation for details on arguments and methods.</p><pre class="codeinput">doc <span class="string">frames.DataFrame.rolling</span>
 <span class="comment">% or</span>
 doc <span class="string">frames.internal.Rolling</span>
 </pre><pre class="codeinput">doc <span class="string">frames.DataFrame.ewm</span>
 <span class="comment">% or</span>
-doc <span class="string">frames.internal.Ewm</span>
-</pre><p>Below, we give a few example on how these methods can be used, using our previous TimeFrame.</p><pre class="codeinput">price = tf.compoundChange(<span class="string">'log'</span>);  <span class="comment">% assume tf contains log returns and compound them</span>
+doc <span class="string">frames.internal.ExponentiallyWeightedMoving</span>
+</pre><p>Below, we give a few examples on how these methods can be used, using our previous TimeFrame.</p><pre class="codeinput">price = tf.compoundChange(<span class="string">'log'</span>);  <span class="comment">% assume tf contains log returns and compound them</span>
 rollingMean = price.rolling(30).mean();  <span class="comment">% 30-day moving average</span>
 exponentialMean = price.ewm(Span=30).mean();  <span class="comment">% 30-day exponentially moving average</span>
 priceSmoothers = [price{:,1}, rollingMean{:,1}, exponentialMean{:,1}];  <span class="comment">% group the first series</span>
@@ -460,11 +468,87 @@ priceSmoothers.name = <span class="string">"smoothers"</span>;  <span class="com
 priceSmoothers.plot(Log=true)
 </pre><pre class="codeoutput">Warning: index is not unique 
 Warning: index is not unique 
-</pre><img vspace="5" hspace="5" src="framesDoc_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot()  <span class="comment">% exponentially weighted moving standard deviation</span>
-</pre><img vspace="5" hspace="5" src="framesDoc_04.png" alt=""> <h2 id="37">Split Apply</h2><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2021a</a><br></p></div><!--
+</pre><img vspace="5" hspace="5" src="framesDoc_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
+</pre><img vspace="5" hspace="5" src="framesDoc_04.png" alt=""> <h2 id="41">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The _groups_ of columns can be expressed in different ways.
+ * (cellArrayOfGroupLists,groupNames)
+ * structure: fields are group names and values are elements in each group
+ * frames.Group: Group whose property  are group names and property
+ values are elements in each group. See 'doc frames.Group' for more
+ details.</pre><pre class="codeinput">df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],[<span class="string">"a"</span> <span class="string">"b"</span> <span class="string">"c"</span>])
+</pre><pre class="codeoutput">
+df = 
+
+         a    b    c
+         _    _    _
+
+    1    1    2    5
+    2    2    5    0
+    3    3    3    1
+
+</pre><pre class="codeinput"><span class="comment">% simple example with cell</span>
+<span class="comment">% apply a sum horizontally in each group</span>
+x1 = df.split({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>},[<span class="string">"group1"</span>,<span class="string">"group2"</span>]).apply(@(x) x.sum(2))
+</pre><pre class="codeoutput">
+x1 = 
+
+         group1    group2
+         ______    ______
+
+    1      6         2   
+    2      2         5   
+    3      4         3   
+
+</pre><pre class="codeinput"><span class="comment">% apply function using group names</span>
+<span class="comment">% multiply each group by 10 and 1 respectively</span>
+multiplier.group1 = 10;
+multiplier.group2 = 1;
+x2 = df.split({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>},[<span class="string">"group1"</span>,<span class="string">"group2"</span>]).apply(@(x) x.*multiplier.(x.name))
+</pre><pre class="codeoutput">
+x2 = 
+
+         a     c     b
+         __    __    _
+
+    1    10    50    2
+    2    20     0    5
+    3    30    10    3
+
+</pre><pre class="codeinput"><span class="comment">% split with a structure</span>
+<span class="comment">% cap each group at 1.5 and 2.5 respectively</span>
+s = struct();
+s.group1 = [<span class="string">"a"</span> <span class="string">"c"</span>];
+s.group2 = <span class="string">"b"</span>;
+ceiler.group1 = 1.5;
+ceiler.group2 = 2.5;
+x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
+</pre><pre class="codeoutput">
+x3 = 
+
+          a      c      b 
+         ___    ___    ___
+
+    1      1    1.5      2
+    2    1.5      0    2.5
+    3    1.5      1    2.5
+
+</pre><pre class="codeinput"><span class="comment">% split with a Group</span>
+<span class="comment">% take the maximum of each groups at each row</span>
+g = frames.Groups(df.columns,s);
+x4 = df.split(g).apply(@(x) x.max(2))
+</pre><pre class="codeoutput">
+x4 = 
+
+         group2    group1
+         ______    ______
+
+    1      2         5   
+    2      5         2   
+    3      3         3   
+
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2021a</a><br></p></div><!--
 ##### SOURCE BEGIN #####
-%% frames package
-% The frames package contains classes to handle operations on homogeneous 
+%% _frames_ package
+% The *frames* package contains classes to handle operations on homogeneous 
 % data matrices that are referenced by column and index identifiers.
 %
 % There are currently no tool in Matlab to do that.
@@ -477,10 +561,10 @@ Warning: index is not unique
 %% Frame classes
 %
 % The class *frames.DataFrame* and its child class *frames.TimeFrame* aim to 
-% give a solution to working with this kind of data (homogeneous and with column and 
-% row names), to make operations on and between Frames simple and robust.
+% give a solution to working with data sets that are _homogeneous and with column and 
+% row names_, to make operations on and between Frames simple and robust.
 %
-% Their main properties are:
+% The main properties of these classes are:
 %
 % * data:       TxN,  homogeneous data
 % * index:      Tx1
@@ -503,6 +587,8 @@ doc frames.TimeFrame
 % Construct a Frame as follows:
 %
 %   df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
+
+% Example:
 df = frames.DataFrame([1 2;3 4],[1 2],["col1","col2"])
 %%
 % or with a TimeFrame
@@ -546,12 +632,16 @@ end
 %   * df.loc(indexNames,columnsNames)
 %   * df(indexNames,columnsNames) = newData
 %   * df.loc(indexNames,columnsNames) = newData
+
+% Selection
 df(1,:)
 % same as
 df.loc(1,:);
 df(1);
 df.loc(1);
 %%
+
+% Modification
 df(1,:) = 10
 % Or df.loc(1,:) = 10
 %%
@@ -571,6 +661,7 @@ df.iloc(:,2);
 %%
 df{2,1} = 20
 % or df.iloc(2,1) = 20
+%%
 df.data = [1 2;3 4];  % reset data to original example
 %% Operations
 % Frames can be used like matrices for operations.
@@ -583,6 +674,7 @@ df + df
 %%
 % transpose and matrix operation
 df' * df
+%%
 vector = frames.DataFrame([1;2],["a","b"],"vectorColumn");
 df * vector
 %%
@@ -609,6 +701,7 @@ catch me
     disp(me.message)
 end
 %%
+% Make it work by make the Frame a Series
 series = seriesBad.asColSeries();
 % or series = frames.DataFrame([1;2],[1 2],"seriesColumn",ColSeries=true);
 details(series)
@@ -651,7 +744,7 @@ try
 catch me
     disp(me.message)
 end
-
+%%
 % Alignment
 df1 = frames.DataFrame([1 3]',[1 3],1);
 df2 = frames.DataFrame([2 3]',[2 3],2);
@@ -668,7 +761,7 @@ frames.TimeIndex("29-Jun-2021",Format="dd-MMM-yyyy");
 %%
 % When used in a Frame (used by default in a TimeFrame), one can select a
 % sub-Frame using a _timerange_
-tf = frames.TimeFrame((738331:738336)',738331:738336)  % turns 738331:738336 into a TimeIndex
+tf = frames.TimeFrame((1:6)',738331:738336)  % turns 738331:738336 into a TimeIndex
 tf(timerange(-inf,datetime(738333,'ConvertFrom','datenum'),'closed'));
 % This can also be easily written using a string as follows
 % tf("dateStart:dateEnd:dateFormat")
@@ -681,25 +774,26 @@ doc frames.TimeFrame
 %%
 % Methods can be chained to apply them one after the other.
 
-% Example: build random data and apply functions to the TimeFrame.
+% Example: build random correlated data and apply functions to the TimeFrame.
 s = rng(2021);
 nObs = 1000;
 nVar = 3;
 [randomRotationMatrix,~] = qr(randn(nVar));
 randomEigenValues = rand(1,nVar);
 covariance = randomRotationMatrix * diag(randomEigenValues) * randomRotationMatrix';
-correlation = diag(diag(covariance).^-0.5) * covariance * diag(diag(covariance).^-0.5);
+correlation = diag(diag(covariance).^-0.5) * covariance * diag(diag(covariance).^-0.5)
 upper = chol(correlation);
 randomData = randn(nObs,nVar)./100 + 1./3000;
 correlatedData = randomData*upper;
 tf = frames.TimeFrame(correlatedData,738336-nObs+1:738336,1:nVar);
 %%
 tf.cumsum().plot()  % applies a cumulative sum and then plot the result
-tf.corr().heatmap()
+%%
+tf.corr().heatmap()  % computes the correlation matrix and plot it as a heatmap
 %% Rolling and Ewm
 % Computation on a rolling basis are available with the _.rolling()_ and the
-% _.ewm()_ methods. _.rolling()_ carries computations on a rolling window
-% basis. _.ewm()_ carries computations by weighting observations with
+% _.ewm()_ methods. _.rolling()_ applies computations on a rolling window
+% basis. _.ewm()_ applies computations by weighting observations with
 % exponentially decaying weights.
 %
 %  Use:
@@ -713,9 +807,9 @@ doc frames.internal.Rolling
 %%
 doc frames.DataFrame.ewm
 % or
-doc frames.internal.Ewm
+doc frames.internal.ExponentiallyWeightedMoving
 %%
-% Below, we give a few example on how these methods can be used, using our
+% Below, we give a few examples on how these methods can be used, using our
 % previous TimeFrame.
 price = tf.compoundChange('log');  % assume tf contains log returns and compound them
 rollingMean = price.rolling(30).mean();  % 30-day moving average
@@ -725,8 +819,49 @@ priceSmoothers.columns = ["original", "rolling", "smooth"];  % assign new column
 priceSmoothers.name = "smoothers";  % assign the name (it appears as the plot title)
 priceSmoothers.plot(Log=true)
 %%
-tf.ewm(Halflife=10).std().plot()  % exponentially weighted moving standard deviation
+tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
+% One can apply a function to groups of columns in a Frame using the method
+% _.split(groups).apply(@<function>)_.
+%
+%  The _groups_ of columns can be expressed in different ways.
+%   * (cellArrayOfGroupLists,groupNames)
+%   * structure: fields are group names and values are elements in each group
+%   * frames.Group: Group whose property  are group names and property
+%   values are elements in each group. See 'doc frames.Group' for more
+%   details.
+
+df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],["a" "b" "c"])
+%%
+
+% simple example with cell
+% apply a sum horizontally in each group
+x1 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.sum(2))
+%%
+
+% apply function using group names
+% multiply each group by 10 and 1 respectively
+multiplier.group1 = 10;
+multiplier.group2 = 1;
+x2 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.*multiplier.(x.name))
+%%
+
+% split with a structure
+% cap each group at 1.5 and 2.5 respectively
+s = struct();
+s.group1 = ["a" "c"];
+s.group2 = "b";
+ceiler.group1 = 1.5;
+ceiler.group2 = 2.5;
+x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
+%%
+
+% split with a Group
+% take the maximum of each groups at each row
+g = frames.Groups(df.columns,s);
+x4 = df.split(g).apply(@(x) x.max(2))
+
+
 
 ##### SOURCE END #####
 --></body></html>

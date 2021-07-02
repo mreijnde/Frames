@@ -44,6 +44,9 @@ classdef Groups < dynamicprops
                 obj.addprop(f_);
                 obj.(f_) = obj.isinGroup(listOfElements,s.(f_));
             end
+            % ToDo: With Matlab2021a, the order of dynamic properties 
+            % (from fieldnames(obj)) seem to be stable, but not alphabetical.
+            % Make sure in future versions there is no change.
         end
         function allNames = getAllElements(obj)
             s = obj.protectedStructure_;

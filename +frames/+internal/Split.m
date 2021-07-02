@@ -36,7 +36,7 @@ classdef Split < dynamicprops
             % Split(df,splitter[,namesOfGroups])
             if isa(splitter, 'frames.Groups') || isa(splitter,'struct')
                 if nargin < 3
-                    namesOfGroups = fieldnames(splitter);
+                    namesOfGroups = string(fieldnames(splitter));
                 else
                     assert(all(ismember(namesOfGroups,fieldnames(splitter))), ...
                         'The names of the properties must be found in the splitter');
@@ -80,7 +80,7 @@ classdef Split < dynamicprops
                     warning('off','frames:Index:notUnique')
                     res = [res,res_]; %#ok<AGROW>
                 end
-                if length(res_.columns) > 1
+                if length(res_.columns_) > 1
                     isVectorOutput = false;
                 end
             end
