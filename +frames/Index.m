@@ -1,5 +1,5 @@
 classdef Index
-% INDEX is the object that supports index and columns in a DataFrame.
+% INDEX belongs to the objects that support columns in a DataFrame.
 % It contains operations of selection and merging, and constrains.
 %
 % An INDEX is expected to have unique values.
@@ -11,6 +11,8 @@ classdef Index
 % If the length is lower than or equal to 1, the Index can be a
 % 'singleton', ie representing the index of a series, which will allow
 % operations between Frames with different indices (see DataFrame.series)
+%
+% Copyright 2021 Benjamin Gaudin
 %
 % See also: UNIQUEINDEX, SORTEDINDEX, TIMEINDEX
     

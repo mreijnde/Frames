@@ -19,7 +19,9 @@ classdef Rolling
     %       Window on which to compute the rolling method
     %   windowNaN: (integer), default ceil(window/3)
     %       Minimum number of observations at the start required to have a value (otherwise result is NaN).
-    
+    %
+    % Copyright 2021 Benjamin Gaudin
+    %
     properties(SetAccess=protected)
         df
         window

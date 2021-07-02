@@ -16,6 +16,9 @@ classdef Groups < dynamicprops
  %          One can derive a class from Groups to directly specify the
  %          groupStructure by overriding the method 'defineGroups'. In such
  %          a case, 'groupStructure' is not required.
+ %
+ % Copyright 2021 Benjamin Gaudin
+ %
  % See also: frames.internal.Split
     properties(Access=protected)
         protectedStructure_

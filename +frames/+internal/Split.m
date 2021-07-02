@@ -26,6 +26,8 @@ classdef Split < dynamicprops
  % SPLIT method:
  %  apply   - apply a function to each sub-Frame, and returns a single Frame
  %
+ % Copyright 2021 Benjamin Gaudin
+ %
  % See also: frames.Groups
     properties(Access=private)
         nameOfProperties_
