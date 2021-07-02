@@ -274,10 +274,18 @@ classdef dataframeTest < matlab.unittest.TestCase
             sol = [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 2]),[23 3]);frames.DataFrame([4 2;1 1],[3 4],[3 44])];
             expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.SortedIndex([1 2 3 4]),[23 3 44]);
             t.verifyEqual(sol,expected)
-            t.verifyError(@f,'frames:SortedIndex:valueCheckFail')
-            function f()
-                [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 2]),[23 3]);frames.DataFrame([4 2;1 1],[4 3],[3 44])]; %#ok<VUNUS>
-            end
+            
+            % multiple concat with (un)sorted Frames
+            a = frames.TimeFrame(1,1,1);
+            b = frames.TimeFrame(2,[2 4],1);
+            c = frames.TimeFrame(3,3,2);
+            t.verifyEqual([a;c;b],frames.TimeFrame([1 2 NaN 2; NaN NaN 3 NaN]',[1 2 3 4],[1 2]))
+            t.verifyError(@() [a;a], 'frames:vertcat:indexNotUnique')
+            
+            a = frames.DataFrame(1,1,1);
+            b = frames.DataFrame(2,[2 4],1);
+            c = frames.DataFrame(3,3,2);
+            t.verifyEqual([a;c;b],frames.DataFrame([1 NaN 2 2; NaN 3 NaN NaN]',[1 3 2 4],[1 2]))
         end
         
         function resampleTest(t)

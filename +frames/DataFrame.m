@@ -436,9 +436,11 @@ classdef DataFrame
             % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
             idx = obj.index_;
             sameIndex = true;  % compute a merged index, only in case they are not the same
+            columnsNew = obj.columns_;
             lenCols = zeros(length(varargin)+1,1);
             lenCols(1) = length(obj.columns_);
             for ii = 1:nargin-1
+                columnsNew = [columnsNew;varargin{ii}.columns_]; %#ok<AGROW>
                 lenCols(ii+1) = length(varargin{ii}.columns_);
                 idx_ = varargin{ii}.index_;
                 if sameIndex && isequal(idx,idx_)
@@ -464,14 +466,12 @@ classdef DataFrame
             end
             other = getExtendedIndexDF(obj);
             dataH(:,1:lenCols(1)) = other.data_;
-            columnsNew = obj.columns_;
             type = class(obj.data_);
             for ii = 1:nargin-1
                 extendedDF = getExtendedIndexDF(varargin{ii});
                 assert(isa(extendedDF.data_,type), ...
                     'frames do not have the same data type')
                 dataH(:,sizeColumns(ii)+1:sizeColumns(ii+1)) = extendedDF.data_;
-                columnsNew = [columnsNew;varargin{ii}.columns_]; %#ok<AGROW>
             end
             other.data_ = dataH;
             other.columns_ = columnsNew;
@@ -482,9 +482,11 @@ classdef DataFrame
             % frames must each have unique columns
             col = obj.columns_.value_;
             sameCols = true;  % compute a merged columns, only in case they are not the same
+            idxNew = obj.index_;
             lenIdx = zeros(length(varargin),1);
             lenIdx(1) = length(obj.index_);
             for ii = 1:nargin-1
+                idxNew = idxNew.union(varargin{ii}.index_);
                 lenIdx(ii+1) = length(varargin{ii}.index_);
                 col_ = varargin{ii}.columns_.value_;
                 if sameCols && isequal(col,col_)
@@ -498,6 +500,11 @@ classdef DataFrame
             sizeIndex = cumsum(lenIdx);
             dataV = obj.defaultData(sizeIndex(end),length(col));
             
+            if length(idxNew) ~= sizeIndex(end)
+                error('frames:vertcat:indexNotUnique', ...
+                    'There must be no overlap in the index of the Frames.')
+            end
+            
             function df = getExtendedColsDF(df)
                 % Expand DF, keeping the order of col
                 if ~sameCols
@@ -506,18 +513,19 @@ classdef DataFrame
             end
             
             other = getExtendedColsDF(obj);
-            dataV(1:lenIdx(1),:) = other.data_;
+            
+            idData = other.index_.positionIn(idxNew);
+            dataV(idData,:) = other.data_;
             type = class(obj.data_);
             for ii = 1:nargin-1
                 extendedDF = getExtendedColsDF(varargin{ii});
                 assert(isa(extendedDF.data_,type), ...
                     'frames do not have the same data type')
-                idxConc = [other.index_;extendedDF.index_];
-                
-                dataV(sizeIndex(ii)+1:sizeIndex(ii+1),:) = extendedDF.data_;
+                idData = extendedDF.index_.positionIn(idxNew);
+                dataV(idData,:) = extendedDF.data_;
             end
             other.data_ = dataV;
-            other.index_ = idxConc;
+            other.index_ = idxNew;
             other.name_ = ""; other.description = "";
         end
         
