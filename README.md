@@ -20,8 +20,8 @@ If one works directly with the numeric type, one loses the information of the in
 **_Frame_ aims at being both a matrix and a table**, allowing intuitive operations on and between Frames, while forbidding operations when the Frames are not aligned.
 For example, `frame1+frame2` is possible, and will fail if indices or columns are misaligned.
 
-There are two types of Frames: DataFrame and TimeFrame, in relation with Matlab's table and timetable.
-A DataFrame accepts any kind of index (numeric, string, etc.) while TimeFrame is specifically built to work with a chronological time index (ideal for time series).
+There are two types of Frames: `DataFrame` and `TimeFrame`, in relation with Matlab's `table` and `timetable`.
+A `DataFrame` accepts any kind of index (numeric, string, etc.) while `TimeFrame` is specifically built to work with a chronological time index (ideal for time series).
 
 The package is compatible with Matlab R2021a and later versions. No other toolbox is required.
 
