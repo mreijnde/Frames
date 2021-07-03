@@ -3,7 +3,7 @@
 ## Purpose of the package
 **Frames** is a package that introduces a new kind of data type for Matlab. Demo: [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) 
 
-This data type (or _class_) can help when working with homogeneous data that are referenced by column and index identifiers (like time series which have variable and observation names).
+This data type (or _class_) helps when working with homogeneous data that are referenced by column and index identifiers (like time series which have variable and observation names).
 
 Matlab already has several data types available, but none is well suited for homogeneous, labeled data.
 
