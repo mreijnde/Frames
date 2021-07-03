@@ -27,11 +27,16 @@ A demo is available in [html/framesDemo.html](html/framesDemo.html) and can be a
 The documentation is available using Matlab's command
 ```Matlab
 doc frames.DataFrame
-% or frames.TimeFrame
+doc frames.TimeFrame
 ```
 
 Compatible with Matlab R2021a and later versions. No other toolbox are required.
 
+The documentation for DataFrame appears as follows:
+
+```Matlab
+doc frames.DataFrame
+```
 <p><img src="img/docIntro.png"></p>
 <p><img src="img/docMethodsDescr.png"></p>
 <p><img src="img/docProps.png"></p>
