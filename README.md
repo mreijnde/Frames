@@ -31,3 +31,5 @@ doc frames.DataFrame
 ```
 
 Compatible with Matlab R2021a and later versions. No other toolbox are required.
+
+<p align="center"><img width=12.5% src="img/docIntro.png"></p>
