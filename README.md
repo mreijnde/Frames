@@ -1,7 +1,7 @@
 # Frames
 
 ## Purpose of the project
-**Frames** is a package that introduces a new kind of data type for Matlab.
+**Frames** is a package that introduces a new kind of data type for Matlab. Demo: [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) 
 
 This data type (or _class_) can help when working with homogeneous data that are referenced by column and index identifiers (like time series which have variable and observation names).
 
