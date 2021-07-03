@@ -142,7 +142,7 @@ classdef TimeFrame < frames.DataFrame
         end
     end
     
-    methods(Access=protected)
+    methods(Hidden, Access=protected)
         function indexValidation(obj,value)
             if isa(value,'frames.Index') && ~isa(value,'frames.TimeIndex')
                 error('TimeFrame can only accept a TimeIndex as index.')

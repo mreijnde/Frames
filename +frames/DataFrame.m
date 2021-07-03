@@ -195,12 +195,12 @@ classdef DataFrame
             obj.columns_.singleton = bool;
         end
         function obj = asColSeries(obj,bool)
-            % Sets .colseries to true if the Frame is a column series
+            % sets .colseries to true if the Frame can be a column series
             if nargin<2, bool=true; end
             obj.columns_.singleton = bool;
         end
         function obj = asRowSeries(obj,bool)
-            % Sets .rowseries to true if the Frame is a row series
+            % sets .rowseries to true if the Frame can be a row series
             if nargin<2, bool=true; end
             obj.index_.singleton = bool;
         end
@@ -250,8 +250,7 @@ classdef DataFrame
             obj.columns_ = transformIndex(obj.columns_,type);
         end
         function obj = setIndexName(obj,name)
-            % the index name will appear as the the first of the
-            % DimensionNames in the table .t
+            % the index name will appear as the first of the DimensionNames in the table .t
             obj.index_.name = name;
         end
         function obj = setColumnsName(obj,name)
@@ -371,7 +370,7 @@ classdef DataFrame
             other = obj.iloc_(':',colToKeep);
         end
         function other = resample(obj,index,nameValue)
-            % RESAMPLE resample the frame with the new index and propagates the data if there are missing values.
+            % RESAMPLE resample the frame with the new index and propagates the data if there are missing values
             % It propagates the last valid data between two consecutive
             % index values. If all data are missing, it propagates the
             % missing value. Only works with a sorted index.
@@ -902,7 +901,7 @@ classdef DataFrame
         
     end
     
-    methods(Access=protected)
+    methods(Hidden, Access=protected)
         
         function obj = iloc_(obj,idxPosition,colPosition,userCall)
             if nargin < 4, userCall=false; end

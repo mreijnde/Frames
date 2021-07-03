@@ -11,9 +11,9 @@
 %
 %% Frame classes
 %
-% The class *frames.DataFrame* and its child class *frames.TimeFrame* aim to 
-% give a solution to working with data sets that are _homogeneous and with column and 
-% row names_, to make operations on and between Frames simple and robust.
+% The class *frames.DataFrame* and its child class *frames.TimeFrame* 
+% provide a data type suitable when working with data sets that are _homogeneous and with column and 
+% row names_, making operations on and between Frames simple and robust.
 %
 % The main properties of these classes are:
 %
@@ -152,7 +152,7 @@ catch me
     disp(me.message)
 end
 %%
-% Make it work by make the Frame a Series
+% Make it work by making the Frame a Series
 series = seriesBad.asColSeries();
 % or series = frames.DataFrame([1;2],[1 2],"seriesColumn",ColSeries=true);
 details(series)
