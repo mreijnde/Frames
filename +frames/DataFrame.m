@@ -827,12 +827,7 @@ classdef DataFrame
             %
             % See also frames.internal.ExponentiallyWeightedMoving
             obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value);
-        end
-        
-        % ToDo demo mlx, html
-        % toDo readme
-        % ToDo license
-        
+        end        
         
         % ToDo rewrite subsref and subsasgn using the new tools when Matlab
         % release them
