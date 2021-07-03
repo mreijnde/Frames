@@ -1,6 +1,6 @@
 # Frames
 
-## Purpose of the project
+## Purpose of the package
 **Frames** is a package that introduces a new kind of data type for Matlab. Demo: [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) 
 
 This data type (or _class_) can help when working with homogeneous data that are referenced by column and index identifiers (like time series which have variable and observation names).
@@ -33,14 +33,13 @@ The documentation is available using Matlab's command
 doc frames.DataFrame
 doc frames.TimeFrame
 ```
-
-The documentation for DataFrame appears as follows:
-
-```Matlab
-doc frames.DataFrame
-```
 <p><img src="img/docIntro.png"></p>
 <p><img src="img/docMethodsDescr.png"></p>
 <p><img src="img/docProps.png"></p>
 <p><img src="img/docMethodsSummary1.png"></p>
 <p><img src="img/docMethodsSummary2.png"></p>
+
+## License
+Copyright 2021-2022 Benjamin Gaudin
+
+Frames is free software made available under the MIT License. For details see the LICENSE file.
