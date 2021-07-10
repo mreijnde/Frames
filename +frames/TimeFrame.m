@@ -39,6 +39,7 @@ classdef TimeFrame < frames.DataFrame
 %   - One can also use a timerange in lieu of specific index names:
 %     tf(timerange,columnNames)
 %     tf("dateStart:dateEnd:dateFormat",columnNames)
+%     tf({dateStart,dateEnd},columnNames)
 %
 %   - Selection and modification based on position with {} or the iloc method:
 %     tf{indexPosition,columnsPosition}
@@ -53,7 +54,7 @@ classdef TimeFrame < frames.DataFrame
 %     tf1' * tf2, etc.
 %
 %   - Chaining of methods:
-%     tf.relChange().std(),  computes the standard deviation of the
+%     tf.relChg().std(),  computes the standard deviation of the
 %     relative change of tf
 %     tf{5:end,:}.log().diff(),  computes the difference of the log of tf
 %     from lines 5 to end

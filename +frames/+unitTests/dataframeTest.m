@@ -22,6 +22,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyTrue(isdatetime(emptyDF.index))
             t.verifyTrue(isa(emptyDF.getIndex_(),'frames.Index'))
             
+            % error index not sorted
+            t.verifyError(@() frames.TimeFrame([1;2],[2,1]),'frames:SortedIndex:valueCheckFail');
+            
             %from unique data
             t.verifyEqual(frames.DataFrame(1,[1 2]).data,[1;1])
             
@@ -104,6 +107,14 @@ classdef dataframeTest < matlab.unittest.TestCase
             df([2 1],[3 1 2]) = [1 2 3; 4 5 6];
             expected = frames.DataFrame([5 6 4; 2 3 1],[1 2],[1 2 3]);
             t.verifyEqual(df,expected)
+            df{[2 1],[3 1 2]} = [10 20 30; 40 50 60];
+            expected = frames.DataFrame([50 60 40; 20 30 10],[1 2],[1 2 3]);
+            t.verifyEqual(df,expected)
+            df = df.setIndexType('sorted');
+            t.verifyError( @() f(df), 'frames:SortedIndex:valueCheckFail' )
+            function f(x), x.loc([2 1], 2) = 20; end
+            t.verifyError( @() fi(df), 'frames:SortedIndex:valueCheckFail' )
+            function fi(x), x.loc{[2 1], 2} = 20; end
             
             % assign []
             df = frames.DataFrame([1 2 3; 2 5 NaN],[1 2],[1 2 3]);
@@ -140,6 +151,17 @@ classdef dataframeTest < matlab.unittest.TestCase
             expected = frames.DataFrame([2 1 3],1,["b","a","a"]);
             t.verifyEqual(sol,expected)
             warning('on','frames:Index:notUnique')
+            
+            % test empty selection
+            df = frames.DataFrame([1 2;3 4],[1,2],["a","b"]);
+            t.verifyEqual(df{:,double.empty(1,0)},frames.DataFrame([],[1,2]))
+            t.verifyEqual(df(double.empty(0,1),"b"),frames.DataFrame([],[],"b"))
+            
+            % sorted index
+            t.verifyEqual(df(([2 1])),frames.DataFrame([3 4;1 2],[2 1],["a","b"]))
+            df = df.setIndexType('sorted');
+            t.verifyError(@() df([2 1]),'frames:SortedIndex:valueCheckFail')
+            t.verifyError(@() df{[2 1]},'frames:SortedIndex:valueCheckFail')
         end
         
         function setIndexTest(t)
@@ -207,6 +229,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             ext = df.extendIndex([3 2 0]);
             t.verifyEqual(ext.data, [NaN NaN;1 1;2 2;NaN NaN]);
             t.verifyEqual(ext.index, [0 1 2 3]');
+            
+            t.verifyEqual(df.extendIndex([2 1 2]),df);
         end
         
         function dropIndexTest(t)
@@ -268,6 +292,19 @@ classdef dataframeTest < matlab.unittest.TestCase
             solSorted = [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 3]), [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
             expectedSorted = frames.DataFrame([4 2 4 2;NaN NaN NaN 1;1 1 NaN NaN],frames.SortedIndex([1 2 3]),[23 3 4 2]);
             t.verifyEqual(solSorted,expectedSorted)
+            
+            % repeating
+            a = frames.DataFrame(1,1,"a");
+            b = frames.DataFrame([11 11;22 22],[1 3],["b1","b2"]);
+            warning('off','frames:Index:notUnique')
+            expected = frames.DataFrame([1 11 11 1; NaN 22 22 NaN],[1 3],["a","b1","b2","a"]);
+            t.verifyEqual([a b a],expected)
+            
+            % disallow concatenation between different classes like [1,'1']
+            c = b;
+            c.data = char(c.data);
+            t.verifyError(@() [b c],'frames:concat:differentDatatype');
+            warning('on','frames:Index:notUnique')
         end
         
         function vertcatTest(t)
@@ -351,6 +388,12 @@ classdef dataframeTest < matlab.unittest.TestCase
             df2 = frames.DataFrame([1 2]');
             t.verifyEqual(df2.relChg('log').data,[NaN log(2)]')
             t.verifyEqual(df2.relChg().data,[NaN 1]')
+            
+            % test other arguments
+            tf = frames.TimeFrame([1 1 NaN 2]');
+            t.verifyEqual(tf.relChg(),frames.TimeFrame([NaN 0 NaN 1]'));
+            t.verifyEqual(tf.relChg('simple',2),frames.TimeFrame([NaN NaN NaN 1]'));
+            t.verifyEqual(tf.relChg('simple',2,false),frames.TimeFrame([NaN 1]',[2 4]));
         end
         
         function mathOperationsTest(t)
@@ -391,8 +434,11 @@ classdef dataframeTest < matlab.unittest.TestCase
 
             % with arrays
             df = frames.DataFrame([1 2;3 4],["a" "b"],["one" "two"]);
+            two = frames.DataFrame(2,ColSeries=true,RowSeries=true);
             t.verifyEqual(df*2,frames.DataFrame(2*[1 2;3 4],["a" "b"],["one" "two"]))
             t.verifyEqual(2*df,df*2)
+            t.verifyEqual(2*df,two.*df)
+            t.verifyError(@() two*df,'frames:matrixOpHandler:notAligned')
             t.verifyEqual([1 2]*df,frames.DataFrame([7 10],1,df.columns))
             t.verifyEqual(df*[1;2],frames.DataFrame([5;11],df.index))
             
@@ -410,6 +456,21 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(res.columns,["a" "b" "c"])
         end
         
+        function mathOperationsMiscellaneousTest(t)
+            df = t.dfMissing1;
+            t.verifyEqual(df./df,df./df.data)
+            div = 1./df;
+            t.verifyEqual(div.data,1./df.data)
+            t.verifyEqual(df/2,df./2)
+            t.verifyEqual(df+1,1+df)
+            t.verifyEqual(df-1,-(1-df))
+            
+            b = df{1,:}';
+            expectedData = df.data * b.data;
+            expected = frames.DataFrame(expectedData,df.index,b.columns);
+            t.verifyEqual(df*b,expected)
+        end
+        
         function equalTest(t)
         end
         
@@ -419,10 +480,23 @@ classdef dataframeTest < matlab.unittest.TestCase
             tr = timerange("09-Jun-2021","14-Jun-2021",'closed');
             sel2 = tf(tr);
             sel3 = tf("-inf:14-Jun-2021");
-            expected = frames.TimeFrame(1,738318:738318+3);  % 11 June 2021 to 21 June 2021
+            sel4 = tf({-inf,datetime("14.06.2021",Format='dd.MM.yyyy')});
+            sel5 = tf({"11-Jun-2021","14-Jun-2021"}); %#ok<CLARRSTR>
+            sel6 = tf(738318:738318+3);
+            expected = frames.TimeFrame(1,738318:738318+3);  % 11 June 2021 to 14 June 2021
             t.verifyEqual(sel1,expected)
             t.verifyEqual(sel2,expected)
             t.verifyEqual(sel3,expected)
+            t.verifyEqual(sel4,expected)
+            t.verifyEqual(sel5,expected)
+            t.verifyEqual(sel6,expected)
+            
+            selSpecific = tf(["11-Jun-2021","14-Jun-2021"]);
+            expectedSpecific = frames.TimeFrame(1,[738318,738318+3]);  % 11 June 2021 and 14 June 2021
+            t.verifyEqual(selSpecific,expectedSpecific)
+            
+            % not possible to turn it into a timerange (use [] to get specific observations)
+            t.verifyError(@() tf({"11-Jun-2021","12-Jun-2021","14-Jun-2021"}),'MATLAB:datetime:InvalidData') %#ok<CLARRSTR>
         end
         
         function matrix2seriesTest(t)
@@ -452,13 +526,17 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function dropMissingTest(t)
-            df = frames.DataFrame([NaN NaN; NaN 1],string([1 2]),["a","b"]);
+            df = frames.DataFrame([NaN NaN; NaN 1],string([1 2]),{'a','b'});
             dany = df.dropMissing(How='any');
-            t.verifyEqual(dany,frames.DataFrame(double.empty(0,2),string.empty(0,1),["a","b"]));
+            t.verifyEqual(dany,frames.DataFrame(double.empty(0,2),string.empty(0,1),{'a','b'}));
             dall = df.dropMissing(How='all');
-            t.verifyEqual(dall,frames.DataFrame([NaN 1],string(2),["a","b"]));
+            t.verifyEqual(dall,frames.DataFrame([NaN 1],string(2),{'a','b'}));
             dall2 = df.dropMissing(How='all',Axis=2);
-            t.verifyEqual(dall2,frames.DataFrame([NaN 1]',string([1 2]),"b"));
+            t.verifyEqual(dall2,frames.DataFrame([NaN 1]',string([1 2]),{'b'}));
+            dfstring = df;
+            dfstring.data = string(df.data);
+            dall2string = dfstring.dropMissing(How='all',Axis=2);
+            t.verifyEqual(dall2string,frames.DataFrame(string([NaN 1]'),string([1 2]),{'b'}));
         end
         
         function rollingEwmTest(t)

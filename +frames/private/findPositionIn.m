@@ -15,5 +15,6 @@ function idx = findPositionIn(a,b)
     idx = arrayfun(@(x) find(b==x),a,'UniformOutput',false);
     idx = [idx{:}];
     
+    if isempty(idx), idx=double.empty(1,0); end
     if iscolumn(a), idx=idx'; end
 end
