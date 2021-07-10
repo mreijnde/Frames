@@ -39,6 +39,7 @@ classdef TimeFrame < frames.DataFrame
 %   - One can also use a timerange in lieu of specific index names:
 %     tf(timerange,columnNames)
 %     tf("dateStart:dateEnd:dateFormat",columnNames)
+%     tf({dateStart,dateEnd},columnNames)
 %
 %   - Selection and modification based on position with {} or the iloc method:
 %     tf{indexPosition,columnsPosition}

@@ -44,6 +44,9 @@ classdef TimeIndex < frames.SortedIndex
             if isTextScalar(selector) && contains(selector,':')
                 selector = obj.getTimerange(selector);
             end
+            if iscell(selector) && length(selector)==2
+                selector = timerange(selector{1},selector{2},'closed');
+            end
             if isa(selector,'timerange')
                 tt = timetable(obj.value);
                 [~,whichRows] = overlapsrange(tt,selector);
