@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-07-04"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
+      --><title>frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-07-10"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -267,7 +267,7 @@ ans =
     disp(me.message)
 <span class="keyword">end</span>
 </pre><pre class="codeoutput">Frames have different columns!
-</pre><p>Make it work by make the Frame a Series</p><pre class="codeinput">series = seriesBad.asColSeries();
+</pre><p>Make it work by making the Frame a Series</p><pre class="codeinput">series = seriesBad.asColSeries();
 <span class="comment">% or series = frames.DataFrame([1;2],[1 2],"seriesColumn",ColSeries=true);</span>
 details(series)
 df .* series
@@ -369,22 +369,22 @@ sortedConcatenation = [df1,df2]
 </pre><pre class="codeoutput">
 unsortedConcatenation = 
 
-         Var1    Var2
-         ____    ____
+         x1     x2 
+         ___    ___
 
-    1      1     NaN 
-    3      3       3 
-    2    NaN       2 
+    1      1    NaN
+    3      3      3
+    2    NaN      2
 
 
 sortedConcatenation = 
 
-         Var1    Var2
-         ____    ____
+         x1     x2 
+         ___    ___
 
-    1      1     NaN 
-    2    NaN       2 
-    3      3       3 
+    1      1    NaN
+    2    NaN      2
+    3      3      3
 
 </pre><p><b>TimeIndex</b> can read several kinds of arguments: datenum, datetime, and strings/cell together with a Format</p><pre class="codeinput">frames.TimeIndex(738336)
 frames.TimeIndex(datetime(738336,<span class="string">'ConvertFrom'</span>,<span class="string">'datenum'</span>,Format=<span class="string">'dd-MMM-yyyy'</span>));
@@ -404,6 +404,9 @@ tf(timerange(-inf,datetime(738333,<span class="string">'ConvertFrom'</span>,<spa
 <span class="comment">% This can also be easily written using a string as follows</span>
 <span class="comment">% tf("dateStart:dateEnd:dateFormat")</span>
 tf(<span class="string">"-inf:26*06*2021:dd*MM*yyyy"</span>)
+<span class="comment">% or with curly brackets</span>
+<span class="comment">% tf({dateStart,dateEnd})</span>
+tf({-inf,<span class="string">"26-Jun-2021"</span>});
 </pre><pre class="codeoutput">
 tf = 
 
@@ -700,7 +703,7 @@ catch me
     disp(me.message)
 end
 %%
-% Make it work by make the Frame a Series
+% Make it work by making the Frame a Series
 series = seriesBad.asColSeries();
 % or series = frames.DataFrame([1;2],[1 2],"seriesColumn",ColSeries=true);
 details(series)
@@ -765,6 +768,9 @@ tf(timerange(-inf,datetime(738333,'ConvertFrom','datenum'),'closed'));
 % This can also be easily written using a string as follows
 % tf("dateStart:dateEnd:dateFormat")
 tf("-inf:26*06*2021:dd*MM*yyyy")
+% or with curly brackets
+% tf({dateStart,dateEnd})
+tf({-inf,"26-Jun-2021"});
 %% Methods Chaining
 % Several methods are available. Again, please refer to the documentation
 % for the full list

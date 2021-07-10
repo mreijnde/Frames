@@ -217,6 +217,9 @@ tf(timerange(-inf,datetime(738333,'ConvertFrom','datenum'),'closed'));
 % This can also be easily written using a string as follows
 % tf("dateStart:dateEnd:dateFormat")
 tf("-inf:26*06*2021:dd*MM*yyyy")
+% or with curly brackets
+% tf({dateStart,dateEnd})
+tf({-inf,"26-Jun-2021"});
 %% Methods Chaining
 % Several methods are available. Again, please refer to the documentation
 % for the full list
