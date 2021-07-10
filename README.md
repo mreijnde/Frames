@@ -14,7 +14,7 @@ Below are the fundamental data types provided by Matlab together with the new _F
 
 When one works with data with names for index and columns, one can use a `table`.
 
-However this class does not allow simple operations like addition (`table1+table2` is not supported) or operation on data (`abs(table)` is not directly available).
+However this class does not allow simple operations like addition (`table1+table2` is not supported) or operation on data (like `abs(table)`) is not directly available.
 
 If one works directly with the numeric type, one loses the information of the index and column names, risking adding apples to pears.
 
