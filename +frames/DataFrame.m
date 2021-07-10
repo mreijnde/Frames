@@ -50,7 +50,7 @@ classdef DataFrame
 %     df1' * df2, etc.
 %
 %   - Chaining of methods:
-%     df.relChange().std(),  computes the standard deviation of the
+%     df.relChg().std(),  computes the standard deviation of the
 %     relative change of df
 %     df{5:end,:}.log().diff(),  computes the difference of the log of df
 %     from lines 5 to end
@@ -688,7 +688,8 @@ classdef DataFrame
             %       the lag to compute the change as in d(i+lag)./d(i)-1
             % * overlapping : (logical), default true
             %       whether to return the frame with all the indices (true) or only the indices at n*lag (false)
-            obj.data_ = relativeChange(obj.data_,varargin{:});
+            [obj.data_,idx] = relativeChange(obj.data_,varargin{:});
+            obj.index_.value_ = obj.index_.value_(idx);
         end
         function obj = compoundChange(obj,varargin)
             % compound relative changes
@@ -981,10 +982,10 @@ classdef DataFrame
         end
         function [index,columns] = localizeSelectors(obj,index,columns)
             if ~iscolon(index)
-                index = obj.index_.positionOf(index);
+                index = obj.index_.positionOf(index,true);
             end
             if ~iscolon(columns)
-                columns = obj.columns_.positionOf(columns);
+                columns = obj.columns_.positionOf(columns,true);
             end
         end
         

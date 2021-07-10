@@ -53,7 +53,7 @@ classdef TimeFrame < frames.DataFrame
 %     tf1' * tf2, etc.
 %
 %   - Chaining of methods:
-%     tf.relChange().std(),  computes the standard deviation of the
+%     tf.relChg().std(),  computes the standard deviation of the
 %     relative change of tf
 %     tf{5:end,:}.log().diff(),  computes the difference of the log of tf
 %     from lines 5 to end

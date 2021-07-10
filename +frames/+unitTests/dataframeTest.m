@@ -140,6 +140,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             expected = frames.DataFrame([2 1 3],1,["b","a","a"]);
             t.verifyEqual(sol,expected)
             warning('on','frames:Index:notUnique')
+            
+            % test empty selection
+            df = frames.DataFrame([1 2;3 4],[1,2],["a","b"]);
+            t.verifyEqual(df{:,double.empty(1,0)},frames.DataFrame([],[1,2]))
+            t.verifyEqual(df(double.empty(0,1),"b"),frames.DataFrame([],[],"b"))
         end
         
         function setIndexTest(t)
