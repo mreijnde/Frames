@@ -468,7 +468,7 @@ classdef DataFrame
             type = class(obj.data_);
             for ii = 1:nargin-1
                 extendedDF = getExtendedIndexDF(varargin{ii});
-                assert(isa(extendedDF.data_,type), ...
+                assert(isa(extendedDF.data_,type),'frames:concat:differentDatatype', ...
                     'frames do not have the same data type')
                 dataH(:,sizeColumns(ii)+1:sizeColumns(ii+1)) = extendedDF.data_;
             end
@@ -518,7 +518,7 @@ classdef DataFrame
             type = class(obj.data_);
             for ii = 1:nargin-1
                 extendedDF = getExtendedColsDF(varargin{ii});
-                assert(isa(extendedDF.data_,type), ...
+                assert(isa(extendedDF.data_,type),'frames:concat:differentDatatype', ...
                     'frames do not have the same data type')
                 idData = extendedDF.index_.positionIn(idxNew);
                 dataV(idData,:) = extendedDF.data_;
