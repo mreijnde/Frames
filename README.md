@@ -24,7 +24,7 @@ For example, `frame1+frame2` is possible, and will fail if indices or columns ar
 There are two types of Frames: `DataFrame` and `TimeFrame`, in relation with Matlab's `table` and `timetable`.
 A `DataFrame` accepts any kind of index (numeric, string, etc.) while `TimeFrame` is specifically built to work with a chronological time index (ideal for time series).
 
-The package is compatible with Matlab R2021a and later versions. No other toolbox is required.
+The package is compatible with **Matlab R2021a** and later versions. No other toolbox is required.
 
 ## Demo and documentation
 A demo is available in [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) and can be also found in the live script format [framesDemo.mlx](framesDemo.mlx).
