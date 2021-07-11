@@ -9,6 +9,8 @@
 % represents observations of variables, it is always tricky to make sure the
 % data is not misaligned.
 %
+% The package currently requires a version of *Matlab R2021a* or later.
+%
 %% Frame classes
 %
 % The class *frames.DataFrame* and its child class *frames.TimeFrame* 
