@@ -2,7 +2,7 @@
 [![View Frames on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://ch.mathworks.com/matlabcentral/fileexchange/95258-frames)
 
 ## Purpose of the package
-**Frames** is a package that introduces a new kind of data type for Matlab. Demo: [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) 
+**Frames** is a package that introduces a new kind of data type for Matlab, the **DataFrame**. Demo: [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) 
 
 This data type (or _class_) helps when working with homogeneous data that are referenced by column and index identifiers (like time series which have variable and observation names).
 
@@ -21,7 +21,7 @@ If one works directly with the numeric type, one loses the information of the in
 **_Frame_ aims at being both a matrix and a table**, allowing intuitive operations on and between Frames, while forbidding operations when the Frames are not aligned.
 For example, `frame1+frame2` is possible, and will fail if indices or columns are misaligned.
 
-There are two types of Frames: `DataFrame` and `TimeFrame`, in relation with Matlab's `table` and `timetable`.
+We provide two types of Frames: **`DataFrame`** and **`TimeFrame`**, in relation with Matlab's `table` and `timetable`.
 A `DataFrame` accepts any kind of index (numeric, string, etc.) while `TimeFrame` is specifically built to work with a chronological time index (ideal for time series).
 
 The package is compatible with **Matlab R2021a** and later versions. No other toolbox is required.
