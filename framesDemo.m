@@ -11,6 +11,9 @@
 %
 % The package currently requires a version of *Matlab R2021a* or later.
 %
+% Author: Benjamin Gaudin
+%
+% Email: frames.matlab@gmail.com
 %% Frame classes
 %
 % The class *frames.DataFrame* and its child class *frames.TimeFrame* 
@@ -243,9 +246,9 @@ randomData = randn(nObs,nVar)./100 + 1./3000;
 correlatedData = randomData*upper;
 tf = frames.TimeFrame(correlatedData,738336-nObs+1:738336,1:nVar);
 %%
-tf.cumsum().plot()  % applies a cumulative sum and then plot the result
+tf.cumsum().plot()  % apply a cumulative sum and then plot the result
 %%
-tf.corr().heatmap()  % computes the correlation matrix and plot it as a heatmap
+tf.corr().heatmap()  % compute the correlation matrix and plot it as a heatmap
 %% Rolling and Ewm
 % Computation on a rolling basis are available with the _.rolling()_ and the
 % _.ewm()_ methods. _.rolling()_ applies computations on a rolling window
@@ -280,7 +283,7 @@ tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving 
 % One can apply a function to groups of columns in a Frame using the method
 % _.split(groups).apply(@<function>)_.
 %
-%  The _groups_ of columns can be expressed in different ways.
+%  The groups of columns can be expressed in different ways.
 %   * (cellArrayOfGroupLists,groupNames)
 %   * structure: fields are group names and values are elements in each group
 %   * frames.Group: Group whose property  are group names and property
@@ -317,4 +320,11 @@ x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
 g = frames.Groups(df.columns,s);
 x4 = df.split(g).apply(@(x) x.max(2))
 
+%% Other Methods
+% We list here all the methods available in the DataFrame. We provided a
+% demo above for some of them. 
+% 
+% Refer to the documentation for detailed information.
+% You can also refer to the unit tests (+frames/+unitTests/) for some examples.
+methods('frames.DataFrame')
 

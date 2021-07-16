@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-07-11"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
+      --><title>frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-07-17"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -67,7 +67,7 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h1><i>frames</i> package</h1><!--introduction--><p>The <b>frames</b> package contains classes to handle operations on homogeneous data matrices that are referenced by column and index identifiers.</p><p>There are currently no tool in Matlab to do that. Matlab's (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible). Matlab's native matrices are not aware of row and column names. When data represents observations of variables, it is always tricky to make sure the data is not misaligned.</p><p>The package currently requires a version of <b>Matlab R2021a</b> or later.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frame classes</a></li><li><a href="#3">Constructor</a></li><li><a href="#7">Properties Access and Modification</a></li><li><a href="#11">Sub-Frame Access and Modification</a></li><li><a href="#18">Operations</a></li><li><a href="#26">Concatenation</a></li><li><a href="#28">Particular use of Index</a></li><li><a href="#33">Methods Chaining</a></li><li><a href="#37">Rolling and Ewm</a></li><li><a href="#41">Split Apply</a></li></ul></div><h2 id="1">Frame classes</h2><p>The class <b>frames.DataFrame</b> and its child class <b>frames.TimeFrame</b> provide a data type suitable when working with data sets that are <i>homogeneous and with column and row names</i>, making operations on and between Frames simple and robust.</p><p>The main properties of these classes are:</p><div><ul><li>data:       TxN,  homogeneous data</li><li>index:      Tx1</li><li>columns:    1xN</li><li>t: dependent table built on the properties above.</li></ul></div><p><i>columns</i> and <i>index</i> are expected to have unique elements. <i>columns</i> allows duplicates but issues a warning if it is the case. <i>index</i> does not accept duplicates. Moreover, for TimeFrame, <i>index</i> is a chronological datetime array.</p><p>The Frames are displayed as a table (DataFrame) and as a timetable (TimeFrame).</p><p>For the documentation, run</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
+  </style></head><body><div class="content"><h1><i>frames</i> package</h1><!--introduction--><p>The <b>frames</b> package contains classes to handle operations on homogeneous data matrices that are referenced by column and index identifiers.</p><p>There are currently no tool in Matlab to do that. Matlab's (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible). Matlab's native matrices are not aware of row and column names. When data represents observations of variables, it is always tricky to make sure the data is not misaligned.</p><p>The package currently requires a version of <b>Matlab R2021a</b> or later.</p><p>Author: Benjamin Gaudin</p><p>Email: <a href="mailto:frames.matlab@gmail.com">frames.matlab@gmail.com</a></p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frame classes</a></li><li><a href="#3">Constructor</a></li><li><a href="#7">Properties Access and Modification</a></li><li><a href="#11">Sub-Frame Access and Modification</a></li><li><a href="#18">Operations</a></li><li><a href="#26">Concatenation</a></li><li><a href="#28">Particular use of Index</a></li><li><a href="#33">Methods Chaining</a></li><li><a href="#37">Rolling and Ewm</a></li><li><a href="#41">Split Apply</a></li><li><a href="#46">Other Methods</a></li></ul></div><h2 id="1">Frame classes</h2><p>The class <b>frames.DataFrame</b> and its child class <b>frames.TimeFrame</b> provide a data type suitable when working with data sets that are <i>homogeneous and with column and row names</i>, making operations on and between Frames simple and robust.</p><p>The main properties of these classes are:</p><div><ul><li>data:       TxN,  homogeneous data</li><li>index:      Tx1</li><li>columns:    1xN</li><li>t: dependent table built on the properties above.</li></ul></div><p><i>columns</i> and <i>index</i> are expected to have unique elements. <i>columns</i> allows duplicates but issues a warning if it is the case. <i>index</i> does not accept duplicates. Moreover, for TimeFrame, <i>index</i> is a chronological datetime array.</p><p>The Frames are displayed as a table (DataFrame) and as a timetable (TimeFrame).</p><p>For the documentation, run</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
 doc <span class="string">frames.TimeFrame</span>
 </pre><h2 id="3">Constructor</h2><p>Construct a Frame as follows:</p><pre>df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])</pre><pre class="codeinput"><span class="comment">% Example:</span>
 df = frames.DataFrame([1 2;3 4],[1 2],[<span class="string">"col1"</span>,<span class="string">"col2"</span>])
@@ -451,8 +451,8 @@ correlation =
     0.4277    1.0000   -0.7770
    -0.5917   -0.7770    1.0000
 
-</pre><pre class="codeinput">tf.cumsum().plot()  <span class="comment">% applies a cumulative sum and then plot the result</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_01.png" alt=""> <pre class="codeinput">tf.corr().heatmap()  <span class="comment">% computes the correlation matrix and plot it as a heatmap</span>
+</pre><pre class="codeinput">tf.cumsum().plot()  <span class="comment">% apply a cumulative sum and then plot the result</span>
+</pre><img vspace="5" hspace="5" src="framesDemo_01.png" alt=""> <pre class="codeinput">tf.corr().heatmap()  <span class="comment">% compute the correlation matrix and plot it as a heatmap</span>
 </pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <h2 id="37">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
  * .rolling(window[,windowNaN]).&lt;method&gt;
  * .ewm(&lt;DecayType&gt;=value).&lt;method&gt;</pre><p>Please refer to the documentation for details on arguments and methods.</p><pre class="codeinput">doc <span class="string">frames.DataFrame.rolling</span>
@@ -471,7 +471,7 @@ priceSmoothers.plot(Log=true)
 </pre><pre class="codeoutput">Warning: index is not unique 
 Warning: index is not unique 
 </pre><img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <h2 id="41">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The _groups_ of columns can be expressed in different ways.
+</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <h2 id="41">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The groups of columns can be expressed in different ways.
  * (cellArrayOfGroupLists,groupNames)
  * structure: fields are group names and values are elements in each group
  * frames.Group: Group whose property  are group names and property
@@ -540,12 +540,39 @@ x4 = df.split(g).apply(@(x) x.max(2))
 </pre><pre class="codeoutput">
 x4 = 
 
-         group1    group2
+         group2    group1
          ______    ______
 
-    1      5         2   
-    2      2         5   
+    1      2         5   
+    2      5         2   
     3      3         3   
+
+</pre><h2 id="46">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (+frames/+unitTests/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
+</pre><pre class="codeoutput">
+Methods for class frames.DataFrame:
+
+DataFrame         ewm               maxOf             size              
+abs               exp               mean              sortBy            
+asColSeries       extendColumns     median            sortIndex         
+asRowSeries       extendIndex       min               split             
+bfill             ffill             minOf             sqrt              
+ceil              firstCommonIndex  plot              std               
+clip              firstValidIndex   relChg            subsasgn          
+compoundChange    floor             replace           subsref           
+corr              getColumns_       replaceStartBy    sum               
+cov               getIndex_         resample          tail              
+cumprod           head              rolling           tanh              
+cumsum            heatmap           setColumnsName    toFile            
+diff              horzcat           setColumnsType    var               
+dropColumns       iloc              setIndex          vertcat           
+dropIndex         isempty           setIndexName      
+dropMissing       loc               setIndexType      
+emptyStart        log               shift             
+equals            max               sign              
+
+Static methods:
+
+empty             fromFile          fromTable         
 
 </pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2021a</a><br></p></div><!--
 ##### SOURCE BEGIN #####
@@ -562,6 +589,9 @@ x4 =
 %
 % The package currently requires a version of *Matlab R2021a* or later.
 %
+% Author: Benjamin Gaudin
+%
+% Email: frames.matlab@gmail.com
 %% Frame classes
 %
 % The class *frames.DataFrame* and its child class *frames.TimeFrame* 
@@ -794,9 +824,9 @@ randomData = randn(nObs,nVar)./100 + 1./3000;
 correlatedData = randomData*upper;
 tf = frames.TimeFrame(correlatedData,738336-nObs+1:738336,1:nVar);
 %%
-tf.cumsum().plot()  % applies a cumulative sum and then plot the result
+tf.cumsum().plot()  % apply a cumulative sum and then plot the result
 %%
-tf.corr().heatmap()  % computes the correlation matrix and plot it as a heatmap
+tf.corr().heatmap()  % compute the correlation matrix and plot it as a heatmap
 %% Rolling and Ewm
 % Computation on a rolling basis are available with the _.rolling()_ and the
 % _.ewm()_ methods. _.rolling()_ applies computations on a rolling window
@@ -831,7 +861,7 @@ tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving 
 % One can apply a function to groups of columns in a Frame using the method
 % _.split(groups).apply(@<function>)_.
 %
-%  The _groups_ of columns can be expressed in different ways.
+%  The groups of columns can be expressed in different ways.
 %   * (cellArrayOfGroupLists,groupNames)
 %   * structure: fields are group names and values are elements in each group
 %   * frames.Group: Group whose property  are group names and property
@@ -868,6 +898,13 @@ x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
 g = frames.Groups(df.columns,s);
 x4 = df.split(g).apply(@(x) x.max(2))
 
+%% Other Methods
+% We list here all the methods available in the DataFrame. We provided a
+% demo above for some of them. 
+% 
+% Refer to the documentation for detailed information.
+% You can also refer to the unit tests (+frames/+unitTests/) for some examples.
+methods('frames.DataFrame')
 
 
 ##### SOURCE END #####
