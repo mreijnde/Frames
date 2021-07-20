@@ -41,7 +41,7 @@ doc frames.TimeFrame
 <p><img src="img/docMethodsSummary2.png"></p>
 
 ## Contact
-Please send questions, comments, suggestions, bug reports to <frames.matlab@gmail.com> or open an issue on the [github project](https://github.com/benjamingaudin/Frames/issues). 
+Please send questions, feedback, suggestions, bug reports to <frames.matlab@gmail.com> or open an issue on the [github project](https://github.com/benjamingaudin/Frames/issues). 
 
 ## License
 Copyright 2021-2022 Benjamin Gaudin
