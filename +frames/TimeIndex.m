@@ -24,9 +24,9 @@ classdef TimeIndex < frames.SortedIndex
             end
             if isdatetime(value); nameValue.Format = string(value.Format); end
             
+            value = getValue_from_local(value,nameValue.Format);
             obj = obj@frames.SortedIndex(value,Name=nameValue.Name);
             obj.format = nameValue.Format;
-            obj.value = value;
         end
         
         function obj=set.format(obj,format)
@@ -71,18 +71,8 @@ classdef TimeIndex < frames.SortedIndex
         function value = getValue_from(obj,value)
             % the internal value_ is stored as a datenum for performance
             % reasons
-            if ismissing(obj.format), return; end  % only the case when constructing the object
             value = getValue_from@frames.SortedIndex(obj,value);
-            switch class(value)
-                case 'datetime'
-                    value = datenum(value);
-                case {'string','cell'}
-                    value = datenum(datetime(value,Format=obj.format));
-                case 'double'
-                    return
-                otherwise
-                    error('type of time index not recognized')
-            end
+            value = getValue_from_local(value,obj.format);
         end
         function selector = getTimerange(obj,selector)
             splitted = split(selector,':');
@@ -100,3 +90,15 @@ classdef TimeIndex < frames.SortedIndex
     
 end
 
+function value = getValue_from_local(value,format)
+switch class(value)
+    case 'datetime'
+        value = datenum(value);
+    case {'string','cell'}
+        value = datenum(datetime(value,Format=format));
+    case 'double'
+        return
+    otherwise
+        error('type of time index not recognized')
+end
+end

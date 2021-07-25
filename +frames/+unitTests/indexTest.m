@@ -15,6 +15,12 @@ classdef indexTest < matlab.unittest.TestCase
             t.verifyEqual(timeindex.getValue_(),738331)
             t.verifyEqual(timeindex.name,"Time")
 
+            a = frames.TimeFrame(1,["22.05.2021","20.06.2021"]);
+            b = frames.TimeFrame(1,["22-May-2021","20-Jun-2021"]);
+            c = frames.TimeFrame(1,["5/22/2021","6/20/2021"]);
+            t.verifyEqual(a,b)
+            t.verifyEqual(a,c)
+            
         end
         
         function indexGetterTest(t)
