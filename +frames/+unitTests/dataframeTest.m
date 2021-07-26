@@ -89,6 +89,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             df(2,[22,33]) = 3.14;
             t.verifyEqual(df.data,[1 2 3; 2 3.14 3.14])
             
+            % end in selection
+            df=frames.DataFrame([1 2;3 4;5 6]);
+            t.verifyEqual(df{end-1:end},df{end-1:end,:})
+            t.verifyEqual(df{end-1:end},frames.DataFrame([3 4;5 6],[2 3]))
+
             % empty all keeps the index type
             tf=t.tfMissing1;
             tf{1:length(tf.index),:} = [];
