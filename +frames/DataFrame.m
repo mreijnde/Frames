@@ -1104,7 +1104,7 @@ classdef DataFrame
         end
         
         function n = numArgumentsFromSubscript(varargin), n = 1; end
-        function e = end(obj,q,w), e = builtin('end',obj.data_,q,w); end
+        function e = end(obj,q,~), e = builtin('end',obj.data_,q,2); end
         
         function other = plus(df1,df2)
             other = operator(@plus,@elementWiseHandler,df1,df2);
