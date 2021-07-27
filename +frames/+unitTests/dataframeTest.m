@@ -476,6 +476,18 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df*b,expected)
         end
         
+        function mat2seriesTest(t)
+            df = frames.DataFrame([1:6;11:16;21:26]);
+            df.data(8) = NaN;
+            t.verifyEqual(df.mean(),df.mean(1))
+            t.verifyEqual(df.mean().data,mean(df.data,'omitnan'))
+            t.verifyEqual(df.mean(2).data,mean(df.data,2,'omitnan'))
+            
+            t.verifyEqual(df.std(),df.std(1))
+            t.verifyEqual(df.std().data,std(df.data,'omitnan'))
+            t.verifyEqual(df.std(2).data,std(df.data,[],2,'omitnan'))
+        end
+        
         function equalTest(t)
         end
         
