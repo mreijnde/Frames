@@ -22,10 +22,14 @@ classdef Index
     properties(Dependent)
         value  % Tx1 array
         singleton  % (logical, default false) set it to true if the Index represents a series, cf DataFrame.series
+        requireUnique  % (logical, default false) whether the Index requires unique elements
+        requireSorted  % (logical, default false) whether the Index requires sorted elements
     end
-    properties(Access={?frames.UniqueIndex,?frames.DataFrame})
+    properties(Hidden,Access={?frames.UniqueIndex,?frames.DataFrame})
         value_
         singleton_
+        requireUnique_
+        requireSorted_
     end
     
     methods
@@ -34,17 +38,25 @@ classdef Index
             arguments
                 value {mustBeDFcolumns} = []
                 nameValue.Name = ""
-                nameValue.Singleton {mustBeA(nameValue.Singleton,'logical')} = false
+                nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = false
+                nameValue.Sorted (1,1) {mustBeA(nameValue.Sorted,'logical')} = false
+                nameValue.Singleton (1,1) {mustBeA(nameValue.Singleton,'logical')} = false
             end
             name = nameValue.Name;
             singleton = nameValue.Singleton;
+            requireUnique = nameValue.Unique;
+            requireSorted = nameValue.Sorted;
             if isa(value,'frames.Index')
                 singleton = value.singleton;
                 name = value.name;
+                requireUnique = value.requireUnique;
+                requireSorted = value.requireSorted;
                 value = value.value;
             end
             obj.value = value;
             obj.name = name;
+            obj.requireUnique = requireUnique;
+            obj.requireSorted = requireSorted;
             obj.singleton_ = singleton;
         end
         
@@ -53,6 +65,12 @@ classdef Index
         end
         function idx = get.singleton(obj)
             idx = obj.singleton_;
+        end
+        function idx = get.requireUnique(obj)
+            idx = obj.requireUnique_;
+        end
+        function idx = get.requireSorted(obj)
+            idx = obj.requireSorted_;
         end
         function obj = set.value(obj,value)
             arguments
@@ -69,13 +87,33 @@ classdef Index
         end
         function obj = set.singleton(obj,tf)
             arguments
-                obj, tf {mustBeA(tf,'logical')}
+                obj, tf (1,1) {mustBeA(tf,'logical')}
             end
             if tf && length(obj.value_) ~= 1
                 error('frames:Index:setSingleton',...
                     'Index must contain 1 element to be a singleton')
             end
             obj.singleton_ = tf;
+        end
+        function obj = set.requireUnique(obj,tf)
+            arguments
+                obj, tf (1,1) {mustBeA(tf,'logical')}
+            end
+            if tf && ~isunique(obj.value_)
+                error('frames:Index:setRequireUnique',...
+                    'Index must be unique')
+            end
+            obj.requireUnique_ = tf;
+        end
+        function obj = set.requireSorted(obj,tf)
+            arguments
+                obj, tf (1,1) {mustBeA(tf,'logical')}
+            end
+            if tf && ~issorted(obj.value_)
+                error('frames:Index:setRequireSorted',...
+                    'Index must be sorted')
+            end
+            obj.requireSorted_ = tf;
         end
         function v = getValue_(obj)
             v = obj.value_;
