@@ -488,7 +488,24 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df.std(2).data,std(df.data,[],2,'omitnan'))
         end
         
-        function equalTest(t)
+        function equalsTest(t)
+            df=frames.DataFrame([1 2;3 4]);
+            df2=frames.DataFrame([1 2;3 4])+0.5;
+            t.verifyTrue(df.equals(df2,1))
+            t.verifyFalse(df.equals(df2))
+        end
+        
+        function eqTest(t)
+            df=frames.DataFrame([1 2;1 2]);
+            df2=frames.DataFrame([1 2]);
+            series=df2.asRowSeries();
+            t.verifyEqual(df==series,frames.DataFrame([true true;true true]))
+            t.verifyError(@()df==df2,'frames:elementWiseHandler:differentIndex')
+        end
+        
+        function anyTest(t)
+            df=frames.DataFrame([false true; false false]);
+            t.verifyEqual(df.any(1),frames.DataFrame([false true],RowSeries=true));
         end
         
         function selectFromTimeRangeTest(t)

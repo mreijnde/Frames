@@ -757,16 +757,20 @@ classdef DataFrame
         function obj = sign(obj), obj.data_ = sign(obj.data_); end
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
         
-        function other = sum(obj,varargin), other=obj.matrix2series(@sum,varargin{:}); end
+        function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
-        function other = mean(obj,varargin), other=obj.matrix2series(@mean,varargin{:}); end
+        function other = mean(obj,varargin), other=obj.matrix2series(@mean,true,varargin{:}); end
         % MEAN mean through the desired dimension, returns a series
-        function other = median(obj,varargin), other=obj.matrix2series(@median,varargin{:}); end
+        function other = median(obj,varargin), other=obj.matrix2series(@median,true,varargin{:}); end
         % MEDIAN median through the desired dimension, returns a series
-        function other = std(obj,varargin), other=obj.matrix2series(@std,[],varargin{:}); end
+        function other = std(obj,varargin), other=obj.matrix2series(@std,true,[],varargin{:}); end
         % STD standard deviation through the desired dimension, returns a series
-        function other = var(obj,varargin), other=obj.matrix2series(@var,[],varargin{:}); end
+        function other = var(obj,varargin), other=obj.matrix2series(@var,true,[],varargin{:}); end
         % VAR variance through the desired dimension, returns a series
+        function other = any(obj,varargin), other=obj.matrix2series(@any,false,varargin{:}); end
+        % ANY 'any' function through the desired dimension, returns a series
+        function other = all(obj,varargin), other=obj.matrix2series(@all,false,varargin{:}); end
+        % ALL 'all' function through the desired dimension, returns a series
         
         function other = max(obj,varargin), other=obj.maxmin(@max,varargin{:}); end
         % MAX maximum through the desired dimension, returns a series
@@ -989,15 +993,19 @@ classdef DataFrame
             end
         end
         
-        function series = matrix2series(obj,fun,varargin)
+        function series = matrix2series(obj,fun,canOmitNaNs,varargin)
             if ~isempty(varargin) && ~isempty(varargin{end})
                 dim = varargin{end};  % end because std takes dimension value as argument after the weighting scheme, cf doc std versus doc sum
             else
                 dim = 1;
             end
             assert(ismember(dim,[1,2]),'dimension value must be in [1,2]')
-            res = fun(obj.data_,varargin{:},'omitnan');
-            res(all(isnan(obj.data_),dim)) = NaN;  % puts NaN instead of zero when all entries are NaNs
+            if canOmitNaNs
+                res = fun(obj.data_,varargin{:},'omitnan');
+                res(all(isnan(obj.data_),dim)) = NaN;  % puts NaN instead of zero when all entries are NaNs
+            else
+                res = fun(obj.data_,varargin{:});
+            end
             if (dim==1 && obj.columns_.singleton_) || (dim==2 && obj.index_.singleton_)
                 % returns a scalar if the operation is done on a series
                 series = res;
@@ -1150,10 +1158,10 @@ classdef DataFrame
             other = operator(@ge,@elementWiseHandler,df1,df2);
         end
         function bool = eq(df1,df2)
-            bool = df1.equals(df2,0);
+            bool = operator(@eq,@elementWiseHandler,df1,df2);
         end
         function bool = ne(df1,df2)
-            bool = ~df1.eq(df2);
+            bool = operator(@ne,@elementWiseHandler,df1,df2);
         end
         
         function other = ctranspose(obj)
