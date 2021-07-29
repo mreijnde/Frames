@@ -23,13 +23,13 @@ classdef Index
         value  % Tx1 array
         singleton  % (logical, default false) set it to true if the Index represents a series, cf DataFrame.series
         requireUnique  % (logical, default false) whether the Index requires unique elements
-        requireSorted  % (logical, default false) whether the Index requires sorted elements
+        requireUniqueSorted  % (logical, default false) whether the Index requires unique and sorted elements
     end
     properties(Hidden,Access={?frames.UniqueIndex,?frames.DataFrame})
         value_
         singleton_
         requireUnique_
-        requireSorted_
+        requireUniqueSorted_
     end
     
     methods
@@ -39,20 +39,20 @@ classdef Index
                 value {mustBeDFcolumns} = []
                 nameValue.Name = ""
                 nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = false
-                nameValue.Sorted (1,1) {mustBeA(nameValue.Sorted,'logical')} = false
+                nameValue.UniqueSorted (1,1) {mustBeA(nameValue.UniqueSorted,'logical')} = false
                 nameValue.Singleton (1,1) {mustBeA(nameValue.Singleton,'logical')} = false
             end
             name = nameValue.Name;
             singleton = nameValue.Singleton;
             requireUnique = nameValue.Unique;
-            requireSorted = nameValue.Sorted;
+            requireUniqueSorted = nameValue.UniqueSorted;
             if isa(value,'frames.Index')
                 singleton = value.singleton;
                 name = value.name;
                 value = value.value;
             end
-            obj.requireUnique = requireUnique;
-            obj.requireSorted = requireSorted;
+            obj.requireUnique_ = requireUnique;
+            obj.requireUniqueSorted = requireUniqueSorted;
             obj.value = value;
             obj.name = name;
             obj.singleton_ = singleton;
@@ -67,8 +67,8 @@ classdef Index
         function idx = get.requireUnique(obj)
             idx = obj.requireUnique_;
         end
-        function idx = get.requireSorted(obj)
-            idx = obj.requireSorted_;
+        function idx = get.requireUniqueSorted(obj)
+            idx = obj.requireUniqueSorted_;
         end
         function obj = set.value(obj,value)
             arguments
@@ -100,24 +100,26 @@ classdef Index
             if tf && ~isunique(obj.value_)
                 error('frames:Index:setRequireUnique',...
                     'Index must be unique')
+            elseif ~tf && obj.requireUniqueSorted_
+                error('frames:Index:setRequireNotUniqueIsSorted',...
+                    'Index must remain unique as it is uniquesorted')
             end
             obj.requireUnique_ = tf;
         end
-        function obj = set.requireSorted(obj,tf)
+        function obj = set.requireUniqueSorted(obj,tf)
             arguments
                 obj, tf (1,1) {mustBeA(tf,'logical')}
             end
             if tf 
                 if ~issorted(obj.value_)
-                    error('frames:Index:setRequireSorted',...
+                    error('frames:Index:setrequireUniqueSorted',...
                         'Index must be sorted.')
                 end
                 if ~obj.requireUnique
-                    error('frames:Index:sortedRequireUnique',...
-                        'Index must require unique to require sorted.')
+                    obj.requireUnique_ = true;
                 end
             end
-            obj.requireSorted_ = tf;
+            obj.requireUniqueSorted_ = tf;
         end
         function v = getValue_(obj)
             v = obj.value_;
@@ -142,7 +144,7 @@ classdef Index
             target = obj.getValue_andCheck(target,varargin{:});
             if obj.requireUnique_
                 assertFoundIn(obj.value_,target)
-                if obj.requireSorted_
+                if obj.requireUniqueSorted_
                     pos = ismember(target,obj.value_);
                 else
                     [~,~,pos] = intersect(obj.value_,target,'stable');
@@ -179,7 +181,7 @@ classdef Index
             end
         end
         function bool = issorted(obj)
-            if obj.requireSorted_
+            if obj.requireUniqueSorted_
                 bool = true;
             else
                 bool = issorted(obj.value_);
@@ -200,13 +202,13 @@ classdef Index
                     warning('frames:Index:notUnique','index is not unique')
                 end
             end
-            if obj.requireSorted_ && ~issorted(value)
+            if obj.requireUniqueSorted_ && ~issorted(value)
                 error('frames:SortedIndex:valueCheckFail','Index is not sorted.')
             end
         end
         function u = unionData(obj,v1,v2)
             if obj.requireUnique_
-                if obj.requireSorted_
+                if obj.requireUniqueSorted_
                     u = union(v1,v2,'sorted');  % sorts by default
                 else
                     u = union(v1,v2,'stable');

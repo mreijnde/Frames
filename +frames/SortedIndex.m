@@ -17,10 +17,10 @@ classdef SortedIndex < frames.UniqueIndex
                 value {mustBeDFcolumns} = []
                 nameValue.Name = ""
                 nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = true
-                nameValue.Sorted (1,1) {mustBeA(nameValue.Sorted,'logical')} = true
+                nameValue.UniqueSorted (1,1) {mustBeA(nameValue.UniqueSorted,'logical')} = true
                 nameValue.Singleton (1,1) {mustBeA(nameValue.Singleton,'logical')} = false
             end
-            obj = obj@frames.UniqueIndex(value,Name=nameValue.Name,Unique=nameValue.Unique,Sorted=nameValue.Sorted);
+            obj = obj@frames.UniqueIndex(value,Name=nameValue.Name,UniqueSorted=nameValue.UniqueSorted);
         end
     end
 end
