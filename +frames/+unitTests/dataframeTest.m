@@ -552,6 +552,18 @@ classdef dataframeTest < matlab.unittest.TestCase
             function misaligned(), df.maxOf(df2); end
         end
         
+        function nansumTest(t)
+            df1 = frames.DataFrame([1 NaN;NaN 4]);
+            df2 = frames.DataFrame([1 2;NaN 4]);
+            df3 = frames.DataFrame([1 2;NaN 4],[2 3]);
+            t.verifyEqual(df1.nansum(df1,df1),3.*df1)
+            t.verifyEqual(df1.nansum(df2),frames.DataFrame([2 2;NaN 8]))
+            t.verifyEqual(df1.nansum(df2.data),frames.DataFrame([2 2;NaN 8]))
+            
+            t.verifyError(@()df1.nansum(2),'frames:nansum:differentSize')
+            t.verifyError(@()df1.nansum(df3),'frames:nansum:notAligned')
+        end
+        
         function covcorrTest(t)
             df = t.dfMissing1;
             cor = df.corr();

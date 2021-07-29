@@ -736,8 +736,9 @@ classdef DataFrame
             % are the same, and if the data are equal in the tolerance range
             if nargin<3, tol=eps; end
             try
+                assert(isequal(class(df1),class(df2)))
                 assert(isequal(df1.index_,df2.index_)&&isequal(df1.columns_,df2.columns_))
-                assert(isequal(df1.name_,df2.name_)&&isequal(df1.description,df2.description))
+                assert(isequal(df1.name_,df2.name_))
                 diff = df1-df2;
                 iseq = diff.abs().data <= tol;
                 bool = all(iseq(:));
@@ -787,6 +788,31 @@ classdef DataFrame
         % correlation matrix (pairwise)
         function other = cov(obj), other= corrcov(obj,@cov,'partialRows'); end
         % covariance matrix (pairwise)
+        
+        function obj = nansum(obj,varargin)
+            %NANSUM (df1,df2,df3,...) sums DataFrames. NaNs are treated as zeros or NaNs: a+NaN=a, NaN+NaN=NaN 
+            d = cell(1,length(varargin));
+            i = 0;
+            for v_ = varargin
+                v = v_{1};
+                i = i+1;
+                if isa(v,'frames.DataFrame')
+                    assert(isequal(obj.index,v.index)&&isequal(obj.columns,v.columns), ...
+                        'frames:nansum:notAligned','Frames must be aligned.')
+                    d{i} = v.data;
+                else
+                    assert(isequal(size(obj),size(v)), ...
+                        'frames:nansum:differentSize','Data must be of the same size.')
+                    d{i} = v;
+                end
+                
+            end
+            d = cat(3,obj.data,d{:});
+            s = sum(d,3,'omitnan');
+            isn = all(isnan(d),3);
+            s(isn) = NaN;
+            obj.data_ = s;
+        end
         
         function obj = rolling(obj,window)
             % provide rolling window calculations
