@@ -53,10 +53,10 @@ classdef Index
                 requireSorted = value.requireSorted;
                 value = value.value;
             end
-            obj.value = value;
-            obj.name = name;
             obj.requireUnique = requireUnique;
             obj.requireSorted = requireSorted;
+            obj.value = value;
+            obj.name = name;
             obj.singleton_ = singleton;
         end
         
@@ -109,9 +109,15 @@ classdef Index
             arguments
                 obj, tf (1,1) {mustBeA(tf,'logical')}
             end
-            if tf && ~issorted(obj.value_)
-                error('frames:Index:setRequireSorted',...
-                    'Index must be sorted')
+            if tf 
+                if ~issorted(obj.value_)
+                    error('frames:Index:setRequireSorted',...
+                        'Index must be sorted.')
+                end
+                if ~obj.requireUnique
+                    error('frames:Index:sortedRequireUnique',...
+                        'Index must require unique to require sorted.')
+                end
             end
             obj.requireSorted_ = tf;
         end
@@ -126,12 +132,26 @@ classdef Index
         function pos = positionOf(obj,selector,varargin)
             % find position of 'selector' in the Index
             selector = obj.getValue_andCheck(selector,varargin{:});
-            pos = findPositionIn(selector,obj.value_);
+            if obj.requireUnique_
+                assertFoundIn(selector,obj.value_)
+                [~,~,pos] = intersect(selector,obj.value_,'stable');
+            else
+                pos = findPositionIn(selector,obj.value_);
+            end
         end
         function pos = positionIn(obj,target,varargin)
             % find position of the Index into the target
             target = obj.getValue_andCheck(target,varargin{:});
-            pos = findPositionIn(obj.value_,target);
+            if obj.requireUnique_
+                assertFoundIn(obj.value_,target)
+                if obj.requireSorted_
+                    pos = ismember(target,obj.value_);
+                else
+                    [~,~,pos] = intersect(obj.value_,target,'stable');
+                end
+            else
+                pos = findPositionIn(obj.value_,target);
+            end
         end
         
         function obj = union(obj,index2)
@@ -154,26 +174,49 @@ classdef Index
         end
             
         function bool = isunique(obj)
-            bool = isunique(obj.value_);
+            if obj.requireUnique_
+                bool = true;
+            else
+                bool = isunique(obj.value_);
+            end
         end
         function bool = issorted(obj)
-            bool = issorted(obj.value_);
+            if obj.requireSorted_
+                bool = true;
+            else
+                bool = issorted(obj.value_);
+            end
         end
         
     end
     
     methods(Access=protected)
-        function valueChecker(~,value)
+        function valueChecker(obj,value)
             if ~isvector(value)
                 error('frames:Index:notVector','index must be a vector')
             end
             if ~isunique(value)
-                warning('frames:Index:notUnique','index is not unique')
+                if obj.requireUnique_
+                    error('frames:UniqueIndex:valueCheckFail','index is not unique')
+                else
+                    warning('frames:Index:notUnique','index is not unique')
+                end
+            end
+            if obj.requireSorted_ && ~issorted(value)
+                error('frames:SortedIndex:valueCheckFail','Index is not sorted.')
             end
         end
         function u = unionData(obj,v1,v2)
-            u = [v1; v2];
-            obj.valueChecker(u);
+            if obj.requireUnique_
+                if obj.requireSorted_
+                    u = union(v1,v2,'sorted');  % sorts by default
+                else
+                    u = union(v1,v2,'stable');
+                end
+            else
+                u = [v1; v2];
+                obj.valueChecker(u);
+            end
         end
         
         function value = getValue(obj)

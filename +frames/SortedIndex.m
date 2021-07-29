@@ -11,6 +11,17 @@ classdef SortedIndex < frames.UniqueIndex
 %
 % See also: UNIQUEINDEX, INDEX, TIMEINDEX
     methods
+        function obj = SortedIndex(value,nameValue)
+            % INDEX Index(value[,Name=name,Singleton=logical])
+            arguments
+                value {mustBeDFcolumns} = []
+                nameValue.Name = ""
+                nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = true
+                nameValue.Sorted (1,1) {mustBeA(nameValue.Sorted,'logical')} = true
+                nameValue.Singleton (1,1) {mustBeA(nameValue.Singleton,'logical')} = false
+            end
+            obj = obj@frames.UniqueIndex(value,Name=nameValue.Name,Unique=nameValue.Unique,Sorted=nameValue.Sorted);
+        end
         function pos = positionIn(obj,target,varargin)
             target = obj.getValue_andCheck(target,varargin{:});
             assertFoundIn(obj.value_,target)
