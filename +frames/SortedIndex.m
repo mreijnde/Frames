@@ -22,26 +22,5 @@ classdef SortedIndex < frames.UniqueIndex
             end
             obj = obj@frames.UniqueIndex(value,Name=nameValue.Name,Unique=nameValue.Unique,Sorted=nameValue.Sorted);
         end
-%         function pos = positionIn(obj,target,varargin)
-%             target = obj.getValue_andCheck(target,varargin{:});
-%             assertFoundIn(obj.value_,target)
-%             pos = ismember(target,obj.value_);
-%         end
-%         function bool = issorted(~)
-%             bool = true;
-%         end
-    end
-    methods(Access=protected)
-        function valueChecker(obj,value)
-            if ~issorted(value)
-                error('frames:SortedIndex:valueCheckFail','Index is not sorted.')
-            end
-            valueChecker@frames.UniqueIndex(obj,value);
-            
-        end
-%         function u = unionData(~,v1,v2)
-%             u = union(v1,v2,'sorted');  % sorts by default
-%         end
-        
     end
 end
