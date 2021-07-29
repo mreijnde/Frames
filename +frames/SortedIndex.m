@@ -39,9 +39,9 @@ classdef SortedIndex < frames.UniqueIndex
             valueChecker@frames.UniqueIndex(obj,value);
             
         end
-        function u = unionData(~,v1,v2)
-            u = union(v1,v2,'sorted');  % sorts by default
-        end
+%         function u = unionData(~,v1,v2)
+%             u = union(v1,v2,'sorted');  % sorts by default
+%         end
         
     end
 end

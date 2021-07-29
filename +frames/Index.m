@@ -49,8 +49,6 @@ classdef Index
             if isa(value,'frames.Index')
                 singleton = value.singleton;
                 name = value.name;
-                requireUnique = value.requireUnique;
-                requireSorted = value.requireSorted;
                 value = value.value;
             end
             obj.requireUnique = requireUnique;

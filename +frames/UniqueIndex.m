@@ -48,9 +48,9 @@ classdef UniqueIndex < frames.Index
             end
         end
 
-        function u = unionData(~,v1,v2)
-            u = union(v1,v2,'stable');
-        end
+%         function u = unionData(~,v1,v2)
+%             u = union(v1,v2,'stable');
+%         end
     end
 end
 
