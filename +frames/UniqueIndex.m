@@ -22,20 +22,20 @@ classdef UniqueIndex < frames.Index
             end
             obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique,Sorted=nameValue.Sorted);
         end
-        function pos = positionOf(obj,selector,varargin)
-            selector = obj.getValue_andCheck(selector,varargin{:});
-            assertFoundIn(selector,obj.value_)
-            [~,~,pos] = intersect(selector,obj.value_,'stable');
-        end
-        function pos = positionIn(obj,target,varargin)
-            target = obj.getValue_andCheck(target,varargin{:});
-            assertFoundIn(obj.value_,target)
-            [~,~,pos] = intersect(obj.value_,target,'stable');
-        end
+%         function pos = positionOf(obj,selector,varargin)
+%             selector = obj.getValue_andCheck(selector,varargin{:});
+%             assertFoundIn(selector,obj.value_)
+%             [~,~,pos] = intersect(selector,obj.value_,'stable');
+%         end
+%         function pos = positionIn(obj,target,varargin)
+%             target = obj.getValue_andCheck(target,varargin{:});
+%             assertFoundIn(obj.value_,target)
+%             [~,~,pos] = intersect(obj.value_,target,'stable');
+%         end
         
-        function bool = isunique(~)
-            bool = true;
-        end
+%         function bool = isunique(~)
+%             bool = true;
+%         end
     end
     
     methods(Access=protected)
