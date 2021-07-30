@@ -10,7 +10,7 @@ classdef TimeIndex < frames.Index
 %
 % Copyright 2021 Benjamin Gaudin
 %
-% See also: UNIQUEINDEX, INDEX, Index
+% See also: INDEX
     properties
         format {mustBeTextScalar} = string(missing)  % datetime format
     end
@@ -57,8 +57,8 @@ classdef TimeIndex < frames.Index
             pos = positionOf@frames.Index(obj,selector,varargin{:});
         end
         
-        
     end
+    
     methods(Access = protected)
         function value = valueChecker(obj,value)
             value_ = obj.getValue_from(value);

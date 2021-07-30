@@ -14,7 +14,7 @@ classdef Index
 %
 % Copyright 2021 Benjamin Gaudin
 %
-% See also: UNIQUEINDEX, SORTEDINDEX, TIMEINDEX
+% See also: TIMEINDEX
     
     properties
         name {mustBeTextScalar} = ""  % (textScalar) name of the Index

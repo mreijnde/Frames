@@ -93,6 +93,7 @@ classdef DataFrame
         t  % table, dependent and built on data, index, columns
         rowseries  % logical, whether the Frame is to be considered as a row series
         colseries  % logical, whether the Frame is to be considered as a column series
+        identifierProperties  % structure of the properties of the Index objects underlying .index and .columns
     end
     properties
         description {mustBeText} = ""  % text description of the object
@@ -105,9 +106,6 @@ classdef DataFrame
         index_  % Tx1 frames.Index with requireUnique=true
         columns_  % Nx1 frames.Index
         name_  % textscalar, name of the frame
-    end
-    properties(Hidden, Dependent)
-        constructor  % constructor of the class (here a @frames.DataFrame)
     end
     
     methods
@@ -226,8 +224,11 @@ classdef DataFrame
         function t = get.t(obj)
             t = obj.getTable();
         end
-        function c = get.constructor(obj)
-            c = str2func(class(obj));
+        function s = get.identifierProperties(obj)
+            s.columns = publicProps2struct(obj.columns_,Skip="value");
+            s.columns.class = class(obj.columns_);
+            s.index = publicProps2struct(obj.index_,Skip="value");
+            s.index.class = class(obj.index_);
         end
         
         function idx = getIndex_(obj)
