@@ -21,11 +21,14 @@ classdef TimeIndex < frames.Index
                 value
                 nameValue.Name = "Time"
                 nameValue.Format = "dd-MMM-yyyy"
+                nameValue.Unique = true
+                nameValue.UniqueSorted = true
             end
             if isdatetime(value); nameValue.Format = string(value.Format); end
+            if ~nameValue.Unique, nameValue.UniqueSorted = false; end
             
             value = getValue_from_local(value,nameValue.Format);
-            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=true,UniqueSorted=true);
+            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted);
             obj.format = nameValue.Format;
         end
         

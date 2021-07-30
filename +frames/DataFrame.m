@@ -483,6 +483,7 @@ classdef DataFrame
             col = obj.columns_.value_;
             sameCols = true;  % compute a merged columns, only in case they are not the same
             idxNew = obj.index_;
+            testUniqueIndex(obj.index_);
             lenIdx = zeros(length(varargin),1);
             lenIdx(1) = length(obj.index_);
             for ii = 1:nargin-1
@@ -1305,3 +1306,9 @@ other.data_ = d; other.index_ = idx_; other.columns_ = col_;
 other.description = "";
 end
 
+%--------------------------------------------------------------------------
+function testUniqueIndex(indexObj)
+if ~indexObj.requireUnique
+    error('frames:requireUniqueIndex','The function requires an Index of unique values')
+end
+end
