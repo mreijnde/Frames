@@ -25,7 +25,7 @@ classdef Index
         requireUnique  % (logical, default false) whether the Index requires unique elements
         requireUniqueSorted  % (logical, default false) whether the Index requires unique and sorted elements
     end
-    properties(Hidden,Access={?frames.UniqueIndex,?frames.DataFrame})
+    properties(Hidden,Access={?frames.TimeIndex,?frames.DataFrame})
         value_
         singleton_
         requireUnique_

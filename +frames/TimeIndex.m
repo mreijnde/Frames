@@ -1,4 +1,4 @@
-classdef TimeIndex < frames.SortedIndex
+classdef TimeIndex < frames.Index
 % TIMEINDEX belongs to the objects that support index in a DataFrame,
 % and in particular is the only possible Index for TimeFrame.
 % It contains operations of selection and merging, and constrains.
@@ -6,11 +6,11 @@ classdef TimeIndex < frames.SortedIndex
 % A TIMEINDEX has unique chronological values.
 % Index allows duplicates, but throw a warning.
 % UniqueIndex only allows unique entries.
-% SortedIndex only allows unique entries that are sorted.
+% Index only allows unique entries that are sorted.
 %
 % Copyright 2021 Benjamin Gaudin
 %
-% See also: UNIQUEINDEX, INDEX, SORTEDINDEX
+% See also: UNIQUEINDEX, INDEX, Index
     properties
         format {mustBeTextScalar} = string(missing)  % datetime format
     end
@@ -25,7 +25,7 @@ classdef TimeIndex < frames.SortedIndex
             if isdatetime(value); nameValue.Format = string(value.Format); end
             
             value = getValue_from_local(value,nameValue.Format);
-            obj = obj@frames.SortedIndex(value,Name=nameValue.Name);
+            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=true,UniqueSorted=true);
             obj.format = nameValue.Format;
         end
         
@@ -54,7 +54,7 @@ classdef TimeIndex < frames.SortedIndex
                 pos = ids(whichRows);
                 return
             end
-            pos = positionOf@frames.SortedIndex(obj,selector,varargin{:});
+            pos = positionOf@frames.Index(obj,selector,varargin{:});
         end
         
         
@@ -62,7 +62,7 @@ classdef TimeIndex < frames.SortedIndex
     methods(Access = protected)
         function value = valueChecker(obj,value)
             value_ = obj.getValue_from(value);
-            valueChecker@frames.SortedIndex(obj,value_);
+            valueChecker@frames.Index(obj,value_);
         end
         
         function value = getValue(obj)
@@ -71,7 +71,7 @@ classdef TimeIndex < frames.SortedIndex
         function value = getValue_from(obj,value)
             % the internal value_ is stored as a datenum for performance
             % reasons
-            value = getValue_from@frames.SortedIndex(obj,value);
+            value = getValue_from@frames.Index(obj,value);
             value = getValue_from_local(value,obj.format);
         end
         function selector = getTimerange(obj,selector)
