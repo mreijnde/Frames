@@ -6,10 +6,10 @@ classdef indexTest < matlab.unittest.TestCase
             function duplicate(), frames.Index([2 2]); end
             
             t.verifyError(@badsorted,'frames:SortedIndex:valueCheckFail')
-            function badsorted(), frames.SortedIndex([3 2]); end
+            function badsorted(), frames.Index([3 2],UniqueSorted=true); end
             
             t.verifyError(@duplicateError,'frames:UniqueIndex:valueCheckFail')
-            function duplicateError(), frames.UniqueIndex([2 2]); end
+            function duplicateError(), frames.Index([2 2],Unique=true); end
             
             timeindex = frames.TimeIndex("24*06*2021",Format="dd*MM*yyyy");
             t.verifyEqual(timeindex.getValue_(),738331)
@@ -31,7 +31,7 @@ classdef indexTest < matlab.unittest.TestCase
         function positionOfTest(t)
             warning('off','frames:Index:notUnique')
             index = frames.Index([30 10 20 30]);
-            uniqueindex = frames.UniqueIndex([30 10 20]);
+            uniqueindex = frames.Index([30 10 20],Unique=true);
             
             t.verifyEqual(index.positionOf([30,20]),[1 4 3]')
             t.verifyEqual(uniqueindex.positionOf([20,30]),[3 1]')
@@ -41,8 +41,8 @@ classdef indexTest < matlab.unittest.TestCase
         function positionInTest(t)
             warning('off','frames:Index:notUnique')
             index = frames.Index([30 10 20 30]);
-            uniqueindex = frames.UniqueIndex([30 10 20]);
-            sortedindex = frames.SortedIndex([10 20 30]);
+            uniqueindex = frames.Index([30 10 20],Unique=true);
+            sortedindex = frames.Index([10 20 30],UniqueSorted=true);
             
             t.verifyError(@indexNotWhole,'frames:assertFoundIn')
             function indexNotWhole(), index.positionIn([40,30,20]); end
@@ -56,8 +56,8 @@ classdef indexTest < matlab.unittest.TestCase
         
         function unionTest(t)
             index = frames.Index([30 10 20]);
-            uniqueindex = frames.UniqueIndex([30 10 20]);
-            sortedindex = frames.SortedIndex([10 20 30]);
+            uniqueindex = frames.Index([30 10 20],Unique=true);
+            sortedindex = frames.Index([10 20 30],UniqueSorted=true);
             timeindex = frames.TimeIndex([10 20 30]);
             
             t.verifyWarning(@duplicate,'frames:Index:notUnique')

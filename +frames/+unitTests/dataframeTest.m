@@ -178,7 +178,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function indexSetterTest(t)
             df = frames.DataFrame([1 2; 2 5]);
-            df.index = frames.SortedIndex([3 5]);
+            df.index = frames.Index([3 5],UniqueSorted=true);
             t.verifyEqual(df.index,[3 5]')
             
             t.verifyError(@idxNotSorted,'frames:SortedIndex:valueCheckFail')
@@ -202,7 +202,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyWarning(@colsNotUniqueWarning,'frames:Index:notUnique')
             function colsNotUniqueWarning(), df.columns=[6 6]; end
             
-            df.columns = frames.UniqueIndex([3 5]);
+            df.columns = frames.Index([3 5],Unique=true);
             t.verifyEqual(df.columns,[3 5])
             
             t.verifyError(@colsNotUnique,'frames:UniqueIndex:valueCheckFail')
@@ -252,7 +252,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(wDuplicates.data, [1 2 3 4 5 6 NaN NaN]);
             t.verifyEqual(wDuplicates.columns, [1 3 1 4 5 4 2 2]);
             warning('on','frames:Index:notUnique')
-            sorted = frames.DataFrame([1 3 4 5],[],frames.SortedIndex([1 3 4 5])).extendColumns([1 2 4]);
+            sorted = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],UniqueSorted=true)).extendColumns([1 2 4]);
             t.verifyEqual(sorted.data, [1 NaN 3 4 5]);
             t.verifyEqual(sorted.columns, [1 2 3 4 5]);
         end
@@ -294,8 +294,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             solUnsorted = [frames.DataFrame([4 2;1 1],[1 3], [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
             expectedUnsorted = frames.DataFrame([4 2 4 2;1 1 NaN NaN;NaN NaN NaN 1],[1 3 2],[23 3 4 2]);
             t.verifyEqual(solUnsorted,expectedUnsorted)
-            solSorted = [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 3]), [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
-            expectedSorted = frames.DataFrame([4 2 4 2;NaN NaN NaN 1;1 1 NaN NaN],frames.SortedIndex([1 2 3]),[23 3 4 2]);
+            solSorted = [frames.DataFrame([4 2;1 1],frames.Index([1 3],UniqueSorted=true), [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
+            expectedSorted = frames.DataFrame([4 2 4 2;NaN NaN NaN 1;1 1 NaN NaN],frames.Index([1 2 3],UniqueSorted=true),[23 3 4 2]);
             t.verifyEqual(solSorted,expectedSorted)
             
             % repeating
@@ -313,8 +313,8 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function vertcatTest(t)
-            sol = [frames.DataFrame([4 2;1 1],frames.SortedIndex([1 2]),[23 3]);frames.DataFrame([4 2;1 1],[3 4],[3 44])];
-            expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.SortedIndex([1 2 3 4]),[23 3 44]);
+            sol = [frames.DataFrame([4 2;1 1],frames.Index([1 2],UniqueSorted=true),[23 3]);frames.DataFrame([4 2;1 1],[3 4],[3 44])];
+            expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.Index([1 2 3 4],UniqueSorted=true),[23 3 44]);
             t.verifyEqual(sol,expected)
             
             % multiple concat with (un)sorted Frames
@@ -350,7 +350,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function sortIndexTest(t)
-            sol = frames.DataFrame([1 2 3; 2 5 3]', frames.UniqueIndex([2 6 1],Name="Row")).sortIndex();
+            sol = frames.DataFrame([1 2 3; 2 5 3]', frames.Index([2 6 1],Unique=true,Name="Row")).sortIndex();
             t.verifyEqual(sol,frames.DataFrame([3 1 2;3 2 5]',[1 2 6]))
         end
         

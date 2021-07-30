@@ -5,9 +5,9 @@ arguments
 end
 switch type
     case "unsorted"
-        index = frames.UniqueIndex(index);
+        index = frames.Index(index,Unique=true);
     case "sorted"
-        index = frames.SortedIndex(index);
+        index = frames.Index(index,UniqueSorted=true);
     case "time"
         index = frames.TimeIndex(index);
     case "duplicate"

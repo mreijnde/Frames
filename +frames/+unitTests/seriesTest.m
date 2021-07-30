@@ -37,14 +37,14 @@ classdef seriesTest < matlab.unittest.TestCase
         end
         
         function indexTest(t)
-            idx1 = frames.SortedIndex([1,2,3]);
-            idx2 = frames.UniqueIndex(4,Singleton=true);
+            idx1 = frames.Index([1,2,3],UniqueSorted=true);
+            idx2 = frames.Index(4,Unique=true,Singleton=true);
             
             t.verifyError(@notUnique,'frames:Index:setSingleton')
             function notUnique(), idx1.singleton=true; end
             t.verifyFalse(idx2.union(idx1).singleton)
             
-            idx3 = frames.UniqueIndex(4);
+            idx3 = frames.Index(4,Unique=true);
             idx3.singleton = true;
             t.verifyTrue(idx3.singleton)
         end

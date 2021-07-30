@@ -102,8 +102,8 @@ classdef DataFrame
         % and setters.
         
         data_  % TxN matrix of homogeneous data
-        index_  % Tx1 frames.UniqueIndex or its child classes
-        columns_  % Nx1 frames.Index or its child classes
+        index_  % Tx1 frames.Index with requireUnique=true
+        columns_  % Nx1 frames.Index
         name_  % textscalar, name of the frame
     end
     properties(Hidden, Dependent)
@@ -392,8 +392,8 @@ classdef DataFrame
                 obj, index
                 nameValue.FirstValueFilling = "noFfill"
             end
-            if ~isa(obj.index_, 'frames.SortedIndex')
-                error('Only use resample with SortedIndex (set obj.setIndexType("sorted"))')
+            if ~obj.index_.requireUniqueSorted
+                error('Only use resample with a sorted Index (set obj.setIndexType("sorted"))')
             end
             FirstValueFilling = nameValue.FirstValueFilling;
             if ~iscell(FirstValueFilling)
@@ -458,7 +458,7 @@ classdef DataFrame
                 % Expand DF, keeping the order of idx
                 if ~sameIndex
                     df = df.extendIndex(idx);
-                    if ~isa(obj.index_,'frames.SortedIndex')
+                    if ~obj.index_.requireUniqueSorted
                         df = df.loc_(idx.value,':');
                     end
                 end
@@ -532,7 +532,7 @@ classdef DataFrame
             % sort frame from a column
             col = obj.loc_(':',columnName);
             [~,sortedID] = sort(col.data);
-            obj.index_ = frames.UniqueIndex(obj.index_);
+            obj.index_ = frames.Index(obj.index_,Unique=true);
             other = obj.iloc_(sortedID,':');
         end
         function obj = sortIndex(obj)
@@ -982,7 +982,7 @@ classdef DataFrame
                 'columns do not have the same size as data')
         end
         function idx = getIndexObject(~,index)
-            idx = frames.UniqueIndex(index);
+            idx = frames.Index(index,Unique=true);
             idx.name = "Row";  % to be consistent with 'table' in which the default name of the index is 'Row'
         end
         function col = getColumnsObject(~,columns)
@@ -1250,7 +1250,7 @@ if isa(df2,'frames.DataFrame')
         col_ = df2.columns_;
     else
         if size(df1,2)>1 && size(df1,2) == length(df2.index_)
-            idx_ = df2.getIndexObject(df2.defaultIndex(size(df1,1)));  % frames.UniqueIndex(1:size(df1,1),Name="Row");
+            idx_ = df2.getIndexObject(df2.defaultIndex(size(df1,1)));
         else
             idx_ = df2.index_;
         end
@@ -1260,7 +1260,7 @@ if isa(df2,'frames.DataFrame')
 else
     idx_ = df1.index_;
     if size(df2,1)>1 && size(df2,1) == length(df1.columns_)
-        col_ = df1.getColumnsObject(df1.defaultColumns(size(df2,2)));  % frames.Index(1:size(df2,2));
+        col_ = df1.getColumnsObject(df1.defaultColumns(size(df2,2)));
     else
         col_ = df1.columns_;
     end
