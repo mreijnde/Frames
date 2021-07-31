@@ -213,6 +213,7 @@ classdef Index
                 else
                     u = union(v1,v2,'stable');
                 end
+                if isrow(u), u=u'; end
             else
                 u = [v1; v2];
                 obj.valueChecker(u);

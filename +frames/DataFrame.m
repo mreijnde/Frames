@@ -334,10 +334,12 @@ classdef DataFrame
         
         function other = extendIndex(obj,index)
             % extend the index with the new values
-            newIndex = obj.index_.union(index);
+            valuesToAdd = index(~ismember(index,obj.index));
+            newIndex = obj.index_.union(valuesToAdd);
             newData = obj.defaultData(length(newIndex),length(obj.columns_));
             
             idx = obj.index_.positionIn(newIndex.value);
+            if ~islogical(idx), idx = unique(idx,'stable'); end
             newData(idx,:) = obj.data_;
             
             other = obj;
@@ -357,7 +359,7 @@ classdef DataFrame
             newData = obj.defaultData(length(obj.index_),length(newColumns));
             
             col = obj.columns_.positionIn(newColumns.value);
-            if ~islogical(col), col = unique(col); end
+            if ~islogical(col), col = unique(idx,'stable'); end
             newData(:,col) = obj.data_;
             
             other = obj;
@@ -442,8 +444,8 @@ classdef DataFrame
             for ii = 1:nargin-1
                 columnsNew = [columnsNew;varargin{ii}.columns_]; %#ok<AGROW>
                 lenCols(ii+1) = length(varargin{ii}.columns_);
-                idx_ = varargin{ii}.index_;
-                if sameIndex && isequal(idx,idx_)
+                idx_ = varargin{ii}.index_.value_;
+                if sameIndex && isequal(idx.value_,idx_)
                     continue
                 else
                     sameIndex = false;
@@ -455,12 +457,17 @@ classdef DataFrame
             sizeColumns = cumsum(lenCols);
             dataH = obj.defaultData(length(idx),sizeColumns(end));
             
+            idxVal = idx.value;
+            if ~sameIndex && ~obj.index_.requireUniqueSorted
+                idxUnique = unique(idxVal,'stable');
+            end
             function df = getExtendedIndexDF(df)
                 % Expand DF, keeping the order of idx
                 if ~sameIndex
-                    df = df.extendIndex(idx);
+                    testUniqueIndex(idx);
+                    df = df.extendIndex(idxVal);
                     if ~obj.index_.requireUniqueSorted
-                        df = df.loc_(idx.value,':');
+                        df = df.loc_(idxUnique,':');
                     end
                 end
             end
@@ -487,6 +494,7 @@ classdef DataFrame
             lenIdx = zeros(length(varargin),1);
             lenIdx(1) = length(obj.index_);
             for ii = 1:nargin-1
+                testUniqueIndex(varargin{ii}.index_);
                 idxNew = idxNew.union(varargin{ii}.index_);
                 lenIdx(ii+1) = length(varargin{ii}.index_);
                 col_ = varargin{ii}.columns_.value_;
@@ -1309,6 +1317,6 @@ end
 %--------------------------------------------------------------------------
 function testUniqueIndex(indexObj)
 if ~indexObj.requireUnique
-    error('frames:requireUniqueIndex','The function requires an Index of unique values')
+    error('frames:requireUniqueIndex','The function requires an Index of unique values.')
 end
 end
