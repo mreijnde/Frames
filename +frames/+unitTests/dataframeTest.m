@@ -330,6 +330,14 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual([a;c;b],frames.DataFrame([1 NaN 2 2; NaN 3 NaN NaN]',[1 3 2 4],[1 2]))
         end
         
+        function vertcatIndexPropsTest(t)
+            df = frames.DataFrame([1 2;3 4],[1 2],frames.Index([1 3],UniqueSorted=true));
+            df2 = frames.DataFrame([30,20],3,[3 2]);
+            
+            t.verifyEqual([df;df2],frames.DataFrame([1 NaN 2;3 NaN 4;NaN 20 30],[1 2 3],frames.Index([1 2 3],UniqueSorted=true)))
+            
+        end
+        
         function resampleTest(t)
             sortedframe = frames.DataFrame([4 1 NaN 3; 2 NaN 4 NaN]',[1 4 10 20]).setIndexType("sorted");
             ffi = sortedframe.resample([2 5],FirstValueFilling='ffillFromInterval');

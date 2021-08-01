@@ -338,9 +338,12 @@ classdef DataFrame
             newIndex = obj.index_.union(valuesToAdd);
             newData = obj.defaultData(length(newIndex),length(obj.columns_));
             
-            idx = obj.index_.positionIn(newIndex.value);
-            if ~islogical(idx), idx = unique(idx,'stable'); end
-            newData(idx,:) = obj.data_;
+            if obj.index_.requireUnique_
+                idx = obj.index_.positionIn(newIndex.value);
+                newData(idx,:) = obj.data_;
+            else
+                newData(1:length(obj.index_),:) = obj.data_;
+            end
             
             other = obj;
             other.data_ = newData;
@@ -358,9 +361,12 @@ classdef DataFrame
             newColumns = obj.columns_.union(valuesToAdd);
             newData = obj.defaultData(length(obj.index_),length(newColumns));
             
-            col = obj.columns_.positionIn(newColumns.value);
-            if ~islogical(col), col = unique(idx,'stable'); end
-            newData(:,col) = obj.data_;
+            if obj.columns_.requireUnique_
+                col = obj.columns_.positionIn(newColumns.value);
+                newData(:,col) = obj.data_;
+            else
+                newData(:,1:length(obj.columns_)) = obj.data_;
+            end
             
             other = obj;
             other.data_ = newData;
@@ -504,6 +510,9 @@ classdef DataFrame
                     sameCols = false;
                 end
                 col = union(col,col_,'stable');  % requires unique columns
+            end
+            if obj.columns_.requireUniqueSorted
+                col = sort(col);
             end
             
             sizeIndex = cumsum(lenIdx);
