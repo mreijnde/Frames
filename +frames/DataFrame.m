@@ -758,8 +758,7 @@ classdef DataFrame
                 assert(isequal(class(df1),class(df2)))
                 assert(isequal(df1.index_,df2.index_)&&isequal(df1.columns_,df2.columns_))
                 assert(isequal(df1.name_,df2.name_))
-                diff = df1-df2;
-                iseq = diff.abs().data <= tol;
+                iseq = abs(df1.data-df2.data) <= tol;
                 bool = all(iseq(:));
             catch
                 bool = false;
