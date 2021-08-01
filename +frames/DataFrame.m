@@ -256,7 +256,7 @@ classdef DataFrame
         end
         function obj = setIndex(obj,colName)
             % set the index value from the value of a column
-            obj.index = obj.data(:,findPositionIn(colName,obj.columns));
+            obj.index = obj.data(:,ismember(obj.columns,colName));
             obj = obj.dropColumns(colName);
         end
         
