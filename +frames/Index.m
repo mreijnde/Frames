@@ -169,8 +169,8 @@ classdef Index
             for ii = 1:nargin-1
                 val = [val;varargin{ii}.value_]; %#ok<AGROW>
             end
-            obj.value = val;  % check if properties are respected
             obj.singleton_ = false;
+            obj.value = val;  % check if properties are respected
         end
             
         function bool = isunique(obj)
@@ -192,6 +192,10 @@ classdef Index
     
     methods(Access=protected)
         function valueChecker(obj,value)
+            if obj.singleton_
+                assert(numel(value)==1,'frames:Index:notSingleValue',...
+                    'Index is a singleton so its value should have only one element.')
+            end
             if ~isvector(value)
                 error('frames:Index:notVector','index must be a vector')
             end
