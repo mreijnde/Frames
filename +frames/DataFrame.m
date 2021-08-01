@@ -903,16 +903,21 @@ classdef DataFrame
         
         function obj = subsasgn(obj,s,b)
             if length(s)==2
-                [islocFct,selectors] = s.subs;
-                if strcmp(islocFct,'iloc') || strcmp(islocFct,'loc')
-                    if strcmp(islocFct,'iloc')
+                [beingAssigned,selectors] = s.subs;
+                locs = strcmp(beingAssigned,["iloc","loc"]);
+                indexers = strcmp(beingAssigned,["index","columns"]);
+                if any(indexers)
+%                     obj.([beingAssigned,'_'])(selectors{1}) = b;
+                    obj.([beingAssigned,'_']).value(selectors{1}) = b;
+                elseif any(locs)
+                    if locs(1)
                         fromPosition = true;
                     else
                         fromPosition = false;
                     end
                     obj = obj.modify(b,selectors{1},selectors{2},fromPosition);
-                    return
                 end
+                return
             end
             if length(s)>1
                 obj = builtin('subsasgn',obj,s,b);
