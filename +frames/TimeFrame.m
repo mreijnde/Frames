@@ -29,7 +29,7 @@ classdef TimeFrame < frames.DataFrame
 %                              the 1-dimension column for operations)
 %
 %
-%   Short overwiew of methods available:
+%   Short overview of methods available:
 %
 %   - Selection and modification based on index/column names with () or the loc method:
 %     tf(indexNames,columnsNames)
