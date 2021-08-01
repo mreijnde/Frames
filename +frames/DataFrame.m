@@ -240,10 +240,7 @@ classdef DataFrame
             col = obj.columns_;
         end
         function obj = setIndexType(obj,type)
-            % type can be "unsorted", "sorted", or "time"
-            if strcmp(type,"duplicate")
-                error('frames:setIndexType:duplicate','index cannot have duplicate values')
-            end
+            % type can be "unsorted", "sorted", "time", or "duplicate"
             obj.index_ = transformIndex(obj.index_,type);
         end
         function obj = setColumnsType(obj,type)
@@ -551,7 +548,7 @@ classdef DataFrame
             % sort frame from a column
             col = obj.loc_(':',columnName);
             [~,sortedID] = sort(col.data);
-            obj.index_ = frames.Index(obj.index_,Unique=true);
+            obj.index_ = frames.Index(obj.index_,Unique=true,UniqueSorted=false);
             other = obj.iloc_(sortedID,':');
         end
         function obj = sortIndex(obj)
