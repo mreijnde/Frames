@@ -220,7 +220,9 @@ classdef Index
                 if isrow(u), u=u'; end
             else
                 u = [v1; v2];
-                obj.valueChecker(u);
+                if ~isunique(v2) || any(ismember(v2,v1))
+                    warning('frames:Index:notUnique','index is not unique')
+                end
             end
         end
         
