@@ -907,17 +907,22 @@ classdef DataFrame
                 locs = strcmp(beingAssigned,["iloc","loc"]);
                 indexers = strcmp(beingAssigned,["index","columns"]);
                 if any(indexers)
-%                     obj.([beingAssigned,'_'])(selectors{1}) = b;
-                    obj.([beingAssigned,'_']).value(selectors{1}) = b;
+                    obj.([beingAssigned,'_'])(selectors{1}) = b;
+                    return
                 elseif any(locs)
                     if locs(1)
+                        if length(selectors)==1 && isa(selectors{1},'frames.DataFrame')
+                            obj = obj.modifyFromDFbool(selectors{1},b);
+                            return
+                        end
                         fromPosition = true;
                     else
                         fromPosition = false;
                     end
-                    obj = obj.modify(b,selectors{1},selectors{2},fromPosition);
+                    [idx,col] = getSelectorsFromSubs(selectors);
+                    obj = obj.modify(b,idx,col,fromPosition);
+                    return
                 end
-                return
             end
             if length(s)>1
                 obj = builtin('subsasgn',obj,s,b);
