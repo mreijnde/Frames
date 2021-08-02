@@ -548,7 +548,7 @@ classdef DataFrame
             % sort frame from a column
             col = obj.loc_(':',columnName);
             [~,sortedID] = sort(col.data);
-            obj.index_ = frames.Index(obj.index_,Unique=true,UniqueSorted=false);
+            obj.index_.requireUniqueSorted = false;
             other = obj.iloc_(sortedID,':');
         end
         function obj = sortIndex(obj)

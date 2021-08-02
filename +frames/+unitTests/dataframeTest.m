@@ -88,13 +88,15 @@ classdef dataframeTest < matlab.unittest.TestCase
             df = frames.DataFrame([1 2 3 4 5 6; 2 5 NaN 1 3 2]');
             % test removal
             df{:,2} = [];
-            df([1 3],:) = [];
+            df([1 3]) = [];
             df.iloc(4,:) = [];
             t.verifyEqual(df,frames.DataFrame([2 4 5]',[2 4 5]))
             % test loc iloc
             df.loc([2 5],:) = [22 55]';
             df.iloc(2,:) = 44;
             t.verifyEqual(df.data,[22 44 55]')
+            df.iloc(2) = 43;
+            t.verifyEqual(df.data,[22 43 55]')
             df.iloc(:,1) = 100;
             t.verifyEqual(df.data,[100 100 100]')
             % test (), {}
