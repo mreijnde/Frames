@@ -1160,6 +1160,7 @@ classdef DataFrame
                 cols = string(cols);
                 idx = string(idx);
             end
+            if isempty(idx), idx = []; end
             df = frames.DataFrame(t.Variables,idx,cols);
             df.index_.name = string(t.Properties.DimensionNames{1});
         end

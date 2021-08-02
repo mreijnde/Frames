@@ -45,26 +45,40 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(frames.DataFrame.fromTable(tb).columns,["a","b"])
             
             % from file
-            pathfile = t.dataPath+"f.txt";
+            pathfile = fullfile(t.dataPath,"f.txt");
             tf1 = frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),format='yyyy'));
             tf1.toFile(pathfile);
             tf2 = frames.TimeFrame.fromFile(pathfile,timeFormat='yyyy');
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             
-            pathfile = t.dataPath+"g.txt";
+            pathfile = fullfile(t.dataPath,"g.txt");
             tf1 = frames.TimeFrame(1,738316);
             tf1.toFile(pathfile);
             tf2 = frames.TimeFrame.fromFile(pathfile);
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             
-            pathfile = t.dataPath+"h.txt";
-            df1 = frames.DataFrame(1,string(1));
+            pathfile = fullfile(t.dataPath,"h.txt");
+            df1 = frames.DataFrame("x","h","H");
             df1.toFile(pathfile);
             df2 = frames.DataFrame.fromFile(pathfile);
+            df3 = frames.DataFrame.fromFile(pathfile,'ReadVariableNames',false);
             delete(pathfile)
             t.verifyEqual(df1,df2)
+            t.verifyEqual(df3,frames.DataFrame({'H','x'}',["Row","h"]))
+            
+            warning('off','frames:Index:notUnique')
+            pathfile = fullfile(t.dataPath,"k.txt");
+            tf1 = frames.TimeFrame(1,frames.TimeIndex([738316,738316],Unique=false),"a");
+            tf1.toFile(pathfile);
+            tf2 = frames.TimeFrame.fromFile(pathfile);
+            tf3 = frames.TimeFrame.fromFile(pathfile,'ReadVariableNames',false);
+            delete(pathfile)
+            t.verifyEqual(tf1,tf2)
+            t.verifyEqual(tf3,frames.TimeFrame(1,frames.TimeIndex([738316,738316],Unique=false)));
+            warning('on','frames:Index:notUnique')
+            
         end
         
         function subsasgnTest(t)

@@ -138,6 +138,13 @@ classdef TimeFrame < frames.DataFrame
             if ~nameValue.keepCellstr, cols = string(cols); end
             idx = t.Properties.RowTimes;
             idx.Format = string(idx.Format).replace('u','y');
+            if ~isunique(idx)
+                if ~issorted(idx)
+                    idx = frames.TimeIndex(idx,Unique=true,UniqueSorted=false);
+                else
+                    idx = frames.TimeIndex(idx,Unique=false,UniqueSorted=true);
+                end
+            end
             tf = frames.TimeFrame(t.Variables,idx,cols);
             tf.index_.name = string(t.Properties.DimensionNames{1});
         end
