@@ -68,6 +68,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df1,df2)
             t.verifyEqual(df3,frames.DataFrame({'H','x'}',["Row","h"]))
             
+            t.verifyEqual(frames.DataFrame.fromTable(table(1)),...
+                frames.DataFrame(1));
+            
             warning('off','frames:Index:notUnique')
             pathfile = fullfile(t.dataPath,"k.txt");
             tf1 = frames.TimeFrame(1,frames.TimeIndex([738316,738316],Unique=false),"a");
