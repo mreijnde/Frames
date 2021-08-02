@@ -905,11 +905,7 @@ classdef DataFrame
             if length(s)==2
                 [beingAssigned,selectors] = s.subs;
                 locs = strcmp(beingAssigned,["iloc","loc"]);
-                indexers = strcmp(beingAssigned,["index","columns"]);
-                if any(indexers)
-                    obj.([beingAssigned,'_'])(selectors{1}) = b;
-                    return
-                elseif any(locs)
+                if any(locs)
                     if locs(1)
                         if length(selectors)==1 && isa(selectors{1},'frames.DataFrame')
                             obj = obj.modifyFromDFbool(selectors{1},b);
