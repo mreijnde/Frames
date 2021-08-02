@@ -581,6 +581,8 @@ classdef dataframeTest < matlab.unittest.TestCase
         function anyTest(t)
             df=frames.DataFrame([false true; false false]);
             t.verifyEqual(df.any(1),frames.DataFrame([false true],RowSeries=true));
+            t.verifyEqual(df.any(1).any(2),true);
+            t.verifyEqual(df.all(2),frames.DataFrame([false false]',ColSeries=true));
         end
         
         function selectFromTimeRangeTest(t)

@@ -205,11 +205,15 @@ classdef Index
                         error('frames:Index:asgnNotSorted',...
                             'The assigned values make the Index not sorted.')
                     end
-                    if ~isunique(val)
-                        if obj.requireUnique
+                    if obj.requireUnique
+                        if ~isunique(val)
                             error('frames:Index:asgnNotUnique',...
                                 'The assigned values make the Index not unique.')
-                        else
+                        end
+                    else
+                        val_ = val;
+                        val_(idxNew) = [];
+                        if ~isunique(b) || any(ismember(b,val_))
                             warning('frames:Index:asgnNotUnique',...
                                 'The assigned values make the Index not unique.')
                         end
