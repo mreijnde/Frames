@@ -933,8 +933,12 @@ classdef DataFrame
                     [idx,col] = getSelectorsFromSubs(s.subs);
                     obj = obj.modify(b,idx,col);
                 case '{}'
-                    [idx,col] = getSelectorsFromSubs(s.subs);
-                    obj = obj.modify(b,idx,col,true);
+                    if length(s.subs)==1 && isa(s.subs{1},'frames.DataFrame')
+                        obj = obj.modifyFromDFbool(s.subs{1},b);
+                    else
+                        [idx,col] = getSelectorsFromSubs(s.subs);
+                        obj = obj.modify(b,idx,col,true);
+                    end
                 case '.'
                     if ismember(s(1).subs,properties(obj))
                         obj.(s.subs) = b;
@@ -1041,6 +1045,21 @@ classdef DataFrame
             end
             if ~iscolon(columns)
                 columns = obj.columns_.positionOf(columns,true);
+            end
+        end
+        function obj = modifyFromDFbool(obj,dfbool,b)
+            df1 = obj.asColSeries(false).asRowSeries(false);
+            indexColChecker(df1,dfbool);
+            if dfbool.colseries
+                if dfbool.rowseries
+                    obj.data(repmat(dfbool.data,size(obj))) = b;
+                else
+                    obj.data(dfbool.data,:) = b;
+                end
+            elseif dfbool.rowseries
+                obj.data(:,dfbool.data) = b;
+            else
+                obj.data(dfbool.data) = b;
             end
         end
         
@@ -1297,14 +1316,8 @@ function [idx_,col_,df] = elementWiseHandler(df1,df2)
 df = df1;
 if isa(df2,'frames.DataFrame')
     if isa(df1,'frames.DataFrame')
-        if ~df1.index_.singleton_ && ~df2.index_.singleton_
-            assert(isequal(df1.index_.value_,df2.index_.value_), ...
-                'frames:elementWiseHandler:differentIndex','Frames have different indices!')
-        end
-        if ~df1.columns_.singleton_ && ~df2.columns_.singleton_
-            assert(isequal(df1.columns_.value_,df2.columns_.value_), ...
-                'frames:elementWiseHandler:differentColumns','Frames have different columns!')
-        end
+        indexColChecker(df1,df2);
+        
         idx_ = df1.index_;
         if size(df2,1)>size(df1,1), idx_ = df2.index_; end
         col_ = df1.columns_;
@@ -1317,6 +1330,18 @@ if isa(df2,'frames.DataFrame')
 else
     idx_ = df1.index_;
     col_ = df1.columns_;
+end
+end
+
+%--------------------------------------------------------------------------
+function indexColChecker(df1,df2)
+if ~df1.index_.singleton_ && ~df2.index_.singleton_
+    assert(isequal(df1.index_.value_,df2.index_.value_), ...
+        'frames:elementWiseHandler:differentIndex','Frames have different indices!')
+end
+if ~df1.columns_.singleton_ && ~df2.columns_.singleton_
+    assert(isequal(df1.columns_.value_,df2.columns_.value_), ...
+        'frames:elementWiseHandler:differentColumns','Frames have different columns!')
 end
 end
 

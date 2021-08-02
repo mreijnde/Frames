@@ -133,6 +133,31 @@ classdef dataframeTest < matlab.unittest.TestCase
             
         end
         
+        function subsasgnWithDFTest(t)
+            df = frames.DataFrame([1 2;3 4],frames.Index([1 2]));
+            dfbool = frames.DataFrame([false,true;true,false],[1 2]);
+            seriesbool = frames.DataFrame([false,true]',[1 2]).asColSeries();
+            series = frames.DataFrame([1 2]',[1 2],2).asColSeries(); %#ok<SETNU>
+            dfother = frames.DataFrame([false,true;true,false],[2 3]);
+            
+            df{dfbool} = NaN;
+            t.verifyEqual(df,frames.DataFrame([1 NaN;NaN 4],frames.Index([1 2])))
+            df.iloc(dfbool) = 33;
+            t.verifyEqual(df,frames.DataFrame([1 33;33 4],frames.Index([1 2])))
+            
+            df{seriesbool} = 10;
+            t.verifyEqual(df,frames.DataFrame([1 33;10 10],frames.Index([1 2])))
+            
+            t.verifyError(@notSeries,'frames:elementWiseHandler:differentColumns')
+            function notSeries, df.iloc(seriesbool.asColSeries(false)) = 0; end
+            
+            t.verifyError(@dfnotSeries,'frames:elementWiseHandler:differentColumns')
+            function dfnotSeries, series{seriesbool.asColSeries(false)} = 0; end
+            
+            t.verifyError(@notAligned,'frames:elementWiseHandler:differentIndex')
+            function notAligned, df{dfother} = 0; end
+        end
+        
         function subsrefTest(t)
             warning('off','frames:Index:notUnique')
             % repeating columns
@@ -187,13 +212,55 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@wrongSize,'frames:indexValidation:wrongSize')
             function wrongSize(), df.index=3; end
             
-            t.verifyError(@idxNotSorted2,'frames:SortedIndex:valueCheckFail')
+            t.verifyError(@idxNotSorted2,'frames:Index:asgnNotSorted')
             function idxNotSorted2(), df.index(1)=33; end
             
             df.index = [3 6];
             t.verifyEqual(df.index,[3 6]')   
             
+        end
+        
+        function indexAssignTest(t)
+            dfs = frames.DataFrame(1,frames.Index([1 2 3 10 20],UniqueSorted=true));
+            dfu = frames.DataFrame(1,frames.Index([1 2 3 10 20],Unique=true));
+            warning('off','frames:Index:notUnique')
+            dfd = frames.DataFrame(1,frames.Index([1 2 3 10 10],Unique=false));
+            warning('on','frames:Index:notUnique')
             
+            df1=dfs;
+            df1.index([3,1]) = [4,0];
+            t.verifyEqual(df1.index,[0 2 4 10 20]')
+            t.verifyError(@notSorted,'frames:Index:asgnNotSorted')
+            function notSorted, df1.index([1,3]) = [4,0]; end
+            t.verifyError(@notSortedAll,'frames:SortedIndex:valueCheckFail')
+            function notSortedAll, df1.index = [1 2 3 20 10]; end
+            t.verifyError(@notSortedAll2,'frames:Index:asgnNotSorted')
+            function notSortedAll2, df1.index(1:end) = [1 2 3 20 10]; end
+            
+            df2=dfu;
+            df2.index([3,1]) = [0,4];
+            t.verifyEqual(df2.index,[4 2 0 10 20]')
+            t.verifyError(@notUnique,'frames:Index:asgnNotUnique')
+            function notUnique, df2.index([3,1]) = [2,0]; end
+            t.verifyError(@notUniqueAll,'frames:validators:mustBeDFindex')
+            function notUniqueAll, df2.index = [1 2 3 20 20]; end
+            t.verifyError(@notUniqueAll2,'frames:Index:asgnNotUnique')
+            function notUniqueAll2, df1.index(1:end) = [1 2 3 20 20]; end
+            
+            df3=dfd;
+            df3.index([3,1]) = [0,4];
+            t.verifyEqual(df3.index,[4 2 0 10 10]')
+            t.verifyWarning(@duplicate1,'frames:Index:asgnNotUnique')
+            function duplicate1, df3.index([3,1]) = [2,0]; end
+            t.verifyWarning(@duplicate2,'frames:Index:asgnNotUnique')
+            function duplicate2, df3.index([3,1]) = [6,6]; end
+            
+            dfcs = frames.DataFrame(1,[],frames.Index([1 2 3 10 20],UniqueSorted=true));
+            df4=dfcs;
+            df4.columns([3,1]) = [4,0];
+            t.verifyEqual(df4.columns,[0 2 4 10 20])
+            t.verifyError(@notSortedCol,'frames:Index:asgnNotSorted')
+            function notSortedCol, df4.columns([1,3]) = [4,0]; end
         end
         
         function columnsSetterTest(t)
