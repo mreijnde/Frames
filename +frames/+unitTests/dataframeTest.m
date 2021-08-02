@@ -303,6 +303,12 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(ext.index, [0 1 2 3]');
             
             t.verifyEqual(df.extendIndex([2 1 2]),df);
+            
+            warning('off','frames:Index:notUnique')
+            dupli = frames.DataFrame([1 3 4 5]',frames.Index([1 3 4 5],Unique=false)).extendIndex([1 2 4]);
+            warning('on','frames:Index:notUnique')
+            t.verifyEqual(dupli.data, [1 3 4 5 NaN]');
+            t.verifyEqual(dupli.index, [1 3 4 5 2]');
         end
         
         function dropIndexTest(t)
@@ -322,6 +328,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             sorted = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],UniqueSorted=true)).extendColumns([1 2 4]);
             t.verifyEqual(sorted.data, [1 NaN 3 4 5]);
             t.verifyEqual(sorted.columns, [1 2 3 4 5]);
+            uniq = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],Unique=true)).extendColumns([1 2 4]);
+            t.verifyEqual(uniq.data, [1 3 4 5 NaN]);
+            t.verifyEqual(uniq.columns, [1 3 4 5 2]);
         end
         
         function dropColumnsTest(t)
