@@ -84,6 +84,49 @@ classdef dataframeTest < matlab.unittest.TestCase
             
         end
         
+        function catsIndexSpecTest(t)
+            duplicate = frames.Index([1 1 3]);
+            unique = frames.Index([6 5 4],Unique=true);
+            sorted = frames.Index([10 20 30],UniqueSorted=true);
+            d1 = [1 2 3;4 5 6;7 8 9];
+            d2 = d1.*10;
+            d3 = d1.*100;
+            
+            dd = frames.DataFrame(d1,duplicate,duplicate);
+            du = frames.DataFrame(d1,duplicate,unique);
+            ud = frames.DataFrame(d2,unique,duplicate);
+            uu = frames.DataFrame(d2,unique,unique);
+            us = frames.DataFrame(d2,unique,sorted);
+            sd = frames.DataFrame(d3,sorted,duplicate);
+            su = frames.DataFrame(d3,sorted,unique);
+            ss = frames.DataFrame(d3,sorted,sorted);
+            e = frames.DataFrame.empty();
+            
+            % vertcat does not accept duplicate index
+            t.verifyError(@()[du;uu],'frames:requireUniqueIndex')
+            t.verifyError(@()[su;du],'frames:requireUniqueIndex')
+            t.verifyError(@()[su;su],'frames:vertcat:indexNotUnique')
+            t.verifyError(@()[uu;ud],'frames:vertcat:indexNotUnique')
+            
+            % can concatenate duplicates if same columns
+            t.verifyEqual([ud;sd],frames.DataFrame([ud.data;sd.data],...
+                frames.Index([6 5 4 10 20 30],Unique=true),ud.getColumns_()))
+            % cannot otherwise
+            t.verifyError(@()[ud;su],'MATLAB:subsassigndimmismatch')
+            % sorts if first index is required sorted
+            % and align same columns
+            uutmp = uu;
+            uutmp.index(1) = 25;
+            uutmp.columns(1) = 20;
+            tmp = [su;uutmp];
+            tmpdata = NaN(6,4);
+            tmpdata([3,4,6],1:3) = su.data;
+            tmpdata([5 2 1],[4 2 3]) = uu.data;
+            t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
+                frames.Index([4 5 10 20 25 30],UniqueSorted=true),frames.Index([6 5 4 20],Unique=true)))
+            
+        end
+        
         function subsasgnTest(t)
             df = frames.DataFrame([1 2 3 4 5 6; 2 5 NaN 1 3 2]');
             % test removal

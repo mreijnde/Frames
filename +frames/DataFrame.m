@@ -1120,11 +1120,14 @@ classdef DataFrame
     end
  
     methods(Static)
-        function df = empty(type)
+        function df = empty(type,varargin)
             % constructor for an empty frame, specifying the data type of
             % the index. 'type' takes a value in ["double","string","datetime"]
             arguments
                 type {mustBeTextScalar, mustBeMember(type,["double","string","datetime"])} = 'double'
+            end
+            arguments(Repeating)
+                varargin
             end
             switch type
                 case 'double'
@@ -1134,7 +1137,7 @@ classdef DataFrame
                 case 'datetime'
                     idx = datetime.empty(0,1); 
             end
-            df = frames.DataFrame([],idx);
+            df = frames.DataFrame([],idx,[],varargin{:});
         end
         function df = fromFile(filePath, varargin)
             % construct a frame from reading a table from a file
