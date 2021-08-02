@@ -190,6 +190,40 @@ classdef Index
         
     end
     
+    methods(Hidden)
+        function obj = subsasgn(obj,s,b)
+            if length(s)>1
+                obj = builtin('subsasgn',obj,s,b);
+                return
+            end
+            switch s.type
+                case '()'
+                    idxNew = s.subs{1};
+                    val = obj.value;
+                    val(idxNew) = b;
+                    if obj.requireUniqueSorted && ~issorted(val)
+                        error('frames:Index:asgnNotSorted',...
+                            'The assigned values make the Index not sorted.')
+                    end
+                    if ~isunique(val)
+                        if obj.requireUnique
+                            error('frames:Index:asgnNotUnique',...
+                                'The assigned values make the Index not unique.')
+                        else
+                            warning('frames:Index:asgnNotUnique',...
+                                'The assigned values make the Index not unique.')
+                        end
+                    end
+                    
+                    obj.value_ = obj.getValue_from(val);
+                case '{}'
+                    error('frames:Index:asgnCurly','subasgn is not defined for curly brackets.')
+                case '.'
+                    obj.(s.subs) = b;
+            end
+        end
+    end
+    
     methods(Access=protected)
         function valueChecker(obj,value)
             if obj.singleton_
