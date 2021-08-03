@@ -85,7 +85,9 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function catsIndexSpecTest(t)
+            warning('off','frames:Index:notUnique')
             duplicate = frames.Index([1 1 3]);
+            warning('on','frames:Index:notUnique')
             unique = frames.Index([6 5 4],Unique=true);
             sorted = frames.Index([10 20 30],UniqueSorted=true);
             d1 = [1 2 3;4 5 6;7 8 9];
@@ -93,6 +95,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             d3 = d1.*100;
             
             dd = frames.DataFrame(d1,duplicate,duplicate);
+            ds = frames.DataFrame(d1,duplicate,sorted);
             du = frames.DataFrame(d1,duplicate,unique);
             ud = frames.DataFrame(d2,unique,duplicate);
             uu = frames.DataFrame(d2,unique,unique);
@@ -100,8 +103,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             sd = frames.DataFrame(d3,sorted,duplicate);
             su = frames.DataFrame(d3,sorted,unique);
             ss = frames.DataFrame(d3,sorted,sorted);
-            e = frames.DataFrame.empty();
-            
+            e = frames.DataFrame([],[],frames.Index([])).setIndexName("");
+                        
+            % VERTCAT
             % vertcat does not accept duplicate index
             t.verifyError(@()[du;uu],'frames:requireUniqueIndex')
             t.verifyError(@()[su;du],'frames:requireUniqueIndex')
@@ -113,6 +117,7 @@ classdef dataframeTest < matlab.unittest.TestCase
                 frames.Index([6 5 4 10 20 30],Unique=true),ud.getColumns_()))
             % cannot otherwise
             t.verifyError(@()[ud;su],'MATLAB:subsassigndimmismatch')
+            
             % sorts if first index is required sorted
             % and align same columns
             uutmp = uu;
@@ -124,7 +129,27 @@ classdef dataframeTest < matlab.unittest.TestCase
             tmpdata([5 2 1],[4 2 3]) = uu.data;
             t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
                 frames.Index([4 5 10 20 25 30],UniqueSorted=true),frames.Index([6 5 4 20],Unique=true)))
+            % with sorted columns
+            tmp = [ss;uutmp];
+            tmpdata = NaN(6,5);
+            tmpdata([3,4,6],3:5) = ss.data;
+            tmpdata([5 2 1],[4 2 1]) = uu.data;
+            t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
+                frames.Index([4 5 10 20 25 30],UniqueSorted=true),frames.Index([4 5 10 20 30],UniqueSorted=true)))
             
+            % with empty
+            t.verifyEqual([us;e;su;e],[us;su])
+            t.verifyEqual([e;su],su.setIndexType('unsorted').setColumnsType('duplicate'))
+            
+            
+            %HORZCAT
+            % horzcat does not accept duplicate index unless it is the same
+            t.verifyError(@()[du,us],'frames:requireUniqueIndex')
+            t.verifyError(@()[uu,ds],'MATLAB:subsassigndimmismatch')
+            t.verifyEqual([du,ds],frames.DataFrame([du.data,ds.data],duplicate,[unique;sorted]))
+            warning('off','frames:Index:notUnique')
+            t.verifyEqual([dd,du],frames.DataFrame([dd.data,du.data],duplicate,[duplicate;unique]))
+            warning('on','frames:Index:notUnique')
         end
         
         function subsasgnTest(t)

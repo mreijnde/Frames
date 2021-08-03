@@ -36,7 +36,7 @@ classdef Index
         function obj = Index(value,nameValue)
             % INDEX Index(value[,Name=name,Singleton=logical])
             arguments
-                value {mustBeDFcolumns} = []
+                value {mustBeDFcolumns} = double.empty(0,1)
                 nameValue.Name = ""
                 nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = false
                 nameValue.UniqueSorted (1,1) {mustBeA(nameValue.UniqueSorted,'logical')} = false
@@ -50,6 +50,8 @@ classdef Index
                 singleton = value.singleton;
                 name = value.name;
                 value = value.value;
+            elseif isequal(value,[])
+                value = double.empty(0,1);
             end
             obj.requireUnique_ = requireUnique;
             obj.requireUniqueSorted = requireUniqueSorted;
