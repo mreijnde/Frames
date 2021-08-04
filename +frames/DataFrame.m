@@ -461,17 +461,11 @@ classdef DataFrame
             dataH = obj.defaultData(length(idx),sizeColumns(end));
             
             idxVal = idx.value;
-            if ~sameIndex && ~obj.index_.requireUniqueSorted
-                idxUnique = unique(idxVal,'stable');
-            end
             function df = getExtendedIndexDF(df)
                 % Expand DF, keeping the order of idx
                 if ~sameIndex
                     testUniqueIndex(idx);
-                    df = df.extendIndex(idxVal);
-                    if ~obj.index_.requireUniqueSorted
-                        df = df.loc_(idxUnique,':');
-                    end
+                    df = df.extendIndex(idxVal).loc_(idxVal,':');
                 end
             end
             other = getExtendedIndexDF(obj);

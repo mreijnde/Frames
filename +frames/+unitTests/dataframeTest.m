@@ -150,6 +150,33 @@ classdef dataframeTest < matlab.unittest.TestCase
             warning('off','frames:Index:notUnique')
             t.verifyEqual([dd,du],frames.DataFrame([dd.data,du.data],duplicate,[duplicate;unique]))
             warning('on','frames:Index:notUnique')
+            
+            uud = uu.setColumnsType('duplicate');
+            sstmp = ss;
+            sstmp.columns(1) = 5;
+            sstmp.index(1:2) = [4 6];
+            warning('off','frames:Index:notUnique')
+            tmp = [uud,sstmp,sstmp];
+            tmpdata = NaN(4,9);
+            tmpdata(1:3,1:3) = uud.data;
+            tmpdata([3 1 4],4:end) = [sstmp.data,sstmp.data];
+            t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
+                frames.Index([6 5 4 30],Unique=true),[uud.columns,sstmp.columns,sstmp.columns]))
+            warning('off','frames:Index:notUnique')
+            
+            uutmp = us;
+            uutmp.index(2) = 10;
+            tmpdata = NaN(5,6);
+            tmpdata(3:end,1:3) = su.data;
+            tmpdata([2 3 1],4:end) = uutmp.data;
+            tmp = [su,uutmp];
+            t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
+                frames.Index([4 6 10 20 30],UniqueSorted=true),[unique;sorted]))
+            
+            t.verifyError(@()[ss,su],'frames:SortedIndex:valueCheckFail')
+            t.verifyEqual([su,ss],frames.DataFrame([su.data,ss.data],sorted,[unique;sorted]))
+
+%             su
         end
         
         function subsasgnTest(t)
