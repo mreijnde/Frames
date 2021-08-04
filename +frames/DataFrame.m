@@ -911,8 +911,8 @@ classdef DataFrame
                     return
                 elseif any(locs)
                     if locs(1)
-                        if length(selectors)==1 && isa(selectors{1},'frames.DataFrame')
-                            obj = obj.modifyFromDFbool(selectors{1},b);
+                        if any(isFrame(selectors{:}))
+                            obj = obj.modifyFromDFbool(selectors,b);
                             return
                         end
                         fromPosition = true;
@@ -933,8 +933,8 @@ classdef DataFrame
                     [idx,col] = getSelectorsFromSubs(s.subs);
                     obj = obj.modify(b,idx,col);
                 case '{}'
-                    if length(s.subs)==1 && isa(s.subs{1},'frames.DataFrame')
-                        obj = obj.modifyFromDFbool(s.subs{1},b);
+                    if any(isFrame(s.subs{:}))
+                        obj = obj.modifyFromDFbool(s.subs,b);
                     else
                         [idx,col] = getSelectorsFromSubs(s.subs);
                         obj = obj.modify(b,idx,col,true);
@@ -1047,20 +1047,37 @@ classdef DataFrame
                 columns = obj.columns_.positionOf(columns,true);
             end
         end
-        function obj = modifyFromDFbool(obj,dfbool,b)
-            df1 = obj.asColSeries(false).asRowSeries(false);
-            indexColChecker(df1,dfbool);
-            if dfbool.colseries
-                if dfbool.rowseries
-                    obj.data(repmat(dfbool.data,size(obj))) = b;
-                else
-                    obj.data(dfbool.data,:) = b;
+        function obj = modifyFromDFbool(obj,idxCol,b)
+            [idx,col] = getSelectorsFromSubs(idxCol);
+            if length(idxCol) > 1
+                if isFrame(idx) && ~idx.colseries
+                    error('frames:dfBoolSelection:needSeries', ...
+                        'The first selector must be a ColSeries.')
                 end
-            elseif dfbool.rowseries
-                obj.data(:,dfbool.data) = b;
-            else
-                obj.data(dfbool.data) = b;
             end
+            other = obj.asColSeries(false).asRowSeries(false);
+            if isFrame(idx)
+                indexColChecker(other,idx);
+                assert(isa(idx.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
+                    'The selector must be a logical.')
+                assert(~idx.rowseries,'frames:dfBoolSelection:noRowSeries', ...
+                    'The first selector can not be a RowSeries.')
+                if idx.colseries
+                    idx = idx.data_;
+                else
+                    obj.data_( idx.data_ ) = b;
+                    return
+                end
+            end
+            if isFrame(col)
+                indexColChecker(other,col);
+                assert(isa(col.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
+                    'The selector must be a logical.')
+                assert(~col.colseries && col.rowseries,'frames:dfBoolSelection:needRowSeries', ...
+                    'The second selector must be a RowSeries.')
+                col = col.data_;
+            end
+            obj.data_(idx,col) = b;
         end
         
         function series = matrix2series(obj,fun,canOmitNaNs,varargin)

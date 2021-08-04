@@ -225,6 +225,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             dfbool = frames.DataFrame([false,true;true,false],[1 2]);
             seriesbool = frames.DataFrame([false,true]',[1 2]).asColSeries();
             series = frames.DataFrame([1 2]',[1 2],2).asColSeries(); %#ok<SETNU>
+            vector = frames.DataFrame([false,true],[],df.columns).asRowSeries();
             dfother = frames.DataFrame([false,true;true,false],[2 3]);
             
             df{dfbool} = NaN;
@@ -235,6 +236,12 @@ classdef dataframeTest < matlab.unittest.TestCase
             df{seriesbool} = 10;
             t.verifyEqual(df,frames.DataFrame([1 33;10 10],frames.Index([1 2])))
             
+            df{seriesbool,vector} = 11;
+            t.verifyEqual(df,frames.DataFrame([1 33;10 11],frames.Index([1 2])))
+            
+            df{:,vector} = 12;
+            t.verifyEqual(df,frames.DataFrame([1 12;10 12],frames.Index([1 2])))
+            
             t.verifyError(@notSeries,'frames:elementWiseHandler:differentColumns')
             function notSeries, df.iloc(seriesbool.asColSeries(false)) = 0; end
             
@@ -243,6 +250,12 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             t.verifyError(@notAligned,'frames:elementWiseHandler:differentIndex')
             function notAligned, df{dfother} = 0; end
+            
+            t.verifyError(@noTwoElements,'frames:dfBoolSelection:needSeries')
+            function noTwoElements, df{dfbool,:} = 0; end
+            
+            t.verifyError(@noFirstCol,'frames:dfBoolSelection:noRowSeries')
+            function noFirstCol, df{vector} = 0; end
         end
         
         function subsrefTest(t)
