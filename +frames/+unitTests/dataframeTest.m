@@ -775,18 +775,18 @@ classdef dataframeTest < matlab.unittest.TestCase
             df = frames.DataFrame([1 2 3 3 2 1;2 5 NaN 1 3 2;5 0 1 1 3 2]');
             t.verifyEqual(df.rolling(4).sum().data,[NaN NaN 6 9 10 9;NaN NaN NaN 8 9 6;NaN NaN 6 7 5 7]');
             
-            covdf = df.rolling(6).cov(df{:,3});
+            covdf = df.rolling(6).cov(df{:,3}.asColSeries());
             covVal = cov(df.data(:,[2,3]),'partialrows');
             t.verifyEqual(covdf.data(end,2),covVal(1,2),AbsTol=t.tol)
             
-            cordf = df.rolling(6).corr(df{:,2});
+            cordf = df.rolling(6).corr(df{:,2}.asColSeries());
             corVal = corrcoef(df.data(:,[2,3]),Rows='pairwise');
             t.verifyEqual(cordf.data(end,3),corVal(1,2),AbsTol=t.tol)
             
             beta23 = cov(df.dropMissing(How='any').data(2:end,[2,3]),'partialrows') ./ var(df.dropMissing(How='any').data(2:end,[2,3]));
-            beta2y = df{:,2}.rolling(5).betaXY(df);
-            beta3y = df{:,3}.rolling(5).betaXY(df);
-            betax3 = df.rolling(5).betaXY(df{:,3});
+            beta2y = df{:,2}.asColSeries().rolling(5).betaXY(df);
+            beta3y = df{:,3}.asColSeries().rolling(5).betaXY(df);
+            betax3 = df.rolling(5).betaXY(df{:,3}.asColSeries());
             
             t.verifyEqual(beta2y.data(end,3),beta23(2,1),AbsTol=t.tol)
             t.verifyEqual(beta3y.data(end,2),beta23(1,2),AbsTol=t.tol)

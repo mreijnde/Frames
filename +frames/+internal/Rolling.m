@@ -71,24 +71,25 @@ classdef Rolling
         function df = cov(obj,series)
             % rolling univariate covariance with a series
             assert(frames.internal.areAligned(obj.df,series),'frames are not aligned')
+            assert(series.colseries,'The argument must be a ColSeries')
             df = obj.df;
             df.data = obj.covarianceM(series.data,obj.df.data);
         end
         function df = corr(obj,series)
             % rolling univariate correlation with a series
             assert(frames.internal.areAligned(obj.df,series),'frames are not aligned')
+            assert(series.colseries,'The argument must be a ColSeries')
             df = obj.df;
             df.data = obj.correlationM(series.data,obj.df.data);
         end
         function df = betaXY(obj,dfOrSeries)
             % univariate beta of dfOrSeries being Y (the dependant variable) on obj.df being X (the independent variable)
             assert(frames.internal.areAligned(obj.df,dfOrSeries),'frames are not aligned')
-            if size(obj.df,2) == 1
+            assert(obj.df.colseries||dfOrSeries.colseries,'One of the frames must be a series.')
+            if obj.df.colseries
                 df = dfOrSeries;
-            elseif size(dfOrSeries,2) == 1
-                df = obj.df;
             else
-                error('One of the frames must be a series.')
+                df = obj.df;
             end
             df.data = obj.betaXY_M(obj.df.data,dfOrSeries.data);
         end
