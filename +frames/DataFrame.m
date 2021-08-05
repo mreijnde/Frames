@@ -766,6 +766,7 @@ classdef DataFrame
         function obj = ceil(obj), obj.data_ = ceil(obj.data_); end
         function obj = sign(obj), obj.data_ = sign(obj.data_); end
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
+        function obj = ismissing(obj), obj.data_ = ismissing(obj.data_); end
         
         function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
@@ -773,10 +774,30 @@ classdef DataFrame
         % MEAN mean through the desired dimension, returns a series
         function other = median(obj,varargin), other=obj.matrix2series(@median,true,varargin{:}); end
         % MEDIAN median through the desired dimension, returns a series
-        function other = std(obj,varargin), other=obj.matrix2series(@std,true,[],varargin{:}); end
-        % STD standard deviation through the desired dimension, returns a series
-        function other = var(obj,varargin), other=obj.matrix2series(@var,true,[],varargin{:}); end
-        % VAR variance through the desired dimension, returns a series
+        function other = std(obj,varargin)
+            % STD standard deviation through the desired dimension, returns a series
+            % The remaining optional arguments of std come after the dimension
+        if length(varargin) >= 2
+            varargin([1,2]) = varargin([2,1]);
+        elseif length(varargin) == 1
+            varargin = {[],varargin{1}};
+        else
+            varargin = {[],1};
+        end
+            other=obj.matrix2series(@std,true,varargin{:});
+        end
+        function other = var(obj,varargin)
+            % VAR variance through the desired dimension, returns a series
+            % The remaining optional arguments of std come after the dimension
+            if length(varargin) >= 2
+                varargin([1,2]) = varargin([2,1]);
+            elseif length(varargin) == 1
+                varargin = {[],varargin{1}};
+            else
+                varargin = {[],1};
+            end
+            other=obj.matrix2series(@var,true,[],varargin{:});
+        end
         function other = any(obj,varargin), other=obj.matrix2series(@any,false,varargin{:}); end
         % ANY 'any' function through the desired dimension, returns a series
         function other = all(obj,varargin), other=obj.matrix2series(@all,false,varargin{:}); end
@@ -1075,7 +1096,7 @@ classdef DataFrame
         end
         
         function series = matrix2series(obj,fun,canOmitNaNs,varargin)
-            if ~isempty(varargin) && ~isempty(varargin{end})
+            if ~isempty(varargin)
                 dim = varargin{end};  % end because std takes dimension value as argument after the weighting scheme, cf doc std versus doc sum
             else
                 dim = 1;
