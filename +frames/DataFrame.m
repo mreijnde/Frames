@@ -1080,7 +1080,7 @@ classdef DataFrame
                 if idx.colseries
                     idx = idx.data_;
                 else
-                    obj.data_( idx.data_ ) = b;
+                    obj.data_(idx.data_) = b;
                     return
                 end
             end
