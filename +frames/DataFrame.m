@@ -826,7 +826,7 @@ classdef DataFrame
             for v_ = varargin
                 v = v_{1};
                 i = i+1;
-                if isa(v,'frames.DataFrame')
+                if isFrame(v)
                     assert(isequal(obj.index,v.index)&&isequal(obj.columns,v.columns), ...
                         'frames:nansum:notAligned','Frames must be aligned.')
                     d{i} = v.data;
@@ -1320,7 +1320,7 @@ end
 function varargout = getData_(varargin)
 for ii = 1:nargout
     v = varargin{ii};
-    if isa(v,'frames.DataFrame'), v=v.data_; end
+    if isFrame(v), v=v.data_; end
     varargout{ii} = v; %#ok<AGROW>
 end
 end
@@ -1328,8 +1328,8 @@ end
 %--------------------------------------------------------------------------
 function [idx_,col_,df] = matrixOpHandler(df1,df2)
 df = df1;
-if isa(df2,'frames.DataFrame')
-    if isa(df1,'frames.DataFrame')
+if isFrame(df2)
+    if isFrame(df1)
         assert(isequal(df1.columns_.value,df2.index_.value), ...
             'frames:matrixOpHandler:notAligned','Frames are not aligned!')
         idx_ = df1.index_;
@@ -1356,8 +1356,8 @@ end
 %--------------------------------------------------------------------------
 function [idx_,col_,df] = elementWiseHandler(df1,df2)
 df = df1;
-if isa(df2,'frames.DataFrame')
-    if isa(df1,'frames.DataFrame')
+if isFrame(df2)
+    if isFrame(df1)
         indexColChecker(df1,df2);
         
         idx_ = df1.index_;
