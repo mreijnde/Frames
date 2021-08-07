@@ -1269,6 +1269,12 @@ classdef DataFrame
         function bool = ne(df1,df2)
             bool = operator(@ne,@elementWiseHandler,df1,df2);
         end
+        function other = and(df1,df2)
+            other=operator(@and,@elementWiseHandler,df1,df2);
+        end
+        function other = or(df1,df2)
+            other=operator(@or,@elementWiseHandler,df1,df2);
+        end
         
         function other = ctranspose(obj)
             other = frames.DataFrame(obj.data_',obj.columns,obj.index,Name=obj.name_);
