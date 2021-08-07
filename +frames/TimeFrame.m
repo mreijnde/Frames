@@ -89,7 +89,7 @@ classdef TimeFrame < frames.DataFrame
 % See also: frames.DataFrame
     
     methods
-        function obj = setIndexType(obj,type)
+        function obj = setIndexFormat(obj,type)
             % set the time format of the TimeIndex
             obj.index_.format = type;
         end
