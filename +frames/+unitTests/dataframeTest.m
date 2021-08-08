@@ -23,7 +23,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyTrue(isa(emptyDF.getIndex_(),'frames.Index'))
             
             % error index not sorted
-            t.verifyError(@() frames.TimeFrame([1;2],[2,1]),'frames:SortedIndex:valueCheckFail');
+            t.verifyError(@() frames.TimeFrame([1;2],[2,1]),'frames:Index:requireSortedFail');
             
             %from unique data
             t.verifyEqual(frames.DataFrame(1,[1 2]).data,[1;1])
@@ -173,7 +173,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
                 frames.Index([4 6 10 20 30],UniqueSorted=true),[unique;sorted]))
             
-            t.verifyError(@()[ss,su],'frames:SortedIndex:valueCheckFail')
+            t.verifyError(@()[ss,su],'frames:Index:requireSortedFail')
             t.verifyEqual([su,ss],frames.DataFrame([su.data,ss.data],sorted,[unique;sorted]))
 
 %             su
@@ -230,9 +230,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             expected = frames.DataFrame([50 60 40; 20 30 10],[1 2],[1 2 3]);
             t.verifyEqual(df,expected)
             df = df.setIndexType('sorted');
-            t.verifyError( @() f(df), 'frames:SortedIndex:valueCheckFail' )
+            t.verifyError( @() f(df), 'frames:Index:requireSortedFail' )
             function f(x), x.loc([2 1], 2) = 20; end
-            t.verifyError( @() fi(df), 'frames:SortedIndex:valueCheckFail' )
+            t.verifyError( @() fi(df), 'frames:Index:requireSortedFail' )
             function fi(x), x.loc{[2 1], 2} = 20; end
             
             % assign []
@@ -317,8 +317,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             % sorted index
             t.verifyEqual(df(([2 1])),frames.DataFrame([3 4;1 2],[2 1],["a","b"]))
             df = df.setIndexType('sorted');
-            t.verifyError(@() df([2 1]),'frames:SortedIndex:valueCheckFail')
-            t.verifyError(@() df{[2 1]},'frames:SortedIndex:valueCheckFail')
+            t.verifyError(@() df([2 1]),'frames:Index:requireSortedFail')
+            t.verifyError(@() df{[2 1]},'frames:Index:requireSortedFail')
         end
         
         function setIndexTest(t)
@@ -333,7 +333,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             df.index = frames.Index([3 5],UniqueSorted=true);
             t.verifyEqual(df.index,[3 5]')
             
-            t.verifyError(@idxNotSorted,'frames:SortedIndex:valueCheckFail')
+            t.verifyError(@idxNotSorted,'frames:Index:requireSortedFail')
             function idxNotSorted(), df.index=[6 3]; end
             
             t.verifyError(@wrongSize,'frames:indexValidation:wrongSize')
@@ -359,7 +359,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df1.index,[0 2 4 10 20]')
             t.verifyError(@notSorted,'frames:Index:asgnNotSorted')
             function notSorted, df1.index([1,3]) = [4,0]; end
-            t.verifyError(@notSortedAll,'frames:SortedIndex:valueCheckFail')
+            t.verifyError(@notSortedAll,'frames:Index:requireSortedFail')
             function notSortedAll, df1.index = [1 2 3 20 10]; end
             t.verifyError(@notSortedAll2,'frames:Index:asgnNotSorted')
             function notSortedAll2, df1.index(1:end) = [1 2 3 20 10]; end
@@ -377,9 +377,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             df3=dfd;
             df3.index([3,1]) = [0,4];
             t.verifyEqual(df3.index,[4 2 0 10 10]')
-            t.verifyWarning(@duplicate1,'frames:Index:asgnNotUnique')
+            t.verifyWarning(@duplicate1,'frames:Index:notUnique')
             function duplicate1, df3.index([3,1]) = [2,0]; end
-            t.verifyWarning(@duplicate2,'frames:Index:asgnNotUnique')
+            t.verifyWarning(@duplicate2,'frames:Index:notUnique')
             function duplicate2, df3.index([3,1]) = [6,6]; end
             
             dfcs = frames.DataFrame(1,[],frames.Index([1 2 3 10 20],UniqueSorted=true));
@@ -399,7 +399,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             df.columns = frames.Index([3 5],Unique=true);
             t.verifyEqual(df.columns,[3 5])
             
-            t.verifyError(@colsNotUnique,'frames:UniqueIndex:valueCheckFail')
+            t.verifyError(@colsNotUnique,'frames:Index:requireUniqueFail')
             function colsNotUnique(), df.columns=[6 6]; end
             
             t.verifyError(@wrongSize,'frames:columnsValidation:wrongSize')

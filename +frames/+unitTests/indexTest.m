@@ -5,10 +5,10 @@ classdef indexTest < matlab.unittest.TestCase
             t.verifyWarning(@duplicate,'frames:Index:notUnique')
             function duplicate(), frames.Index([2 2]); end
             
-            t.verifyError(@badsorted,'frames:SortedIndex:valueCheckFail')
+            t.verifyError(@badsorted,'frames:Index:requireSortedFail')
             function badsorted(), frames.Index([3 2],UniqueSorted=true); end
             
-            t.verifyError(@duplicateError,'frames:UniqueIndex:valueCheckFail')
+            t.verifyError(@duplicateError,'frames:Index:requireUniqueFail')
             function duplicateError(), frames.Index([2 2],Unique=true); end
             
             timeindex = frames.TimeIndex("24*06*2021",Format="dd*MM*yyyy");

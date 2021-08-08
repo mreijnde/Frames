@@ -101,10 +101,10 @@ classdef Index
             end
             if tf && ~isunique(obj.value_)
                 error('frames:Index:setRequireUnique',...
-                    'Index must be unique')
+                    'Index value must be unique.')
             elseif ~tf && obj.requireUniqueSorted_
                 error('frames:Index:setRequireNotUniqueIsSorted',...
-                    'Index must remain unique as it is uniquesorted')
+                    'Index must remain unique as it is uniquesorted.')
             end
             obj.requireUnique_ = tf;
         end
@@ -115,7 +115,7 @@ classdef Index
             if tf 
                 if ~issorted(obj.value_)
                     error('frames:Index:setrequireUniqueSorted',...
-                        'Index must be sorted.')
+                        'Index must be unique and sorted.')
                 end
                 if ~obj.requireUnique
                     obj.requireUnique_ = true;
@@ -216,7 +216,7 @@ classdef Index
                         val_ = val;
                         val_(idxNew) = [];
                         if ~isunique(b) || any(ismember(b,val_))
-                            warning('frames:Index:asgnNotUnique',...
+                            warning('frames:Index:notUnique',...
                                 'The assigned values make the Index not unique.')
                         end
                     end
@@ -237,17 +237,17 @@ classdef Index
                     'Index is a singleton so its value should have only one element.')
             end
             if ~isvector(value)
-                error('frames:Index:notVector','index must be a vector')
+                error('frames:Index:notVector','Index value must be a vector.')
             end
             if ~isunique(value)
                 if obj.requireUnique_
-                    error('frames:UniqueIndex:valueCheckFail','index is not unique')
+                    error('frames:Index:requireUniqueFail','Index value is required to be unique.')
                 else
-                    warning('frames:Index:notUnique','index is not unique')
+                    warning('frames:Index:notUnique','Index value is not unique.')
                 end
             end
             if obj.requireUniqueSorted_ && ~issorted(value)
-                error('frames:SortedIndex:valueCheckFail','Index is not sorted.')
+                error('frames:Index:requireSortedFail','Index value is required to be sorted and unique.')
             end
         end
         function u = unionData(obj,v1,v2)
@@ -261,7 +261,7 @@ classdef Index
             else
                 u = [v1; v2];
                 if ~isunique(v2) || any(ismember(v2,v1))
-                    warning('frames:Index:notUnique','index is not unique')
+                    warning('frames:Index:notUnique','Index value is not unique.')
                 end
             end
         end
