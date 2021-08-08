@@ -1,6 +1,7 @@
 classdef DataFrame
-%DATAFRAME handles common operations on homogeneous data matrices referenced by column and index identifiers.
-%   It is a convenient way to perform operations on labeled matrices (more intuitive than Matlab's table).
+%DATAFRAME is a class to store and do operations on data matrices that are referenced by column and index identifiers.
+%   It is a convenient way to perform operations on labeled matrices.
+%   Its aim is to have properties of a matrix and a table at the same time.
 %
 %   Constructor:
 %   df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
@@ -15,9 +16,9 @@ classdef DataFrame
 %   ColSeries: (logical) whether the Frame is treated like a column series (see below)
 %
 %   DATAFRAME properties:
-%     data                   - Data      TxN  (homogeneous data)
-%     index                  - Index     Tx1
-%     columns                - Columns   1xN
+%     data                   - Data matrix  TxN
+%     index                  - Index        Tx1
+%     columns                - Columns      1xN
 %     t                      - Table built on the properties above.
 %     name                   - Name of the frame
 %     description            - Description of the frame
@@ -27,6 +28,10 @@ classdef DataFrame
 %     colseries              - logical, whether the Frame is treated as a
 %                              column series (ie not considering the value of
 %                              the 1-dimension column for operations)
+%     identifierProperties   - structure of index and columns properties,
+%                              namely whether they accept duplicates, 
+%                              require unique elements, or require unique 
+%                              and sorted elements
 %
 %
 %   Short overview of methods available:

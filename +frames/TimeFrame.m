@@ -1,6 +1,7 @@
 classdef TimeFrame < frames.DataFrame
-%TIMEFRAME handles common operations on homogeneous data matrices referenced by column and chronological time identifiers.
-%   It is a convenient way to perform operations on time series (more intuitive than Matlab's timetable).
+%TIMEFRAME is a class to store and do operations on data matrices that are referenced by column and time identifiers.
+%   It is a convenient way to perform operations on time series.
+%   Its aim is to have properties of a matrix and a timetable at the same time.
 %
 %   Constructor:
 %   tf = frames.TimeFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
@@ -27,6 +28,10 @@ classdef TimeFrame < frames.DataFrame
 %     colseries              - logical, whether the Frame is treated as a
 %                              column series (ie not considering the value of
 %                              the 1-dimension column for operations)
+%     identifierProperties   - structure of index and columns properties,
+%                              namely whether they accept duplicates, 
+%                              require unique elements, or require unique 
+%                              and sorted elements
 %
 %
 %   Short overview of methods available:
