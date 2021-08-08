@@ -3,14 +3,15 @@
 % that are referenced by column and index identifiers.
 % 
 % Matlab currently provide matrices and tables, but they do not work well together:
-%% 
-% * Matlab native matrices are not aware of row and column names; when data 
+% 
+% - Matlab native matrices are not aware of row and column names; when data 
 % represents observations of variables, it is always tricky to make sure the data 
 % is not misaligned (i.e. how to make sure that the ith row in matrices A and 
 % B represents the same observation).
-% * Matlab (time)tables have row and column names, but do not provide simple 
+% 
+% - Matlab (time)tables have row and column names, but do not provide simple 
 % operations like addition (table1+table2 is not possible). 
-%% 
+% 
 % *Frames* aims at being both a table and a matrix, allowing matrix operations 
 % while being aware of row and column names.
 % 
@@ -18,7 +19,7 @@
 % 
 % Author: Benjamin Gaudin
 % 
-% Email: <mailto:frames.matlab@gmail.com frames.matlab@gmail.com>
+% Email: frames.matlab@gmail.com
 %% Frame classes
 % The class *DataFrame* and its child class *TimeFrame* provide a data type 
 % suitable when working with data sets that can be written as _matrices_ (i.e. 
