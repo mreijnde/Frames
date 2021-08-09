@@ -46,9 +46,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             % from file
             pathfile = fullfile(t.dataPath,"f.txt");
-            tf1 = frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),format='yyyy'));
+            tf1 = frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),Format='yyyy'));
             tf1.toFile(pathfile);
-            tf2 = frames.TimeFrame.fromFile(pathfile,timeFormat='yyyy');
+            tf2 = frames.TimeFrame.fromFile(pathfile,TimeFormat='yyyy');
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             
@@ -75,13 +75,28 @@ classdef dataframeTest < matlab.unittest.TestCase
             pathfile = fullfile(t.dataPath,"k.txt");
             tf1 = frames.TimeFrame(1,frames.TimeIndex([738316,738316],Unique=false),"a");
             tf1.toFile(pathfile);
-            tf2 = frames.TimeFrame.fromFile(pathfile);
-            tf3 = frames.TimeFrame.fromFile(pathfile,'ReadVariableNames',false);
+            tf2 = frames.TimeFrame.fromFile(pathfile,Unique=false);
+            tf3 = frames.TimeFrame.fromFile(pathfile,ReadVariableNames=false,Unique=false);
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             t.verifyEqual(tf3,frames.TimeFrame(1,frames.TimeIndex([738316,738316],Unique=false)));
             warning('on','frames:Index:notUnique')
             
+            pathfile = fullfile(t.dataPath,"m.txt");
+            tf1 = frames.TimeFrame(1,frames.TimeIndex([738316 738315],UniqueSorted=false));
+            tf1.toFile(pathfile);
+            tf2 = frames.TimeFrame.fromFile(pathfile,UniqueSorted=false);
+            delete(pathfile)
+            t.verifyEqual(tf1,tf2)
+            
+            warning('off','frames:Index:notUnique')
+            pathfile = fullfile(t.dataPath,"n.txt");
+            tf1 = frames.TimeFrame([1 NaN],frames.TimeIndex([738315 738315],Unique=false,Format="dd%MMM**yyyy"));
+            tf1.toFile(pathfile);
+            tf2 = frames.TimeFrame.fromFile(pathfile,Unique=false,TimeFormat="dd%MMM**yyyy");
+            delete(pathfile)
+            t.verifyEqual(tf1,tf2)
+            warning('on','frames:Index:notUnique')
         end
         
         function catsIndexSpecTest(t)

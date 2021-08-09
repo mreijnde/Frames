@@ -119,6 +119,8 @@ classdef TimeFrame < frames.DataFrame
             p = inputParser;
             p.KeepUnmatched = true;
             addOptional(p,'TimeFormat','')
+            addOptional(p,'Unique',true)
+            addOptional(p,'UniqueSorted',true)
             parse(p,varargin{:});
             namedArgs = p.Results;
             unmatched = namedargs2cell(p.Unmatched);
@@ -127,29 +129,31 @@ classdef TimeFrame < frames.DataFrame
                     'TreatAsEmpty',{'N/A','NA'}, ...
                     'ReadVariableNames',true, ...
                     unmatched{:});
-                tf = frames.TimeFrame.fromTable(tb);
+                tf = frames.TimeFrame.fromTable(tb,Unique=namedArgs.Unique,UniqueSorted=namedArgs.UniqueSorted);
             else
-                df = fromFile@frames.DataFrame(filePath,unmatched{:});
-                ti = frames.TimeIndex(df.index_.value_,Format=namedArgs.TimeFormat);
-                tf = frames.TimeFrame(df.data,ti,df.columns,Name=df.name);
+                tb = readtable(filePath,...
+                    'TreatAsEmpty',{'N/A','NA'}, ...
+                    'ReadVariableNames',true, ...
+                    unmatched{:},'ReadRowNames',false);
+                ti = frames.TimeIndex(string(tb{:,1}),Format=namedArgs.TimeFormat, ...
+                    Unique=namedArgs.Unique,UniqueSorted=namedArgs.UniqueSorted, ...
+                    Name=string(tb.Properties.VariableNames{1}));
+                tf = frames.TimeFrame(tb{:,2:end},ti,tb.Properties.VariableNames(2:end));
             end
         end
         function tf = fromTable(t,nameValue)
             arguments
                 t {mustBeA(t,'timetable')}
                 nameValue.keepCellstr (1,1) logical = false
+                nameValue.Unique = true
+                nameValue.UniqueSorted = true
             end
             cols = t.Properties.VariableNames;
             if ~nameValue.keepCellstr, cols = string(cols); end
             idx = t.Properties.RowTimes;
             idx.Format = string(idx.Format).replace('u','y');
-            if ~isunique(idx)
-                if ~issorted(idx)
-                    idx = frames.TimeIndex(idx,Unique=true,UniqueSorted=false);
-                else
-                    idx = frames.TimeIndex(idx,Unique=false,UniqueSorted=true);
-                end
-            end
+            idx = frames.TimeIndex(idx,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted);
+
             tf = frames.TimeFrame(t.Variables,idx,cols);
             tf.index_.name = string(t.Properties.DimensionNames{1});
         end
