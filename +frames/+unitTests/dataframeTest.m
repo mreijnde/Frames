@@ -110,7 +110,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             df2 = frames.DataFrame.fromFile(pathfile);
             delete(pathfile)
             df1.index = matlab.lang.makeUniqueStrings(string(df1.index),{},namelengthmax());
-            df1 = df1.setIndexType("unsorted");
+            df1 = df1.setIndexType("unique");
             t.verifyEqual(df1,df2)
             warning('on','frames:Index:notUnique')
         end
@@ -170,7 +170,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             % with empty
             t.verifyEqual([us;e;su;e],[us;su])
-            t.verifyEqual([e;su],su.setIndexType('unsorted').setColumnsType('duplicate'))
+            t.verifyEqual([e;su],su.setIndexType('unique').setColumnsType('duplicate'))
             
             
             %HORZCAT
