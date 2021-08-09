@@ -97,6 +97,22 @@ classdef dataframeTest < matlab.unittest.TestCase
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             warning('on','frames:Index:notUnique')
+            
+            warning('off','frames:Index:notUnique')
+            % This is the limitation of Matlab table, as it cannot have
+            % duplicated row names (unlike timetable...).
+            % When the DataFrame has duplicated row names, it saves them
+            % with a modified name, and so reading the file does not have
+            % duplicated names anymore.
+            pathfile = fullfile(t.dataPath,"p.txt");
+            df1 = frames.DataFrame([1 NaN],frames.Index([738315 738315],Unique=false,Name="Row"));
+            df1.toFile(pathfile);
+            df2 = frames.DataFrame.fromFile(pathfile);
+            delete(pathfile)
+            df1.index = matlab.lang.makeUniqueStrings(string(df1.index),{},namelengthmax());
+            df1 = df1.setIndexType("unsorted");
+            t.verifyEqual(df1,df2)
+            warning('on','frames:Index:notUnique')
         end
         
         function catsIndexSpecTest(t)
