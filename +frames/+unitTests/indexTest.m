@@ -85,11 +85,21 @@ classdef indexTest < matlab.unittest.TestCase
             function notUnique, uniqueindex(1) = 10; end
             uniqueindex(1:2) = [10 11]';
             t.verifyEqual(uniqueindex.value, [10 11 20]')
-
+            uniqueindex.value(end+1) = 33;
+            t.verifyEqual(uniqueindex.value, [10 11 20 33]')
+            t.verifyError(@notUnique2,'frames:Index:requireUniqueFail')
+            function notUnique2, uniqueindex.value(1) = 33; end
+            
             t.verifyError(@notSorted,'frames:Index:asgnNotSorted')
             function notSorted, sortedindex(2) = 100; end
             sortedindex(end:end+1) = [40 50];
             t.verifyEqual(sortedindex.value, [10 20 40 50]')
+            sortedindex.value([1 3]) = [1 22];
+            t.verifyEqual(sortedindex.value, [1 20 22 50]')
+            t.verifyError(@notSorted2,'frames:Index:requireUniqueFail')
+            function notSorted2, sortedindex.value(1) = 50; end
+            t.verifyError(@notSorted3,'frames:Index:requireSortedFail')
+            function notSorted3, sortedindex.value(1) = 33; end
         end
     end
 end
