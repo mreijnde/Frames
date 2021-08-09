@@ -71,5 +71,25 @@ classdef indexTest < matlab.unittest.TestCase
   
         end
         
+        function assignmentTest(t)
+            index = frames.Index([30 10 20]);
+            uniqueindex = frames.Index([30 10 20],Unique=true);
+            sortedindex = frames.Index([10 20 30],UniqueSorted=true);
+            timeindex = frames.TimeIndex([10 20 30]);
+            
+            t.verifyWarning(@renderDupl,'frames:Index:notUnique')
+            function renderDupl, index(end+1:end+2) = [11 20]; end
+            t.verifyEqual(index.value, [30 10 20 11 20]')
+            
+            t.verifyError(@notUnique,'frames:Index:asgnNotUnique')
+            function notUnique, uniqueindex(1) = 10; end
+            uniqueindex(1:2) = [10 11]';
+            t.verifyEqual(uniqueindex.value, [10 11 20]')
+
+            t.verifyError(@notSorted,'frames:Index:asgnNotSorted')
+            function notSorted, sortedindex(2) = 100; end
+            sortedindex(end:end+1) = [40 50];
+            t.verifyEqual(sortedindex.value, [10 20 40 50]')
+        end
     end
 end

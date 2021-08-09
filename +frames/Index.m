@@ -228,6 +228,8 @@ classdef Index
                     obj.(s.subs) = b;
             end
         end
+        function n = numArgumentsFromSubscript(varargin), n = 1; end
+        function e = end(obj,~,~), e = builtin('end',obj.value_,1,1); end
     end
     
     methods(Access=protected)
