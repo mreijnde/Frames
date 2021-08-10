@@ -5,11 +5,11 @@ classdef indexTest < matlab.unittest.TestCase
             t.verifyWarning(@duplicate,'frames:Index:notUnique')
             function duplicate(), frames.Index([2 2]); end
             
-            t.verifyError(@badsorted,'frames:SortedIndex:valueCheckFail')
-            function badsorted(), frames.SortedIndex([3 2]); end
+            t.verifyError(@badsorted,'frames:Index:requireSortedFail')
+            function badsorted(), frames.Index([3 2],UniqueSorted=true); end
             
-            t.verifyError(@duplicateError,'frames:UniqueIndex:valueCheckFail')
-            function duplicateError(), frames.UniqueIndex([2 2]); end
+            t.verifyError(@duplicateError,'frames:Index:requireUniqueFail')
+            function duplicateError(), frames.Index([2 2],Unique=true); end
             
             timeindex = frames.TimeIndex("24*06*2021",Format="dd*MM*yyyy");
             t.verifyEqual(timeindex.getValue_(),738331)
@@ -31,7 +31,7 @@ classdef indexTest < matlab.unittest.TestCase
         function positionOfTest(t)
             warning('off','frames:Index:notUnique')
             index = frames.Index([30 10 20 30]);
-            uniqueindex = frames.UniqueIndex([30 10 20]);
+            uniqueindex = frames.Index([30 10 20],Unique=true);
             
             t.verifyEqual(index.positionOf([30,20]),[1 4 3]')
             t.verifyEqual(uniqueindex.positionOf([20,30]),[3 1]')
@@ -41,8 +41,8 @@ classdef indexTest < matlab.unittest.TestCase
         function positionInTest(t)
             warning('off','frames:Index:notUnique')
             index = frames.Index([30 10 20 30]);
-            uniqueindex = frames.UniqueIndex([30 10 20]);
-            sortedindex = frames.SortedIndex([10 20 30]);
+            uniqueindex = frames.Index([30 10 20],Unique=true);
+            sortedindex = frames.Index([10 20 30],UniqueSorted=true);
             
             t.verifyError(@indexNotWhole,'frames:assertFoundIn')
             function indexNotWhole(), index.positionIn([40,30,20]); end
@@ -56,8 +56,8 @@ classdef indexTest < matlab.unittest.TestCase
         
         function unionTest(t)
             index = frames.Index([30 10 20]);
-            uniqueindex = frames.UniqueIndex([30 10 20]);
-            sortedindex = frames.SortedIndex([10 20 30]);
+            uniqueindex = frames.Index([30 10 20],Unique=true);
+            sortedindex = frames.Index([10 20 30],UniqueSorted=true);
             timeindex = frames.TimeIndex([10 20 30]);
             
             t.verifyWarning(@duplicate,'frames:Index:notUnique')
@@ -71,5 +71,35 @@ classdef indexTest < matlab.unittest.TestCase
   
         end
         
+        function assignmentTest(t)
+            index = frames.Index([30 10 20]);
+            uniqueindex = frames.Index([30 10 20],Unique=true);
+            sortedindex = frames.Index([10 20 30],UniqueSorted=true);
+            timeindex = frames.TimeIndex([10 20 30]);
+            
+            t.verifyWarning(@renderDupl,'frames:Index:notUnique')
+            function renderDupl, index(end+1:end+2) = [11 20]; end
+            t.verifyEqual(index.value, [30 10 20 11 20]')
+            
+            t.verifyError(@notUnique,'frames:Index:asgnNotUnique')
+            function notUnique, uniqueindex(1) = 10; end
+            uniqueindex(1:2) = [10 11]';
+            t.verifyEqual(uniqueindex.value, [10 11 20]')
+            uniqueindex.value(end+1) = 33;
+            t.verifyEqual(uniqueindex.value, [10 11 20 33]')
+            t.verifyError(@notUnique2,'frames:Index:requireUniqueFail')
+            function notUnique2, uniqueindex.value(1) = 33; end
+            
+            t.verifyError(@notSorted,'frames:Index:asgnNotSorted')
+            function notSorted, sortedindex(2) = 100; end
+            sortedindex(end:end+1) = [40 50];
+            t.verifyEqual(sortedindex.value, [10 20 40 50]')
+            sortedindex.value([1 3]) = [1 22];
+            t.verifyEqual(sortedindex.value, [1 20 22 50]')
+            t.verifyError(@notSorted2,'frames:Index:requireUniqueFail')
+            function notSorted2, sortedindex.value(1) = 50; end
+            t.verifyError(@notSorted3,'frames:Index:requireSortedFail')
+            function notSorted3, sortedindex.value(1) = 33; end
+        end
     end
 end

@@ -1,20 +1,28 @@
 classdef Index
-% INDEX belongs to the objects that support columns in a DataFrame.
+% INDEX is the object that supports the index and columns properties in a DataFrame.
+% They are stored in the index_ and columns_ properties of DataFrame.
 % It contains operations of selection and merging, and constrains.
 %
-% An INDEX is expected to have unique values.
-% INDEX allows duplicates, but throw an error whenever it is modified.
-% UniqueIndex only allows unique entries.
-% SortedIndex only allows unique entries that are sorted.
-% TimeIndex only allows unique chronological time entries.
+% The INDEX of the columns accepts duplicate values by default.
+% The INDEX of the index accepts only unique values by default.
 %
-% If the length is lower than or equal to 1, the Index can be a
-% 'singleton', ie representing the index of a series, which will allow
+% This property can be defined explicitly in the constructor of INDEX,
+% or changed with the methods .setIndexType and .setColumnsType of
+% DataFrame.
+% An INDEX can 1) accept duplicate values, 2) require unique value, or 3)
+% require unique and sorted values.
+% 
+%
+% If the length of value is equal to 1, the INDEX can be a
+% 'singleton', ie it represents the index of a series, which will allow
 % operations between Frames with different indices (see DataFrame.series)
+%
+% Use:
+%  INDEX(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name])
 %
 % Copyright 2021 Benjamin Gaudin
 %
-% See also: UNIQUEINDEX, SORTEDINDEX, TIMEINDEX
+% See also: TIMEINDEX
     
     properties
         name {mustBeTextScalar} = ""  % (textScalar) name of the Index
@@ -22,27 +30,39 @@ classdef Index
     properties(Dependent)
         value  % Tx1 array
         singleton  % (logical, default false) set it to true if the Index represents a series, cf DataFrame.series
+        requireUnique  % (logical, default false) whether the Index requires unique elements
+        requireUniqueSorted  % (logical, default false) whether the Index requires unique and sorted elements
     end
-    properties(Access={?frames.UniqueIndex,?frames.DataFrame})
+    properties(Hidden,Access={?frames.TimeIndex,?frames.DataFrame})
         value_
         singleton_
+        requireUnique_
+        requireUniqueSorted_
     end
     
     methods
         function obj = Index(value,nameValue)
-            % INDEX Index(value[,Name=name,Singleton=logical])
+            % INDEX Index(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name])
             arguments
-                value {mustBeDFcolumns} = []
+                value {mustBeDFcolumns} = double.empty(0,1)
                 nameValue.Name = ""
-                nameValue.Singleton {mustBeA(nameValue.Singleton,'logical')} = false
+                nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = false
+                nameValue.UniqueSorted (1,1) {mustBeA(nameValue.UniqueSorted,'logical')} = false
+                nameValue.Singleton (1,1) {mustBeA(nameValue.Singleton,'logical')} = false
             end
             name = nameValue.Name;
             singleton = nameValue.Singleton;
+            requireUnique = nameValue.Unique;
+            requireUniqueSorted = nameValue.UniqueSorted;
             if isa(value,'frames.Index')
                 singleton = value.singleton;
                 name = value.name;
                 value = value.value;
+            elseif isequal(value,[])
+                value = double.empty(0,1);
             end
+            obj.requireUnique_ = requireUnique;
+            obj.requireUniqueSorted = requireUniqueSorted;
             obj.value = value;
             obj.name = name;
             obj.singleton_ = singleton;
@@ -53,6 +73,12 @@ classdef Index
         end
         function idx = get.singleton(obj)
             idx = obj.singleton_;
+        end
+        function idx = get.requireUnique(obj)
+            idx = obj.requireUnique_;
+        end
+        function idx = get.requireUniqueSorted(obj)
+            idx = obj.requireUniqueSorted_;
         end
         function obj = set.value(obj,value)
             arguments
@@ -69,13 +95,41 @@ classdef Index
         end
         function obj = set.singleton(obj,tf)
             arguments
-                obj, tf {mustBeA(tf,'logical')}
+                obj, tf (1,1) {mustBeA(tf,'logical')}
             end
             if tf && length(obj.value_) ~= 1
                 error('frames:Index:setSingleton',...
                     'Index must contain 1 element to be a singleton')
             end
             obj.singleton_ = tf;
+        end
+        function obj = set.requireUnique(obj,tf)
+            arguments
+                obj, tf (1,1) {mustBeA(tf,'logical')}
+            end
+            if tf && ~isunique(obj.value_)
+                error('frames:Index:setRequireUnique',...
+                    'Index value must be unique.')
+            elseif ~tf && obj.requireUniqueSorted_
+                error('frames:Index:setRequireNotUniqueIsSorted',...
+                    'Index must remain unique as it is uniquesorted.')
+            end
+            obj.requireUnique_ = tf;
+        end
+        function obj = set.requireUniqueSorted(obj,tf)
+            arguments
+                obj, tf (1,1) {mustBeA(tf,'logical')}
+            end
+            if tf 
+                if ~issorted(obj.value_)
+                    error('frames:Index:setrequireUniqueSorted',...
+                        'Index must be unique and sorted.')
+                end
+                if ~obj.requireUnique
+                    obj.requireUnique_ = true;
+                end
+            end
+            obj.requireUniqueSorted_ = tf;
         end
         function v = getValue_(obj)
             v = obj.value_;
@@ -88,12 +142,26 @@ classdef Index
         function pos = positionOf(obj,selector,varargin)
             % find position of 'selector' in the Index
             selector = obj.getValue_andCheck(selector,varargin{:});
-            pos = findPositionIn(selector,obj.value_);
+            if obj.requireUnique_
+                assertFoundIn(selector,obj.value_)
+                [~,~,pos] = intersect(selector,obj.value_,'stable');
+            else
+                pos = findPositionIn(selector,obj.value_);
+            end
         end
         function pos = positionIn(obj,target,varargin)
             % find position of the Index into the target
             target = obj.getValue_andCheck(target,varargin{:});
-            pos = findPositionIn(obj.value_,target);
+            if obj.requireUnique_
+                assertFoundIn(obj.value_,target)
+                if obj.requireUniqueSorted_
+                    pos = ismember(target,obj.value_);
+                else
+                    [~,~,pos] = intersect(obj.value_,target,'stable');
+                end
+            else
+                pos = findPositionIn(obj.value_,target);
+            end
         end
         
         function obj = union(obj,index2)
@@ -111,31 +179,101 @@ classdef Index
             for ii = 1:nargin-1
                 val = [val;varargin{ii}.value_]; %#ok<AGROW>
             end
-            obj.value = val;  % check if properties are respected
             obj.singleton_ = false;
+            obj.value = val;  % check if properties are respected
         end
             
         function bool = isunique(obj)
-            bool = isunique(obj.value_);
+            if obj.requireUnique_
+                bool = true;
+            else
+                bool = isunique(obj.value_);
+            end
         end
         function bool = issorted(obj)
-            bool = issorted(obj.value_);
+            if obj.requireUniqueSorted_
+                bool = true;
+            else
+                bool = issorted(obj.value_);
+            end
         end
         
     end
     
+    methods(Hidden)
+        function obj = subsasgn(obj,s,b)
+            if length(s)>1
+                obj = builtin('subsasgn',obj,s,b);
+                return
+            end
+            switch s.type
+                case '()'
+                    idxNew = s.subs{1};
+                    val = obj.value;
+                    val(idxNew) = b;
+                    if obj.requireUniqueSorted && ~issorted(val)
+                        error('frames:Index:asgnNotSorted',...
+                            'The assigned values make the Index not sorted.')
+                    end
+                    if obj.requireUnique
+                        if ~isunique(val)
+                            error('frames:Index:asgnNotUnique',...
+                                'The assigned values make the Index not unique.')
+                        end
+                    else
+                        val_ = val;
+                        val_(idxNew) = [];
+                        if ~isunique(b) || any(ismember(b,val_))
+                            warning('frames:Index:notUnique',...
+                                'The assigned values make the Index not unique.')
+                        end
+                    end
+                    
+                    obj.value_ = obj.getValue_from(val);
+                case '{}'
+                    error('frames:Index:asgnCurly','subasgn is not defined for curly brackets.')
+                case '.'
+                    obj.(s.subs) = b;
+            end
+        end
+        function n = numArgumentsFromSubscript(varargin), n = 1; end
+        function e = end(obj,~,~), e = builtin('end',obj.value_,1,1); end
+    end
+    
     methods(Access=protected)
-        function valueChecker(~,value)
+        function valueChecker(obj,value)
+            if obj.singleton_
+                assert(numel(value)==1,'frames:Index:notSingleValue',...
+                    'Index is a singleton so its value should have only one element.')
+            end
             if ~isvector(value)
-                error('frames:Index:notVector','index must be a vector')
+                error('frames:Index:notVector','Index value must be a vector.')
             end
             if ~isunique(value)
-                warning('frames:Index:notUnique','index is not unique')
+                if obj.requireUnique_
+                    error('frames:Index:requireUniqueFail','Index value is required to be unique.')
+                else
+                    warning('frames:Index:notUnique','Index value is not unique.')
+                end
+            end
+            if obj.requireUniqueSorted_ && ~issorted(value)
+                error('frames:Index:requireSortedFail','Index value is required to be sorted and unique.')
             end
         end
         function u = unionData(obj,v1,v2)
-            u = [v1; v2];
-            obj.valueChecker(u);
+            if obj.requireUnique_
+                if obj.requireUniqueSorted_
+                    u = union(v1,v2,'sorted');  % sorts by default
+                else
+                    u = union(v1,v2,'stable');
+                end
+                if isrow(u), u=u'; end
+            else
+                u = [v1; v2];
+                if ~isunique(v2) || any(ismember(v2,v1))
+                    warning('frames:Index:notUnique','Index value is not unique.')
+                end
+            end
         end
         
         function value = getValue(obj)

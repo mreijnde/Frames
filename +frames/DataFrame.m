@@ -1,6 +1,7 @@
 classdef DataFrame
-%DATAFRAME handles common operations on homogeneous data matrices referenced by column and index identifiers.
-%   It is a convenient way to perform operations on labeled matrices (more intuitive than Matlab's table).
+%DATAFRAME is a class to store and do operations on data matrices that are referenced by column and index identifiers.
+%   It is a convenient way to perform operations on labeled matrices.
+%   Its aim is to have properties of a matrix and a table at the same time.
 %
 %   Constructor:
 %   df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
@@ -15,9 +16,9 @@ classdef DataFrame
 %   ColSeries: (logical) whether the Frame is treated like a column series (see below)
 %
 %   DATAFRAME properties:
-%     data                   - Data      TxN  (homogeneous data)
-%     index                  - Index     Tx1
-%     columns                - Columns   1xN
+%     data                   - Data matrix  TxN
+%     index                  - Index        Tx1
+%     columns                - Columns      1xN
 %     t                      - Table built on the properties above.
 %     name                   - Name of the frame
 %     description            - Description of the frame
@@ -27,9 +28,13 @@ classdef DataFrame
 %     colseries              - logical, whether the Frame is treated as a
 %                              column series (ie not considering the value of
 %                              the 1-dimension column for operations)
+%     identifierProperties   - structure of index and columns properties,
+%                              namely whether they accept duplicates, 
+%                              require unique elements, or require unique 
+%                              and sorted elements
 %
 %
-%   Short overwiew of methods available:
+%   Short overview of methods available:
 %
 %   - Selection and modification based on index/column names with () or the loc method:
 %     df(indexNames,columnsNames)
@@ -93,6 +98,7 @@ classdef DataFrame
         t  % table, dependent and built on data, index, columns
         rowseries  % logical, whether the Frame is to be considered as a row series
         colseries  % logical, whether the Frame is to be considered as a column series
+        identifierProperties  % structure of the properties of the Index objects underlying .index and .columns
     end
     properties
         description {mustBeText} = ""  % text description of the object
@@ -102,12 +108,9 @@ classdef DataFrame
         % and setters.
         
         data_  % TxN matrix of homogeneous data
-        index_  % Tx1 frames.UniqueIndex or its child classes
-        columns_  % Nx1 frames.Index or its child classes
+        index_  % Tx1 frames.Index with requireUnique=true
+        columns_  % Nx1 frames.Index
         name_  % textscalar, name of the frame
-    end
-    properties(Hidden, Dependent)
-        constructor  % constructor of the class (here a @frames.DataFrame)
     end
     
     methods
@@ -226,8 +229,11 @@ classdef DataFrame
         function t = get.t(obj)
             t = obj.getTable();
         end
-        function c = get.constructor(obj)
-            c = str2func(class(obj));
+        function s = get.identifierProperties(obj)
+            s.columns = publicProps2struct(obj.columns_,Skip="value");
+            s.columns.class = class(obj.columns_);
+            s.index = publicProps2struct(obj.index_,Skip="value");
+            s.index.class = class(obj.index_);
         end
         
         function idx = getIndex_(obj)
@@ -239,14 +245,11 @@ classdef DataFrame
             col = obj.columns_;
         end
         function obj = setIndexType(obj,type)
-            % type can be "unsorted", "sorted", or "time"
-            if strcmp(type,"duplicate")
-                error('frames:setIndexType:duplicate','index cannot have duplicate values')
-            end
+            % type can be "unique", "sorted", or "duplicate"
             obj.index_ = transformIndex(obj.index_,type);
         end
         function obj = setColumnsType(obj,type)
-            % type can be "unsorted", "sorted", "time", or "duplicate"
+            % type can be "unique", "sorted", or "duplicate"
             obj.columns_ = transformIndex(obj.columns_,type);
         end
         function obj = setIndexName(obj,name)
@@ -258,7 +261,7 @@ classdef DataFrame
         end
         function obj = setIndex(obj,colName)
             % set the index value from the value of a column
-            obj.index = obj.data(:,findPositionIn(colName,obj.columns));
+            obj.index = obj.data(:,ismember(obj.columns,colName));
             obj = obj.dropColumns(colName);
         end
         
@@ -333,11 +336,16 @@ classdef DataFrame
         
         function other = extendIndex(obj,index)
             % extend the index with the new values
-            newIndex = obj.index_.union(index);
+            valuesToAdd = index(~ismember(index,obj.index));
+            newIndex = obj.index_.union(valuesToAdd);
             newData = obj.defaultData(length(newIndex),length(obj.columns_));
             
-            idx = obj.index_.positionIn(newIndex.value);
-            newData(idx,:) = obj.data_;
+            if obj.index_.requireUnique_
+                idx = obj.index_.positionIn(newIndex.value);
+                newData(idx,:) = obj.data_;
+            else
+                newData(1:length(obj.index_),:) = obj.data_;
+            end
             
             other = obj;
             other.data_ = newData;
@@ -355,9 +363,12 @@ classdef DataFrame
             newColumns = obj.columns_.union(valuesToAdd);
             newData = obj.defaultData(length(obj.index_),length(newColumns));
             
-            col = obj.columns_.positionIn(newColumns.value);
-            if ~islogical(col), col = unique(col); end
-            newData(:,col) = obj.data_;
+            if obj.columns_.requireUnique_
+                col = obj.columns_.positionIn(newColumns.value);
+                newData(:,col) = obj.data_;
+            else
+                newData(:,1:length(obj.columns_)) = obj.data_;
+            end
             
             other = obj;
             other.data_ = newData;
@@ -392,8 +403,8 @@ classdef DataFrame
                 obj, index
                 nameValue.FirstValueFilling = "noFfill"
             end
-            if ~isa(obj.index_, 'frames.SortedIndex')
-                error('Only use resample with SortedIndex (set obj.setIndexType("sorted"))')
+            if ~obj.index_.requireUniqueSorted
+                error('Only use resample with a sorted Index (set obj.setIndexType("sorted"))')
             end
             FirstValueFilling = nameValue.FirstValueFilling;
             if ~iscell(FirstValueFilling)
@@ -441,8 +452,8 @@ classdef DataFrame
             for ii = 1:nargin-1
                 columnsNew = [columnsNew;varargin{ii}.columns_]; %#ok<AGROW>
                 lenCols(ii+1) = length(varargin{ii}.columns_);
-                idx_ = varargin{ii}.index_;
-                if sameIndex && isequal(idx,idx_)
+                idx_ = varargin{ii}.index_.value_;
+                if sameIndex && isequal(idx.value_,idx_)
                     continue
                 else
                     sameIndex = false;
@@ -454,13 +465,12 @@ classdef DataFrame
             sizeColumns = cumsum(lenCols);
             dataH = obj.defaultData(length(idx),sizeColumns(end));
             
+            idxVal = idx.value;
             function df = getExtendedIndexDF(df)
                 % Expand DF, keeping the order of idx
                 if ~sameIndex
-                    df = df.extendIndex(idx);
-                    if ~isa(obj.index_,'frames.SortedIndex')
-                        df = df.loc_(idx.value,':');
-                    end
+                    testUniqueIndex(idx);
+                    df = df.extendIndex(idxVal).loc_(idxVal,':');
                 end
             end
             other = getExtendedIndexDF(obj);
@@ -482,9 +492,11 @@ classdef DataFrame
             col = obj.columns_.value_;
             sameCols = true;  % compute a merged columns, only in case they are not the same
             idxNew = obj.index_;
+            testUniqueIndex(obj.index_);
             lenIdx = zeros(length(varargin),1);
             lenIdx(1) = length(obj.index_);
             for ii = 1:nargin-1
+                testUniqueIndex(varargin{ii}.index_);
                 idxNew = idxNew.union(varargin{ii}.index_);
                 lenIdx(ii+1) = length(varargin{ii}.index_);
                 col_ = varargin{ii}.columns_.value_;
@@ -494,6 +506,9 @@ classdef DataFrame
                     sameCols = false;
                 end
                 col = union(col,col_,'stable');  % requires unique columns
+            end
+            if obj.columns_.requireUniqueSorted
+                col = sort(col);
             end
             
             sizeIndex = cumsum(lenIdx);
@@ -532,7 +547,7 @@ classdef DataFrame
             % sort frame from a column
             col = obj.loc_(':',columnName);
             [~,sortedID] = sort(col.data);
-            obj.index_ = frames.UniqueIndex(obj.index_);
+            obj.index_.requireUniqueSorted = false;
             other = obj.iloc_(sortedID,':');
         end
         function obj = sortIndex(obj)
@@ -739,8 +754,7 @@ classdef DataFrame
                 assert(isequal(class(df1),class(df2)))
                 assert(isequal(df1.index_,df2.index_)&&isequal(df1.columns_,df2.columns_))
                 assert(isequal(df1.name_,df2.name_))
-                diff = df1-df2;
-                iseq = diff.abs().data <= tol;
+                iseq = abs(df1.data-df2.data) <= tol;
                 bool = all(iseq(:));
             catch
                 bool = false;
@@ -757,6 +771,7 @@ classdef DataFrame
         function obj = ceil(obj), obj.data_ = ceil(obj.data_); end
         function obj = sign(obj), obj.data_ = sign(obj.data_); end
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
+        function obj = ismissing(obj), obj.data_ = ismissing(obj.data_); end
         
         function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
@@ -764,10 +779,30 @@ classdef DataFrame
         % MEAN mean through the desired dimension, returns a series
         function other = median(obj,varargin), other=obj.matrix2series(@median,true,varargin{:}); end
         % MEDIAN median through the desired dimension, returns a series
-        function other = std(obj,varargin), other=obj.matrix2series(@std,true,[],varargin{:}); end
-        % STD standard deviation through the desired dimension, returns a series
-        function other = var(obj,varargin), other=obj.matrix2series(@var,true,[],varargin{:}); end
-        % VAR variance through the desired dimension, returns a series
+        function other = std(obj,varargin)
+            % STD standard deviation through the desired dimension, returns a series
+            % The remaining optional arguments of std come after the dimension
+        if length(varargin) >= 2
+            varargin([1,2]) = varargin([2,1]);
+        elseif length(varargin) == 1
+            varargin = {[],varargin{1}};
+        else
+            varargin = {[],1};
+        end
+            other=obj.matrix2series(@std,true,varargin{:});
+        end
+        function other = var(obj,varargin)
+            % VAR variance through the desired dimension, returns a series
+            % The remaining optional arguments of std come after the dimension
+            if length(varargin) >= 2
+                varargin([1,2]) = varargin([2,1]);
+            elseif length(varargin) == 1
+                varargin = {[],varargin{1}};
+            else
+                varargin = {[],1};
+            end
+            other=obj.matrix2series(@var,true,[],varargin{:});
+        end
         function other = any(obj,varargin), other=obj.matrix2series(@any,false,varargin{:}); end
         % ANY 'any' function through the desired dimension, returns a series
         function other = all(obj,varargin), other=obj.matrix2series(@all,false,varargin{:}); end
@@ -796,7 +831,7 @@ classdef DataFrame
             for v_ = varargin
                 v = v_{1};
                 i = i+1;
-                if isa(v,'frames.DataFrame')
+                if isFrame(v)
                     assert(isequal(obj.index,v.index)&&isequal(obj.columns,v.columns), ...
                         'frames:nansum:notAligned','Frames must be aligned.')
                     d{i} = v.data;
@@ -888,14 +923,24 @@ classdef DataFrame
         
         function obj = subsasgn(obj,s,b)
             if length(s)==2
-                [islocFct,selectors] = s.subs;
-                if strcmp(islocFct,'iloc') || strcmp(islocFct,'loc')
-                    if strcmp(islocFct,'iloc')
+                [beingAssigned,selectors] = s.subs;
+                locs = strcmp(beingAssigned,["iloc","loc"]);
+                indexers = strcmp(beingAssigned,["index","columns"]);
+                if any(indexers)
+                    obj.([beingAssigned,'_'])(selectors{1}) = b;
+                    return
+                elseif any(locs)
+                    if locs(1)
+                        if any(isFrame(selectors{:}))
+                            obj = obj.modifyFromDFbool(selectors,b);
+                            return
+                        end
                         fromPosition = true;
                     else
                         fromPosition = false;
                     end
-                    obj = obj.modify(b,selectors{1},selectors{2},fromPosition);
+                    [idx,col] = getSelectorsFromSubs(selectors);
+                    obj = obj.modify(b,idx,col,fromPosition);
                     return
                 end
             end
@@ -908,8 +953,12 @@ classdef DataFrame
                     [idx,col] = getSelectorsFromSubs(s.subs);
                     obj = obj.modify(b,idx,col);
                 case '{}'
-                    [idx,col] = getSelectorsFromSubs(s.subs);
-                    obj = obj.modify(b,idx,col,true);
+                    if any(isFrame(s.subs{:}))
+                        obj = obj.modifyFromDFbool(s.subs,b);
+                    else
+                        [idx,col] = getSelectorsFromSubs(s.subs);
+                        obj = obj.modify(b,idx,col,true);
+                    end
                 case '.'
                     if ismember(s(1).subs,properties(obj))
                         obj.(s.subs) = b;
@@ -982,7 +1031,7 @@ classdef DataFrame
                 'columns do not have the same size as data')
         end
         function idx = getIndexObject(~,index)
-            idx = frames.UniqueIndex(index);
+            idx = frames.Index(index,Unique=true);
             idx.name = "Row";  % to be consistent with 'table' in which the default name of the index is 'Row'
         end
         function col = getColumnsObject(~,columns)
@@ -1018,9 +1067,41 @@ classdef DataFrame
                 columns = obj.columns_.positionOf(columns,true);
             end
         end
+        function obj = modifyFromDFbool(obj,idxCol,b)
+            [idx,col] = getSelectorsFromSubs(idxCol);
+            if length(idxCol) > 1
+                if isFrame(idx) && ~idx.colseries
+                    error('frames:dfBoolSelection:needSeries', ...
+                        'The first selector must be a ColSeries.')
+                end
+            end
+            other = obj.asColSeries(false).asRowSeries(false);
+            if isFrame(idx)
+                indexColChecker(other,idx);
+                assert(isa(idx.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
+                    'The selector must be a logical.')
+                assert(~idx.rowseries,'frames:dfBoolSelection:noRowSeries', ...
+                    'The first selector can not be a RowSeries.')
+                if idx.colseries
+                    idx = idx.data_;
+                else
+                    obj.data_(idx.data_) = b;
+                    return
+                end
+            end
+            if isFrame(col)
+                indexColChecker(other,col);
+                assert(isa(col.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
+                    'The selector must be a logical.')
+                assert(~col.colseries && col.rowseries,'frames:dfBoolSelection:needRowSeries', ...
+                    'The second selector must be a RowSeries.')
+                col = col.data_;
+            end
+            obj.data_(idx,col) = b;
+        end
         
         function series = matrix2series(obj,fun,canOmitNaNs,varargin)
-            if ~isempty(varargin) && ~isempty(varargin{end})
+            if ~isempty(varargin)
                 dim = varargin{end};  % end because std takes dimension value as argument after the weighting scheme, cf doc std versus doc sum
             else
                 dim = 1;
@@ -1076,11 +1157,14 @@ classdef DataFrame
     end
  
     methods(Static)
-        function df = empty(type)
+        function df = empty(type,varargin)
             % constructor for an empty frame, specifying the data type of
             % the index. 'type' takes a value in ["double","string","datetime"]
             arguments
                 type {mustBeTextScalar, mustBeMember(type,["double","string","datetime"])} = 'double'
+            end
+            arguments(Repeating)
+                varargin
             end
             switch type
                 case 'double'
@@ -1090,7 +1174,7 @@ classdef DataFrame
                 case 'datetime'
                     idx = datetime.empty(0,1); 
             end
-            df = frames.DataFrame([],idx);
+            df = frames.DataFrame([],idx,[],varargin{:});
         end
         function df = fromFile(filePath, varargin)
             % construct a frame from reading a table from a file
@@ -1116,6 +1200,7 @@ classdef DataFrame
                 cols = string(cols);
                 idx = string(idx);
             end
+            if isempty(idx), idx = []; end
             df = frames.DataFrame(t.Variables,idx,cols);
             df.index_.name = string(t.Properties.DimensionNames{1});
         end
@@ -1189,6 +1274,12 @@ classdef DataFrame
         function bool = ne(df1,df2)
             bool = operator(@ne,@elementWiseHandler,df1,df2);
         end
+        function other = and(df1,df2)
+            other=operator(@and,@elementWiseHandler,df1,df2);
+        end
+        function other = or(df1,df2)
+            other=operator(@or,@elementWiseHandler,df1,df2);
+        end
         
         function other = ctranspose(obj)
             other = frames.DataFrame(obj.data_',obj.columns,obj.index,Name=obj.name_);
@@ -1234,7 +1325,7 @@ end
 function varargout = getData_(varargin)
 for ii = 1:nargout
     v = varargin{ii};
-    if isa(v,'frames.DataFrame'), v=v.data_; end
+    if isFrame(v), v=v.data_; end
     varargout{ii} = v; %#ok<AGROW>
 end
 end
@@ -1242,15 +1333,15 @@ end
 %--------------------------------------------------------------------------
 function [idx_,col_,df] = matrixOpHandler(df1,df2)
 df = df1;
-if isa(df2,'frames.DataFrame')
-    if isa(df1,'frames.DataFrame')
+if isFrame(df2)
+    if isFrame(df1)
         assert(isequal(df1.columns_.value,df2.index_.value), ...
             'frames:matrixOpHandler:notAligned','Frames are not aligned!')
         idx_ = df1.index_;
         col_ = df2.columns_;
     else
         if size(df1,2)>1 && size(df1,2) == length(df2.index_)
-            idx_ = df2.getIndexObject(df2.defaultIndex(size(df1,1)));  % frames.UniqueIndex(1:size(df1,1),Name="Row");
+            idx_ = df2.getIndexObject(df2.defaultIndex(size(df1,1)));
         else
             idx_ = df2.index_;
         end
@@ -1260,7 +1351,7 @@ if isa(df2,'frames.DataFrame')
 else
     idx_ = df1.index_;
     if size(df2,1)>1 && size(df2,1) == length(df1.columns_)
-        col_ = df1.getColumnsObject(df1.defaultColumns(size(df2,2)));  % frames.Index(1:size(df2,2));
+        col_ = df1.getColumnsObject(df1.defaultColumns(size(df2,2)));
     else
         col_ = df1.columns_;
     end
@@ -1270,16 +1361,10 @@ end
 %--------------------------------------------------------------------------
 function [idx_,col_,df] = elementWiseHandler(df1,df2)
 df = df1;
-if isa(df2,'frames.DataFrame')
-    if isa(df1,'frames.DataFrame')
-        if ~df1.index_.singleton_ && ~df2.index_.singleton_
-            assert(isequal(df1.index_.value_,df2.index_.value_), ...
-                'frames:elementWiseHandler:differentIndex','Frames have different indices!')
-        end
-        if ~df1.columns_.singleton_ && ~df2.columns_.singleton_
-            assert(isequal(df1.columns_.value_,df2.columns_.value_), ...
-                'frames:elementWiseHandler:differentColumns','Frames have different columns!')
-        end
+if isFrame(df2)
+    if isFrame(df1)
+        indexColChecker(df1,df2);
+        
         idx_ = df1.index_;
         if size(df2,1)>size(df1,1), idx_ = df2.index_; end
         col_ = df1.columns_;
@@ -1296,6 +1381,18 @@ end
 end
 
 %--------------------------------------------------------------------------
+function indexColChecker(df1,df2)
+if ~df1.index_.singleton_ && ~df2.index_.singleton_
+    assert(isequal(df1.index_.value_,df2.index_.value_), ...
+        'frames:elementWiseHandler:differentIndex','Frames have different indices!')
+end
+if ~df1.columns_.singleton_ && ~df2.columns_.singleton_
+    assert(isequal(df1.columns_.value_,df2.columns_.value_), ...
+        'frames:elementWiseHandler:differentColumns','Frames have different columns!')
+end
+end
+
+%--------------------------------------------------------------------------
 function other = operator(fun,handler,df1,df2)
 [idx_,col_,other] = handler(df1,df2);
 [v1,v2] = getData_(df1,df2);
@@ -1304,3 +1401,9 @@ other.data_ = d; other.index_ = idx_; other.columns_ = col_;
 other.description = "";
 end
 
+%--------------------------------------------------------------------------
+function testUniqueIndex(indexObj)
+if ~indexObj.requireUnique
+    error('frames:requireUniqueIndex','The function requires an Index of unique values.')
+end
+end

@@ -1,6 +1,7 @@
 classdef TimeFrame < frames.DataFrame
-%TIMEFRAME handles common operations on homogeneous data matrices referenced by column and chronological time identifiers.
-%   It is a convenient way to perform operations on time series (more intuitive than Matlab's timetable).
+%TIMEFRAME is a class to store and do operations on data matrices that are referenced by column and time identifiers.
+%   It is a convenient way to perform operations on time series.
+%   Its aim is to have properties of a matrix and a timetable at the same time.
 %
 %   Constructor:
 %   tf = frames.TimeFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
@@ -27,9 +28,13 @@ classdef TimeFrame < frames.DataFrame
 %     colseries              - logical, whether the Frame is treated as a
 %                              column series (ie not considering the value of
 %                              the 1-dimension column for operations)
+%     identifierProperties   - structure of index and columns properties,
+%                              namely whether they accept duplicates, 
+%                              require unique elements, or require unique 
+%                              and sorted elements
 %
 %
-%   Short overwiew of methods available:
+%   Short overview of methods available:
 %
 %   - Selection and modification based on index/column names with () or the loc method:
 %     tf(indexNames,columnsNames)
@@ -89,7 +94,7 @@ classdef TimeFrame < frames.DataFrame
 % See also: frames.DataFrame
     
     methods
-        function obj = setIndexType(obj,type)
+        function obj = setIndexFormat(obj,type)
             % set the time format of the TimeIndex
             obj.index_.format = type;
         end
@@ -114,6 +119,8 @@ classdef TimeFrame < frames.DataFrame
             p = inputParser;
             p.KeepUnmatched = true;
             addOptional(p,'TimeFormat','')
+            addOptional(p,'Unique',true)
+            addOptional(p,'UniqueSorted',true)
             parse(p,varargin{:});
             namedArgs = p.Results;
             unmatched = namedargs2cell(p.Unmatched);
@@ -122,22 +129,31 @@ classdef TimeFrame < frames.DataFrame
                     'TreatAsEmpty',{'N/A','NA'}, ...
                     'ReadVariableNames',true, ...
                     unmatched{:});
-                tf = frames.TimeFrame.fromTable(tb);
+                tf = frames.TimeFrame.fromTable(tb,Unique=namedArgs.Unique,UniqueSorted=namedArgs.UniqueSorted);
             else
-                df = fromFile@frames.DataFrame(filePath,unmatched{:});
-                ti = frames.TimeIndex(df.index_.value_,Format=namedArgs.TimeFormat);
-                tf = frames.TimeFrame(df.data,ti,df.columns,Name=df.name);
+                tb = readtable(filePath,...
+                    'TreatAsEmpty',{'N/A','NA'}, ...
+                    'ReadVariableNames',true, ...
+                    unmatched{:},'ReadRowNames',false);
+                ti = frames.TimeIndex(string(tb{:,1}),Format=namedArgs.TimeFormat, ...
+                    Unique=namedArgs.Unique,UniqueSorted=namedArgs.UniqueSorted, ...
+                    Name=string(tb.Properties.VariableNames{1}));
+                tf = frames.TimeFrame(tb{:,2:end},ti,tb.Properties.VariableNames(2:end));
             end
         end
         function tf = fromTable(t,nameValue)
             arguments
                 t {mustBeA(t,'timetable')}
                 nameValue.keepCellstr (1,1) logical = false
+                nameValue.Unique = true
+                nameValue.UniqueSorted = true
             end
             cols = t.Properties.VariableNames;
             if ~nameValue.keepCellstr, cols = string(cols); end
             idx = t.Properties.RowTimes;
             idx.Format = string(idx.Format).replace('u','y');
+            idx = frames.TimeIndex(idx,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted);
+
             tf = frames.TimeFrame(t.Variables,idx,cols);
             tf.index_.name = string(t.Properties.DimensionNames{1});
         end
