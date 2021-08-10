@@ -67,7 +67,7 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h1><b>Frames</b> package</h1><!--introduction--><p>The <b>frames</b> package contains a class to store and do operations on data matrices that are referenced by column and index identifiers.</p><p>Matlab currently provide matrices and tables, but they do not work well together:</p><p>- Matlab native matrices are not aware of row and column names; when data represents observations of variables, it is always tricky to make sure the data is not misaligned (i.e. how to make sure that the ith row in matrices A and B represents the same observation).</p><p>- Matlab (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible).</p><p><b>Frames</b> aims at being both a table and a matrix, allowing matrix operations while being aware of row and column names.</p><p>The package currently requires a version of <b>Matlab R2021a</b> or later.</p><p>Author: Benjamin Gaudin</p><p>Email: <a href="mailto:frames.matlab@gmail.com">&lt;mailto:frames.matlab@gmail.com frames.matlab@gmail.com</a>&gt;</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frame classes</a></li><li><a href="#5">Constructor</a></li><li><a href="#10">Properties Access and Modification</a></li><li><a href="#14">Sub-Frame Access and Modification</a></li><li><a href="#21">Operations</a></li><li><a href="#29">Concatenation</a></li><li><a href="#31">Index Object</a></li><li><a href="#38">Methods Chaining</a></li><li><a href="#42">Rolling and Ewm</a></li><li><a href="#48">Split Apply</a></li><li><a href="#54">Other Methods</a></li></ul></div><h2 id="1">Frame classes</h2><p>The class <b>DataFrame</b> and its child class <b>TimeFrame</b> provide a data type suitable when working with <i>matrices</i> that have <i>column and row names.</i> They make operations on and between Frames simple and robust. The distinction between the two is similar to that between Matlab native <i>table</i> and <i>timetable</i>; basically, the properties and methods are the same, but there are a few additional tools to handle time series in TimeFrame.</p><p>The main properties of these classes are:</p><div><ul><li>data: TxN, data matrix</li><li>index: Tx1</li><li>columns: 1xN</li><li>t: dependent table built on the properties above.</li></ul></div><p>The Frames are displayed as a table (DataFrame) or as a timetable (TimeFrame).</p><p>For the documentation, run</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
+  </style></head><body><div class="content"><h1><b>Frames</b> package</h1><!--introduction--><p>The <b>frames</b> package contains a class to store and do operations on data matrices that are referenced by column and index identifiers.</p><p>Matlab currently provide matrices and tables, but they do not work well together:</p><p>- Matlab native matrices are not aware of row and column names; when data represents observations of variables, it is always tricky to make sure the data is not misaligned (i.e. how to make sure that the ith row in matrices A and B represents the same observation).</p><p>- Matlab (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible).</p><p><b>Frames</b> aims at being both a table and a matrix, allowing matrix operations while being aware of row and column names.</p><p>The package currently requires a version of <b>Matlab R2021a</b> or later.</p><p>Author: Benjamin Gaudin</p><p>Email: <a href="mailto:frames.matlab@gmail.com">frames.matlab@gmail.com</a></p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frame classes</a></li><li><a href="#5">Constructor</a></li><li><a href="#10">Properties Access and Modification</a></li><li><a href="#14">Sub-Frame Access and Modification</a></li><li><a href="#21">Operations</a></li><li><a href="#29">Concatenation</a></li><li><a href="#31">Index Object</a></li><li><a href="#40">Methods Chaining</a></li><li><a href="#44">Rolling and Ewm</a></li><li><a href="#50">Split Apply</a></li><li><a href="#56">Other Methods</a></li></ul></div><h2 id="1">Frame classes</h2><p>The class <b>DataFrame</b> and its child class <b>TimeFrame</b> provide a data type suitable when working with <i>matrices</i> that have <i>column and row names.</i> They make operations on and between Frames simple and robust. The distinction between the two is similar to that between Matlab native <i>table</i> and <i>timetable</i>; basically, the properties and methods are the same, but there are a few additional tools to handle time series in TimeFrame.</p><p>The main properties of these classes are:</p><div><ul><li>data: TxN, data matrix</li><li>index: Tx1</li><li>columns: 1xN</li><li>t: dependent table built on the properties above.</li></ul></div><p>The Frames are displayed as a table (DataFrame) or as a timetable (TimeFrame).</p><p>For the documentation, run</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
 doc <span class="string">frames.TimeFrame</span>
 </pre><h2 id="5">Constructor</h2><p>Construct a Frame as follows:</p><pre>df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])</pre><pre class="codeinput"><span class="comment">% Example:</span>
 df = frames.DataFrame([1 2;3 4],[1 2],[<span class="string">"col1"</span>,<span class="string">"col2"</span>])
@@ -353,6 +353,7 @@ ans =
     1    1    2
 
 </pre><pre class="codeinput">dfSorted = df.setIndexType(<span class="string">"sorted"</span>);
+<span class="comment">% or df.index = frames.Index([1 2],UniqueSorted=true)</span>
 dfSorted.getIndex_()
 <span class="keyword">try</span>
     dfSorted([2 1])
@@ -443,7 +444,7 @@ ans =
     25-Jun-2021     2  
     26-Jun-2021     3  
 
-</pre><h2 id="38">Methods Chaining</h2><p>Several methods are available. Again, please refer to the documentation for the full list</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
+</pre><h2 id="40">Methods Chaining</h2><p>Several methods are available. Again, please refer to the documentation for the full list</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
 doc <span class="string">frames.TimeFrame</span>
 </pre><p>Methods can be chained to apply them one after the other.</p><pre class="codeinput"><span class="comment">% Example: build random correlated data and apply functions to the TimeFrame.</span>
 s = rng(2021);
@@ -466,12 +467,12 @@ correlation =
 
 </pre><pre class="codeinput">tf.cumsum().plot()  <span class="comment">% apply a cumulative sum and then plot the result</span>
 </pre><img vspace="5" hspace="5" src="framesDemo_01.png" alt=""> <pre class="codeinput">tf.corr().heatmap(CellLabelFormat=<span class="string">'%.2f'</span>)  <span class="comment">% compute the correlation matrix and plot it as a heatmap</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <h2 id="42">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
+</pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <h2 id="44">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
  * .rolling(window[,windowNaN]).&lt;method&gt;
  * .ewm(&lt;DecayType&gt;=value).&lt;method&gt;</pre><p>Please refer to the documentation for details on arguments and methods.</p><pre class="codeinput">doc <span class="string">frames.DataFrame.rolling</span>
 <span class="comment">% or</span>
 doc <span class="string">frames.internal.Rolling</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <pre class="codeinput">doc <span class="string">frames.DataFrame.ewm</span>
+</pre><pre class="codeinput">doc <span class="string">frames.DataFrame.ewm</span>
 <span class="comment">% or</span>
 doc <span class="string">frames.internal.ExponentiallyWeightedMoving</span>
 </pre><p>Below, we give a few examples on how these methods can be used, using our previous TimeFrame.</p><pre class="codeinput">price = tf.compoundChange(<span class="string">'log'</span>);  <span class="comment">% assume tf contains log returns and compound them</span>
@@ -483,8 +484,8 @@ priceSmoothers.name = <span class="string">"smoothers"</span>;  <span class="com
 priceSmoothers.plot(Log=true)
 </pre><pre class="codeoutput">Warning: Index value is not unique. 
 Warning: Index value is not unique. 
-</pre><img vspace="5" hspace="5" src="framesDemo_05.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_06.png" alt=""> <img vspace="5" hspace="5" src="framesDemo_07.png" alt=""> <h2 id="48">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The groups of columns can be expressed in different ways.
+</pre><img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
+</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <h2 id="50">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The groups of columns can be expressed in different ways.
  * (cellArrayOfGroupLists,groupNames)
  * structure: fields are group names and values are elements in each group
  * frames.Group: Group whose property  are group names and property
@@ -500,7 +501,9 @@ df =
     2    2    5    0
     3    3    3    1
 
-</pre><p>simple example with cell apply a sum horizontally in each group</p><pre class="codeinput">x1 = df.split({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>},[<span class="string">"group1"</span>,<span class="string">"group2"</span>]).apply(@(x) x.sum(2))
+</pre><pre class="codeinput"><span class="comment">% simple example with cell</span>
+<span class="comment">% apply a sum horizontally in each group</span>
+x1 = df.split({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>},[<span class="string">"group1"</span>,<span class="string">"group2"</span>]).apply(@(x) x.sum(2))
 </pre><pre class="codeoutput">
 x1 = 
 
@@ -511,7 +514,9 @@ x1 =
     2      2         5   
     3      4         3   
 
-</pre><p>apply function using group names multiply each group by 10 and 1 respectively</p><pre class="codeinput">multiplier.group1 = 10;
+</pre><pre class="codeinput"><span class="comment">% apply function using group names</span>
+<span class="comment">% multiply each group by 10 and 1 respectively</span>
+multiplier.group1 = 10;
 multiplier.group2 = 1;
 x2 = df.split({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>},[<span class="string">"group1"</span>,<span class="string">"group2"</span>]).apply(@(x) x.*multiplier.(x.name))
 </pre><pre class="codeoutput">
@@ -524,7 +529,9 @@ x2 =
     2    20     0    5
     3    30    10    3
 
-</pre><p>split with a structure cap each group at 1.5 and 2.5 respectively</p><pre class="codeinput">s = struct();
+</pre><pre class="codeinput"><span class="comment">% split with a structure</span>
+<span class="comment">% cap each group at 1.5 and 2.5 respectively</span>
+s = struct();
 s.group1 = [<span class="string">"a"</span> <span class="string">"c"</span>];
 s.group2 = <span class="string">"b"</span>;
 ceiler.group1 = 1.5;
@@ -540,7 +547,9 @@ x3 =
     2    1.5      0    2.5
     3    1.5      1    2.5
 
-</pre><p>split with a Group take the maximum of each groups at each row</p><pre class="codeinput">g = frames.Groups(df.columns,s);
+</pre><pre class="codeinput"><span class="comment">% split with a Group</span>
+<span class="comment">% take the maximum of each groups at each row</span>
+g = frames.Groups(df.columns,s);
 x4 = df.split(g).apply(@(x) x.max(2))
 </pre><pre class="codeoutput">
 x4 = 
@@ -552,7 +561,7 @@ x4 =
     2      5         2   
     3      3         3   
 
-</pre><h2 id="54">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (+frames/+unitTests/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
+</pre><h2 id="56">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (+frames/+unitTests/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
 </pre><pre class="codeoutput">
 Methods for class frames.DataFrame:
 
@@ -603,7 +612,7 @@ empty             fromFile          fromTable
 % 
 % Author: Benjamin Gaudin
 % 
-% Email: <mailto:frames.matlab@gmail.com frames.matlab@gmail.com>
+% Email: frames.matlab@gmail.com
 %% Frame classes
 % The class *DataFrame* and its child class *TimeFrame* provide a data type 
 % suitable when working with _matrices_ that have _column and row names._ They 
@@ -691,8 +700,9 @@ df(1,:)
 df.loc(1,:);
 df(1);
 df.loc(1);
-%%
+%% 
 % Modification
+
 df(1,:) = 11
 % Or df.loc(1,:) = 11
 %% 
@@ -802,8 +812,11 @@ tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"],Format="dd
 % the _index_ and _columns_ properties.
 % 
 % Here is an example of an Index:
-%
+%%
+% 
 %  frames.Index(value,Unique=false,UniqueSorted=false,Singleton=false,Name="")
+%
+
 frames.Index([1,2])
 %% 
 % * The _singleton_ property is related to the series property of the DataFrame. 
@@ -822,6 +835,7 @@ df.getIndex_()  % gets the underlying Index object
 df([2 1])
 %%
 dfSorted = df.setIndexType("sorted");
+% or df.index = frames.Index([1 2],UniqueSorted=true)
 dfSorted.getIndex_()
 try
     dfSorted([2 1])
@@ -842,8 +856,10 @@ sortedConcatenation = [df1,df2]
 % 
 % TimeIndex can read several kinds of arguments: datenum, datetime, and strings/cell 
 % together with a Format
-%
+%%
+% 
 %  frames.TimeIndex(value,Unique=false,UniqueSorted=false,Singleton=false,Name="Time",Format="dd-MMM-yyyy")
+%
 
 frames.TimeIndex(738336)
 frames.TimeIndex(datetime(738336,'ConvertFrom','datenum',Format='dd-MMM-yyyy'));
@@ -886,8 +902,8 @@ tf.cumsum().plot()  % apply a cumulative sum and then plot the result
 %%
 tf.corr().heatmap(CellLabelFormat='%.2f')  % compute the correlation matrix and plot it as a heatmap
 %% Rolling and Ewm
-% Computation on a rolling basis are available with the _.rolling()_ and the 
-% _.ewm()_ methods. _.rolling()_ applies computations on a rolling window basis. 
+% Computation on a rolling basis are available with the _.rolling()_ and the  
+% _.ewm()_ methods. _.rolling()_ applies computations on a rolling window basis.  
 % _.ewm()_ applies computations by weighting observations with exponentially decaying 
 % weights.
 %%
@@ -920,7 +936,7 @@ priceSmoothers.plot(Log=true)
 %%
 tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
-% One can apply a function to groups of columns in a Frame using the method 
+% One can apply a function to groups of columns in a Frame using the method  
 % _.split(groups).apply(@<function>)_.
 %%
 % 
@@ -933,17 +949,23 @@ tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving 
 %
 
 df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],["a" "b" "c"])
-%%
+%% 
+% 
+
 % simple example with cell
 % apply a sum horizontally in each group
 x1 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.sum(2))
-%%
-% apply function using group names
+%% 
+% 
+
+% apply function using group names 
 % multiply each group by 10 and 1 respectively
 multiplier.group1 = 10;
 multiplier.group2 = 1;
 x2 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.*multiplier.(x.name))
-%%
+%% 
+% 
+
 % split with a structure
 % cap each group at 1.5 and 2.5 respectively
 s = struct();
@@ -952,8 +974,10 @@ s.group2 = "b";
 ceiler.group1 = 1.5;
 ceiler.group2 = 2.5;
 x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
-%%
-% split with a Group
+%% 
+% 
+
+% split with a Group 
 % take the maximum of each groups at each row
 g = frames.Groups(df.columns,s);
 x4 = df.split(g).apply(@(x) x.max(2))

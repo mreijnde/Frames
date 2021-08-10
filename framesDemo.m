@@ -19,7 +19,7 @@
 % 
 % Author: Benjamin Gaudin
 % 
-% Email: <mailto:frames.matlab@gmail.com frames.matlab@gmail.com>
+% Email: frames.matlab@gmail.com
 %% Frame classes
 % The class *DataFrame* and its child class *TimeFrame* provide a data type 
 % suitable when working with _matrices_ that have _column and row names._ They 
@@ -107,8 +107,9 @@ df(1,:)
 df.loc(1,:);
 df(1);
 df.loc(1);
-%%
+%% 
 % Modification
+
 df(1,:) = 11
 % Or df.loc(1,:) = 11
 %% 
@@ -218,8 +219,11 @@ tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"],Format="dd
 % the _index_ and _columns_ properties.
 % 
 % Here is an example of an Index:
-%
+%%
+% 
 %  frames.Index(value,Unique=false,UniqueSorted=false,Singleton=false,Name="")
+%
+
 frames.Index([1,2])
 %% 
 % * The _singleton_ property is related to the series property of the DataFrame. 
@@ -238,6 +242,7 @@ df.getIndex_()  % gets the underlying Index object
 df([2 1])
 %%
 dfSorted = df.setIndexType("sorted");
+% or df.index = frames.Index([1 2],UniqueSorted=true)
 dfSorted.getIndex_()
 try
     dfSorted([2 1])
@@ -258,8 +263,10 @@ sortedConcatenation = [df1,df2]
 % 
 % TimeIndex can read several kinds of arguments: datenum, datetime, and strings/cell 
 % together with a Format
-%
+%%
+% 
 %  frames.TimeIndex(value,Unique=false,UniqueSorted=false,Singleton=false,Name="Time",Format="dd-MMM-yyyy")
+%
 
 frames.TimeIndex(738336)
 frames.TimeIndex(datetime(738336,'ConvertFrom','datenum',Format='dd-MMM-yyyy'));
@@ -302,8 +309,8 @@ tf.cumsum().plot()  % apply a cumulative sum and then plot the result
 %%
 tf.corr().heatmap(CellLabelFormat='%.2f')  % compute the correlation matrix and plot it as a heatmap
 %% Rolling and Ewm
-% Computation on a rolling basis are available with the _.rolling()_ and the 
-% _.ewm()_ methods. _.rolling()_ applies computations on a rolling window basis. 
+% Computation on a rolling basis are available with the _.rolling()_ and the  
+% _.ewm()_ methods. _.rolling()_ applies computations on a rolling window basis.  
 % _.ewm()_ applies computations by weighting observations with exponentially decaying 
 % weights.
 %%
@@ -336,7 +343,7 @@ priceSmoothers.plot(Log=true)
 %%
 tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
-% One can apply a function to groups of columns in a Frame using the method 
+% One can apply a function to groups of columns in a Frame using the method  
 % _.split(groups).apply(@<function>)_.
 %%
 % 
@@ -349,17 +356,23 @@ tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving 
 %
 
 df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],["a" "b" "c"])
-%%
+%% 
+% 
+
 % simple example with cell
 % apply a sum horizontally in each group
 x1 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.sum(2))
-%%
-% apply function using group names
+%% 
+% 
+
+% apply function using group names 
 % multiply each group by 10 and 1 respectively
 multiplier.group1 = 10;
 multiplier.group2 = 1;
 x2 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.*multiplier.(x.name))
-%%
+%% 
+% 
+
 % split with a structure
 % cap each group at 1.5 and 2.5 respectively
 s = struct();
@@ -368,8 +381,10 @@ s.group2 = "b";
 ceiler.group1 = 1.5;
 ceiler.group2 = 2.5;
 x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
-%%
-% split with a Group
+%% 
+% 
+
+% split with a Group 
 % take the maximum of each groups at each row
 g = frames.Groups(df.columns,s);
 x4 = df.split(g).apply(@(x) x.max(2))
