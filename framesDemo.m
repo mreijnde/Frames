@@ -1,5 +1,5 @@
 %% *Frames* package
-% The *frames* package contains two classes to handle operations on matrices 
+% The *frames* package contains a class to store and do operations on data matrices 
 % that are referenced by column and index identifiers.
 % 
 % Matlab currently provide matrices and tables, but they do not work well together:
@@ -19,12 +19,11 @@
 % 
 % Author: Benjamin Gaudin
 % 
-% Email: frames.matlab@gmail.com
+% Email: <mailto:frames.matlab@gmail.com frames.matlab@gmail.com>
 %% Frame classes
 % The class *DataFrame* and its child class *TimeFrame* provide a data type 
-% suitable when working with data sets that can be written as _matrices_ (i.e. 
-% that have a homogoneous type) and that have _column and row names._ They make 
-% operations on and between Frames simple and robust. The distinction between 
+% suitable when working with _matrices_ that have _column and row names._ They 
+% make operations on and between Frames simple and robust. The distinction between 
 % the two is similar to that between Matlab native _table_ and _timetable_; basically, 
 % the properties and methods are the same, but there are a few additional tools 
 % to handle time series in TimeFrame.
@@ -36,7 +35,7 @@
 % * columns: 1xN
 % * t: dependent table built on the properties above.
 %% 
-% The Frames are displayed as a table (DataFrame) and as a timetable (TimeFrame).
+% The Frames are displayed as a table (DataFrame) or as a timetable (TimeFrame).
 % 
 % For the documentation, run
 
@@ -110,8 +109,8 @@ df(1);
 df.loc(1);
 %%
 % Modification
-df(1,:) = 10
-% Or df.loc(1,:) = 10
+df(1,:) = 11
+% Or df.loc(1,:) = 11
 %% 
 % One can also drop a column/row with the empty assignment
 
@@ -219,7 +218,8 @@ tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"],Format="dd
 % the _index_ and _columns_ properties.
 % 
 % Here is an example of an Index:
-
+%
+%  frames.Index(value,Unique=false,UniqueSorted=false,Singleton=false,Name="")
 frames.Index([1,2])
 %% 
 % * The _singleton_ property is related to the series property of the DataFrame. 
@@ -258,6 +258,8 @@ sortedConcatenation = [df1,df2]
 % 
 % TimeIndex can read several kinds of arguments: datenum, datetime, and strings/cell 
 % together with a Format
+%
+%  frames.TimeIndex(value,Unique=false,UniqueSorted=false,Singleton=false,Name="Time",Format="dd-MMM-yyyy")
 
 frames.TimeIndex(738336)
 frames.TimeIndex(datetime(738336,'ConvertFrom','datenum',Format='dd-MMM-yyyy'));

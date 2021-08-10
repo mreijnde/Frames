@@ -1,12 +1,26 @@
 classdef TimeIndex < frames.Index
-% TIMEINDEX belongs to the objects that support index in a DataFrame,
-% and in particular is the only possible Index for TimeFrame.
+% TIMEINDEX belongs to the objects that support index property in a TimeFrame.
+% It is stored in the index_ property of TimeFrame.
 % It contains operations of selection and merging, and constrains.
 %
-% A TIMEINDEX has unique chronological values.
-% Index allows duplicates, but throw a warning.
-% UniqueIndex only allows unique entries.
-% Index only allows unique entries that are sorted.
+% A TIMEINDEX has unique chronological values by default.
+%
+% This property can be defined explicitly in the constructor of TIMEINDEX,
+% or changed with the methods .setIndexType and .setColumnsType of
+% TimeFrame.
+% An TIMEINDEX can 1) accept duplicate values, 2) require unique value, or 3)
+% require unique and sorted values.
+%
+% If the length of value is equal to 1, the TIMEINDEX can be a
+% 'singleton', ie it represents the index of a series, which will allow
+% operations between Frames with different indices (see TimeFrame.series)
+%
+% Use:
+%  TIMEINDEX(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name,Format=format])
+%
+% The value can be a datenum, a datetime, or a string, in which case one
+% needs to specify its format in the Format key-value argument.
+% It can also be modified with the .setIndexFormat method of TimeFrame.
 %
 % Copyright 2021 Benjamin Gaudin
 %

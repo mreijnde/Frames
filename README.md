@@ -11,14 +11,14 @@ Matlab currently provide matrices and tables, but they do not work well together
    - Matlab (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible). 
 
 **_Frame_ aims at being both a matrix and a table**, allowing intuitive operations on and between Frames, while applying sanity checks on index and columns.
-For example, `frame1+frame2` is possible, but will give an error if the index or columns are misaligned.
+For example, `frame1+frame2` is possible, and it will give an error if the index or columns are misaligned.
 
 Below are the fundamental data types provided by Matlab together with the new _Frame_.
 
 ![fundamental_classes](https://user-images.githubusercontent.com/57812158/124361682-8ef69e00-dc30-11eb-8fa3-1b4e81f24140.png)
 
 We provide two types of Frames: **`DataFrame`** and **`TimeFrame`**. 
-The distinction between the two is similar to that between Matlab native table and timetable; basically, the properties and methods are the same, but there are a few additional tools to handle time series in TimeFrame.
+The distinction between the two is similar to that between Matlab native `table` and `timetable`; basically, the properties and methods are the same, but there are a few additional tools to handle time series in TimeFrame.
 
 The package is compatible with **Matlab R2021a** and later versions. No other toolbox is required.
 

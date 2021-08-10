@@ -1,16 +1,24 @@
 classdef Index
-% INDEX belongs to the objects that support columns in a DataFrame.
+% INDEX is the object that supports the index and columns properties in a DataFrame.
+% They are stored in the index_ and columns_ properties of DataFrame.
 % It contains operations of selection and merging, and constrains.
 %
-% An INDEX is expected to have unique values.
-% INDEX allows duplicates, but throw an error whenever it is modified.
-% UniqueIndex only allows unique entries.
-% SortedIndex only allows unique entries that are sorted.
-% TimeIndex only allows unique chronological time entries.
+% The INDEX of the columns accepts duplicate values by default.
+% The INDEX of the index accepts only unique values by default.
 %
-% If the length is lower than or equal to 1, the Index can be a
-% 'singleton', ie representing the index of a series, which will allow
+% This property can be defined explicitly in the constructor of INDEX,
+% or changed with the methods .setIndexType and .setColumnsType of
+% DataFrame.
+% An INDEX can 1) accept duplicate values, 2) require unique value, or 3)
+% require unique and sorted values.
+% 
+%
+% If the length of value is equal to 1, the INDEX can be a
+% 'singleton', ie it represents the index of a series, which will allow
 % operations between Frames with different indices (see DataFrame.series)
+%
+% Use:
+%  INDEX(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name])
 %
 % Copyright 2021 Benjamin Gaudin
 %
@@ -34,7 +42,7 @@ classdef Index
     
     methods
         function obj = Index(value,nameValue)
-            % INDEX Index(value[,Name=name,Singleton=logical])
+            % INDEX Index(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name])
             arguments
                 value {mustBeDFcolumns} = double.empty(0,1)
                 nameValue.Name = ""
