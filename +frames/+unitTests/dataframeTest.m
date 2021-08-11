@@ -40,6 +40,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(frames.TimeFrame(1,"09-Jun-2021").index,datetime(2021,6,9))
             t.verifyEqual(frames.TimeFrame(1,frames.TimeIndex("09.06.2021",Format="dd.MM.yyyy")).index,datetime(2021,6,9))
             
+            t.verifyError(@()frames.DataFrame(1,NaN),'frames:validators:mustBeFullVector')
+            t.verifyError(@()frames.TimeFrame(1,NaN),'frames:validators:mustBeFullVector')
+            t.verifyError(@()frames.TimeFrame(1,1,NaN),'frames:validators:mustBeFullVector')
+            
             % from table
             tb = array2table([1 2; 3 4],RowNames=["r1","r2"],VariableNames=["a","b"]);
             t.verifyEqual(frames.DataFrame.fromTable(tb).columns,["a","b"])
@@ -207,7 +211,6 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@()[ss,su],'frames:Index:requireSortedFail')
             t.verifyEqual([su,ss],frames.DataFrame([su.data,ss.data],sorted,[unique;sorted]))
 
-%             su
         end
         
         function subsasgnTest(t)
