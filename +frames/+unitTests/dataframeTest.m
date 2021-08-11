@@ -379,6 +379,16 @@ classdef dataframeTest < matlab.unittest.TestCase
             df.index = [3 6];
             t.verifyEqual(df.index,[3 6]')   
             
+            df.index = frames.Index([3 5]);
+            t.verifyEqual(df.index,[3 5]')   
+            t.verifyFalse(df.identifierProperties.index.requireUniqueSorted)   
+            
+            df.index=frames.Index([6 3]);
+            t.verifyFalse(df.identifierProperties.index.requireUniqueSorted)  
+            
+            tf = frames.TimeFrame([1 2; 2 5]);
+            t.verifyError(@notTi,'frames:TimeFrame:indexObjNotTime')
+            function notTi(), tf.index=frames.Index([1 2]); end
         end
         
         function indexAssignTest(t)
