@@ -157,7 +157,7 @@ classdef DataFrame
             obj.indexValidation(value);
             if ~isa(value,'frames.Index')
                 if ~isequal(obj.index_,[])  % ToDo: this is always true unless it is called from a constructor
-                    obj.index_.value = value;
+                    obj.index_(1:end) = value;
                     return
                 else
                     value = obj.getIndexObject(value);
@@ -172,7 +172,7 @@ classdef DataFrame
             obj.columnsValidation(value);
             if ~isa(value,'frames.Index')
                 if ~isequal(obj.columns_,[])
-                    obj.columns_.value = value;
+                    obj.columns_(1:end) = value;
                     return
                 else
                     value = obj.getColumnsObject(value);
@@ -927,6 +927,7 @@ classdef DataFrame
                 locs = strcmp(beingAssigned,["iloc","loc"]);
                 indexers = strcmp(beingAssigned,["index","columns"]);
                 if any(indexers)
+                    mustBeDFindex(b);
                     obj.([beingAssigned,'_'])(selectors{1}) = b;
                     return
                 elseif any(locs)

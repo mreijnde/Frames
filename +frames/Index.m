@@ -209,27 +209,28 @@ classdef Index
             switch s.type
                 case '()'
                     idxNew = s.subs{1};
-                    val = obj.value;
-                    val(idxNew) = b;
-                    if obj.requireUniqueSorted && ~issorted(val)
+                    b_ = obj.getValue_from(b);
+                    val_ = obj.value_;
+                    val_(idxNew) = b_;
+                    if obj.requireUniqueSorted && ~issorted(val_)
                         error('frames:Index:asgnNotSorted',...
                             'The assigned values make the Index not sorted.')
                     end
                     if obj.requireUnique
-                        if ~isunique(val)
+                        if ~isunique(val_)
                             error('frames:Index:asgnNotUnique',...
                                 'The assigned values make the Index not unique.')
                         end
                     else
-                        val_ = val;
-                        val_(idxNew) = [];
-                        if ~isunique(b) || any(ismember(b,val_))
+                        valTmp = val_;
+                        valTmp(idxNew) = [];
+                        if ~isunique(b) || any(ismember(b,valTmp))
                             warning('frames:Index:notUnique',...
                                 'The assigned values make the Index not unique.')
                         end
                     end
                     
-                    obj.value_ = obj.getValue_from(val);
+                    obj.value_ = val_;
                 case '{}'
                     error('frames:Index:asgnCurly','subasgn is not defined for curly brackets.')
                 case '.'
