@@ -40,6 +40,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(frames.TimeFrame(1,"09-Jun-2021").index,datetime(2021,6,9))
             t.verifyEqual(frames.TimeFrame(1,frames.TimeIndex("09.06.2021",Format="dd.MM.yyyy")).index,datetime(2021,6,9))
             
+            t.verifyError(@()frames.DataFrame(1,NaN),'frames:validators:mustBeFullVector')
+            t.verifyError(@()frames.TimeFrame(1,NaN),'frames:validators:mustBeFullVector')
+            t.verifyError(@()frames.TimeFrame(1,1,NaN),'frames:validators:mustBeFullVector')
+            
             % from table
             tb = array2table([1 2; 3 4],RowNames=["r1","r2"],VariableNames=["a","b"]);
             t.verifyEqual(frames.DataFrame.fromTable(tb).columns,["a","b"])
@@ -207,7 +211,6 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@()[ss,su],'frames:Index:requireSortedFail')
             t.verifyEqual([su,ss],frames.DataFrame([su.data,ss.data],sorted,[unique;sorted]))
 
-%             su
         end
         
         function subsasgnTest(t)
@@ -376,6 +379,16 @@ classdef dataframeTest < matlab.unittest.TestCase
             df.index = [3 6];
             t.verifyEqual(df.index,[3 6]')   
             
+            df.index = frames.Index([3 5]);
+            t.verifyEqual(df.index,[3 5]')   
+            t.verifyFalse(df.identifierProperties.index.requireUniqueSorted)   
+            
+            df.index=frames.Index([6 3]);
+            t.verifyFalse(df.identifierProperties.index.requireUniqueSorted)  
+            
+            tf = frames.TimeFrame([1 2; 2 5]);
+            t.verifyError(@notTi,'frames:TimeFrame:indexObjNotTime')
+            function notTi(), tf.index=frames.Index([1 2]); end
         end
         
         function indexAssignTest(t)
@@ -400,7 +413,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df2.index,[4 2 0 10 20]')
             t.verifyError(@notUnique,'frames:Index:asgnNotUnique')
             function notUnique, df2.index([3,1]) = [2,0]; end
-            t.verifyError(@notUniqueAll,'frames:validators:mustBeDFindex')
+            t.verifyError(@notUniqueAll,'frames:Index:requireUniqueFail')
             function notUniqueAll, df2.index = [1 2 3 20 20]; end
             t.verifyError(@notUniqueAll2,'frames:Index:asgnNotUnique')
             function notUniqueAll2, df1.index(1:end) = [1 2 3 20 20]; end
@@ -419,6 +432,35 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df4.columns,[0 2 4 10 20])
             t.verifyError(@notSortedCol,'frames:Index:asgnNotSorted')
             function notSortedCol, df4.columns([1,3]) = [4,0]; end
+            
+            df = frames.DataFrame([1 2; 2 5]);
+            t.verifyError(@missing1,'frames:validators:mustBeFullVector')
+            function missing1(), df.index(1:2)=[NaN 1]; end
+            
+            t.verifyError(@missing2,'frames:validators:mustBeFullVector')
+            function missing2(), df.index=[NaN 1]'; end
+            
+            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
+            function cannotBeEmpty(), df.index(2)=[]; end
+            
+            t.verifyError(@cannotBeEmpty2,'frames:indexValidation:wrongSize')
+            function cannotBeEmpty2(), df.index=[]; end
+            
+            t.verifyError(@notUnique1,'frames:Index:requireUniqueFail')
+            function notUnique1(), df.index=[6 6]; end
+            
+            t.verifyError(@notUnique2,'frames:Index:asgnNotUnique')
+            function notUnique2(), df.index(1)=2; end
+            
+            tf = frames.TimeFrame([1 2; 2 5],[738315,738316]);
+            tf.index = [738315,738317];
+            t.verifyTrue(isdatetime(tf.index))
+            t.verifyEqual(datenum(tf.index),[738315,738317]') 
+            
+            tf.index(1) = 738314;
+            t.verifyEqual(datenum(tf.index),[738314,738317]') 
+            t.verifyError(@tiNotSorted,'frames:Index:asgnNotSorted')
+            function tiNotSorted(), tf.index(1)=738318; end
         end
         
         function columnsSetterTest(t)
@@ -427,14 +469,29 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyWarning(@colsNotUniqueWarning,'frames:Index:notUnique')
             function colsNotUniqueWarning(), df.columns=[6 6]; end
             
+            df.columns = ["3" "5"];
+            t.verifyEqual(df.columns,["3" "5"])
+            
             df.columns = frames.Index([3 5],Unique=true);
             t.verifyEqual(df.columns,[3 5])
             
             t.verifyError(@colsNotUnique,'frames:Index:requireUniqueFail')
             function colsNotUnique(), df.columns=[6 6]; end
             
+            t.verifyError(@colsNotUnique2,'frames:Index:asgnNotUnique')
+            function colsNotUnique2(), df.columns(1)=5; end
+            
             t.verifyError(@wrongSize,'frames:columnsValidation:wrongSize')
             function wrongSize(), df.columns=3; end
+            
+            t.verifyError(@missing1,'frames:validators:mustBeFullVector')
+            function missing1(), df.columns(1:2)=[NaN 1]; end
+            
+            t.verifyError(@missing2,'frames:validators:mustBeFullVector')
+            function missing2(), df.columns=[NaN 1]'; end
+            
+            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
+            function cannotBeEmpty(), df.columns(2)=[]; end
             
             df.columns = [3 6];
             t.verifyEqual(df.columns,[3 6]) 

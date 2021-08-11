@@ -44,7 +44,7 @@ classdef Index
         function obj = Index(value,nameValue)
             % INDEX Index(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name])
             arguments
-                value {mustBeDFcolumns} = double.empty(0,1)
+                value {mustBeFullVector} = double.empty(0,1)
                 nameValue.Name = ""
                 nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = false
                 nameValue.UniqueSorted (1,1) {mustBeA(nameValue.UniqueSorted,'logical')} = false
@@ -81,9 +81,6 @@ classdef Index
             idx = obj.requireUniqueSorted_;
         end
         function obj = set.value(obj,value)
-            arguments
-                obj, value {mustBeDFcolumns} = []
-            end
             if isa(value,'frames.Index')
                 error('frames:index:setvalue','value of Index cannot be an Index')
             end
@@ -209,27 +206,28 @@ classdef Index
             switch s.type
                 case '()'
                     idxNew = s.subs{1};
-                    val = obj.value;
-                    val(idxNew) = b;
-                    if obj.requireUniqueSorted && ~issorted(val)
+                    b_ = obj.getValue_from(b);
+                    val_ = obj.value_;
+                    val_(idxNew) = b_;
+                    if obj.requireUniqueSorted && ~issorted(val_)
                         error('frames:Index:asgnNotSorted',...
                             'The assigned values make the Index not sorted.')
                     end
                     if obj.requireUnique
-                        if ~isunique(val)
+                        if ~isunique(val_)
                             error('frames:Index:asgnNotUnique',...
                                 'The assigned values make the Index not unique.')
                         end
                     else
-                        val_ = val;
-                        val_(idxNew) = [];
-                        if ~isunique(b) || any(ismember(b,val_))
+                        valTmp = val_;
+                        valTmp(idxNew) = [];
+                        if ~isunique(b) || any(ismember(b,valTmp))
                             warning('frames:Index:notUnique',...
                                 'The assigned values make the Index not unique.')
                         end
                     end
                     
-                    obj.value_ = obj.getValue_from(val);
+                    obj.value_ = val_;
                 case '{}'
                     error('frames:Index:asgnCurly','subasgn is not defined for curly brackets.')
                 case '.'
