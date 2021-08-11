@@ -400,7 +400,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df2.index,[4 2 0 10 20]')
             t.verifyError(@notUnique,'frames:Index:asgnNotUnique')
             function notUnique, df2.index([3,1]) = [2,0]; end
-            t.verifyError(@notUniqueAll,'frames:validators:mustBeDFindex')
+            t.verifyError(@notUniqueAll,'frames:Index:requireUniqueFail')
             function notUniqueAll, df2.index = [1 2 3 20 20]; end
             t.verifyError(@notUniqueAll2,'frames:Index:asgnNotUnique')
             function notUniqueAll2, df1.index(1:end) = [1 2 3 20 20]; end

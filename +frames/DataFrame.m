@@ -118,8 +118,8 @@ classdef DataFrame
             %DATAFRAME frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
             arguments
                 data (:,:) = []
-                index {mustBeDFindex} = []
-                columns {mustBeDFcolumns} = []
+                index {mustBeFullVector} = []
+                columns {mustBeFullVector} = []
                 NameValueArgs.Name {mustBeTextScalar} = ""
                 NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
@@ -152,12 +152,12 @@ classdef DataFrame
         % Setters and Getters
         function obj = set.index(obj, value)
             arguments
-                obj, value {mustBeDFindex}
+                obj, value {mustBeFullVector}
             end
             obj.indexValidation(value);
             if ~isa(value,'frames.Index')
                 if ~isequal(obj.index_,[])  % ToDo: this is always true unless it is called from a constructor
-                    obj.index_(1:end) = value;
+                    obj.index_.value = value;
                     return
                 else
                     value = obj.getIndexObject(value);
@@ -167,12 +167,12 @@ classdef DataFrame
         end
         function obj = set.columns(obj,value)
             arguments
-                obj, value {mustBeDFcolumns}
+                obj, value {mustBeFullVector}
             end
             obj.columnsValidation(value);
             if ~isa(value,'frames.Index')
                 if ~isequal(obj.columns_,[])
-                    obj.columns_(1:end) = value;
+                    obj.columns_.value = value;
                     return
                 else
                     value = obj.getColumnsObject(value);
@@ -927,7 +927,8 @@ classdef DataFrame
                 locs = strcmp(beingAssigned,["iloc","loc"]);
                 indexers = strcmp(beingAssigned,["index","columns"]);
                 if any(indexers)
-                    mustBeDFindex(b);
+                    mustBeFullVector(b);
+                    mustBeNonempty(b);
                     obj.([beingAssigned,'_'])(selectors{1}) = b;
                     return
                 elseif any(locs)

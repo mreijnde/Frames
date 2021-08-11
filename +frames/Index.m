@@ -44,7 +44,7 @@ classdef Index
         function obj = Index(value,nameValue)
             % INDEX Index(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name])
             arguments
-                value {mustBeDFcolumns} = double.empty(0,1)
+                value {mustBeFullVector} = double.empty(0,1)
                 nameValue.Name = ""
                 nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = false
                 nameValue.UniqueSorted (1,1) {mustBeA(nameValue.UniqueSorted,'logical')} = false
@@ -81,9 +81,6 @@ classdef Index
             idx = obj.requireUniqueSorted_;
         end
         function obj = set.value(obj,value)
-            arguments
-                obj, value {mustBeDFcolumns} = []
-            end
             if isa(value,'frames.Index')
                 error('frames:index:setvalue','value of Index cannot be an Index')
             end
