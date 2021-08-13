@@ -845,8 +845,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             df = frames.DataFrame([4 NaN;3 1]);
             t.verifyEqual(df.maxOf(3).data,[4 3;3 3])
             t.verifyEqual(df.maxOf(df+1),df+1)
-            t.verifyEqual(df.max().min(2).columns,"Var2")
-            t.verifyEqual(df.max(2).min().index,2)
+            [~,colmax1min2] = df.max().min(2);
+            t.verifyEqual(colmax1min2,"Var2")
+            [~,idxmax2min1] = df.max(2).min();
+            t.verifyEqual(idxmax2min1,2)
             df2 = df;
             df2.index(end) = 7;
             t.verifyError(@misaligned,'frames:elementWiseHandler:differentIndex')

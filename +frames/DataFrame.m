@@ -808,9 +808,9 @@ classdef DataFrame
         function other = all(obj,varargin), other=obj.matrix2series(@all,false,varargin{:}); end
         % ALL 'all' function through the desired dimension, returns a series
         
-        function other = max(obj,varargin), other=obj.maxmin(@max,varargin{:}); end
+        function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@max,varargin{:}); end
         % MAX maximum through the desired dimension, returns a series
-        function other = min(obj,varargin), other=obj.maxmin(@min,varargin{:}); end
+        function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@min,varargin{:}); end
         % MIN minimum through the desired dimension, returns a series
         function other = maxOf(df1,df2), other=operator(@max,@elementWiseHandler,df1,df2); end
         % maximum of the elements of the two input arguments
@@ -1125,29 +1125,33 @@ classdef DataFrame
         
         function obj = df2series(obj,data,dim)
             if dim == 1
-                indexValue = obj.defaultIndex(1);
-                obj = frames.DataFrame(data,indexValue,obj.columns,Name=obj.name);
-                obj.index_.singleton_ = true;
+                if obj.colseries
+                    obj = data;
+                else
+                    obj.data_ = data;
+                    obj.index_.value_ = obj.index_.value_(1);
+                    obj.index_.singleton = true;
+                end
             else
-                obj.data_ = data;
-                obj.columns_.value = obj.defaultColumns(1);
-                obj.columns_.singleton_ = true;
+                if obj.rowseries
+                    obj = data;
+                else
+                    obj.data_ = data;
+                    obj.columns_.value_ = obj.columns_.value_(1);
+                    obj.columns_.singleton = true;
+                end
             end
         end
         
-        function series = maxmin(obj,fun,dim)
+        function varargout = maxmin(obj,fun,dim)
             if nargin < 3, dim = 1; end
-            d = fun(obj.data_,[],dim);
-            series = df2series(obj,d,dim);
-            if numel( d ) == 1
+            [d, ii] = fun(obj.data_,[],dim);
+            varargout{1} = df2series(obj,d,dim);
+            if nargout == 2
                 if dim == 1
-                    loc = obj.index_.value_(obj.data_ == d);
-                    loc = loc(1);
-                    series.index_.value_ = loc;
+                    varargout{2} = obj.index(ii);
                 else
-                    loc = obj.columns_.value_(obj.data_ == d);
-                    loc = loc(1);
-                    series.columns_.value_ = loc;
+                    varargout{2} = obj.columns(ii);
                 end
             end
         end
