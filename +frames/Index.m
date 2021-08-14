@@ -65,14 +65,8 @@ classdef Index
             obj.requireUnique_ = requireUnique;
             obj.requireUniqueSorted = requireUniqueSorted;
             obj.name = name;
-            obj.singleton_ = nameValue.Singleton;
-%             if nameValue.Singleton 
-%                 assert(isSingletonValue(value),'frames:indexConstructor:singleton', ...
-%                         'The value of the singleton Index must be missing.')
-%             end
+            obj.singleton_ = singleton;
             obj.value = value;
-%             obj.singleton_ = false;
-%             obj.singleton = singleton;
         end
         
         function idx = get.value(obj)
