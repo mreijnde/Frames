@@ -251,9 +251,9 @@ classdef Index
                 assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...
                         'The value of a singleton Index must be missing.')
             else
-                mustBeFullVector(value)
+                mustBeFullVector(value). % and the rest below, return on previous
             end
-            if ~isvector(value)  % useless?
+            if ~isvector(value)  % useless?  No check empty in mustbefullvector
                 error('frames:Index:notVector','Index value must be a vector.')
             end
             if ~isunique(value)
