@@ -1288,10 +1288,10 @@ classdef DataFrame
         end
         
         function other = ctranspose(obj)
-            other = frames.DataFrame(obj.data_',obj.columns,obj.index,Name=obj.name_);
+            other = frames.DataFrame(obj.data_',obj.columns_,obj.index_,Name=obj.name_);
         end
         function other = transpose(obj)
-            other = frames.DataFrame(obj.data_.',obj.columns,obj.index,Name=obj.name_);
+            other = frames.DataFrame(obj.data_.',obj.columns_,obj.index_,Name=obj.name_);
         end
         
         function obj = uminus(obj), obj.data_ = uminus(obj.data_); end

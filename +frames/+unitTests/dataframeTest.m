@@ -709,11 +709,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             tf = frames.TimeFrame([738331:738336;1:6]',738331:738336);
             
             tfOp = tf' * tf;
-            t.verifyEqual(tfOp,frames.DataFrame(tf.data'*tf.data,tf.columns,tf.columns))
+            t.verifyEqual(tfOp,frames.DataFrame(tf.data'*tf.data,tf.getColumns_(),tf.getColumns_()))
             mtimesM = mat1' * mat2;
-            t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.columns,mat2.columns))
+            t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.getColumns_(),mat2.getColumns_()))
             mtimesV = mat1' * vecV2;
-            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.columns,vecV2.columns,ColSeries=true))
+            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.getColumns_(),vecV2.getColumns_(),ColSeries=true))
             times = mat1 .* vecV;
             t.verifyEqual(times,frames.DataFrame([6 12;21 28],mat1.index,mat1.columns))
             plus1 = mat1 + vecH;
@@ -771,7 +771,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             b = df{1,:}';
             expectedData = df.data * b.data;
-            expected = frames.DataFrame(expectedData,df.index,b.columns);
+            expected = frames.DataFrame(expectedData,df.index,b.getColumns_());
             t.verifyEqual(df*b,expected)
         end
         
@@ -836,7 +836,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function matrix2seriesTest(t)
             tf = t.tfMissing1;
-            t.verifyEqual(tf.sum(),frames.DataFrame([12 13 12],[],tf.columns,RowSeries=true))
+            t.verifyEqual(tf.sum(),frames.TimeFrame([12 13 12],[],tf.columns,RowSeries=true))
             t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.getIndex_(),[],ColSeries=true))
             t.verifyEqual(tf.sum().sum(2),37)
         end
