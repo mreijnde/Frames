@@ -297,7 +297,7 @@ classdef Index
         function valueOut = getValue_andCheck(obj,value,userCall)
             if nargin<3, userCall=false; end
             valueOut = obj.getValue_from(value);
-            if userCall, obj.valueChecker(valueOut); end
+            if userCall, obj.valueChecker(valueOut); end. % if equal [] then double 0,1, and potentially remove it in constructor 
         end
         
     end
