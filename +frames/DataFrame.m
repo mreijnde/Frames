@@ -156,20 +156,24 @@ classdef DataFrame
                 data = repmat(data,length(index),1);
             end
             
+% if col series 
+%Assert issungleton value ...Len idx 1, ismissing index
+%Getindexobject val closeries true (add carargin
+% if index series 
             
             obj.data_ = data;
             obj.index = index;
             obj.columns = columns;
             obj.name_ = NameValueArgs.Name;
-            obj.rowseries = NameValueArgs.RowSeries;
-            obj.colseries = NameValueArgs.ColSeries;
+            obj.rowseries = NameValueArgs.RowSeries; % no
+            obj.colseries = NameValueArgs.ColSeries; % no
         end
         
         %------------------------------------------------------------------
         % Setters and Getters
         function obj = set.index(obj, value)
-            arguments
-                obj, value {mustBeFullVector}
+            arguments % if obj.singleton assert value missing 
+                obj, value {mustBeFullVector}. % checked in Index always? What index(I []?
             end
             obj.indexValidation(value);
             if ~isa(value,'frames.Index')
@@ -177,7 +181,7 @@ classdef DataFrame
                     obj.index_.value = value;
                     return
                 else
-                    value = obj.getIndexObject(value);
+                    value = obj.getIndexObject(value); % write it in constr
                 end
             end
             obj.index_ = value;
