@@ -118,11 +118,27 @@ classdef DataFrame
             %DATAFRAME frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
             arguments
                 data (:,:) = []
-                index {mustBeFullVector} = []
-                columns {mustBeFullVector} = []
-                NameValueArgs.Name {mustBeTextScalar} = ""
+                index = []
+                columns = []
+                NameValueArgs.Name = ""
                 NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
+            end
+            if NameValueArgs.RowSeries
+                if isequal(index,[])
+                    index = missingData('double');
+                else
+                    assert(isSingletonValue(index),'frames:constructor:rowseries', ...
+                        'The value of the index of a RowSeries must be missing.')
+                end
+            end
+            if NameValueArgs.ColSeries
+                if isequal(columns,[])
+                    columns = missingData('string');
+                else
+                    assert(isSingletonValue(columns),'frames:constructor:colseries', ...
+                        'The value of the index of a ColSeries must be missing.')
+                end
             end
             if isequal(index,[])
                 index = obj.defaultIndex(size(data,1));
@@ -139,6 +155,7 @@ classdef DataFrame
             if isrow(data)
                 data = repmat(data,length(index),1);
             end
+            
             
             obj.data_ = data;
             obj.index = index;
@@ -446,14 +463,14 @@ classdef DataFrame
             % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
             idx = obj.index_;
             sameIndex = true;  % compute a merged index, only in case they are not the same
-            columnsNew = obj.columns_;
+            columnsNewVal = obj.columns_.value_;
             lenCols = zeros(length(varargin)+1,1);
             lenCols(1) = length(obj.columns_);
             for ii = 1:nargin-1
-                columnsNew = [columnsNew;varargin{ii}.columns_]; %#ok<AGROW>
+                columnsNewVal = [columnsNewVal;varargin{ii}.columns_.value_]; %#ok<AGROW>
                 lenCols(ii+1) = length(varargin{ii}.columns_);
                 idx_ = varargin{ii}.index_.value_;
-                if sameIndex && isequal(idx.value_,idx_)
+                if sameIndex && isequaln(idx.value_,idx_)
                     continue
                 else
                     sameIndex = false;
@@ -461,6 +478,14 @@ classdef DataFrame
                 idx = idx.union(idx_);
             end
             
+            % replace missing values from column series by default values
+            ism = ismissing(columnsNewVal);
+            if ism, columnsNewVal(ism) = defaultValue(class(columnsNewVal)); end
+            
+            columnsNew = obj.columns_;
+            columnsNew.singleton_ = false;
+            columnsNew.value = columnsNewVal;
+
             % expand each DF with the new idx, and merge their data_
             sizeColumns = cumsum(lenCols);
             dataH = obj.defaultData(length(idx),sizeColumns(end));
@@ -753,7 +778,6 @@ classdef DataFrame
             try
                 assert(isequal(class(df1),class(df2)))
                 assert(isequal(df1.index_,df2.index_)&&isequal(df1.columns_,df2.columns_))
-                assert(isequal(df1.name_,df2.name_))
                 iseq = abs(df1.data-df2.data) <= tol;
                 bool = all(iseq(:));
             catch
@@ -1301,10 +1325,10 @@ classdef DataFrame
     
     methods(Hidden, Static, Access=protected)
         function idx = defaultIndex(len)
-            idx = (1:len)';
+            idx = defaultValue('double',len)';
         end
         function col = defaultColumns(len)
-            col = "Var" + (1:len);
+            col = defaultValue('string',len);
         end
     end
 end

@@ -44,7 +44,7 @@ classdef Index
         function obj = Index(value,nameValue)
             % INDEX Index(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name])
             arguments
-                value {mustBeFullVector} = double.empty(0,1)
+                value = double.empty(0,1)
                 nameValue.Name = ""
                 nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = false
                 nameValue.UniqueSorted (1,1) {mustBeA(nameValue.UniqueSorted,'logical')} = false
@@ -61,11 +61,18 @@ classdef Index
             elseif isequal(value,[])
                 value = double.empty(0,1);
             end
+            
             obj.requireUnique_ = requireUnique;
             obj.requireUniqueSorted = requireUniqueSorted;
-            obj.value = value;
             obj.name = name;
-            obj.singleton_ = singleton;
+            obj.singleton_ = nameValue.Singleton;
+%             if nameValue.Singleton 
+%                 assert(isSingletonValue(value),'frames:indexConstructor:singleton', ...
+%                         'The value of the singleton Index must be missing.')
+%             end
+            obj.value = value;
+%             obj.singleton_ = false;
+%             obj.singleton = singleton;
         end
         
         function idx = get.value(obj)
@@ -94,9 +101,12 @@ classdef Index
             arguments
                 obj, tf (1,1) {mustBeA(tf,'logical')}
             end
-            if tf && length(obj.value_) ~= 1
-                error('frames:Index:setSingleton',...
+            if tf 
+                assert(length(obj.value_)==1,'frames:Index:setSingleton',...
                     'Index must contain 1 element to be a singleton')
+                obj.value_ = missingData(class(obj.value_));
+            elseif ~tf && obj.singleton_ && ismissing(obj.value_)
+                obj.value_ = defaultValue(class(obj.value_));
             end
             obj.singleton_ = tf;
         end
@@ -194,6 +204,9 @@ classdef Index
                 bool = issorted(obj.value_);
             end
         end
+        function bool = ismissing(obj)
+            bool = ismissing(obj.value_);
+        end
         
     end
     
@@ -241,10 +254,12 @@ classdef Index
     methods(Access=protected)
         function valueChecker(obj,value)
             if obj.singleton_
-                assert(numel(value)==1,'frames:Index:notSingleValue',...
-                    'Index is a singleton so its value should have only one element.')
+                assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...
+                        'The value of a singleton Index must be missing.')
+            else
+                mustBeFullVector(value)
             end
-            if ~isvector(value)
+            if ~isvector(value)  % useless?
                 error('frames:Index:notVector','Index value must be a vector.')
             end
             if ~isunique(value)
