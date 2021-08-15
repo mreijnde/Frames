@@ -215,7 +215,7 @@ b_ = obj.getValue_from(b);
                     val_ = obj.value_;
                     val_(idxNew) = b_;
 
-                    obj.checkValue(val_,idx);
+                    obj.checkValue(val_,idx,b_);
 obj.value_=val_;
                     return
 end
