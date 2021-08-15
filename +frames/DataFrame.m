@@ -135,6 +135,13 @@ classdef DataFrame
                         index = obj.getIndexObject(index,Singleton=true);
                     end
                 end
+            else
+                if ~isa(index,'frames.Index')
+                    if isequal(index,[])
+                        index = obj.defaultIndex(size(data,1));
+                    end
+                    index = obj.getIndexObject(index,Singleton=false);
+                end
             end
             if NameValueArgs.ColSeries
                 if isa(columns,'frames.Index')
@@ -144,15 +151,17 @@ classdef DataFrame
                     if isequal(columns,[])
                         columns = missingData('string');
                     end
-                    columns = obj.getIndexObject(columns,Singleton=true);
+                    columns = obj.getColumnsObject(columns,Singleton=true);
+                end
+            else
+                if ~isa(columns,'frames.Index')
+                    if isequal(columns,[])
+                        columns = obj.defaultColumns(size(data,2));
+                    end
+                    columns = obj.getColumnsObject(columns,Singleton=false);
                 end
             end
-            if isequal(index,[])
-                index = obj.defaultIndex(size(data,1));
-            end
-            if isequal(columns,[])
-                columns = obj.defaultColumns(size(data,2));
-            end
+            
             if isempty(data)
                 data = obj.defaultData(length(index),length(columns),class(data));
             end
@@ -175,9 +184,9 @@ classdef DataFrame
 %             arguments % if obj.singleton assert value missing 
 %                 obj, value {mustBeFullVector} % checked in Index always? What index(I []?
 %             end
-            if ~obj.index_.singleton_
-                mustBeFullVector(value)
-            end
+%             if ~obj.index_.singleton_
+%                 mustBeFullVector(value)
+%             end
             obj.indexValidation(value)
             if isa(value,'frames.Index')
                 obj.index_ = value;
@@ -189,9 +198,9 @@ classdef DataFrame
 %             arguments
 %                 obj, value {mustBeFullVector}
 %             end
-            if ~obj.columns_.singleton_
-                mustBeFullVector(value)
-            end
+%             if ~obj.columns_.singleton_
+%                 mustBeFullVector(value)
+%             end
             obj.columnsValidation(value);
             if isa(value,'frames.Index')
                 obj.columns_ = value;
@@ -1063,8 +1072,8 @@ classdef DataFrame
             idx = frames.Index(index,varargin{:},Unique=true);
             idx.name = "Row";  % to be consistent with 'table' in which the default name of the index is 'Row'
         end
-        function col = getColumnsObject(~,columns)
-            col = frames.Index(columns);
+        function col = getColumnsObject(~,columns,varargin)
+            col = frames.Index(columns,varargin{:});
         end
         
         function obj = modify(obj,data,index,columns,fromPosition)
