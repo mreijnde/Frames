@@ -210,70 +210,51 @@ classdef Index
             if length(s)==2
                 [beingAssigned,selectors] = s.subs;
                 if strcmp(beingAssigned,'value')
-                    
-                    mustBeFullVector(b);
-                    mustBeNonempty(b);
-                    obj.([beingAssigned,'_']).value(selectors{1}) = b;
+idxNew=selectors{1};
+b_ = obj.getValue_from(b);
+                    val_ = obj.value_;
+                    val_(idxNew) = b_;
 
+                    obj.checkValue(val_,idx);
+obj.value_=val_;
+                    
             else
                 obj = builtin('subsasgn',obj,s,b);
     
             end
-send
-            switch s.type
-                case '()'
-                    idxNew = s.subs{1};
-                    if obj.singleton_
-                        assert(isSingletonValue(b),'frames:Index:asgnNotSortedsingleton', ...
-                                'The value of a singleton Index must be missing.')
-                        obj.value_(idxNew) = b;
-                        return
-                    end
-                    mustBeFullVector(b)
-                    b_ = obj.getValue_from(b);
-                    val_ = obj.value_;
-                    val_(idxNew) = b_;
-                    if obj.requireUniqueSorted && ~issorted(val_)
-                        error('frames:Index:asgnNotSorted',...
-                            'The assigned values make the Index not sorted.')
-                    end
-                    if obj.requireUnique
-                        if ~isunique(val_)
-                            error('frames:Index:asgnNotUnique',...
-                                'The assigned values make the Index not unique.')
-                        end
-                    else
-                        valTmp = val_;
-                        valTmp(idxNew) = [];
-                        if ~isunique(b) || any(ismember(b,valTmp))
-                            warning('frames:Index:notUnique',...
-                                'The assigned values make the Index not unique.')
-                        end
-                    end
-                    
-                    obj.value_ = val_;
-                case '{}'
-                    error('frames:Index:asgnCurly','subasgn is not defined for curly brackets.')
-                case '.'
-                    obj.(s.subs) = b;
-            end
-        end
-      %  function n = numArgumentsFromSubscript(varargin), n = 1; end
-     %   function e = end(obj,~,~), e = builtin('end',obj.value_,1,1); end
-    end
+end
+   end
     
     methods(Access=protected)
-        function valueChecker(obj,value,fromSubsAsgnIdx)
+        function valueChecker(obj,value,fromSubsAsgnIdx,b)
+if nargin<3
+isSubsasgnIdxCall=true;
+else
+
+isSubsasgnIdxCall=false;
+
+end
             if obj.singleton_
                 assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...
                         'The value of a singleton Index must be missing.')
                     return
             end
             mustBeFullVector(value)
-            if ~isunique(value)
+           
                 if obj.requireUnique_
+
+if ~isunique(value)
+
                     error('frames:Index:requireUniqueFail','Index value is required to be unique.')
                 else
+if fromSubsAsgnIdx
+valTmp = val_;
+                        valTmp(fromSubsAsgnIdx) = [];
+                        if ~isunique(b) || any(ismember(b,valTmp))
+                            warning('frames:Index:notUnique',...
+                                'The assigned values make the Index not unique.')
+                        end
+else
                     warning('frames:Index:notUnique','Index value is not unique.')
                 end
             end
