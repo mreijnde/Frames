@@ -38,7 +38,7 @@ classdef seriesTest < matlab.unittest.TestCase
         
         function indexTest(t)
             idx1 = frames.Index([1,2,3],UniqueSorted=true);
-            idx2 = frames.Index(4,Unique=true,Singleton=true);
+            idx2 = frames.Index(NaN,Unique=true,Singleton=true);
             
             t.verifyError(@notUnique,'frames:Index:setSingleton')
             function notUnique(), idx1.singleton=true; end
@@ -59,7 +59,7 @@ classdef seriesTest < matlab.unittest.TestCase
             t.verifyEqual(t.noSeries.asColSeries(true).colseries,true)
             
             % limit case empty
-            t.verifyEqual(frames.DataFrame([],[],1).asColSeries().columns,1)
+            t.verifyEqual(frames.DataFrame([],[],1).asColSeries().columns,NaN)
             t.verifyError(@() frames.DataFrame([],[],1).asRowSeries(),'frames:Index:setSingleton')
         end
         
