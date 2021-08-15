@@ -246,6 +246,7 @@ end
 if ~isunique(value)
 
                     error('frames:Index:requireUniqueFail','Index value is required to be unique.')
+end
                 else
 if fromSubsAsgnIdx
 valTmp = val_;
