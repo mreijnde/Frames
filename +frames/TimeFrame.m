@@ -167,8 +167,8 @@ classdef TimeFrame < frames.DataFrame
             end
             indexValidation@frames.DataFrame(obj,value);
         end
-        function idx = getIndexObject(~,index)
-            idx = frames.TimeIndex(index);
+        function idx = getIndexObject(~,index,varargin)
+            idx = frames.TimeIndex(index,varargin{:});
         end
         function tb = getTable(obj)
             col = columnsForTable(obj.columns);

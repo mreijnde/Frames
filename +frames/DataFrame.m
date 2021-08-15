@@ -125,19 +125,26 @@ classdef DataFrame
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
             end
             if NameValueArgs.RowSeries
-                if isequal(index,[])
-                    index = missingData('double');
+                if isa(index,'frames.Index')
+                    assert(index.singleton_, 'frames:constructor:indexSingletonFail', ...
+                        'RowSeries needs to have a singleton Index object in index.')
                 else
-                    assert(isSingletonValue(index),'frames:constructor:rowseries', ...
-                        'The value of the index of a RowSeries must be missing.')
+                    if isequal(index,[])
+                        index = missingData('double');
+                    else
+                        index = obj.getIndexObject(index,Singleton=true);
+                    end
                 end
             end
             if NameValueArgs.ColSeries
-                if isequal(columns,[])
-                    columns = missingData('string');
+                if isa(columns,'frames.Index')
+                    assert(columns.singleton_, 'frames:constructor:indexSingletonFail', ...
+                        'ColSeries needs to have a singleton Index object in columns.')
                 else
-                    assert(isSingletonValue(columns),'frames:constructor:colseries', ...
-                        'The value of the index of a ColSeries must be missing.')
+                    if isequal(columns,[])
+                        columns = missingData('string');
+                    end
+                    columns = obj.getIndexObject(columns,Singleton=true);
                 end
             end
             if isequal(index,[])
@@ -155,6 +162,7 @@ classdef DataFrame
             if isrow(data)
                 data = repmat(data,length(index),1);
             end
+
             
 % if col series 
 %Assert issungleton value ...Len idx 1, ismissing index
@@ -173,7 +181,7 @@ classdef DataFrame
         % Setters and Getters
         function obj = set.index(obj, value)
             arguments % if obj.singleton assert value missing 
-                obj, value {mustBeFullVector}. % checked in Index always? What index(I []?
+                obj, value {mustBeFullVector} % checked in Index always? What index(I []?
             end
             obj.indexValidation(value);
             if ~isa(value,'frames.Index')
@@ -1060,8 +1068,8 @@ classdef DataFrame
             assert(length(value) == size(obj.data,2), 'frames:columnsValidation:wrongSize', ...
                 'columns do not have the same size as data')
         end
-        function idx = getIndexObject(~,index)
-            idx = frames.Index(index,Unique=true);
+        function idx = getIndexObject(~,index,varargin)
+            idx = frames.Index(index,varargin{:},Unique=true);
             idx.name = "Row";  % to be consistent with 'table' in which the default name of the index is 'Row'
         end
         function col = getColumnsObject(~,columns)
