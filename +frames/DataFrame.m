@@ -964,7 +964,7 @@ classdef DataFrame
                 if any(indexers)
                     mustBeFullVector(b);
                     mustBeNonempty(b);
-                    obj.([beingAssigned,'_'])(selectors{1}) = b;
+                    obj.([beingAssigned,'_']).value(selectors{1}) = b;
                     return
                 elseif any(locs)
                     if locs(1)
