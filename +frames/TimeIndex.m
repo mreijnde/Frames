@@ -34,12 +34,18 @@ classdef TimeIndex < frames.Index
             arguments
                 value
                 nameValue.Name = "Time"
-                nameValue.Format = "dd-MMM-yyyy"
+                nameValue.Format = string(missing)
                 nameValue.Unique = true
                 nameValue.UniqueSorted = true
                 nameValue.Singleton = false
             end
-            if isdatetime(value); nameValue.Format = string(value.Format); end
+            if ismissing(nameValue.Format)
+                if isdatetime(value)
+                    nameValue.Format = string(value.Format);
+                else
+                    nameValue.Format = "dd-MMM-yyyy";
+                end
+            end
             if ~nameValue.Unique, nameValue.UniqueSorted = false; end
             
             value = getValue_from_local(value,nameValue.Format);

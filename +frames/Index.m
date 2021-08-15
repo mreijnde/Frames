@@ -213,6 +213,13 @@ classdef Index
             switch s.type
                 case '()'
                     idxNew = s.subs{1};
+                    if obj.singleton_
+                        assert(isSingletonValue(b),'frames:Index:asgnNotSortedsingleton', ...
+                                'The value of a singleton Index must be missing.')
+                        obj.value_(idxNew) = b;
+                        return
+                    end
+                    mustBeFullVector(b)
                     b_ = obj.getValue_from(b);
                     val_ = obj.value_;
                     val_(idxNew) = b_;
