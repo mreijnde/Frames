@@ -252,7 +252,7 @@ if fromSubsAsgnIdx
 valTmp = val_;
                         valTmp(fromSubsAsgnIdx) = [];
                         if ~isunique(b) || any(ismember(b,valTmp))
-                            warning('frames:Index:notUnique',...
+                            warning('frames:Index:subsagnNotUnique',...
                                 'The assigned values make the Index not unique.')
                         end
 else
