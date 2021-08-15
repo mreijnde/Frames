@@ -126,7 +126,7 @@ classdef DataFrame
             end
             if NameValueArgs.RowSeries
                 if isa(index,'frames.Index')
-                    assert(index.singleton_, 'frames:constructor:indexSingletonFail', ...
+                    assert(index.singleton_,'frames:constructor:indexSingletonFail', ...
                         'RowSeries needs to have a singleton Index object in index.')
                 else
                     if isequal(index,[])
@@ -138,7 +138,7 @@ classdef DataFrame
             end
             if NameValueArgs.ColSeries
                 if isa(columns,'frames.Index')
-                    assert(columns.singleton_, 'frames:constructor:indexSingletonFail', ...
+                    assert(columns.singleton_,'frames:constructor:columnsSingletonFail', ...
                         'ColSeries needs to have a singleton Index object in columns.')
                 else
                     if isequal(columns,[])
@@ -162,52 +162,43 @@ classdef DataFrame
             if isrow(data)
                 data = repmat(data,length(index),1);
             end
-
-            
-% if col series 
-%Assert issungleton value ...Len idx 1, ismissing index
-%Getindexobject val closeries true (add carargin
-% if index series 
             
             obj.data_ = data;
             obj.index = index;
             obj.columns = columns;
             obj.name_ = NameValueArgs.Name;
-            obj.rowseries = NameValueArgs.RowSeries; % no
-            obj.colseries = NameValueArgs.ColSeries; % no
         end
         
         %------------------------------------------------------------------
         % Setters and Getters
         function obj = set.index(obj, value)
-            arguments % if obj.singleton assert value missing 
-                obj, value {mustBeFullVector} % checked in Index always? What index(I []?
+%             arguments % if obj.singleton assert value missing 
+%                 obj, value {mustBeFullVector} % checked in Index always? What index(I []?
+%             end
+            if ~obj.index_.singleton_
+                mustBeFullVector(value)
             end
-            obj.indexValidation(value);
-            if ~isa(value,'frames.Index')
-                if ~isequal(obj.index_,[])  % ToDo: this is always true unless it is called from a constructor
-                    obj.index_.value = value;
-                    return
-                else
-                    value = obj.getIndexObject(value); % write it in constr
-                end
+            obj.indexValidation(value)
+            if isa(value,'frames.Index')
+                obj.index_ = value;
+            else
+                obj.index_.value = value;
             end
-            obj.index_ = value;
         end
         function obj = set.columns(obj,value)
-            arguments
-                obj, value {mustBeFullVector}
+%             arguments
+%                 obj, value {mustBeFullVector}
+%             end
+            if ~obj.columns_.singleton_
+                mustBeFullVector(value)
             end
             obj.columnsValidation(value);
-            if ~isa(value,'frames.Index')
-                if ~isequal(obj.columns_,[])
-                    obj.columns_.value = value;
-                    return
-                else
-                    value = obj.getColumnsObject(value);
-                end
+            if isa(value,'frames.Index')
+                obj.columns_ = value;
+            else
+                obj.columns_.value = value;
             end
-            obj.columns_ = value;
+            
         end
         function obj = set.data(obj,value)
             assert(all(size(value)==size(obj.data_)), 'frames:dataValidation:wrongSize', ...
