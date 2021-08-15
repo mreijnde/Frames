@@ -250,12 +250,9 @@ classdef Index
             if obj.singleton_
                 assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...
                         'The value of a singleton Index must be missing.')
-            else
-                mustBeFullVector(value) % and the rest below, return on previous
+                    return
             end
-            if ~isvector(value)  % useless?  No check empty in mustbefullvector
-                error('frames:Index:notVector','Index value must be a vector.')
-            end
+            mustBeFullVector(value)
             if ~isunique(value)
                 if obj.requireUnique_
                     error('frames:Index:requireUniqueFail','Index value is required to be unique.')
@@ -297,7 +294,7 @@ classdef Index
         function valueOut = getValue_andCheck(obj,value,userCall)
             if nargin<3, userCall=false; end
             valueOut = obj.getValue_from(value);
-            if userCall, obj.valueChecker(valueOut); end % if equal [] then double 0,1, and potentially remove it in constructor 
+            if userCall, obj.valueChecker(valueOut); end
         end
         
     end
