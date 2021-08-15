@@ -206,10 +206,20 @@ classdef Index
     
     methods(Hidden)
         function obj = subsasgn(obj,s,b)
-            if length(s)>1
+
+            if length(s)==2
+                [beingAssigned,selectors] = s.subs;
+                if strcmp(beingAssigned,'value')
+                    
+                    mustBeFullVector(b);
+                    mustBeNonempty(b);
+                    obj.([beingAssigned,'_']).value(selectors{1}) = b;
+
+            else
                 obj = builtin('subsasgn',obj,s,b);
-                return
+    
             end
+send
             switch s.type
                 case '()'
                     idxNew = s.subs{1};
@@ -248,12 +258,12 @@ classdef Index
                     obj.(s.subs) = b;
             end
         end
-        function n = numArgumentsFromSubscript(varargin), n = 1; end
-        function e = end(obj,~,~), e = builtin('end',obj.value_,1,1); end
+      %  function n = numArgumentsFromSubscript(varargin), n = 1; end
+     %   function e = end(obj,~,~), e = builtin('end',obj.value_,1,1); end
     end
     
     methods(Access=protected)
-        function valueChecker(obj,value)
+        function valueChecker(obj,value,fromSubsAsgnIdx)
             if obj.singleton_
                 assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...
                         'The value of a singleton Index must be missing.')
