@@ -440,7 +440,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.index=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty,'frames:validators:mustBeFullVector')
             function cannotBeEmpty(), df.index(2)=[]; end
             
             t.verifyError(@cannotBeEmpty2,'frames:indexValidation:wrongSize')
@@ -490,7 +490,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.columns=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty,'frames:validators:mustBeFullVector')
             function cannotBeEmpty(), df.columns(2)=[]; end
             
             df.columns = [3 6];
@@ -704,7 +704,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             mat1 = frames.DataFrame([1 2;3 4]);
             mat2 = frames.DataFrame([10 20;30 40],[],["a","b"]);
             vecV = frames.DataFrame([6 7]',ColSeries=true);
-            vecV2 = frames.DataFrame([6 7]',[],"a",ColSeries=true);
+            vecV2 = frames.DataFrame([6 7]',ColSeries=true);
             vecH = frames.DataFrame([6 7]',ColSeries=true);
             tf = frames.TimeFrame([738331:738336;1:6]',738331:738336);
             

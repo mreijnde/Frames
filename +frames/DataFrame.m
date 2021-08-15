@@ -131,9 +131,8 @@ classdef DataFrame
                 else
                     if isequal(index,[])
                         index = missingData('double');
-                    else
-                        index = obj.getIndexObject(index,Singleton=true);
                     end
+                    index = obj.getIndexObject(index,Singleton=true);
                 end
             else
                 if ~isa(index,'frames.Index')
