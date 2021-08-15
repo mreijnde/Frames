@@ -217,12 +217,12 @@ b_ = obj.getValue_from(b);
 
                     obj.checkValue(val_,idx);
 obj.value_=val_;
-                    
-            else
-                obj = builtin('subsasgn',obj,s,b);
+                    return
+end
+           
+               obj = builtin('subsasgn',obj,s,b);
     
             end
-end
    end
     
     methods(Access=protected)
