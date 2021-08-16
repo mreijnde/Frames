@@ -100,6 +100,14 @@ classdef indexTest < matlab.unittest.TestCase
             function notSorted2, sortedindex.value(1) = 50; end
             t.verifyError(@notSorted3,'frames:Index:requireSortedFail')
             function notSorted3, sortedindex.value(1) = 33; end
+            
+            timeindex.value([2 3]) = ["16-Aug-2021" "17-Aug-2021"];
+            timeindex2 = timeindex;
+            timeindex2.value(end) = 738385;
+            t.verifyEqual(timeindex.value, timeindex2.value)
+            
+            t.verifyError(@tiNotSorted,'frames:Index:requireSortedFail')
+            function tiNotSorted, timeindex.value([3 2]) = ["16-Aug-2021" "17-Aug-2021"]; end
         end
     end
 end
