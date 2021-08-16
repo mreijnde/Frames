@@ -23,6 +23,7 @@ classdef TimeIndex < frames.Index
 % It can also be modified with the .setIndexFormat method of TimeFrame.
 %
 % Copyright 2021 Benjamin Gaudin
+% Contact: frames.matlab@gmail.com
 %
 % See also: INDEX
     properties

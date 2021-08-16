@@ -90,6 +90,7 @@ classdef TimeFrame < frames.DataFrame
 % For more details, see the list of available methods below.
 %
 % Copyright 2021 Benjamin Gaudin
+% Contact: frames.matlab@gmail.com
 %
 % See also: frames.DataFrame
     

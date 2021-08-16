@@ -27,6 +27,7 @@ classdef Split < dynamicprops
  %  apply   - apply a function to each sub-Frame, and returns a single Frame
  %
  % Copyright 2021 Benjamin Gaudin
+ % Contact: frames.matlab@gmail.com
  %
  % See also: frames.Groups
     properties(Access=private)

@@ -21,6 +21,7 @@ classdef Index
 %  INDEX(value[,Unique=logical,UniqueSorted=logical,Singleton=logical,Name=name])
 %
 % Copyright 2021 Benjamin Gaudin
+% Contact: frames.matlab@gmail.com
 %
 % See also: TIMEINDEX
     
