@@ -440,7 +440,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.index=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'frames:validators:mustBeFullVector')
+            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
             function cannotBeEmpty(), df.index(2)=[]; end
             
             t.verifyError(@cannotBeEmpty2,'frames:indexValidation:wrongSize')
@@ -490,7 +490,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.columns=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'frames:validators:mustBeFullVector')
+            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
             function cannotBeEmpty(), df.columns(2)=[]; end
             
             df.columns = [3 6];

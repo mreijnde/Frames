@@ -963,7 +963,6 @@ classdef DataFrame
                 locs = strcmp(beingAssigned,["iloc","loc"]);
                 indexers = strcmp(beingAssigned,["index","columns"]);
                 if any(indexers)
-                    mustBeFullVector(b);
                     mustBeNonempty(b);
                     obj.([beingAssigned,'_']).value(selectors{1}) = b;
                     return

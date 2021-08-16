@@ -209,12 +209,21 @@ classdef Index
         function obj = subsasgn(obj,s,b)
             if length(s) == 2 && strcmp([s.type],'.()') && strcmp(s(1).subs,'value')
                 idxNew = s(2).subs{1};
-                b_ = obj.getValue_from(b);
-                val_ = obj.value_;
-                val_(idxNew) = b_;
-                
-                obj.valueChecker(val_,idxNew,b_);
-                obj.value_=val_;
+                if isequal(b,[])
+                    obj.value_(idxNew) = [];
+                    if obj.singleton_
+                        assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
+                            'The value of a singleton Index must be missing.')
+                        return
+                    end
+                else
+                    b_ = obj.getValue_from(b);
+                    val_ = obj.value_;
+                    val_(idxNew) = b_;
+
+                    obj.valueChecker(val_,idxNew,b_);
+                    obj.value_ = val_;
+                end
             else
                 obj = builtin('subsasgn',obj,s,b);
             end
