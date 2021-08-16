@@ -11,7 +11,7 @@ classdef Index
 % DataFrame.
 % An INDEX can 1) accept duplicate values, 2) require unique value, or 3)
 % require unique and sorted values.
-% 
+%
 %
 % If the length of value is equal to 1, the INDEX can be a
 % 'singleton', ie it represents the index of a series, which will allow
@@ -95,7 +95,7 @@ classdef Index
             arguments
                 obj, tf (1,1) {mustBeA(tf,'logical')}
             end
-            if tf 
+            if tf
                 assert(length(obj.value_)==1,'frames:Index:setSingleton',...
                     'Index must contain 1 element to be a singleton')
                 obj.value_ = missingData(class(obj.value_));
@@ -121,7 +121,7 @@ classdef Index
             arguments
                 obj, tf (1,1) {mustBeA(tf,'logical')}
             end
-            if tf 
+            if tf
                 if ~issorted(obj.value_)
                     error('frames:Index:setrequireUniqueSorted',...
                         'Index must be unique and sorted.')
@@ -183,7 +183,7 @@ classdef Index
             obj.singleton_ = false;
             obj.value = val;  % check if properties are respected
         end
-            
+        
         function bool = isunique(obj)
             if obj.requireUnique_
                 bool = true;
@@ -206,63 +206,55 @@ classdef Index
     
     methods(Hidden)
         function obj = subsasgn(obj,s,b)
-
-            if length(s)==2
-                [beingAssigned,selectors] = s.subs;
-                if strcmp(beingAssigned,'value')
-idxNew=selectors{1};
-b_ = obj.getValue_from(b);
-                    val_ = obj.value_;
-                    val_(idxNew) = b_;
-
-                    obj.checkValue(val_,idx,b_);
-obj.value_=val_;
-                    return
-end
-           
-               obj = builtin('subsasgn',obj,s,b);
-    
+            if length(s) == 2 && strcmp([s.type],'.()') && strcmp(s(1).subs,'value')
+                idxNew = s(2).subs{1};
+                b_ = obj.getValue_from(b);
+                val_ = obj.value_;
+                val_(idxNew) = b_;
+                
+                obj.valueChecker(val_,idxNew,b_);
+                obj.value_=val_;
+            else
+                obj = builtin('subsasgn',obj,s,b);
             end
-   end
+        end
+    end
     
     methods(Access=protected)
         function valueChecker(obj,value,fromSubsAsgnIdx,b)
-if nargin<3
-isSubsasgnIdxCall=true;
-else
-
-isSubsasgnIdxCall=false;
-
-end
             if obj.singleton_
                 assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...
-                        'The value of a singleton Index must be missing.')
-                    return
+                    'The value of a singleton Index must be missing.')
+                return
             end
             mustBeFullVector(value)
-           
-                if obj.requireUnique_
-
-if ~isunique(value)
-
-                    error('frames:Index:requireUniqueFail','Index value is required to be unique.')
-end
+            
+            if obj.requireUnique_
+                if ~isunique(value)
+                    error('frames:Index:requireUniqueFail', ...
+                        'Index value is required to be unique.')
+                end
+            else
+                if nargin >= 3
+                    valTmp = value;
+                    valTmp(fromSubsAsgnIdx) = [];  % this is slow
+                    if ~isunique(b) || any(ismember(b,valTmp))
+                        warning('frames:Index:subsagnNotUnique', ...
+                            'The assigned values make the Index not unique.')
+                    end
                 else
-if fromSubsAsgnIdx
-valTmp = val_;
-                        valTmp(fromSubsAsgnIdx) = [];
-                        if ~isunique(b) || any(ismember(b,valTmp))
-                            warning('frames:Index:subsagnNotUnique',...
-                                'The assigned values make the Index not unique.')
-                        end
-else
-                    warning('frames:Index:notUnique','Index value is not unique.')
+                    if ~isunique(value)
+                        warning('frames:Index:notUnique', ...
+                            'Index value is not unique.')
+                    end
                 end
             end
             if obj.requireUniqueSorted_ && ~issorted(value)
-                error('frames:Index:requireSortedFail','Index value is required to be sorted and unique.')
+                error('frames:Index:requireSortedFail', ...
+                    'Index value is required to be sorted and unique.')
             end
         end
+        
         function u = unionData(obj,v1,v2)
             if obj.requireUnique_
                 if obj.requireUniqueSorted_
@@ -295,8 +287,6 @@ else
             valueOut = obj.getValue_from(value);
             if userCall, obj.valueChecker(valueOut); end
         end
-        
-    end
- 
+    end  
 end
 

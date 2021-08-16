@@ -84,9 +84,9 @@ classdef TimeIndex < frames.Index
     end
     
     methods(Access = protected)
-        function value = valueChecker(obj,value)
+        function value = valueChecker(obj,value,varargin)
             value_ = obj.getValue_from(value);
-            valueChecker@frames.Index(obj,value_);
+            valueChecker@frames.Index(obj,value_,varargin{:});
         end
         
         function value = getValue(obj)

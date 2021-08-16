@@ -373,7 +373,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@wrongSize,'frames:indexValidation:wrongSize')
             function wrongSize(), df.index=3; end
             
-            t.verifyError(@idxNotSorted2,'frames:Index:asgnNotSorted')
+            t.verifyError(@idxNotSorted2,'frames:Index:requireSortedFail')
             function idxNotSorted2(), df.index(1)=33; end
             
             df.index = [3 6];
@@ -401,36 +401,36 @@ classdef dataframeTest < matlab.unittest.TestCase
             df1=dfs;
             df1.index([3,1]) = [4,0];
             t.verifyEqual(df1.index,[0 2 4 10 20]')
-            t.verifyError(@notSorted,'frames:Index:asgnNotSorted')
+            t.verifyError(@notSorted,'frames:Index:requireSortedFail')
             function notSorted, df1.index([1,3]) = [4,0]; end
             t.verifyError(@notSortedAll,'frames:Index:requireSortedFail')
             function notSortedAll, df1.index = [1 2 3 20 10]; end
-            t.verifyError(@notSortedAll2,'frames:Index:asgnNotSorted')
+            t.verifyError(@notSortedAll2,'frames:Index:requireSortedFail')
             function notSortedAll2, df1.index(1:end) = [1 2 3 20 10]; end
             
             df2=dfu;
             df2.index([3,1]) = [0,4];
             t.verifyEqual(df2.index,[4 2 0 10 20]')
-            t.verifyError(@notUnique,'frames:Index:asgnNotUnique')
+            t.verifyError(@notUnique,'frames:Index:requireUniqueFail')
             function notUnique, df2.index([3,1]) = [2,0]; end
             t.verifyError(@notUniqueAll,'frames:Index:requireUniqueFail')
             function notUniqueAll, df2.index = [1 2 3 20 20]; end
-            t.verifyError(@notUniqueAll2,'frames:Index:asgnNotUnique')
+            t.verifyError(@notUniqueAll2,'frames:Index:requireUniqueFail')
             function notUniqueAll2, df1.index(1:end) = [1 2 3 20 20]; end
             
             df3=dfd;
             df3.index([3,1]) = [0,4];
             t.verifyEqual(df3.index,[4 2 0 10 10]')
-            t.verifyWarning(@duplicate1,'frames:Index:notUnique')
+            t.verifyWarning(@duplicate1,'frames:Index:subsagnNotUnique')
             function duplicate1, df3.index([3,1]) = [2,0]; end
-            t.verifyWarning(@duplicate2,'frames:Index:notUnique')
+            t.verifyWarning(@duplicate2,'frames:Index:subsagnNotUnique')
             function duplicate2, df3.index([3,1]) = [6,6]; end
             
             dfcs = frames.DataFrame(1,[],frames.Index([1 2 3 10 20],UniqueSorted=true));
             df4=dfcs;
             df4.columns([3,1]) = [4,0];
             t.verifyEqual(df4.columns,[0 2 4 10 20])
-            t.verifyError(@notSortedCol,'frames:Index:asgnNotSorted')
+            t.verifyError(@notSortedCol,'frames:Index:requireSortedFail')
             function notSortedCol, df4.columns([1,3]) = [4,0]; end
             
             df = frames.DataFrame([1 2; 2 5]);
@@ -449,7 +449,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@notUnique1,'frames:Index:requireUniqueFail')
             function notUnique1(), df.index=[6 6]; end
             
-            t.verifyError(@notUnique2,'frames:Index:asgnNotUnique')
+            t.verifyError(@notUnique2,'frames:Index:requireUniqueFail')
             function notUnique2(), df.index(1)=2; end
             
             tf = frames.TimeFrame([1 2; 2 5],[738315,738316]);
@@ -459,7 +459,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             tf.index(1) = 738314;
             t.verifyEqual(datenum(tf.index),[738314,738317]') 
-            t.verifyError(@tiNotSorted,'frames:Index:asgnNotSorted')
+            t.verifyError(@tiNotSorted,'frames:Index:requireSortedFail')
             function tiNotSorted(), tf.index(1)=738318; end
         end
         
@@ -478,7 +478,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@colsNotUnique,'frames:Index:requireUniqueFail')
             function colsNotUnique(), df.columns=[6 6]; end
             
-            t.verifyError(@colsNotUnique2,'frames:Index:asgnNotUnique')
+            t.verifyError(@colsNotUnique2,'frames:Index:requireUniqueFail')
             function colsNotUnique2(), df.columns(1)=5; end
             
             t.verifyError(@wrongSize,'frames:columnsValidation:wrongSize')
