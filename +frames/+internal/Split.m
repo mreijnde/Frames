@@ -87,7 +87,10 @@ classdef Split < dynamicprops
                     isVectorOutput = false;
                 end
             end
-            if isVectorOutput, res.columns = props; end
+            if isVectorOutput
+                res.columns_.singleton_ = false;
+                res.columns = props;
+            end
             res.name = "";
             warning('on','frames:Index:notUnique')
         end
