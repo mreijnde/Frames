@@ -61,19 +61,22 @@ classdef singletonTest < matlab.unittest.TestCase
             t.verifyError(@assignEmtpyVali2,"frames:Index:valueChecker:singleton")
             function assignEmtpyVali2, id.value(1) = []; end
         end
+        function useInDFTest(t)
+            t.verifyEqual(frames.DataFrame(1,nan,RowSeries=true).index,NaN)
+            t.verifyError(@valueFail,"frames:Index:valueChecker:singleton")
+            function valueFail, frames.DataFrame(1,1,RowSeries=true); end
+            t.verifyEqual(frames.DataFrame(1,nan,RowSeries=true), ...
+                frames.DataFrame(1,1).asRowSeries())
+            t.verifyEqual(frames.DataFrame(1,[],string(missing),ColSeries=true), ...
+                frames.DataFrame(1,[],"e").asColSeries())
+            t.verifyEqual(frames.TimeFrame(1,RowSeries=true), ...
+                frames.TimeFrame(1,10000).asRowSeries())
+            
+            t.verifyError(@failIndex,"frames:constructor:columnsSingletonFail")
+            function failIndex, frames.DataFrame(1,[],frames.Index("w"),ColSeries=true); end
+            t.verifyEqual(frames.DataFrame(1,[],frames.Index(NaN,Singleton=true),ColSeries=true).columns,NaN)
 
-%             frames.DataFrame(1,nan,RowSeries=true)
-%             frames.DataFrame(1,1,RowSeries=true)
-%             s = frames.DataFrame(1,ColSeries=true)
-%             s = frames.DataFrame(1,[],frames.Index("w"),ColSeries=true)
-%             s = frames.DataFrame(1,[],frames.Index("w",Singleton=true),ColSeries=true)
-%             s = frames.DataFrame(1,[],frames.Index(string(missing),Singleton=true),ColSeries=true)
-% 
-%             id = frames.Index([3 4])
-%             id.value = []
-%             id = frames.Index(NaN,Singleton=true)
-%             id.value = NaT
-%             id.value = 1
-%             id.value = []
+        end
+
     end
 end
