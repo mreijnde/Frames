@@ -853,6 +853,12 @@ classdef dataframeTest < matlab.unittest.TestCase
             df2.index(end) = 7;
             t.verifyError(@misaligned,'frames:elementWiseHandler:differentIndex')
             function misaligned(), df.maxOf(df2); end
+            
+            df = frames.DataFrame([1 10;8 0]);
+            [df1,idx1] = df.max(1);
+            [df2,idx2] = df.max(2);
+            t.verifyEqual({frames.DataFrame([8 10]).asRowSeries(),[2;1]},{df1,idx1})
+            t.verifyEqual({frames.DataFrame([10;8]).asColSeries(),["Var2","Var1"]},{df2,idx2})
         end
         
         function nansumTest(t)
