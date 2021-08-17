@@ -100,7 +100,7 @@ classdef Index
                 assert(length(obj.value_)==1,'frames:Index:setSingleton',...
                     'Index must contain 1 element to be a singleton')
                 obj.value_ = missingData(class(obj.value_));
-            elseif ~tf && obj.singleton_ && ismissing(obj.value_)
+            elseif ~tf && obj.singleton_
                 obj.value_ = defaultValue(class(obj.value_));
             end
             obj.singleton_ = tf;
@@ -214,7 +214,6 @@ classdef Index
                     if obj.singleton_
                         assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
                             'The value of a singleton Index must be missing.')
-                        return
                     end
                 else
                     b_ = obj.getValue_from(b);

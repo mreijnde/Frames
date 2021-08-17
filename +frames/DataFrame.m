@@ -181,12 +181,6 @@ classdef DataFrame
         %------------------------------------------------------------------
         % Setters and Getters
         function obj = set.index(obj, value)
-%             arguments % if obj.singleton assert value missing 
-%                 obj, value {mustBeFullVector} % checked in Index always? What index(I []?
-%             end
-%             if ~obj.index_.singleton_
-%                 mustBeFullVector(value)
-%             end
             obj.indexValidation(value)
             if isa(value,'frames.Index')
                 obj.index_ = value;
@@ -195,19 +189,12 @@ classdef DataFrame
             end
         end
         function obj = set.columns(obj,value)
-%             arguments
-%                 obj, value {mustBeFullVector}
-%             end
-%             if ~obj.columns_.singleton_
-%                 mustBeFullVector(value)
-%             end
             obj.columnsValidation(value);
             if isa(value,'frames.Index')
                 obj.columns_ = value;
             else
                 obj.columns_.value = value;
             end
-            
         end
         function obj = set.data(obj,value)
             assert(all(size(value)==size(obj.data_)), 'frames:dataValidation:wrongSize', ...

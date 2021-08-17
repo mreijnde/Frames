@@ -7,8 +7,6 @@ switch type
         v = "Var" + (1:len);
     case 'cell'
         v = cellstr("Var" + (1:len));
-    case 'logical'
-        v = true;
     otherwise
         error('default data type not implemented')
 end
