@@ -85,6 +85,7 @@ classdef DataFrame
 % For more details, see the list of available methods below.
 %
 % Copyright 2021 Benjamin Gaudin
+% Contact: frames.matlab@gmail.com
 %
 % See also: frames.TimeFrame
     
@@ -118,18 +119,49 @@ classdef DataFrame
             %DATAFRAME frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
             arguments
                 data (:,:) = []
-                index {mustBeFullVector} = []
-                columns {mustBeFullVector} = []
-                NameValueArgs.Name {mustBeTextScalar} = ""
+                index = []
+                columns = []
+                NameValueArgs.Name = ""
                 NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
             end
-            if isequal(index,[])
-                index = obj.defaultIndex(size(data,1));
+            if NameValueArgs.RowSeries
+                if isa(index,'frames.Index')
+                    assert(index.singleton_,'frames:constructor:indexSingletonFail', ...
+                        'RowSeries needs to have a singleton Index object in index.')
+                else
+                    if isequal(index,[])
+                        index = missingData('double');
+                    end
+                    index = obj.getIndexObject(index,Singleton=true);
+                end
+            else
+                if ~isa(index,'frames.Index')
+                    if isequal(index,[])
+                        index = obj.defaultIndex(size(data,1));
+                    end
+                    index = obj.getIndexObject(index,Singleton=false);
+                end
             end
-            if isequal(columns,[])
-                columns = obj.defaultColumns(size(data,2));
+            if NameValueArgs.ColSeries
+                if isa(columns,'frames.Index')
+                    assert(columns.singleton_,'frames:constructor:columnsSingletonFail', ...
+                        'ColSeries needs to have a singleton Index object in columns.')
+                else
+                    if isequal(columns,[])
+                        columns = missingData('string');
+                    end
+                    columns = obj.getColumnsObject(columns,Singleton=true);
+                end
+            else
+                if ~isa(columns,'frames.Index')
+                    if isequal(columns,[])
+                        columns = obj.defaultColumns(size(data,2));
+                    end
+                    columns = obj.getColumnsObject(columns,Singleton=false);
+                end
             end
+            
             if isempty(data)
                 data = obj.defaultData(length(index),length(columns),class(data));
             end
@@ -144,41 +176,25 @@ classdef DataFrame
             obj.index = index;
             obj.columns = columns;
             obj.name_ = NameValueArgs.Name;
-            obj.rowseries = NameValueArgs.RowSeries;
-            obj.colseries = NameValueArgs.ColSeries;
         end
         
         %------------------------------------------------------------------
         % Setters and Getters
         function obj = set.index(obj, value)
-            arguments
-                obj, value {mustBeFullVector}
+            obj.indexValidation(value)
+            if isa(value,'frames.Index')
+                obj.index_ = value;
+            else
+                obj.index_.value = value;
             end
-            obj.indexValidation(value);
-            if ~isa(value,'frames.Index')
-                if ~isequal(obj.index_,[])  % ToDo: this is always true unless it is called from a constructor
-                    obj.index_.value = value;
-                    return
-                else
-                    value = obj.getIndexObject(value);
-                end
-            end
-            obj.index_ = value;
         end
         function obj = set.columns(obj,value)
-            arguments
-                obj, value {mustBeFullVector}
-            end
             obj.columnsValidation(value);
-            if ~isa(value,'frames.Index')
-                if ~isequal(obj.columns_,[])
-                    obj.columns_.value = value;
-                    return
-                else
-                    value = obj.getColumnsObject(value);
-                end
+            if isa(value,'frames.Index')
+                obj.columns_ = value;
+            else
+                obj.columns_.value = value;
             end
-            obj.columns_ = value;
         end
         function obj = set.data(obj,value)
             assert(all(size(value)==size(obj.data_)), 'frames:dataValidation:wrongSize', ...
@@ -446,14 +462,14 @@ classdef DataFrame
             % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
             idx = obj.index_;
             sameIndex = true;  % compute a merged index, only in case they are not the same
-            columnsNew = obj.columns_;
+            columnsNewVal = obj.columns_.value_;
             lenCols = zeros(length(varargin)+1,1);
             lenCols(1) = length(obj.columns_);
             for ii = 1:nargin-1
-                columnsNew = [columnsNew;varargin{ii}.columns_]; %#ok<AGROW>
+                columnsNewVal = [columnsNewVal;varargin{ii}.columns_.value_]; %#ok<AGROW>
                 lenCols(ii+1) = length(varargin{ii}.columns_);
                 idx_ = varargin{ii}.index_.value_;
-                if sameIndex && isequal(idx.value_,idx_)
+                if sameIndex && isequaln(idx.value_,idx_)
                     continue
                 else
                     sameIndex = false;
@@ -461,6 +477,14 @@ classdef DataFrame
                 idx = idx.union(idx_);
             end
             
+            % replace missing values from column series by default values
+            ism = ismissing(columnsNewVal);
+            if ism, columnsNewVal(ism) = defaultValue(class(columnsNewVal)); end
+            
+            columnsNew = obj.columns_;
+            columnsNew.singleton_ = false;
+            columnsNew.value = columnsNewVal;
+
             % expand each DF with the new idx, and merge their data_
             sizeColumns = cumsum(lenCols);
             dataH = obj.defaultData(length(idx),sizeColumns(end));
@@ -753,7 +777,6 @@ classdef DataFrame
             try
                 assert(isequal(class(df1),class(df2)))
                 assert(isequal(df1.index_,df2.index_)&&isequal(df1.columns_,df2.columns_))
-                assert(isequal(df1.name_,df2.name_))
                 iseq = abs(df1.data-df2.data) <= tol;
                 bool = all(iseq(:));
             catch
@@ -808,9 +831,9 @@ classdef DataFrame
         function other = all(obj,varargin), other=obj.matrix2series(@all,false,varargin{:}); end
         % ALL 'all' function through the desired dimension, returns a series
         
-        function other = max(obj,varargin), other=obj.maxmin(@max,varargin{:}); end
+        function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@max,varargin{:}); end
         % MAX maximum through the desired dimension, returns a series
-        function other = min(obj,varargin), other=obj.maxmin(@min,varargin{:}); end
+        function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@min,varargin{:}); end
         % MIN minimum through the desired dimension, returns a series
         function other = maxOf(df1,df2), other=operator(@max,@elementWiseHandler,df1,df2); end
         % maximum of the elements of the two input arguments
@@ -927,9 +950,8 @@ classdef DataFrame
                 locs = strcmp(beingAssigned,["iloc","loc"]);
                 indexers = strcmp(beingAssigned,["index","columns"]);
                 if any(indexers)
-                    mustBeFullVector(b);
                     mustBeNonempty(b);
-                    obj.([beingAssigned,'_'])(selectors{1}) = b;
+                    obj.([beingAssigned,'_']).value(selectors{1}) = b;
                     return
                 elseif any(locs)
                     if locs(1)
@@ -1032,12 +1054,12 @@ classdef DataFrame
             assert(length(value) == size(obj.data,2), 'frames:columnsValidation:wrongSize', ...
                 'columns do not have the same size as data')
         end
-        function idx = getIndexObject(~,index)
-            idx = frames.Index(index,Unique=true);
+        function idx = getIndexObject(~,index,varargin)
+            idx = frames.Index(index,varargin{:},Unique=true);
             idx.name = "Row";  % to be consistent with 'table' in which the default name of the index is 'Row'
         end
-        function col = getColumnsObject(~,columns)
-            col = frames.Index(columns);
+        function col = getColumnsObject(~,columns,varargin)
+            col = frames.Index(columns,varargin{:});
         end
         
         function obj = modify(obj,data,index,columns,fromPosition)
@@ -1125,29 +1147,33 @@ classdef DataFrame
         
         function obj = df2series(obj,data,dim)
             if dim == 1
-                indexValue = obj.defaultIndex(1);
-                obj = frames.DataFrame(data,indexValue,obj.columns,Name=obj.name);
-                obj.index_.singleton_ = true;
+                if obj.colseries
+                    obj = data;
+                else
+                    obj.data_ = data;
+                    obj.index_.value_ = obj.index_.value_(1);
+                    obj.index_.singleton = true;
+                end
             else
-                obj.data_ = data;
-                obj.columns_.value = obj.defaultColumns(1);
-                obj.columns_.singleton_ = true;
+                if obj.rowseries
+                    obj = data;
+                else
+                    obj.data_ = data;
+                    obj.columns_.value_ = obj.columns_.value_(1);
+                    obj.columns_.singleton = true;
+                end
             end
         end
         
-        function series = maxmin(obj,fun,dim)
+        function varargout = maxmin(obj,fun,dim)
             if nargin < 3, dim = 1; end
-            d = fun(obj.data_,[],dim);
-            series = df2series(obj,d,dim);
-            if numel( d ) == 1
+            [d, ii] = fun(obj.data_,[],dim);
+            varargout{1} = df2series(obj,d,dim);
+            if nargout == 2
                 if dim == 1
-                    loc = obj.index_.value_(obj.data_ == d);
-                    loc = loc(1);
-                    series.index_.value_ = loc;
+                    varargout{2} = obj.index(ii);
                 else
-                    loc = obj.columns_.value_(obj.data_ == d);
-                    loc = loc(1);
-                    series.columns_.value_ = loc;
+                    varargout{2} = obj.columns(ii);
                 end
             end
         end
@@ -1284,10 +1310,10 @@ classdef DataFrame
         end
         
         function other = ctranspose(obj)
-            other = frames.DataFrame(obj.data_',obj.columns,obj.index,Name=obj.name_);
+            other = frames.DataFrame(obj.data_',obj.columns_,obj.index_,Name=obj.name_);
         end
         function other = transpose(obj)
-            other = frames.DataFrame(obj.data_.',obj.columns,obj.index,Name=obj.name_);
+            other = frames.DataFrame(obj.data_.',obj.columns_,obj.index_,Name=obj.name_);
         end
         
         function obj = uminus(obj), obj.data_ = uminus(obj.data_); end
@@ -1297,10 +1323,10 @@ classdef DataFrame
     
     methods(Hidden, Static, Access=protected)
         function idx = defaultIndex(len)
-            idx = (1:len)';
+            idx = defaultValue('double',len)';
         end
         function col = defaultColumns(len)
-            col = "Var" + (1:len);
+            col = defaultValue('string',len);
         end
     end
 end

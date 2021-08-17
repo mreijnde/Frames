@@ -21,6 +21,7 @@ classdef Rolling
     %       Minimum number of observations at the start required to have a value (otherwise result is NaN).
     %
     % Copyright 2021 Benjamin Gaudin
+    % Contact: frames.matlab@gmail.com
     %
     properties(SetAccess=protected)
         df

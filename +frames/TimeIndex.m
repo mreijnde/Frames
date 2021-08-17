@@ -23,6 +23,7 @@ classdef TimeIndex < frames.Index
 % It can also be modified with the .setIndexFormat method of TimeFrame.
 %
 % Copyright 2021 Benjamin Gaudin
+% Contact: frames.matlab@gmail.com
 %
 % See also: INDEX
     properties
@@ -34,15 +35,22 @@ classdef TimeIndex < frames.Index
             arguments
                 value
                 nameValue.Name = "Time"
-                nameValue.Format = "dd-MMM-yyyy"
+                nameValue.Format = string(missing)
                 nameValue.Unique = true
                 nameValue.UniqueSorted = true
+                nameValue.Singleton = false
             end
-            if isdatetime(value); nameValue.Format = string(value.Format); end
+            if ismissing(nameValue.Format)
+                if isdatetime(value)
+                    nameValue.Format = string(value.Format);
+                else
+                    nameValue.Format = "dd-MMM-yyyy";
+                end
+            end
             if ~nameValue.Unique, nameValue.UniqueSorted = false; end
             
             value = getValue_from_local(value,nameValue.Format);
-            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted);
+            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted,Singleton=nameValue.Singleton);
             obj.format = nameValue.Format;
         end
         
@@ -77,9 +85,9 @@ classdef TimeIndex < frames.Index
     end
     
     methods(Access = protected)
-        function value = valueChecker(obj,value)
+        function value = valueChecker(obj,value,varargin)
             value_ = obj.getValue_from(value);
-            valueChecker@frames.Index(obj,value_);
+            valueChecker@frames.Index(obj,value_,varargin{:});
         end
         
         function value = getValue(obj)

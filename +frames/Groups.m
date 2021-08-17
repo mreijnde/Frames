@@ -18,6 +18,7 @@ classdef Groups < dynamicprops
  %          a case, 'groupStructure' is not required.
  %
  % Copyright 2021 Benjamin Gaudin
+ % Contact: frames.matlab@gmail.com
  %
  % See also: frames.internal.Split
     properties(Access=protected)

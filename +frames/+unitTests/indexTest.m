@@ -77,22 +77,22 @@ classdef indexTest < matlab.unittest.TestCase
             sortedindex = frames.Index([10 20 30],UniqueSorted=true);
             timeindex = frames.TimeIndex([10 20 30]);
             
-            t.verifyWarning(@renderDupl,'frames:Index:notUnique')
-            function renderDupl, index(end+1:end+2) = [11 20]; end
+            t.verifyWarning(@renderDupl,'frames:Index:subsagnNotUnique')
+            function renderDupl, index.value(end+1:end+2) = [11 20]; end
             t.verifyEqual(index.value, [30 10 20 11 20]')
             
-            t.verifyError(@notUnique,'frames:Index:asgnNotUnique')
-            function notUnique, uniqueindex(1) = 10; end
-            uniqueindex(1:2) = [10 11]';
+            t.verifyError(@notUnique,'frames:Index:requireUniqueFail')
+            function notUnique, uniqueindex.value(1) = 10; end
+            uniqueindex.value(1:2) = [10 11]';
             t.verifyEqual(uniqueindex.value, [10 11 20]')
             uniqueindex.value(end+1) = 33;
             t.verifyEqual(uniqueindex.value, [10 11 20 33]')
             t.verifyError(@notUnique2,'frames:Index:requireUniqueFail')
             function notUnique2, uniqueindex.value(1) = 33; end
             
-            t.verifyError(@notSorted,'frames:Index:asgnNotSorted')
-            function notSorted, sortedindex(2) = 100; end
-            sortedindex(end:end+1) = [40 50];
+            t.verifyError(@notSorted,'frames:Index:requireSortedFail')
+            function notSorted, sortedindex.value(2) = 100; end
+            sortedindex.value(end:end+1) = [40 50];
             t.verifyEqual(sortedindex.value, [10 20 40 50]')
             sortedindex.value([1 3]) = [1 22];
             t.verifyEqual(sortedindex.value, [1 20 22 50]')
@@ -100,6 +100,14 @@ classdef indexTest < matlab.unittest.TestCase
             function notSorted2, sortedindex.value(1) = 50; end
             t.verifyError(@notSorted3,'frames:Index:requireSortedFail')
             function notSorted3, sortedindex.value(1) = 33; end
+            
+            timeindex.value([2 3]) = ["16-Aug-2021" "17-Aug-2021"];
+            timeindex2 = timeindex;
+            timeindex2.value(end) = 738385;
+            t.verifyEqual(timeindex.value, timeindex2.value)
+            
+            t.verifyError(@tiNotSorted,'frames:Index:requireSortedFail')
+            function tiNotSorted, timeindex.value([3 2]) = ["16-Aug-2021" "17-Aug-2021"]; end
         end
     end
 end

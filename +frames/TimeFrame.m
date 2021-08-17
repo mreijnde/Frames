@@ -90,6 +90,7 @@ classdef TimeFrame < frames.DataFrame
 % For more details, see the list of available methods below.
 %
 % Copyright 2021 Benjamin Gaudin
+% Contact: frames.matlab@gmail.com
 %
 % See also: frames.DataFrame
     
@@ -167,8 +168,8 @@ classdef TimeFrame < frames.DataFrame
             end
             indexValidation@frames.DataFrame(obj,value);
         end
-        function idx = getIndexObject(~,index)
-            idx = frames.TimeIndex(index);
+        function idx = getIndexObject(~,index,varargin)
+            idx = frames.TimeIndex(index,varargin{:});
         end
         function tb = getTable(obj)
             col = columnsForTable(obj.columns);

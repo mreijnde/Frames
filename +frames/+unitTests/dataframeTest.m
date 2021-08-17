@@ -373,7 +373,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@wrongSize,'frames:indexValidation:wrongSize')
             function wrongSize(), df.index=3; end
             
-            t.verifyError(@idxNotSorted2,'frames:Index:asgnNotSorted')
+            t.verifyError(@idxNotSorted2,'frames:Index:requireSortedFail')
             function idxNotSorted2(), df.index(1)=33; end
             
             df.index = [3 6];
@@ -401,36 +401,36 @@ classdef dataframeTest < matlab.unittest.TestCase
             df1=dfs;
             df1.index([3,1]) = [4,0];
             t.verifyEqual(df1.index,[0 2 4 10 20]')
-            t.verifyError(@notSorted,'frames:Index:asgnNotSorted')
+            t.verifyError(@notSorted,'frames:Index:requireSortedFail')
             function notSorted, df1.index([1,3]) = [4,0]; end
             t.verifyError(@notSortedAll,'frames:Index:requireSortedFail')
             function notSortedAll, df1.index = [1 2 3 20 10]; end
-            t.verifyError(@notSortedAll2,'frames:Index:asgnNotSorted')
+            t.verifyError(@notSortedAll2,'frames:Index:requireSortedFail')
             function notSortedAll2, df1.index(1:end) = [1 2 3 20 10]; end
             
             df2=dfu;
             df2.index([3,1]) = [0,4];
             t.verifyEqual(df2.index,[4 2 0 10 20]')
-            t.verifyError(@notUnique,'frames:Index:asgnNotUnique')
+            t.verifyError(@notUnique,'frames:Index:requireUniqueFail')
             function notUnique, df2.index([3,1]) = [2,0]; end
             t.verifyError(@notUniqueAll,'frames:Index:requireUniqueFail')
             function notUniqueAll, df2.index = [1 2 3 20 20]; end
-            t.verifyError(@notUniqueAll2,'frames:Index:asgnNotUnique')
+            t.verifyError(@notUniqueAll2,'frames:Index:requireUniqueFail')
             function notUniqueAll2, df1.index(1:end) = [1 2 3 20 20]; end
             
             df3=dfd;
             df3.index([3,1]) = [0,4];
             t.verifyEqual(df3.index,[4 2 0 10 10]')
-            t.verifyWarning(@duplicate1,'frames:Index:notUnique')
+            t.verifyWarning(@duplicate1,'frames:Index:subsagnNotUnique')
             function duplicate1, df3.index([3,1]) = [2,0]; end
-            t.verifyWarning(@duplicate2,'frames:Index:notUnique')
+            t.verifyWarning(@duplicate2,'frames:Index:subsagnNotUnique')
             function duplicate2, df3.index([3,1]) = [6,6]; end
             
             dfcs = frames.DataFrame(1,[],frames.Index([1 2 3 10 20],UniqueSorted=true));
             df4=dfcs;
             df4.columns([3,1]) = [4,0];
             t.verifyEqual(df4.columns,[0 2 4 10 20])
-            t.verifyError(@notSortedCol,'frames:Index:asgnNotSorted')
+            t.verifyError(@notSortedCol,'frames:Index:requireSortedFail')
             function notSortedCol, df4.columns([1,3]) = [4,0]; end
             
             df = frames.DataFrame([1 2; 2 5]);
@@ -449,7 +449,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@notUnique1,'frames:Index:requireUniqueFail')
             function notUnique1(), df.index=[6 6]; end
             
-            t.verifyError(@notUnique2,'frames:Index:asgnNotUnique')
+            t.verifyError(@notUnique2,'frames:Index:requireUniqueFail')
             function notUnique2(), df.index(1)=2; end
             
             tf = frames.TimeFrame([1 2; 2 5],[738315,738316]);
@@ -459,7 +459,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             tf.index(1) = 738314;
             t.verifyEqual(datenum(tf.index),[738314,738317]') 
-            t.verifyError(@tiNotSorted,'frames:Index:asgnNotSorted')
+            t.verifyError(@tiNotSorted,'frames:Index:requireSortedFail')
             function tiNotSorted(), tf.index(1)=738318; end
         end
         
@@ -478,7 +478,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@colsNotUnique,'frames:Index:requireUniqueFail')
             function colsNotUnique(), df.columns=[6 6]; end
             
-            t.verifyError(@colsNotUnique2,'frames:Index:asgnNotUnique')
+            t.verifyError(@colsNotUnique2,'frames:Index:requireUniqueFail')
             function colsNotUnique2(), df.columns(1)=5; end
             
             t.verifyError(@wrongSize,'frames:columnsValidation:wrongSize')
@@ -674,6 +674,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(x4,expected)
             x5 = df.split(g,["d","e"]).apply(@(x) x.sum(2));
             t.verifyEqual(x5,frames.DataFrame([6 2 4;2 5 3]',[6 2 1],["d","e"]))
+            
+            % returns a not series (even if applied function does)
+            notseries = frames.DataFrame(1).split({"Var1"},"a").apply(@(x) x.sum(2)); %#ok<STRSCALR>
+            t.verifyEqual(notseries,frames.DataFrame(1,[],"a"))
         end
         
         function firstIndexTest(t)
@@ -704,16 +708,16 @@ classdef dataframeTest < matlab.unittest.TestCase
             mat1 = frames.DataFrame([1 2;3 4]);
             mat2 = frames.DataFrame([10 20;30 40],[],["a","b"]);
             vecV = frames.DataFrame([6 7]',ColSeries=true);
-            vecV2 = frames.DataFrame([6 7]',[],"a",ColSeries=true);
+            vecV2 = frames.DataFrame([6 7]',ColSeries=true);
             vecH = frames.DataFrame([6 7]',ColSeries=true);
             tf = frames.TimeFrame([738331:738336;1:6]',738331:738336);
             
             tfOp = tf' * tf;
-            t.verifyEqual(tfOp,frames.DataFrame(tf.data'*tf.data,tf.columns,tf.columns))
+            t.verifyEqual(tfOp,frames.DataFrame(tf.data'*tf.data,tf.getColumns_(),tf.getColumns_()))
             mtimesM = mat1' * mat2;
-            t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.columns,mat2.columns))
+            t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.getColumns_(),mat2.getColumns_()))
             mtimesV = mat1' * vecV2;
-            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.columns,vecV2.columns,ColSeries=true))
+            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.getColumns_(),vecV2.getColumns_(),ColSeries=true))
             times = mat1 .* vecV;
             t.verifyEqual(times,frames.DataFrame([6 12;21 28],mat1.index,mat1.columns))
             plus1 = mat1 + vecH;
@@ -771,7 +775,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             b = df{1,:}';
             expectedData = df.data * b.data;
-            expected = frames.DataFrame(expectedData,df.index,b.columns);
+            expected = frames.DataFrame(expectedData,df.index,b.getColumns_());
             t.verifyEqual(df*b,expected)
         end
         
@@ -836,7 +840,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function matrix2seriesTest(t)
             tf = t.tfMissing1;
-            t.verifyEqual(tf.sum(),frames.DataFrame([12 13 12],[],tf.columns,RowSeries=true))
+            t.verifyEqual(tf.sum(),frames.TimeFrame([12 13 12],[],tf.columns,RowSeries=true))
             t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.getIndex_(),[],ColSeries=true))
             t.verifyEqual(tf.sum().sum(2),37)
         end
@@ -845,12 +849,20 @@ classdef dataframeTest < matlab.unittest.TestCase
             df = frames.DataFrame([4 NaN;3 1]);
             t.verifyEqual(df.maxOf(3).data,[4 3;3 3])
             t.verifyEqual(df.maxOf(df+1),df+1)
-            t.verifyEqual(df.max().min(2).columns,"Var2")
-            t.verifyEqual(df.max(2).min().index,2)
+            [~,colmax1min2] = df.max().min(2);
+            t.verifyEqual(colmax1min2,"Var2")
+            [~,idxmax2min1] = df.max(2).min();
+            t.verifyEqual(idxmax2min1,2)
             df2 = df;
             df2.index(end) = 7;
             t.verifyError(@misaligned,'frames:elementWiseHandler:differentIndex')
             function misaligned(), df.maxOf(df2); end
+            
+            df = frames.DataFrame([1 10;8 0]);
+            [df1,idx1] = df.max(1);
+            [df2,idx2] = df.max(2);
+            t.verifyEqual({frames.DataFrame([8 10]).asRowSeries(),[2;1]},{df1,idx1})
+            t.verifyEqual({frames.DataFrame([10;8]).asColSeries(),["Var2","Var1"]},{df2,idx2})
         end
         
         function nansumTest(t)

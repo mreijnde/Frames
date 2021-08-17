@@ -27,6 +27,7 @@ classdef Split < dynamicprops
  %  apply   - apply a function to each sub-Frame, and returns a single Frame
  %
  % Copyright 2021 Benjamin Gaudin
+ % Contact: frames.matlab@gmail.com
  %
  % See also: frames.Groups
     properties(Access=private)
@@ -86,7 +87,10 @@ classdef Split < dynamicprops
                     isVectorOutput = false;
                 end
             end
-            if isVectorOutput, res.columns = props; end
+            if isVectorOutput
+                res.columns_.singleton_ = false;
+                res.columns = props;
+            end
             res.name = "";
             warning('on','frames:Index:notUnique')
         end
