@@ -13,7 +13,7 @@ Matlab currently provide matrices and tables, but they do not work well together
    - Matlab native matrices are not aware of row and column names; when data represents observations of variables, it is always tricky to make sure the data is not misaligned (i.e. how to make sure that the ith row in matrices A and B represents the same observation).
    - Matlab (time)tables have row and column names, but do not provide simple operations like addition (`table1+table2` is not possible). 
 
-**_Frame_ aims at being both a matrix and a table**, allowing intuitive operations on and between Frames, while applying sanity checks on index and columns.
+**DataFrame aims at being both a matrix and a table**, allowing intuitive operations on and between Frames, while applying sanity checks on index and columns.
 For example, `frame1+frame2` is possible, and it will give an error if the index or columns are misaligned.
 
 There are many more operations and tools to discover in the package. 
