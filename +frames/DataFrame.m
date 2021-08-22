@@ -567,6 +567,22 @@ classdef DataFrame
             other.name_ = ""; other.description = "";
         end
         
+        function varargout = join(obj,df2,varargin)
+            [varargout{1:nargout}] = join(obj.t,df2.t,varargin{:});
+            constructor = split(class(obj),'.');
+            varargout{1} = frames.(constructor{2}).fromTable(varargout{1});
+        end
+        function varargout = innerjoin(obj,df2,varargin)
+            [varargout{1:nargout}] = innerjoin(obj.t,df2.t,varargin{:});
+            constructor = split(class(obj),'.');
+            varargout{1} = frames.(constructor{2}).fromTable(varargout{1});
+        end
+        function varargout = outerjoin(obj,df2,varargin)
+            [varargout{1:nargout}] = outerjoin(obj.t,df2.t,varargin{:});
+            constructor = split(class(obj),'.');
+            varargout{1} = frames.(constructor{2}).fromTable(varargout{1});
+        end
+        
         function other = sortBy(obj,columnName)
             % sort frame from a column
             col = obj.loc_(':',columnName);
