@@ -567,21 +567,53 @@ classdef DataFrame
             other.name_ = ""; other.description = "";
         end
         
+        %==================================================================
+        % table related functions
         function varargout = join(obj,df2,varargin)
-            [varargout{1:nargout}] = join(obj.t,df2.t,varargin{:});
-            constructor = split(class(obj),'.');
-            varargout{1} = frames.(constructor{2}).fromTable(varargout{1});
+            % cf table join
+            [varargout{1:nargout}] = obj.tableFunctions(@join,[],df2.t,varargin{:});
         end
         function varargout = innerjoin(obj,df2,varargin)
-            [varargout{1:nargout}] = innerjoin(obj.t,df2.t,varargin{:});
-            constructor = split(class(obj),'.');
-            varargout{1} = frames.(constructor{2}).fromTable(varargout{1});
+            % cf table innerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@innerjoin,[],df2.t,varargin{:});
         end
         function varargout = outerjoin(obj,df2,varargin)
-            [varargout{1:nargout}] = outerjoin(obj.t,df2.t,varargin{:});
-            constructor = split(class(obj),'.');
-            varargout{1} = frames.(constructor{2}).fromTable(varargout{1});
+            % cf table outerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@outerjoin,[],df2.t,varargin{:});
         end
+        function varargout = union(obj,df2,varargin)
+            % cf table outerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@union,[],df2.t,varargin{:});
+        end
+        function varargout = intersect(obj,df2,varargin)
+            % cf table outerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@intersect,[],df2.t,varargin{:});
+        end
+        function varargout = ismember(obj,df2,varargin)
+            % cf table outerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@ismember,[],df2.t,varargin{:});
+        end
+        function varargout = setdiff(obj,df2,varargin)
+            % cf table outerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@setdiff,[],df2.t,varargin{:});
+        end
+        function varargout = setxor(obj,df2,varargin)
+            % cf table outerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@setxor,[],df2.t,varargin{:});
+        end
+        function varargout = groupsummary(obj,varargin)
+            % cf table groupsummary
+            [varargout{1:nargout}] = obj.tableFunctions(@groupsummary,'DataFrame',varargin{:});
+        end
+        function varargout = findgroups(obj,varargin)
+            % cf table findgroups
+            [varargout{1:nargout}] = obj.tableFunctions(@findgroups,missing,varargin{:});
+        end
+        function varargout = splitapply(obj,fun,groups)
+            % cf table splitapply
+            [varargout{1:nargout}] = splitapply(fun,obj.t,groups);
+        end
+        %==================================================================
         
         function other = sortBy(obj,columnName)
             % sort frame from a column
@@ -1197,6 +1229,17 @@ classdef DataFrame
         function other = corrcov(obj,fun,varargin)
             d = fun(obj.data_,varargin{:});
             other = frames.DataFrame(d,obj.columns,obj.columns,Name=obj.name_);
+        end
+        
+        function varargout = tableFunctions(obj,fun,outputClass,varargin)
+            if isempty(outputClass)
+                outputClass = split(class(obj),'.');
+                outputClass = outputClass{2};
+            end
+            [varargout{1:nargout}] = fun(obj.t,varargin{:});
+            if ~ismissing(outputClass)
+                varargout{1} = frames.(outputClass).fromTable(varargout{1});
+            end
         end
     end
  
