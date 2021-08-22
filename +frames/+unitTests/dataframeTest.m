@@ -210,6 +210,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             t.verifyError(@()[ss,su],'frames:Index:requireSortedFail')
             t.verifyEqual([su,ss],frames.DataFrame([su.data,ss.data],sorted,[unique;sorted]))
+            
+            dur1 = frames.TimeFrame([1 2;3 4],seconds([1 3]),["a","b"]);
+            dur2 = frames.TimeFrame([1 2;3 4]*10,seconds([2 3]),["c","d"]);
+            t.verifyEqual([dur1,dur2], ...
+                frames.TimeFrame([1 2 NaN NaN; NaN NaN 10 20;3 4 30 40],seconds([1 2 3]),["a" "b" "c" "d"]))
 
         end
         
