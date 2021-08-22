@@ -841,6 +841,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             % not possible to turn it into a timerange (use [] to get specific observations)
             t.verifyError(@() tf({"11-Jun-2021","12-Jun-2021","14-Jun-2021"}),'MATLAB:datetime:InvalidData') %#ok<CLARRSTR>
+            
+            t.verifyEqual(tf(withtol(datetime("18-Jun-2021"),days(1))), ...
+                tf("17-Jun-2021:19-Jun-2021"))
+            
         end
         
         function matrix2seriesTest(t)

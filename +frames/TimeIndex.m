@@ -81,6 +81,14 @@ classdef TimeIndex < frames.Index
                 pos = ids(whichRows);
                 return
             end
+            if isa(selector,'withtol')
+                tt = timetable(obj.value);
+                tts = tt(selector,:);
+                whichRows = ismember(tt,tts);
+                ids = (1:length(obj.value_))';
+                pos = ids(whichRows);
+                return
+            end
             pos = positionOf@frames.Index(obj,selector,varargin{:});
         end
         
