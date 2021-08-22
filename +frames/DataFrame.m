@@ -601,9 +601,21 @@ classdef DataFrame
             % cf table setxor
             [varargout{1:nargout}] = obj.tableFunctions(@setxor,[],df2.t,varargin{:});
         end
+        function varargout = groupfilter(obj,varargin)
+            % cf table groupfilter
+            [varargout{1:nargout}] = obj.tableFunctions(@groupfilter,[],varargin{:});
+        end
+        function varargout = grouptransform(obj,varargin)
+            % cf table grouptransform
+            [varargout{1:nargout}] = obj.tableFunctions(@grouptransform,[],varargin{:});
+        end
         function varargout = groupsummary(obj,varargin)
             % cf table groupsummary
             [varargout{1:nargout}] = obj.tableFunctions(@groupsummary,'DataFrame',varargin{:});
+        end
+        function varargout = groupcounts(obj,varargin)
+            % cf table groupcounts
+            [varargout{1:nargout}] = obj.tableFunctions(@groupcounts,'DataFrame',varargin{:});
         end
         function varargout = findgroups(obj,varargin)
             % cf table findgroups
