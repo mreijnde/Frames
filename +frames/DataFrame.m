@@ -582,23 +582,23 @@ classdef DataFrame
             [varargout{1:nargout}] = obj.tableFunctions(@outerjoin,[],df2.t,varargin{:});
         end
         function varargout = union(obj,df2,varargin)
-            % cf table outerjoin
+            % cf table union
             [varargout{1:nargout}] = obj.tableFunctions(@union,[],df2.t,varargin{:});
         end
         function varargout = intersect(obj,df2,varargin)
-            % cf table outerjoin
+            % cf table intersect
             [varargout{1:nargout}] = obj.tableFunctions(@intersect,[],df2.t,varargin{:});
         end
         function varargout = ismember(obj,df2,varargin)
-            % cf table outerjoin
+            % cf table ismember
             [varargout{1:nargout}] = obj.tableFunctions(@ismember,[],df2.t,varargin{:});
         end
         function varargout = setdiff(obj,df2,varargin)
-            % cf table outerjoin
+            % cf table setdiff
             [varargout{1:nargout}] = obj.tableFunctions(@setdiff,[],df2.t,varargin{:});
         end
         function varargout = setxor(obj,df2,varargin)
-            % cf table outerjoin
+            % cf table setxor
             [varargout{1:nargout}] = obj.tableFunctions(@setxor,[],df2.t,varargin{:});
         end
         function varargout = groupsummary(obj,varargin)
