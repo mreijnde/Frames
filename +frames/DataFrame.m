@@ -812,6 +812,13 @@ classdef DataFrame
         function varargout = size(obj,varargin)
             [varargout{1:nargout}] = size(obj.data_,varargin{:});
         end
+        function h = height(obj)
+            h = length(obj.index_.value_);
+        end
+        function w = width(obj)
+            w = length(obj.columns_.value_);
+        end
+        
         function bool = isempty(obj), bool = isempty(obj.data_); end
         function obj = cumsum(obj), obj.data_ = nancumsum(obj.data_); end
         % cumulative sum, takes care of missing values
