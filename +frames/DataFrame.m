@@ -1305,7 +1305,7 @@ classdef DataFrame
             arguments
                 t {mustBeA(t,'table')}
                 nameValue.keepCellstr (1,1) logical = false
-                nameValue.Unique (1,1) logical = false
+                nameValue.Unique (1,1) logical = true
                 nameValue.UniqueSorted (1,1) logical = false                
             end
             cols = t.Properties.VariableNames;
