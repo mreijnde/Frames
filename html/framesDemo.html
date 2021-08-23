@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-08-10"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
+      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-08-23"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -142,7 +142,7 @@ df =
 <span class="keyword">catch</span> me
     disp(me.message)
 <span class="keyword">end</span>
-</pre><pre class="codeoutput">Invalid argument at position 2. Value must be a unique vector or a frames.Index.
+</pre><pre class="codeoutput">Index value is required to be unique.
 </pre><h2 id="14">Sub-Frame Access and Modification</h2><pre>Select and modify based on index/column names with () or the loc method:
  * df(indexNames,columnsNames)
  * df.loc(indexNames,columnsNames)
@@ -483,7 +483,6 @@ priceSmoothers.columns = [<span class="string">"original"</span>, <span class="s
 priceSmoothers.name = <span class="string">"smoothers"</span>;  <span class="comment">% assign the name (it appears as the plot title)</span>
 priceSmoothers.plot(Log=true)
 </pre><pre class="codeoutput">Warning: Index value is not unique. 
-Warning: Index value is not unique. 
 </pre><img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
 </pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <h2 id="50">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The groups of columns can be expressed in different ways.
  * (cellArrayOfGroupLists,groupNames)
@@ -554,36 +553,40 @@ x4 = df.split(g).apply(@(x) x.max(2))
 </pre><pre class="codeoutput">
 x4 = 
 
-         group2    group1
+         group1    group2
          ______    ______
 
-    1      2         5   
-    2      5         2   
+    1      5         2   
+    2      2         5   
     3      3         3   
 
 </pre><h2 id="56">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (+frames/+unitTests/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
 </pre><pre class="codeoutput">
 Methods for class frames.DataFrame:
 
-DataFrame         equals            max               sign              
-abs               ewm               maxOf             size              
-all               exp               mean              sortBy            
-any               extendColumns     median            sortIndex         
-asColSeries       extendIndex       min               split             
-asRowSeries       ffill             minOf             sqrt              
-bfill             firstCommonIndex  nansum            std               
-ceil              firstValidIndex   plot              subsasgn          
-clip              floor             relChg            subsref           
-compoundChange    getColumns_       replace           sum               
-corr              getIndex_         replaceStartBy    tail              
-cov               head              resample          tanh              
-cumprod           heatmap           rolling           toFile            
-cumsum            horzcat           setColumnsName    var               
-diff              iloc              setColumnsType    vertcat           
-dropColumns       isempty           setIndex          
-dropIndex         ismissing         setIndexName      
-dropMissing       loc               setIndexType      
-emptyStart        log               shift             
+DataFrame         extendIndex       loc               shift             
+abs               ffill             log               sign              
+all               findgroups        max               size              
+any               firstCommonIndex  maxOf             sortBy            
+asColSeries       firstValidIndex   mean              sortIndex         
+asRowSeries       floor             median            split             
+bfill             getColumns_       min               splitapply        
+ceil              getIndex_         minOf             sqrt              
+clip              groupcounts       nansum            std               
+compoundChange    groupfilter       outerjoin         subsasgn          
+corr              groupsummary      plot              subsref           
+cov               grouptransform    relChg            sum               
+cumprod           head              replace           tail              
+cumsum            heatmap           replaceStartBy    tanh              
+diff              height            resample          toFile            
+dropColumns       horzcat           rolling           union             
+dropIndex         iloc              setColumnsName    var               
+dropMissing       innerjoin         setColumnsType    vertcat           
+emptyStart        intersect         setIndex          width             
+equals            isempty           setIndexName      
+ewm               ismember          setIndexType      
+exp               ismissing         setdiff           
+extendColumns     join              setxor            
 
 Static methods:
 

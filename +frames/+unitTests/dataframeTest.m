@@ -210,6 +210,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             t.verifyError(@()[ss,su],'frames:Index:requireSortedFail')
             t.verifyEqual([su,ss],frames.DataFrame([su.data,ss.data],sorted,[unique;sorted]))
+            
+            dur1 = frames.TimeFrame([1 2;3 4],seconds([1 3]),["a","b"]);
+            dur2 = frames.TimeFrame([1 2;3 4]*10,seconds([2 3]),["c","d"]);
+            t.verifyEqual([dur1,dur2], ...
+                frames.TimeFrame([1 2 NaN NaN; NaN NaN 10 20;3 4 30 40],seconds([1 2 3]),["a" "b" "c" "d"]))
 
         end
         
@@ -836,6 +841,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             % not possible to turn it into a timerange (use [] to get specific observations)
             t.verifyError(@() tf({"11-Jun-2021","12-Jun-2021","14-Jun-2021"}),'MATLAB:datetime:InvalidData') %#ok<CLARRSTR>
+            
+            t.verifyEqual(tf(withtol(datetime("18-Jun-2021"),days(1))), ...
+                tf("17-Jun-2021:19-Jun-2021"))
+            
         end
         
         function matrix2seriesTest(t)

@@ -567,6 +567,69 @@ classdef DataFrame
             other.name_ = ""; other.description = "";
         end
         
+        %==================================================================
+        % table related functions
+        function varargout = join(obj,df2,varargin)
+            % cf table join
+            [varargout{1:nargout}] = obj.tableFunctions(@join,[],df2.t,varargin{:});
+        end
+        function varargout = innerjoin(obj,df2,varargin)
+            % cf table innerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@innerjoin,[],df2.t,varargin{:});
+        end
+        function varargout = outerjoin(obj,df2,varargin)
+            % cf table outerjoin
+            [varargout{1:nargout}] = obj.tableFunctions(@outerjoin,[],df2.t,varargin{:});
+        end
+        function varargout = union(obj,df2,varargin)
+            % cf table union
+            [varargout{1:nargout}] = obj.tableFunctions(@union,[],df2.t,varargin{:});
+        end
+        function varargout = intersect(obj,df2,varargin)
+            % cf table intersect
+            [varargout{1:nargout}] = obj.tableFunctions(@intersect,[],df2.t,varargin{:});
+        end
+        function varargout = ismember(obj,df2,varargin)
+            % cf table ismember
+            [varargout{1:nargout}] = obj.tableFunctions(@ismember,NaN,df2.t,varargin{:});
+        end
+        function varargout = setdiff(obj,df2,varargin)
+            % cf table setdiff
+            [varargout{1:nargout}] = obj.tableFunctions(@setdiff,[],df2.t,varargin{:});
+        end
+        function varargout = setxor(obj,df2,varargin)
+            % cf table setxor
+            [varargout{1:nargout}] = obj.tableFunctions(@setxor,[],df2.t,varargin{:});
+        end
+        function varargout = groupfilter(obj,varargin)
+            % cf table groupfilter
+            [varargout{1:nargout}] = obj.tableFunctions(@groupfilter,[],varargin{:});
+        end
+        function varargout = grouptransform(obj,varargin)
+            % cf table grouptransform
+            [varargout{1:nargout}] = obj.tableFunctions(@grouptransform,[],varargin{:});
+        end
+        function varargout = groupsummary(obj,varargin)
+            % cf table groupsummary
+            [varargout{1:nargout}] = obj.tableFunctions(@groupsummary,'DataFrame',varargin{:});
+        end
+        function varargout = groupcounts(obj,varargin)
+            % cf table groupcounts
+            [varargout{1:nargout}] = obj.tableFunctions(@groupcounts,'DataFrame',varargin{:});
+        end
+        function varargout = findgroups(obj,varargin)
+            % cf table findgroups
+            [varargout{1:nargout}] = obj.tableFunctions(@findgroups,missing,varargin{:});
+            if nargout == 2
+                varargout{2} = frames.DataFrame.fromTable(varargout{2});
+            end
+        end
+        function varargout = splitapply(obj,fun,groups)
+            % cf table splitapply
+            [varargout{1:nargout}] = splitapply(fun,obj.t,groups);
+        end
+        %==================================================================
+        
         function other = sortBy(obj,columnName)
             % sort frame from a column
             col = obj.loc_(':',columnName);
@@ -764,6 +827,13 @@ classdef DataFrame
         function varargout = size(obj,varargin)
             [varargout{1:nargout}] = size(obj.data_,varargin{:});
         end
+        function h = height(obj)
+            h = length(obj.index_.value_);
+        end
+        function w = width(obj)
+            w = length(obj.columns_.value_);
+        end
+        
         function bool = isempty(obj), bool = isempty(obj.data_); end
         function obj = cumsum(obj), obj.data_ = nancumsum(obj.data_); end
         % cumulative sum, takes care of missing values
@@ -1182,6 +1252,20 @@ classdef DataFrame
             d = fun(obj.data_,varargin{:});
             other = frames.DataFrame(d,obj.columns,obj.columns,Name=obj.name_);
         end
+        
+        function varargout = tableFunctions(obj,fun,outputClass,varargin)
+            if isempty(outputClass)
+                outputClass = split(class(obj),'.');
+                outputClass = outputClass{2};
+            end
+            [varargout{1:nargout}] = fun(obj.t,varargin{:});
+            if ~ismissing(outputClass)
+                datetype = varfun(@class,varargout{1},'OutputFormat','cell');
+                if all(strcmp(datetype,datetype{1}))
+                    varargout{1} = frames.(outputClass).fromTable(varargout{1},Unique=false);
+                end
+            end
+        end
     end
  
     methods(Static)
@@ -1221,6 +1305,8 @@ classdef DataFrame
             arguments
                 t {mustBeA(t,'table')}
                 nameValue.keepCellstr (1,1) logical = false
+                nameValue.Unique (1,1) logical = true
+                nameValue.UniqueSorted (1,1) logical = false                
             end
             cols = t.Properties.VariableNames;
             idx = t.Properties.RowNames;
@@ -1230,6 +1316,8 @@ classdef DataFrame
             end
             if isempty(idx), idx = []; end
             df = frames.DataFrame(t.Variables,idx,cols);
+            df.index_.requireUniqueSorted = nameValue.UniqueSorted;
+            df.index_.requireUnique = nameValue.Unique;
             df.index_.name = string(t.Properties.DimensionNames{1});
         end
     end

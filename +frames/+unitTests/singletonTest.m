@@ -75,7 +75,8 @@ classdef singletonTest < matlab.unittest.TestCase
             t.verifyError(@failIndex,"frames:constructor:columnsSingletonFail")
             function failIndex, frames.DataFrame(1,[],frames.Index("w"),ColSeries=true); end
             t.verifyEqual(frames.DataFrame(1,[],frames.Index(NaN,Singleton=true),ColSeries=true).columns,NaN)
-
+    
+            t.verifyEqual(frames.TimeFrame(1,seconds(1)).asRowSeries().index,duration(missing))
         end
 
     end

@@ -21,6 +21,12 @@ classdef indexTest < matlab.unittest.TestCase
             t.verifyEqual(a,b)
             t.verifyEqual(a,c)
             
+            a = frames.TimeIndex(seconds(1):seconds(1):minutes(1));
+            t.verifyEqual(length(a),60)
+            t.verifyEqual(a.format,"duration")
+            t.verifyError(@() frames.TimeIndex([seconds(1),seconds(1),minutes(1)]), ...
+                'frames:Index:requireUniqueFail')
+            
         end
         
         function indexGetterTest(t)
@@ -36,6 +42,9 @@ classdef indexTest < matlab.unittest.TestCase
             t.verifyEqual(index.positionOf([30,20]),[1 4 3]')
             t.verifyEqual(uniqueindex.positionOf([20,30]),[3 1]')
             warning('off','frames:Index:notUnique')
+            
+            a = frames.TimeIndex(seconds(1):seconds(2):minutes(1));
+            t.verifyEqual(a.positionOf(seconds([5 3])),[3 2]')
         end
         
         function positionInTest(t)
@@ -52,6 +61,12 @@ classdef indexTest < matlab.unittest.TestCase
             t.verifyEqual(sortedindex.positionIn([10,20,30,40,50]),[true true true false false]')
             t.verifyEqual(sortedindex.positionIn([10,20,30,40,50]),[true true true false false]')
             warning('on','frames:Index:notUnique')
+            
+            a = frames.TimeIndex(seconds(1):seconds(2):seconds(4));
+            t.verifyEqual(a.positionIn(seconds([5 1 3])),[false true true]')
+            
+            a = frames.TimeIndex(seconds(1):seconds(2):seconds(4),Unique=false);
+            t.verifyEqual(a.positionIn(seconds([5 1 3])),[2 3]')
         end
         
         function unionTest(t)
@@ -69,6 +84,8 @@ classdef indexTest < matlab.unittest.TestCase
             t.verifyEqual(sortedindex.union([2 2 30]).value,[2 10 20 30]')
             t.verifyEqual(timeindex.union([2 2 30]).getValue_(),[2 10 20 30]')
   
+            durationindex = frames.TimeIndex(minutes([10 20 30]));
+            t.verifyEqual(durationindex.union(minutes([2 2 30])).getValue_(),minutes([2 10 20 30]'))
         end
         
         function assignmentTest(t)
@@ -76,6 +93,7 @@ classdef indexTest < matlab.unittest.TestCase
             uniqueindex = frames.Index([30 10 20],Unique=true);
             sortedindex = frames.Index([10 20 30],UniqueSorted=true);
             timeindex = frames.TimeIndex([10 20 30]);
+            durationindex = frames.TimeIndex(minutes([10 20 30]));
             
             t.verifyWarning(@renderDupl,'frames:Index:subsagnNotUnique')
             function renderDupl, index.value(end+1:end+2) = [11 20]; end
@@ -108,6 +126,9 @@ classdef indexTest < matlab.unittest.TestCase
             
             t.verifyError(@tiNotSorted,'frames:Index:requireSortedFail')
             function tiNotSorted, timeindex.value([3 2]) = ["16-Aug-2021" "17-Aug-2021"]; end
+            
+            t.verifyError(@tidNotSorted,'frames:Index:requireSortedFail')
+            function tidNotSorted, durationindex.value([3 2]) = hours([2 3]); end
         end
     end
 end

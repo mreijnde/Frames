@@ -8,7 +8,9 @@ switch type
         d = {''};
     case 'logical'
         d = false;
+    case 'duration'
+        d = duration(missing);
     otherwise
-        error('empty data type not implemented')
+        error('missing data type not implemented')
 end
 end

@@ -43,6 +43,8 @@ classdef TimeIndex < frames.Index
             if ismissing(nameValue.Format)
                 if isdatetime(value)
                     nameValue.Format = string(value.Format);
+                elseif isduration(value)
+                    nameValue.Format = "duration";
                 else
                     nameValue.Format = "dd-MMM-yyyy";
                 end
@@ -79,6 +81,14 @@ classdef TimeIndex < frames.Index
                 pos = ids(whichRows);
                 return
             end
+            if isa(selector,'withtol')
+                tt = timetable(obj.value);
+                tts = tt(selector,:);
+                whichRows = ismember(tt,tts);
+                ids = (1:length(obj.value_))';
+                pos = ids(whichRows);
+                return
+            end
             pos = positionOf@frames.Index(obj,selector,varargin{:});
         end
         
@@ -91,7 +101,11 @@ classdef TimeIndex < frames.Index
         end
         
         function value = getValue(obj)
-            value = datetime(obj.value_,ConvertFrom='datenum',Format=obj.format);
+            if isduration(obj.value_)
+                value = obj.value_;
+            else
+                value = datetime(obj.value_,ConvertFrom='datenum',Format=obj.format);
+            end
         end
         function value = getValue_from(obj,value)
             % the internal value_ is stored as a datenum for performance
@@ -121,7 +135,7 @@ switch class(value)
         value = datenum(value);
     case {'string','cell'}
         value = datenum(datetime(value,Format=format));
-    case 'double'
+    case {'double','duration'}
         return
     otherwise
         error('type of time index not recognized')
