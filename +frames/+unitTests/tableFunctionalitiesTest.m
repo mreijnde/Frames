@@ -275,7 +275,75 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             DFGT = frames.DataFrame.fromTable(GT);
             G2 = findgroups(DFGT);
             meanBMI2 = DFDT.splitapply(meanBMIFcn,G2);
-            t.verifyEqual(meanBMI2,meanBMI)            
+            t.verifyEqual(meanBMI2,meanBMI)
+        end
+        
+        
+        function groupsummary(t)
+            
+            Gender = [1;0;0;1;1];
+            Age = [38;43;38;40;49];
+            Height = [71;69;64;67;64];
+            Weight = [176;163;131;133;119];
+            T = table(Gender,Age,Height,Weight);
+            G = groupsummary(T,"Gender");
+            G.Properties.RowNames = compose('%d',1:height(G));
+            
+            
+            DF = frames.DataFrame.fromTable(T);
+            G2 = groupsummary(DF,"Gender");
+            t.verifyEqual(G,G2.t)
+            
+            G = groupsummary(T,"Gender","mean");
+            G.Properties.RowNames = compose('%d',1:height(G));
+            G2 = groupsummary(DF,"Gender","mean");
+            t.verifyEqual(G,G2.t)
+            
+            G = groupsummary(T,"Gender","median","Height");
+            G.Properties.RowNames = compose('%d',1:height(G));
+            G2 = groupsummary(DF,"Gender","median","Height");
+            t.verifyEqual(G,G2.t)
+            
+            
+            Smoker = [1;0;1;0;1];
+            T = table(Gender,Smoker,Weight);
+            DF = frames.DataFrame.fromTable(T);
+            
+            G = groupsummary(T,{'Gender','Smoker'},'mean','Weight');
+            G.Properties.RowNames = compose('%d',1:height(G));
+            G2 = groupsummary(DF,{'Gender','Smoker'},'mean','Weight');
+            t.verifyEqual(G,G2.t)
+            
+            G = groupsummary(T,{'Gender','Smoker'},'mean','Weight','IncludeEmptyGroups',true);
+            G.Properties.RowNames = compose('%d',1:height(G));
+            G2 = groupsummary(DF,{'Gender','Smoker'},'mean','Weight','IncludeEmptyGroups',true);
+            t.verifyEqual(G,G2.t)
+            
+            
+            TimeStamps = datetime([2017 3 4; 2017 3 2; 2017 3 15; 2017 3 10;...
+                2017 3 14; 2017 3 31; 2017 3 25;...
+                2017 3 29; 2017 3 21; 2017 3 18]);
+            Profit = [2032 3071 1185 2587 1998 2899 3112 909 2619 3085]';
+            TotalItemsSold = [14 13 8 5 10 16 8 6 7 11]';
+            TT = timetable(TimeStamps,Profit,TotalItemsSold);
+            
+            TF = frames.TimeFrame.fromTable(TT,UniqueSorted=false);
+            G = groupsummary(TT,'TotalItemsSold',[0 4 8 12 16],'mean','Profit');
+            G2 = groupsummary(TF,'TotalItemsSold',[0 4 8 12 16],'mean','Profit');
+            t.verifyEqual(G,G2)
+            
+            
+            load patients %#ok<LOAD>
+            GenderN = zeros(length(Gender),1);
+            GenderN(strcmp(Gender,'Female')) = 1;
+            Gender = GenderN;
+            T = table(Gender,Systolic,Diastolic,Height,Weight);
+            DF = frames.DataFrame.fromTable(T);
+            G = groupsummary(T,"Gender",@(x,y)xcov(x,y,0,'coeff'),{["Height","Systolic"],["Weight","Diastolic"]});
+            G.Properties.RowNames = compose('%d',1:height(G));
+            G2 = groupsummary(DF,"Gender",@(x,y)xcov(x,y,0,'coeff'),{["Height","Systolic"],["Weight","Diastolic"]});
+            t.verifyEqual(G,G2.t)
+            
         end
     end
 end

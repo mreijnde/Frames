@@ -1260,7 +1260,10 @@ classdef DataFrame
             end
             [varargout{1:nargout}] = fun(obj.t,varargin{:});
             if ~ismissing(outputClass)
-                varargout{1} = frames.(outputClass).fromTable(varargout{1});
+                datetype = varfun(@class,varargout{1},'OutputFormat','cell');
+                if all(strcmp(datetype,datetype{1}))
+                    varargout{1} = frames.(outputClass).fromTable(varargout{1});
+                end
             end
         end
     end
