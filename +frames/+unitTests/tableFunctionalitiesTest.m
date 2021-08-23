@@ -403,8 +403,60 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             
         end
         function grouptransformTest(t)
+            timeStamp = days([1 1 1 2 2 2 3 3 3]');
+            teamNumber = [1 2 3 1 2 3 1 2 3]';
+            percentComplete = [14.2 28.1 11.5 NaN NaN 19.3 46.1 51.2 30.3]';
+            T = timetable(timeStamp,teamNumber,percentComplete);
+            warning('off','frames:Index:notUnique')
+            TF = frames.TimeFrame.fromTable(T,Unique=false);
+            G = grouptransform(T,'teamNumber','linearfill','percentComplete');
+            G2 = grouptransform(TF,'teamNumber','linearfill','percentComplete');
+            t.verifyEqual(G,G2.t)
+            Gappend = grouptransform(T,'teamNumber','linearfill','percentComplete','ReplaceValues',false);
+            Gappend2 = grouptransform(TF,'teamNumber','linearfill','percentComplete','ReplaceValues',false);
+            t.verifyEqual(Gappend,Gappend2.t)
+            warning('on','frames:Index:notUnique')
+            
+            timeStamps = datetime([2017 3 4; 2017 3 2; 2017 3 15; 2017 3 10;...
+                2017 3 14; 2017 3 31; 2017 3 25;...
+                2017 3 29; 2017 3 21; 2017 3 18]);
+            profit = [2032 3071 1185 2587 1998 2899 3112 909 2619 3085]';
+            T = timetable(timeStamps,profit);
+            TF = frames.TimeFrame.fromTable(T,UniqueSorted=false);
+            G = grouptransform(T,'timeStamps','dayname','norm');
+            G2 = grouptransform(TF,'timeStamps','dayname','norm');
+            t.verifyEqual(G,G2)
+            
         end
         function groupcountsTest(t)
+            Gender = [1;0;0;1;1];
+            Smoker = [1;0;1;0;1];
+            Weight = [176;163;131;133;119];
+            T = table(Gender,Smoker,Weight);
+            DF = frames.DataFrame.fromTable(T);
+            G1 = groupcounts(T,'Gender');
+            G1x = groupcounts(DF,'Gender');
+            G1.Properties.RowNames = compose('%d',1:height(G1));
+            t.verifyEqual(G1,G1x.t)
+            G2 = groupcounts(T,{'Gender','Smoker'},'IncludeEmptyGroups',true);
+            G2x = groupcounts(DF,{'Gender','Smoker'},'IncludeEmptyGroups',true);
+            G2.Properties.RowNames = compose('%d',1:height(G2));
+            t.verifyEqual(G2,G2x.t)
+            
+            TimeStamps = datetime([2017 3 4; 2017 3 2; 2017 3 15; 2017 3 10;...
+                2017 3 14; 2017 3 31; 2017 3 25;...
+                2017 3 29; 2017 3 21; 2017 3 18]);
+            Profit = [2032 3071 1185 2587 1998 2899 3112 909 2619 3085]';
+            TotalItemsSold = [14 13 8 5 10 16 8 6 7 11]';
+            TT = timetable(TimeStamps,Profit,TotalItemsSold);
+            TF = frames.TimeFrame.fromTable(TT,UniqueSorted=false);
+            G = groupcounts(TT,'TotalItemsSold',[0 4 8 12 16]);
+            G2 = groupcounts(TF,'TotalItemsSold',[0 4 8 12 16]);
+            t.verifyEqual(G,G2)
+            G = groupcounts(TT,'TimeStamps','dayname');
+            G2 = groupcounts(TF,'TimeStamps','dayname');
+            t.verifyEqual(G,G2)
+            
         end
     end
 end

@@ -1262,7 +1262,7 @@ classdef DataFrame
             if ~ismissing(outputClass)
                 datetype = varfun(@class,varargout{1},'OutputFormat','cell');
                 if all(strcmp(datetype,datetype{1}))
-                    varargout{1} = frames.(outputClass).fromTable(varargout{1});
+                    varargout{1} = frames.(outputClass).fromTable(varargout{1},Unique=false);
                 end
             end
         end
@@ -1305,6 +1305,8 @@ classdef DataFrame
             arguments
                 t {mustBeA(t,'table')}
                 nameValue.keepCellstr (1,1) logical = false
+                nameValue.Unique (1,1) logical = false
+                nameValue.UniqueSorted (1,1) logical = false                
             end
             cols = t.Properties.VariableNames;
             idx = t.Properties.RowNames;
@@ -1314,6 +1316,8 @@ classdef DataFrame
             end
             if isempty(idx), idx = []; end
             df = frames.DataFrame(t.Variables,idx,cols);
+            df.index_.requireUniqueSorted = nameValue.UniqueSorted;
+            df.index_.requireUnique = nameValue.Unique;
             df.index_.name = string(t.Properties.DimensionNames{1});
         end
     end
