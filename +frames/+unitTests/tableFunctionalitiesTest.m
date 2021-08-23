@@ -1,13 +1,5 @@
 classdef tableFunctionalitiesTest < matlab.unittest.TestCase
     
-    properties
-        
-    end
-    %         function varargout = groupfilter(obj,varargin)
-    %         function varargout = grouptransform(obj,varargin)
-    %         function varargout = groupsummary(obj,varargin)
-    %         function varargout = groupcounts(obj,varargin)
-    
     methods(Test)
         function joinTest(t)
             % Append Values from One Table to Another
@@ -344,6 +336,75 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             G2 = groupsummary(DF,"Gender",@(x,y)xcov(x,y,0,'coeff'),{["Height","Systolic"],["Weight","Diastolic"]});
             t.verifyEqual(G,G2.t)
             
+        end
+        
+        function groupfilterTest(t)
+            
+            groupID = [1 1 1 2 2 3]';
+            sample = [3 1 2 9 8 5]';
+            T = table(groupID,sample);
+            T.Properties.RowNames = compose('%d',1:height(T));
+            
+            DF = frames.DataFrame.fromTable(T);
+            Gnumel = groupfilter(T,'groupID',@(x) numel(x) > 2);
+            
+            Gnumel2 = groupfilter(DF,'groupID',@(x) numel(x) > 2);
+            t.verifyEqual(Gnumel,Gnumel2.t)
+            
+            Gvals = groupfilter(T,'groupID',@(x) min(x) > 0 && max(x) < 6);
+            Gvals2 = groupfilter(DF,'groupID',@(x) min(x) > 0 && max(x) < 6);
+            t.verifyEqual(Gvals,Gvals2.t)
+            
+            
+            daynum = [1 1 1 1 2 2 2 2]';
+            temp = [67 65 71 55 61 79 58 78]';
+            T = table(daynum,temp);
+            T.Properties.RowNames = compose('%d',1:height(T));
+            DF = frames.DataFrame.fromTable(T);
+            G = groupfilter(T,'daynum',@(x) ismember(x,maxk(x,2)));
+            G2 = groupfilter(DF,'daynum',@(x) ismember(x,maxk(x,2)));
+            t.verifyEqual(G,G2.t)
+            
+            timeStamps = datetime([2017 3 4; 2017 3 2; 2017 3 15; 2017 4 10;...
+                2017 4 14; 2017 4 30; 2017 5 25;...
+                2017 5 29; 2017 5 21]);
+            profit = [2032 3071 1185 2587 1998 2899 3112 909 2619]';
+            T = timetable(timeStamps,profit);
+            TF = frames.TimeFrame.fromTable(T,UniqueSorted=false);
+            Gmax = groupfilter(T,'timeStamps','month',@(x) x == max(x));
+            Gmax2 = groupfilter(TF,'timeStamps','month',@(x) x == max(x));
+            t.verifyEqual(Gmax,Gmax2)
+            
+            Gavg = groupfilter(T,'timeStamps','month',@(x) mean(x) > 2300);
+            Gavg2 = groupfilter(TF,'timeStamps','month',@(x) mean(x) > 2300);
+            t.verifyEqual(Gavg,Gavg2)
+            
+            
+            groupID = [1 2 3 1 2 3 1 2 3]';
+            heightx = [62 61 59 66 70 72 57 67 71]';
+            gender = ["M" "F" "F" "M" "M" "F" "M" "M" "M"]';
+            genderN = zeros(length(gender),1);
+            genderN(gender=="M") = 1;
+            gender = genderN;
+            T = table(groupID,heightx,gender);
+            T.Properties.RowNames = compose('%d',1:height(T));
+            
+            DF = frames.DataFrame.fromTable(T);
+            G1 = groupfilter(T,'groupID',@(x) min(x) >= 60,'heightx');
+            G1x = groupfilter(DF,'groupID',@(x) min(x) >= 60,'heightx');
+            t.verifyEqual(G1,G1x.t)
+            
+            G2 = groupfilter(T,'groupID',@(x) all(x == 1),'gender');
+            G2x = groupfilter(DF,'groupID',@(x) all(x == 1),'gender');
+            t.verifyEqual(G2,G2x.t)
+            G3 = groupfilter(T,{'groupID','gender'},@(x) x == max(x));
+            G3x = groupfilter(DF,{'groupID','gender'},@(x) x == max(x));
+            t.verifyEqual(G3,G3x.t)
+            
+        end
+        function grouptransformTest(t)
+        end
+        function groupcountsTest(t)
         end
     end
 end
