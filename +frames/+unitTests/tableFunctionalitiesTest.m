@@ -7,8 +7,6 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
     %         function varargout = grouptransform(obj,varargin)
     %         function varargout = groupsummary(obj,varargin)
     %         function varargout = groupcounts(obj,varargin)
-    %         function varargout = findgroups(obj,varargin)
-    %         function varargout = splitapply(obj,fun,groups)
     
     methods(Test)
         function joinTest(t)
@@ -236,7 +234,6 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             DFright = frames.DataFrame.fromTable(B);
             [DF,ia2] = setdiff(DFleft,DFright);
             t.verifyEqual({DF.t,ia2},{C,ia})
-            
         end
         
         function setxorTest(t)
@@ -247,7 +244,38 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             DFright = frames.DataFrame.fromTable(B);
             DF = setxor(DFleft,DFright);
             t.verifyEqual(DF.t,C)
+        end
+        
+        function findgroupsTest(t)
+            load patients %#ok<LOAD>
+            T = table(Gender,compose('%d',Smoker));
+            [G,TID] = findgroups(T);
+            TID.Properties.RowNames = compose('%d',1:height(TID));
+            DF = frames.DataFrame.fromTable(T);
+            [G2,TID2] = findgroups(DF);
+            t.verifyEqual({G,TID},{G2,TID2.t})
             
+            T = timetable(Gender,compose('%d',Smoker),'RowTimes',seconds(1:length(Gender))');
+            [G,TID] = findgroups(T);
+            TID.Properties.RowNames = compose('%d',1:height(TID));
+            DF = frames.TimeFrame.fromTable(T);
+            [G2,TID2] = findgroups(DF);
+            t.verifyEqual({G,TID},{G2,TID2.t})
+        end
+        
+        function splitapplyTest(t)
+            load patients %#ok<LOAD>
+            DT = table(Height,Weight);
+            GT = table(Gender,compose('%d',Smoker));
+            meanBMIFcn = @(h,w)mean((w ./ (h.^2)) * 703);
+            G = findgroups(GT);
+            meanBMI = splitapply(meanBMIFcn,DT,G);
+            
+            DFDT = frames.DataFrame.fromTable(DT);
+            DFGT = frames.DataFrame.fromTable(GT);
+            G2 = findgroups(DFGT);
+            meanBMI2 = DFDT.splitapply(meanBMIFcn,G2);
+            t.verifyEqual(meanBMI2,meanBMI)            
         end
     end
 end

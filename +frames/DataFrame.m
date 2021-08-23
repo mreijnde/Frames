@@ -620,6 +620,9 @@ classdef DataFrame
         function varargout = findgroups(obj,varargin)
             % cf table findgroups
             [varargout{1:nargout}] = obj.tableFunctions(@findgroups,missing,varargin{:});
+            if nargout == 2
+                varargout{2} = frames.DataFrame.fromTable(varargout{2});
+            end
         end
         function varargout = splitapply(obj,fun,groups)
             % cf table splitapply
