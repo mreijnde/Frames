@@ -591,7 +591,7 @@ classdef DataFrame
         end
         function varargout = ismember(obj,df2,varargin)
             % cf table ismember
-            [varargout{1:nargout}] = obj.tableFunctions(@ismember,[],df2.t,varargin{:});
+            [varargout{1:nargout}] = obj.tableFunctions(@ismember,NaN,df2.t,varargin{:});
         end
         function varargout = setdiff(obj,df2,varargin)
             % cf table setdiff
