@@ -1086,6 +1086,10 @@ classdef DataFrame
         
         function obj = iloc_(obj,idxPosition,colPosition,userCall)
             if nargin < 4, userCall=false; end
+            if userCall
+                assert(isvector(idxPosition) && isvector(colPosition), 'frames:iloc:notvectors', ...
+                    'Selectors must be vectors.')
+            end
             if ~iscolon(idxPosition)
                 if ~userCall || islogical(idxPosition)
                     obj.index_.value_ = obj.index_.value_(idxPosition);
@@ -1149,7 +1153,22 @@ classdef DataFrame
             if ~fromPosition
                 [index,columns] = localizeSelectors(obj,index,columns);
             end
+            if ~isvector(index) && islogical(index) && all(size(index)==size(obj.data_)) && iscolon(columns)
+                obj.data_(index) = data;
+                return
+            end
+            assert(isvector(index) && isvector(columns), 'frames:modify:notvectors', ...
+                'Selectors must be vectors.')
+            sizeDataBefore = size(obj.data_);
             obj.data_(index,columns) = data;
+            
+            badIndexing = size(obj.data_) > sizeDataBefore;
+            if badIndexing(1)
+                error('frames:modify:badIndex','Row index exceeds frame dimensions')
+            elseif badIndexing(2)
+                error('frames:modify:badColumns','Column index exceeds frame dimensions')
+            end
+            
             if isequal(data,[])
                 if iscolon(columns)
                     % matrix(:,:)=[] returns a 0xN matrix, so if both index
