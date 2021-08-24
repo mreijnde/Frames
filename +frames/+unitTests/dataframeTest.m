@@ -360,6 +360,26 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@() df{[2 1]},'frames:Index:requireSortedFail')
         end
         
+        function modifyIlocFailTest(t)
+            df = frames.DataFrame([1 2;3 4]);
+            
+            t.verifyError(@selTooLarge,'MATLAB:badsubscript')
+            function selTooLarge, df{[true true false true],:}; end %#ok<VUNUS>
+            t.verifyError(@selNotVector,'frames:iloc:notvectors')
+            function selNotVector, df{[true false; true true]}; end %#ok<VUNUS>
+            
+            t.verifyError(@modNotVector,'frames:modify:notvectors')
+            function modNotVector, df{[true false; true true; false false]} = 44; end
+            t.verifyError(@modExceed,'frames:modify:badIndex')
+            function modExceed, df{[true false true true]} = 44; end
+            t.verifyError(@modExceed2,'frames:modify:notvectors')
+            function modExceed2, df{[true false; true true],true} = 44; end
+            
+            df{[true false; true true]} = 44;
+            t.verifyEqual(df,frames.DataFrame([44 2;44 44]))
+                        
+        end
+        
         function setIndexTest(t)
             df = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
             df = df.setIndex("Var3");
@@ -809,6 +829,13 @@ classdef dataframeTest < matlab.unittest.TestCase
             series=df2.asRowSeries();
             t.verifyEqual(df==series,frames.DataFrame([true true;true true]))
             t.verifyError(@()df==df2,'frames:elementWiseHandler:differentIndex')
+            
+            df1 = frames.DataFrame([1 NaN]);
+            t.verifyEqual(df1==df2,frames.DataFrame([true false]));
+            t.verifyEqual(df1.data==df2,frames.DataFrame([true false]));
+            dfs = frames.DataFrame({'cc' 'aa'});
+            t.verifyEqual(dfs==dfs,frames.DataFrame([true true]));
+            t.verifyEqual('cc'==dfs,frames.DataFrame([true false]));
         end
         
         function anyTest(t)

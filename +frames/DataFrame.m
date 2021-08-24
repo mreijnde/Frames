@@ -628,16 +628,28 @@ classdef DataFrame
             % cf table splitapply
             [varargout{1:nargout}] = splitapply(fun,obj.t,groups);
         end
+        
+        function [obj,idx] = sortrows(obj,varargin)
+            % cf table sortrows
+            [tb,idx] = sortrows(obj.t,varargin{:});
+            obj.data = tb.Variables;
+            obj.index_.requireUniqueSorted = false;
+            obj.index_.value_ = obj.index_.value_(idx);
+        end
+        function bool = issortedrows(obj,varargin)
+            % cf table issortedrows
+            bool = issortedrows(obj.t,varargin{:});
+        end
         %==================================================================
         
-        function other = sortBy(obj,columnName)
+        function [other,sortedID] = sortBy(obj,columnName)
             % sort frame from a column
             col = obj.loc_(':',columnName);
             [~,sortedID] = sort(col.data);
             obj.index_.requireUniqueSorted = false;
             other = obj.iloc_(sortedID,':');
         end
-        function obj = sortIndex(obj)
+        function [obj,sortedID] = sortIndex(obj)
             % sort frame from the index
             [obj.index_.value_,sortedID] = sort(obj.index_.value_);
             obj.data_ = obj.data_(sortedID,:);
@@ -864,7 +876,7 @@ classdef DataFrame
         function obj = ceil(obj), obj.data_ = ceil(obj.data_); end
         function obj = sign(obj), obj.data_ = sign(obj.data_); end
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
-        function obj = ismissing(obj), obj.data_ = ismissing(obj.data_); end
+        function obj = ismissing(obj,varargin), obj.data_ = ismissing(obj.data_,varargin{:}); end
         
         function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
@@ -1074,6 +1086,10 @@ classdef DataFrame
         
         function obj = iloc_(obj,idxPosition,colPosition,userCall)
             if nargin < 4, userCall=false; end
+            if userCall
+                assert(isvector(idxPosition) && isvector(colPosition), 'frames:iloc:notvectors', ...
+                    'Selectors must be vectors.')
+            end
             if ~iscolon(idxPosition)
                 if ~userCall || islogical(idxPosition)
                     obj.index_.value_ = obj.index_.value_(idxPosition);
@@ -1137,7 +1153,22 @@ classdef DataFrame
             if ~fromPosition
                 [index,columns] = localizeSelectors(obj,index,columns);
             end
+            if ~isvector(index) && islogical(index) && all(size(index)==size(obj.data_)) && iscolon(columns)
+                obj.data_(index) = data;
+                return
+            end
+            assert(isvector(index) && isvector(columns), 'frames:modify:notvectors', ...
+                'Selectors must be vectors.')
+            sizeDataBefore = size(obj.data_);
             obj.data_(index,columns) = data;
+            
+            badIndexing = size(obj.data_) > sizeDataBefore;
+            if badIndexing(1)
+                error('frames:modify:badIndex','Row index exceeds frame dimensions')
+            elseif badIndexing(2)
+                error('frames:modify:badColumns','Column index exceeds frame dimensions')
+            end
+            
             if isequal(data,[])
                 if iscolon(columns)
                     % matrix(:,:)=[] returns a 0xN matrix, so if both index
@@ -1385,9 +1416,19 @@ classdef DataFrame
             other = operator(@ge,@elementWiseHandler,df1,df2);
         end
         function bool = eq(df1,df2)
+            if isFrame(df1) && istext(df1.data)
+                df1.data = string(df1.data);
+            elseif istext(df1)
+                df1 = string(df1);
+            end
             bool = operator(@eq,@elementWiseHandler,df1,df2);
         end
         function bool = ne(df1,df2)
+            if isFrame(df1) && istext(df1.data)
+                df1.data = string(df1.data);
+            elseif istext(df1)
+                df1 = string(df1);
+            end
             bool = operator(@ne,@elementWiseHandler,df1,df2);
         end
         function other = and(df1,df2)
