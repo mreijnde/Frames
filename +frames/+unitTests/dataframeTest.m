@@ -809,6 +809,13 @@ classdef dataframeTest < matlab.unittest.TestCase
             series=df2.asRowSeries();
             t.verifyEqual(df==series,frames.DataFrame([true true;true true]))
             t.verifyError(@()df==df2,'frames:elementWiseHandler:differentIndex')
+            
+            df1 = frames.DataFrame([1 NaN]);
+            t.verifyEqual(df1==df2,frames.DataFrame([true false]));
+            t.verifyEqual(df1.data==df2,frames.DataFrame([true false]));
+            dfs = frames.DataFrame({'cc' 'aa'});
+            t.verifyEqual(dfs==dfs,frames.DataFrame([true true]));
+            t.verifyEqual('cc'==dfs,frames.DataFrame([true false]));
         end
         
         function anyTest(t)

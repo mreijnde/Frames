@@ -1397,9 +1397,19 @@ classdef DataFrame
             other = operator(@ge,@elementWiseHandler,df1,df2);
         end
         function bool = eq(df1,df2)
+            if isFrame(df1) && istext(df1.data)
+                df1.data = string(df1.data);
+            elseif istext(df1)
+                df1 = string(df1);
+            end
             bool = operator(@eq,@elementWiseHandler,df1,df2);
         end
         function bool = ne(df1,df2)
+            if isFrame(df1) && istext(df1.data)
+                df1.data = string(df1.data);
+            elseif istext(df1)
+                df1 = string(df1);
+            end
             bool = operator(@ne,@elementWiseHandler,df1,df2);
         end
         function other = and(df1,df2)
