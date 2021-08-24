@@ -628,16 +628,28 @@ classdef DataFrame
             % cf table splitapply
             [varargout{1:nargout}] = splitapply(fun,obj.t,groups);
         end
+        
+        function [obj,idx] = sortrows(obj,varargin)
+            % cf table sortrows
+            [tb,idx] = sortrows(obj.t,varargin{:});
+            obj.data = tb.Variables;
+            obj.index_.requireUniqueSorted = false;
+            obj.index_.value_ = obj.index_.value_(idx);
+        end
+        function bool = issortedrows(obj,varargin)
+            % cf table issortedrows
+            bool = issortedrows(obj.t,varargin{:});
+        end
         %==================================================================
         
-        function other = sortBy(obj,columnName)
+        function [other,sortedID] = sortBy(obj,columnName)
             % sort frame from a column
             col = obj.loc_(':',columnName);
             [~,sortedID] = sort(col.data);
             obj.index_.requireUniqueSorted = false;
             other = obj.iloc_(sortedID,':');
         end
-        function obj = sortIndex(obj)
+        function [obj,sortedID] = sortIndex(obj)
             % sort frame from the index
             [obj.index_.value_,sortedID] = sort(obj.index_.value_);
             obj.data_ = obj.data_(sortedID,:);
@@ -864,7 +876,7 @@ classdef DataFrame
         function obj = ceil(obj), obj.data_ = ceil(obj.data_); end
         function obj = sign(obj), obj.data_ = sign(obj.data_); end
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
-        function obj = ismissing(obj), obj.data_ = ismissing(obj.data_); end
+        function obj = ismissing(obj,varargin), obj.data_ = ismissing(obj.data_,varargin{:}); end
         
         function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
         % SUM sum through the desired dimension, returns a series

@@ -1,5 +1,5 @@
 classdef tableFunctionalitiesTest < matlab.unittest.TestCase
-    
+    %Examples from Matlab public documentation
     methods(Test)
         function joinTest(t)
             % Append Values from One Table to Another
@@ -191,12 +191,8 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             t.verifyEqual(intr,Lia)
             t.verifyEqual(logical([1 0 1 0 1]'),Lia)
             
-            
-            
-            % ismember timetable does not look at rowTimes (but the help claims
-            % otherwise??)
             A = timetable({'A';'B';'C';'D';'E'},compose('%d',[0;1;0;1;0]),'RowTimes',seconds((1:5)'));
-            B = timetable({'A';'C';'E';'G';'E'},compose('%d',zeros(5,1)),'RowTimes',seconds((1:2:10)'));
+            B = timetable({'A';'C';'E';'G';'F'},compose('%d',zeros(5,1)),'RowTimes',seconds((1:2:10)'));
             TTia = ismember(A,B);
             DFleft = frames.TimeFrame.fromTable(A);
             DFright = frames.TimeFrame.fromTable(B);
@@ -456,6 +452,61 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             G = groupcounts(TT,'TimeStamps','dayname');
             G2 = groupcounts(TF,'TimeStamps','dayname');
             t.verifyEqual(G,G2)
+            
+        end
+        
+        function issortedrowsTest(t)
+            LastName = {'Sweet';'Jacobson';'Wang';'Joiner';'Berger'};
+            Age = [38;38;40;43;49];
+            Height = [69;71;64;67;64];
+            Weight = [176;163;131;133;119];
+            BloodPressure = [124; 109; 125; 117; 122];
+            
+            tblA = table(Age,Height,Weight,BloodPressure,'RowNames',LastName);
+            DF = frames.DataFrame.fromTable(tblA);
+            t.verifyTrue(issortedrows(DF))
+            t.verifyFalse(issortedrows(DF,'RowNames'))
+            t.verifyTrue(issortedrows(DF,{'Age','Weight'},{'ascend','descend'}))
+            
+            Time = seconds(1:5)';
+            TT = timetable(Time,[98;97.5;97.9;98.1;99.9],[120;111;119;117;112],...
+                'VariableNames',{'Temperature','Distance'});
+            TF = frames.TimeFrame.fromTable(TT);
+            t.verifyTrue(issortedrows(TF,'Time','MissingPlacement','last'))
+        end
+        
+        function sortrows(t)
+            LastName = {'Smith';'Johnson';'Williams';'Jones';'Brown'};
+            Age = [38;43;38;40;49];
+            Height = [71;69;64;67;64];
+            Weight = [176;163;131;133;119];
+            BloodPressure = [124; 109; 125; 117; 122];
+            
+            tblA = table(Age,Height,Weight,BloodPressure,'RowNames',LastName);
+            DF = frames.DataFrame.fromTable(tblA);
+            [DF2,index2] = sortrows(DF,'RowNames');
+            [DF3,index3] = DF.sortIndex();
+            t.verifyEqual({DF2,index2},{DF3,index3})
+            
+            [tblB,indexB] = sortrows(tblA,"Height");
+            [DF2,index2] = DF.sortrows("Height");
+            [DF3,index3] = DF.sortBy("Height");
+            t.verifyEqual({DF2,index2},{DF3,index3})
+            t.verifyEqual({tblB,indexB},{DF3.t,index3})
+            
+            Weight = [176;NaN;131;133;NaN];
+            tblA = table(Age,Height,Weight,BloodPressure,'RowNames',LastName);
+            DF = frames.DataFrame.fromTable(tblA);
+            tblB = sortrows(tblA,'Weight','MissingPlacement','first');
+            DFb = sortrows(DF,'Weight','MissingPlacement','first');
+            t.verifyEqual(tblB,DFb.t)
+            
+            TimeDuration = [hours(3) hours(2) hours(1) hours(5) hours(6)]';
+            TT = timetable(TimeDuration,[98;97.5;97.9;98.1;101],[120;111;119;117;118]);
+            TF = frames.TimeFrame.fromTable(TT,UniqueSorted=false);
+            B = sortrows(TT,'TimeDuration');
+            C = TF.sortIndex();
+            t.verifyEqual(C.t,B)
             
         end
     end
