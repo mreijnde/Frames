@@ -27,6 +27,21 @@ The distinction between the two is similar to that between Matlab native `table`
 
 The package is compatible with **Matlab R2021a** and later versions. No other toolbox is required.
 
+## When to use frames versus tables
+Use a frame when:
+- your data has a homogeneous type (e.g. a matrix of doubles, of strings, of cellstr, etc.)
+- you want to use matrix operations in a robust way (plus, times, mtimes, etc.)
+- your data contains missing values, and you want to handle them directly (cf. dropMissing, ffill, resample) or you want your calculations not to be messed up by them (cumprod, sum, relChange, etc. ignore NaNs, but keep them in the result where they appeared, instead of replacing them by zero or applying a forward fill like Matlab does)
+- you care about simple code, the fewer lines the better (e.g. dataFrame.log().plot() plots the logarithm of your dataFrame with a minimum of code)
+- you need the index (or columns) to have properties forcing it to be all the time sorted, or unique, or on the contrary allow it to have duplicate values. Tables only allow unique values (except for the index of timetables which can contain duplicates).
+- you want to use a specific method in frames (e.g. you work with time series and want to access the rolling and ewm computations)
+
+Use a table when:
+- your data is heterogeneous (i.e. variables have mixed types) and needs to stay that way (e.g. for SQL-like operations of joining and grouping)
+- your variables can contain a matrix themselves, and not only a column vector
+- you want to use a specific method or property in tables (note: most table methods are found in frames; plus, dataFrame.t returns a table type of the frame)
+
+
 ## Demo and documentation
 A demo is available in [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) and can be also found in the live script format [framesDemo.mlx](framesDemo.mlx).
 
