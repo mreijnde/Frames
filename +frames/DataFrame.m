@@ -512,7 +512,7 @@ classdef DataFrame
             end
             other.data_ = dataH;
             other.columns_ = columnsNew;
-            other.name_ = ""; other.description = "";
+            other = other.resetUserProperties();
         end
         function other = vertcat(obj,varargin)
             % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
@@ -568,7 +568,7 @@ classdef DataFrame
             end
             other.data_ = dataV;
             other.index_ = idxNew;
-            other.name_ = ""; other.description = "";
+            other = other.resetUserProperties();
         end
         
         %==================================================================
