@@ -380,6 +380,20 @@ classdef dataframeTest < matlab.unittest.TestCase
                         
         end
         
+        function equivalentSubsasgnBoolTest(t)
+            df = frames.DataFrame([-1 3; -2 4]);
+            df2 = df;
+            df{df<0} = NaN;
+            df2{df2.data<0} = NaN;
+            t.verifyEqual(df,df2)
+            t.verifyEqual(df,frames.DataFrame([NaN 3;NaN 4]))
+        end
+        
+        function oneifyTest(t)
+            t.verifyEqual(frames.DataFrame([2 NaN]).oneify(),frames.DataFrame([1 NaN]))
+            t.verifyEqual(frames.DataFrame(string([2 NaN])).oneify(),frames.DataFrame(["" string(missing)]))
+        end
+        
         function setIndexTest(t)
             df = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
             df = df.setIndex("Var3");

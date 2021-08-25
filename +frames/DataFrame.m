@@ -360,12 +360,12 @@ classdef DataFrame
             newIndex = obj.index_.union(valuesToAdd);
             newData = obj.defaultData(length(newIndex),length(obj.columns_));
             
-            if obj.index_.requireUnique_
+            if obj.index_.requireUniqueSorted_
                 idx = obj.index_.positionIn(newIndex.value);
-                newData(idx,:) = obj.data_;
             else
-                newData(1:length(obj.index_),:) = obj.data_;
+                idx = 1:length(obj.index_);
             end
+            newData(idx,:) = obj.data_;
             
             other = obj;
             other.data_ = newData;
@@ -383,12 +383,12 @@ classdef DataFrame
             newColumns = obj.columns_.union(valuesToAdd);
             newData = obj.defaultData(length(obj.index_),length(newColumns));
             
-            if obj.columns_.requireUnique_
+            if obj.columns_.requireUniqueSorted_
                 col = obj.columns_.positionIn(newColumns.value);
-                newData(:,col) = obj.data_;
             else
-                newData(:,1:length(obj.columns_)) = obj.data_;
+                col = 1:length(obj.columns_);
             end
+            newData(:,col) = obj.data_;
             
             other = obj;
             other.data_ = newData;
@@ -886,6 +886,18 @@ classdef DataFrame
         function obj = sign(obj), obj.data_ = sign(obj.data_); end
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
         function obj = ismissing(obj,varargin), obj.data_ = ismissing(obj.data_,varargin{:}); end
+        function obj = oneify(obj)
+        % replace non missing values by a default value (1 for double, "" for strings)
+            switch class(obj.data_)
+                case 'double'
+                    v = 1;
+                case 'string'
+                    v = "";
+                otherwise
+                    error('Default value not implemented for %s.', class(obj.data_))
+            end
+            obj.data_(~ismissing(obj.data_)) = v;
+        end
         
         function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
