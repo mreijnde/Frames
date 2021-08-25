@@ -280,6 +280,10 @@ classdef DataFrame
             obj.index = obj.data(:,ismember(obj.columns,colName));
             obj = obj.dropColumns(colName);
         end
+        function obj = resetUserProperties(obj)
+            obj.name_ = "";
+            obj.description = "";
+        end
         
         function t = head(obj, varargin); t = head(obj.t,varargin{:}); end
         % returns the first rows of the table
@@ -707,6 +711,10 @@ classdef DataFrame
             % * WholeIndex : logical, default false
             %       if true, plot the whole index, even when data is missing
             %       otherwise, plot only when data is valid
+            % ----------------
+            % Output            [f,p]
+            % f             : figure
+            % p             : plot
             arguments
                 obj
                 params.Title {mustBeTextScalar} = obj.name
@@ -721,7 +729,7 @@ classdef DataFrame
             
             useIndex = obj.index_.issorted() && ...
                 (isnumeric(obj.index) || isdatetime(obj.index));  % any type that can be shown on the x axis
-            figure()
+            f = figure();
             if useIndex
                 args = {obj.index,obj.data};
             else
@@ -735,14 +743,15 @@ classdef DataFrame
             if ~useIndex, xtick([]); end
             grid on
             title(params.Title)
-            if params.Legend
+            if params.Legend && ~any(ismissing(obj.columns_.value_))
                 cols = string(obj.columns);
                 legend(cols,Location='Best');
             end
             if params.WholeIndex
                 xlim([obj.index(1),obj.index(end)])
             end
-            if nargout == 1, varargout{1} = p; end
+            if nargout >= 1, varargout{1} = f; end
+            if nargout >= 2, varargout{2} = p; end
         end
         function varargout = heatmap(obj,varargin)
             % plot a heatmap of the frame

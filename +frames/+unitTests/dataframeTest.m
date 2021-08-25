@@ -699,7 +699,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(x4,expected)
             x5 = df.split(g,["d","e"]).apply(@(x) x.sum(2));
             t.verifyEqual(x5,frames.DataFrame([6 2 4;2 5 3]',[6 2 1],["d","e"]))
-            
+            x6 = df.split(g,["d","e"]).apply(@(x) sum(x.data,2));
+            t.verifyEqual(x6,x5)
+            x7 = df.split(g,["d","e"]).apply(@(x) x.data);
+            t.verifyEqual(x7,df(:,[g.d,g.e]))
+
             % returns a not series (even if applied function does)
             notseries = frames.DataFrame(1).split({"Var1"},"a").apply(@(x) x.sum(2)); %#ok<STRSCALR>
             t.verifyEqual(notseries,frames.DataFrame(1,[],"a"))
