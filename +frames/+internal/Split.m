@@ -83,15 +83,29 @@ classdef Split < dynamicprops
                     warning('off','frames:Index:notUnique')
                     res = [res,res_]; %#ok<AGROW>
                 end
-                if length(res_.columns_) > 1
+                if (frames.internal.isFrame(res_) && ~res_.colseries) ...
+                        || (~frames.internal.isFrame(res_) && size(res_,2)>1)
                     isVectorOutput = false;
                 end
             end
-            if isVectorOutput
-                res.columns_.singleton_ = false;
-                res.columns = props;
+            if ~frames.internal.isFrame(res)
+                constructor = str2func(class(obj.(props{1})));
+                if isVectorOutput
+                    cols = props;
+                else
+                    cols = obj.(props{1}).getColumns_();
+                    for ii = 2:length(props)
+                        cols = [cols; obj.(props{ii}).getColumns_()]; %#ok<AGROW>
+                    end
+                end
+                res = constructor(res,obj.(props{1}).index_,cols);
+            else
+                if isVectorOutput
+                    res.columns_.singleton_ = false;
+                    res.columns = props;
+                end
             end
-            res.name = "";
+            res = res.resetUserProperties();
             warning('on','frames:Index:notUnique')
         end
     end

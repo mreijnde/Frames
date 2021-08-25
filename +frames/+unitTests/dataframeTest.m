@@ -380,6 +380,20 @@ classdef dataframeTest < matlab.unittest.TestCase
                         
         end
         
+        function equivalentSubsasgnBoolTest(t)
+            df = frames.DataFrame([-1 3; -2 4]);
+            df2 = df;
+            df{df<0} = NaN;
+            df2{df2.data<0} = NaN;
+            t.verifyEqual(df,df2)
+            t.verifyEqual(df,frames.DataFrame([NaN 3;NaN 4]))
+        end
+        
+        function oneifyTest(t)
+            t.verifyEqual(frames.DataFrame([2 NaN]).oneify(),frames.DataFrame([1 NaN]))
+            t.verifyEqual(frames.DataFrame(string([2 NaN])).oneify(),frames.DataFrame(["" string(missing)]))
+        end
+        
         function setIndexTest(t)
             df = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
             df = df.setIndex("Var3");
@@ -699,7 +713,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(x4,expected)
             x5 = df.split(g,["d","e"]).apply(@(x) x.sum(2));
             t.verifyEqual(x5,frames.DataFrame([6 2 4;2 5 3]',[6 2 1],["d","e"]))
-            
+            x6 = df.split(g,["d","e"]).apply(@(x) sum(x.data,2));
+            t.verifyEqual(x6,x5)
+            x7 = df.split(g,["d","e"]).apply(@(x) x.data);
+            t.verifyEqual(x7,df(:,[g.d,g.e]))
+
             % returns a not series (even if applied function does)
             notseries = frames.DataFrame(1).split({"Var1"},"a").apply(@(x) x.sum(2)); %#ok<STRSCALR>
             t.verifyEqual(notseries,frames.DataFrame(1,[],"a"))

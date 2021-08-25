@@ -280,6 +280,10 @@ classdef DataFrame
             obj.index = obj.data(:,ismember(obj.columns,colName));
             obj = obj.dropColumns(colName);
         end
+        function obj = resetUserProperties(obj)
+            obj.name_ = "";
+            obj.description = "";
+        end
         
         function t = head(obj, varargin); t = head(obj.t,varargin{:}); end
         % returns the first rows of the table
@@ -356,12 +360,12 @@ classdef DataFrame
             newIndex = obj.index_.union(valuesToAdd);
             newData = obj.defaultData(length(newIndex),length(obj.columns_));
             
-            if obj.index_.requireUnique_
+            if obj.index_.requireUniqueSorted_
                 idx = obj.index_.positionIn(newIndex.value);
-                newData(idx,:) = obj.data_;
             else
-                newData(1:length(obj.index_),:) = obj.data_;
+                idx = 1:length(obj.index_);
             end
+            newData(idx,:) = obj.data_;
             
             other = obj;
             other.data_ = newData;
@@ -379,12 +383,12 @@ classdef DataFrame
             newColumns = obj.columns_.union(valuesToAdd);
             newData = obj.defaultData(length(obj.index_),length(newColumns));
             
-            if obj.columns_.requireUnique_
+            if obj.columns_.requireUniqueSorted_
                 col = obj.columns_.positionIn(newColumns.value);
-                newData(:,col) = obj.data_;
             else
-                newData(:,1:length(obj.columns_)) = obj.data_;
+                col = 1:length(obj.columns_);
             end
+            newData(:,col) = obj.data_;
             
             other = obj;
             other.data_ = newData;
@@ -508,7 +512,7 @@ classdef DataFrame
             end
             other.data_ = dataH;
             other.columns_ = columnsNew;
-            other.name_ = ""; other.description = "";
+            other = other.resetUserProperties();
         end
         function other = vertcat(obj,varargin)
             % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
@@ -564,7 +568,7 @@ classdef DataFrame
             end
             other.data_ = dataV;
             other.index_ = idxNew;
-            other.name_ = ""; other.description = "";
+            other = other.resetUserProperties();
         end
         
         %==================================================================
@@ -707,6 +711,10 @@ classdef DataFrame
             % * WholeIndex : logical, default false
             %       if true, plot the whole index, even when data is missing
             %       otherwise, plot only when data is valid
+            % ----------------
+            % Output            [f,p]
+            % f             : figure
+            % p             : plot
             arguments
                 obj
                 params.Title {mustBeTextScalar} = obj.name
@@ -721,7 +729,7 @@ classdef DataFrame
             
             useIndex = obj.index_.issorted() && ...
                 (isnumeric(obj.index) || isdatetime(obj.index));  % any type that can be shown on the x axis
-            figure()
+            f = figure();
             if useIndex
                 args = {obj.index,obj.data};
             else
@@ -735,14 +743,15 @@ classdef DataFrame
             if ~useIndex, xtick([]); end
             grid on
             title(params.Title)
-            if params.Legend
+            if params.Legend && ~any(ismissing(obj.columns_.value_))
                 cols = string(obj.columns);
                 legend(cols,Location='Best');
             end
             if params.WholeIndex
                 xlim([obj.index(1),obj.index(end)])
             end
-            if nargout == 1, varargout{1} = p; end
+            if nargout >= 1, varargout{1} = f; end
+            if nargout >= 2, varargout{2} = p; end
         end
         function varargout = heatmap(obj,varargin)
             % plot a heatmap of the frame
@@ -877,6 +886,18 @@ classdef DataFrame
         function obj = sign(obj), obj.data_ = sign(obj.data_); end
         function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
         function obj = ismissing(obj,varargin), obj.data_ = ismissing(obj.data_,varargin{:}); end
+        function obj = oneify(obj)
+        % replace non missing values by a default value (1 for double, "" for strings)
+            switch class(obj.data_)
+                case 'double'
+                    v = 1;
+                case 'string'
+                    v = "";
+                otherwise
+                    error('Default value not implemented for %s.', class(obj.data_))
+            end
+            obj.data_(~ismissing(obj.data_)) = v;
+        end
         
         function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
