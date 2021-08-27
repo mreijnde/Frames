@@ -49,6 +49,10 @@ classdef Split < dynamicprops
                     splitter_{ii} = splitter.(string(namesOfGroups(ii))); %#ok<AGROW>
                 end
                 splitter = splitter_;
+            else
+                if nargin < 3
+                    namesOfGroups = "Group" + 1:length(splitter);
+                end
             end
             assert(length(namesOfGroups) == length(splitter), ...
                 'The names of the properties are not of the same length as the splitter')
