@@ -723,9 +723,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(notseries,frames.DataFrame(1,[],"a"))
 
             % split without groupOfNames
-            splitted = frames.DataFrame(1:5).split({["Var"+1:2:5],["Var"+4:-2:2]});
-            t.verifyEqual(splitted.apply(@(x) x.sum(2)), frames.DataFrame([8,6],[],["Group1","Group2"]))
-            t.verifyEqual(splitted.apply(@(x) x.sum(1)), frames.DataFrame([1,3,5,4,2],[], "Var"+[1:2:5,4:-2:2]))
+            splitted = frames.DataFrame(1:5).split({"Var"+(1:2:5),"Var"+(4:-2:2)});
+            t.verifyEqual(splitted.apply(@(x) x.sum(2)), frames.DataFrame([9,6],[],["Group1","Group2"]))
+            t.verifyEqual(splitted.apply(@(x) x.sum(1)), frames.DataFrame([1,3,5,4,2],NaN,"Var"+[1:2:5,4:-2:2],RowSeries=true))
         end
         
         function firstIndexTest(t)

@@ -51,7 +51,7 @@ classdef Split < dynamicprops
                 splitter = splitter_;
             else
                 if nargin < 3
-                    namesOfGroups = "Group" + 1:length(splitter);
+                    namesOfGroups = "Group" + (1:length(splitter));
                 end
             end
             assert(length(namesOfGroups) == length(splitter), ...
@@ -74,6 +74,9 @@ classdef Split < dynamicprops
                 warning('frames:SplitNonexhaustive','Split is not exhaustive')
             end
         end
+    end
+    
+    methods
 
         function res = apply(obj,fun,varargin)
             % APPLY apply a function to each sub-Frame, and returns a single Frame
