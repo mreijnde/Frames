@@ -721,6 +721,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             % returns a not series (even if applied function does)
             notseries = frames.DataFrame(1).split({"Var1"},"a").apply(@(x) x.sum(2)); %#ok<STRSCALR>
             t.verifyEqual(notseries,frames.DataFrame(1,[],"a"))
+
+            % split without groupOfNames
+            splitted = frames.DataFrame(1:5).split({["Var"+1:2:5],["Var"+4:-2:2]});
+            t.verifyEqual(splitted.apply(@(x) x.sum(2)), frames.DataFrame([8,6],[],["Group1","Group2"]))
+            t.verifyEqual(splitted.apply(@(x) x.sum(1)), frames.DataFrame([1,3,5,4,2],[], "Var"+[1:2:5,4:-2:2]))
         end
         
         function firstIndexTest(t)
