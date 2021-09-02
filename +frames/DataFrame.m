@@ -1021,32 +1021,102 @@ classdef DataFrame
             obj=frames.internal.ExponentiallyWeightedMoving(obj,type,value);
         end        
         
-        % ToDo rewrite subsref and subsasgn using the new tools when Matlab
-        % release them
-        function varargout = subsref(obj,s)
-            if length(s)>1  % when there are several subsref
-                if strcmp(s(1).type,'.')
-                    [varargout{1:nargout}] = builtin('subsref',obj,s);
-                else  % to handle the () and {} cases (Matlab struggles otherwise).
-                    other = subsref(obj,s(1));
-                    [varargout{1:nargout}] = subsref(other,s(2:end));
-                end
-                return
-            end
+        
+        function varargout = subsref(obj,s)    
+            % provide easy syntax for indexing using () and {} operators,
+            % dot operator for column access with support of chaining 
             
-            nargoutchk(0,1)
-            switch s.type
-                case '()'
-                    [idx,col] = getSelectorsFromSubs(s.subs);
-                    varargout{1} = obj.loc(idx,col);
-                case '{}'
-                    [idx,col] = getSelectorsFromSubs(s.subs);
-                    varargout{1} = obj.iloc(idx,col);
-                case '.'
-                    varargout{1} = obj.(s.subs);
+            %disp(s); for i = 1:length(s), disp(i); disp(s(i));  %for easy debugging                      
+            cmd_length = 1;   
+            switch s(1).type
+                 case '()'      
+                     % array indexing: using .loc indexing operation 
+                     [idx,col] = getSelectorsFromSubs(s(1).subs);
+                     varargout{1} = obj.loc(idx,col);                       
+                   
+                 case '{}'
+                     % cell indexing: using .iloc indexing operation 
+                     [idx,col] = getSelectorsFromSubs(s(1).subs);
+                     varargout{1} = obj.iloc(idx,col);                    
+                    
+                 case '.'
+                    fieldname = s(1).subs;
+                    iscolumnname = any(strcmp(obj.columns, fieldname));
+                    if ismethod(obj, s(1).subs)
+                        % method call                        
+                        if iscolumnname
+                            warning("Ambiguous dot reference '." + fieldname + "' detected. Column with same " + ...
+                                    "name as this builtin method also exists. Ignoring, calling object method.");
+                        end
+                        if length(s)>1 && s(2).type=="()"
+                            % call method with function arguments   
+                            [varargout{1:nargout}] = builtin('subsref',obj,s(1:2));                                        
+                            cmd_length = 2;
+                        else
+                            % call method without function arguments                            
+                            varargout{1} = builtin('subsref',obj,s(1));                                                        
+                        end                        
+                    elseif isprop(obj, s(1).subs)                        
+                        % get property
+                        if iscolumnname
+                            warning("Ambiguous dot reference '." + fieldname + "' detected. Column with same " + ...
+                                    "name as this builtin property also exists. Ignoring, returning property value.");
+                        end
+                        varargout{1} = builtin('subsref',obj,s(1));                                                                               
+                    elseif iscolumnname                          
+                        % get data column
+                        dfcol = obj.loc(':', string(s(1).subs));
+                        if size(dfcol,2)>1
+                            error("Column name '%s' is not unique, cannot use dot notation to access data.", s(1).subs);
+                        end
+                        varargout{1} = dfcol.asColSeries(); % always output as column series
+                    else
+                        error("unknown .dot reference '.%s'", s(1).subs);                        
+                    end 
+            
+            end
+            % recursively apply remaining operations in chain if available
+            if length(s) > cmd_length   
+                s_remaining = s(cmd_length+1:end);
+                if isFrame(varargout{1})                    
+                    % recursive lookup: using DataFrame subsref
+                    [out{1:nargout}] = varargout{1}.subsref(s_remaining);
+                else                   
+                   % recursive lookup: using builtin subsref
+                    [out{1:nargout}] = builtin('subsref', varargout{1}, s_remaining);              
+                end
+                % seperate variable 'out' used to fix problem that existing varargout values are not always overwritten with new values
+                varargout = out;
+                                
             end
         end
-        
+%         
+%         % ToDo rewrite subsref and subsasgn using the new tools when Matlab
+%         % release them
+%         function varargout = subsref(obj,s)
+%             if length(s)>1  % when there are several subsref
+%                 if strcmp(s(1).type,'.')
+%                     [varargout{1:nargout}] = builtin('subsref',obj,s);
+%                 else  % to handle the () and {} cases (Matlab struggles otherwise).
+%                     other = subsref(obj,s(1));
+%                     [varargout{1:nargout}] = subsref(other,s(2:end));
+%                 end
+%                 return
+%             end
+%             
+%             nargoutchk(0,1)
+%             switch s.type
+%                 case '()'
+%                     [idx,col] = getSelectorsFromSubs(s.subs);
+%                     varargout{1} = obj.loc(idx,col);
+%                 case '{}'
+%                     [idx,col] = getSelectorsFromSubs(s.subs);
+%                     varargout{1} = obj.iloc(idx,col);
+%                 case '.'
+%                     varargout{1} = obj.(s.subs);
+%             end
+%         end
+%         
         function obj = subsasgn(obj,s,b)
             if length(s)==2
                 [beingAssigned,selectors] = s.subs;
