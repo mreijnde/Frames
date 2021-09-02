@@ -1177,6 +1177,14 @@ classdef DataFrame
         
         function obj = iloc_(obj,idxPosition,colPosition,userCall)
             if nargin < 4, userCall=false; end
+            if isFrame(idxPosition) && islogical(idxPosition.data_) || ...
+                       (islogical(idxPosition) && isvector(idxPosition))
+                idxPosition = obj.index_.positionOf(idxPosition);
+            end
+            if isFrame(colPosition) && islogical(colPosition.data_) || ...
+                       (islogical(colPosition) && isvector(colPosition))
+                colPosition = obj.columns_.positionOf(colPosition);
+            end
             if userCall
                 assert(isvector(idxPosition) && isvector(colPosition), 'frames:iloc:notvectors', ...
                     'Selectors must be vectors.')

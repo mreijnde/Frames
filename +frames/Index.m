@@ -144,7 +144,17 @@ classdef Index
         function pos = positionOf(obj,selector,varargin)
             % find position of 'selector' in the Index
             selector = obj.getValue_andCheck(selector,varargin{:});
-            if obj.requireUnique_
+            if islogical(selector)
+                if length(selector) == length(obj.value_)
+                    % convert logical array to position array
+                    allpos = 1:length(obj.value_);                    
+                    pos = allpos(selector);
+                else
+                    %error('frames:Index:positionOf',...
+                    error('MATLAB:badsubscript', ...                
+                          'Logic array used for indexing should be of the same length as index itself.') 
+                end                
+            elseif obj.requireUnique_
                 assertFoundIn(selector,obj.value_)
                 [~,~,pos] = intersect(selector,obj.value_,'stable');
             else
@@ -239,7 +249,7 @@ classdef Index
             mustBeFullVector(value)
             
             if obj.requireUnique_
-                if ~isunique(value)
+                if ~isunique(value) && ~islogical(value)
                     error('frames:Index:requireUniqueFail', ...
                         'Index value is required to be unique.')
                 end
@@ -252,7 +262,7 @@ classdef Index
                             'The assigned values make the Index not unique.')
                     end
                 else
-                    if ~isunique(value)
+                    if ~isunique(value) && ~islogical(value)
                         warning('frames:Index:notUnique', ...
                             'Index value is not unique.')
                     end
@@ -286,6 +296,9 @@ classdef Index
         function value = getValue_from(~,value)
             if isa(value,'frames.Index')
                 value = value.value_;
+            end
+            if isFrame(value)
+                value = value.data_;
             end
             if isrow(value)
                 value = value';
