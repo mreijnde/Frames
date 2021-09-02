@@ -213,6 +213,27 @@ classdef Index
             bool = ismissing(obj.value_);
         end
         
+        function type = valueclass(obj)
+           % get type of index values as string
+           if ~iscell(obj.value_)
+               type = class(obj.value_);
+           else
+               type = class(obj.value_{1}); % assume all cells have same type
+           end
+           type = string(type);
+        end
+        
+        function [bool] = contains(obj, value)
+            % check if supplied value(s) is/are within the index
+            
+            if class(value) ~= obj.valueclass()
+                % different types, so not equal
+                bool = false(size(value));
+            else
+                bool = arrayfun(@(v) any(obj.value_==v), value);
+            end
+        end
+        
     end
     
     methods(Hidden)
