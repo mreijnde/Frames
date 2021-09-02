@@ -1117,53 +1117,102 @@ classdef DataFrame
 %             end
 %         end
 %         
+
         function obj = subsasgn(obj,s,b)
-            if length(s)==2
-                [beingAssigned,selectors] = s.subs;
-                locs = strcmp(beingAssigned,["iloc","loc"]);
-                indexers = strcmp(beingAssigned,["index","columns"]);
-                if any(indexers)
-                    mustBeNonempty(b);
-                    obj.([beingAssigned,'_']).value(selectors{1}) = b;
-                    return
-                elseif any(locs)
-                    if locs(1)
-                        if any(isFrame(selectors{:}))
-                            obj = obj.modifyFromDFbool(selectors,b);
+            % assign values to dataframe by indexing: (),{},loc,iloc operations and support of column assign by dot columnname            % 
+            
+            switch s(1).type
+                case {'()','{}'}
+                    if length(s)>1
+                        error("Nested assign in combination with %s indexing operator not supported", s(1).type)
+                    end
+                    if isFrame(s(1).subs{1}) || (length(s(1).subs)>1 && isFrame(s(1).subs{2}))
+                        % special case: dataframe with logical as indexing
+                        obj = obj.modifyFromDFbool(s(1).subs, b);
+                    else
+                        % normal indexing with seperate index and cols
+                        [idx,col] = getSelectorsFromSubs(s(1).subs);
+                        fromPosition = (s(1).type=="{}");
+                        obj = obj.modify(b,idx,col, fromPosition);
+                    end
+     
+                case '.'
+                    field = string(s(1).subs);
+                    if ismember(field, ["loc","iloc"])                        
+                         % assign to iloc() or loc() indexing
+                         if length(s)==1
+                             error("No arguments given for .%s()", field);
+                         elseif length(s)>2
+                             error("Nested assign in combination with .%s() indexing not supported", field);
+                         end
+                         if isFrame(s(2).subs{1}) || (length(s(2).subs)>1 && isFrame(s(2).subs{2}))
+                            % special case: dataframe with logical as indexing
+                            obj = obj.modifyFromDFbool(s(2).subs, b);
+                         else
+                           % normal indexing with seperate index and cols
+                           [idx,col] = getSelectorsFromSubs(s(2).subs);
+                           fromPosition = (field=="iloc");
+                           obj = obj.modify(b,idx, col, fromPosition);
+                         end
+                    elseif ismember(field,  ["index","columns"])
+                        % assign index/ column (with/without) indexing
+                        if length(s)>2
+                            error("Nested assign of .%s in combination with () indexing not supported", field)
+                        end
+                        mustBeNonempty(b);
+                        %mustBeFullVector(b);
+                        if length(s)==1
+                            obj.(field+"") = b;
+                        else
+                            obj.(field + "_").value(s(2).subs{1}) = b;
+                        end
+                        
+                    elseif obj.columns_.contains(field)
+                        % assign to existing column
+                        if isprop(obj, field)
+                            warning("Ambiguous dot assign '." + field + "' detected. Data column with same " + ...
+                                "name as this builtin property also exists. Ignoring, assigning property.");
+                            obj = builtin('subsasgn',obj,s,b);
                             return
                         end
-                        fromPosition = true;
-                    else
-                        fromPosition = false;
-                    end
-                    [idx,col] = getSelectorsFromSubs(selectors);
-                    obj = obj.modify(b,idx,col,fromPosition);
-                    return
-                end
-            end
-            if length(s)>1
-                obj = builtin('subsasgn',obj,s,b);
-                return
-            end
-            switch s.type
-                case '()'
-                    [idx,col] = getSelectorsFromSubs(s.subs);
-                    obj = obj.modify(b,idx,col);
-                case '{}'
-                    if any(isFrame(s.subs{:}))
-                        obj = obj.modifyFromDFbool(s.subs,b);
-                    else
-                        [idx,col] = getSelectorsFromSubs(s.subs);
-                        obj = obj.modify(b,idx,col,true);
-                    end
-                case '.'
-                    if ismember(s(1).subs,properties(obj))
-                        obj.(s.subs) = b;
-                    else
-                        error(('''%s'' is not a public property of the ''%s'' class.'),s(1).subs,class(obj));
+                        if length(s)>2 || (length(s)==2 && s(2).type==".")
+                            error("Nested assign of data column (.%s) not supported", field)
+                        end
+                        if length(s)==1
+                            % whole column vector
+                            obj = obj.modify(b, ':', field);
+                        else
+                            % indexed column vector
+                            if s(2).type=="()"
+                                obj = obj.modify(b, s(2).subs{1}, field);
+                            else % "{}"
+                                colID = obj.columns_.positionOf(field);
+                                obj = obj.modify(b, s(2).subs{1}, colID, true);
+                            end
+                        end
+                        
+                    elseif isprop(obj,field)
+                        % assign to object property
+                        obj = builtin('subsasgn',obj,s,b);
+                    else                       
+                        % unknown, add as new data column
+                        if length(s)>1
+                            error("Indexing (or nested assignment) on a new (to-be-created) column ('%s') not supported", field);
+                        end
+                        % append column
+                        %(todo: handle with seperate function with error checking)
+                        if isFrame(b)
+                            b = b.data;
+                        end
+                        if length(b) ~= size(obj,1) && length(b) ~= 1
+                            error("Invalid number of elements supplied, single value or same number of elements as dataframe index");
+                        end
+                        obj.data_(:,end+1) = b;
+                        obj.columns_.value(end+1) = field;
                     end
             end
         end
+                
         
         function toFile(obj,filePath,varargin)
             % write the frame into a file
