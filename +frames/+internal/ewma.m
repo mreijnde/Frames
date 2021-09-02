@@ -5,7 +5,7 @@ function y = ewma(data,alpha)
 % y_i = alpha .* data_i + (1-alpha) .* y_(i-1)
 % NaNs are ignored in the computation, ie they are removed before
 % computing.
-y = arrayfun(@(x) ewma_(data(:,x),alpha),(1:size(data,2)),UniformOutput=false);
+y = arrayfun(@(x) ewma_(data(:,x),alpha),(1:size(data,2)),'UniformOutput',false);
 y = cell2mat(y);
 end
 

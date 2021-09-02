@@ -205,7 +205,7 @@ tf1 = frames.TimeFrame(1,["25-Jun-2021","27-Jun-2021","28-Jun-2021"],["ts1","ts2
 tf2 = frames.TimeFrame(2,["26-Jun-2021","27-Jun-2021","30-Jun-2021"],"ts3");
 [tf1, tf2]
 %%
-tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"],Format="dd.MM.yyyy"),["ts2","ts3"]);
+tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"],'Format',"dd.MM.yyyy"),["ts2","ts3"]);
 [tf1; tf3]
 %% Index Object
 % The _index_ and _columns_ properties can be assigned some properties themselves, 
@@ -255,8 +255,8 @@ end
 df1 = frames.DataFrame([1 3]',[1 3],1);
 df2 = frames.DataFrame([2 3]',[2 3],2);
 unsortedConcatenation = [df1,df2]
-df1 = frames.DataFrame([1 3]',frames.Index([1 3],UniqueSorted=true),1);
-df2 = frames.DataFrame([2 3]',frames.Index([2 3],UniqueSorted=true),2);
+df1 = frames.DataFrame([1 3]',frames.Index([1 3],'UniqueSorted',true),1);
+df2 = frames.DataFrame([2 3]',frames.Index([2 3],'UniqueSorted',true),2);
 sortedConcatenation = [df1,df2]
 %% 
 % For TimeFrame, the Index object for _index_ is a *TimeIndex*.
@@ -269,8 +269,8 @@ sortedConcatenation = [df1,df2]
 %
 
 frames.TimeIndex(738336)
-frames.TimeIndex(datetime(738336,'ConvertFrom','datenum',Format='dd-MMM-yyyy'));
-frames.TimeIndex("29-Jun-2021",Format="dd-MMM-yyyy");
+frames.TimeIndex(datetime(738336,'ConvertFrom','datenum','Format','dd-MMM-yyyy'));
+frames.TimeIndex("29-Jun-2021",'Format',"dd-MMM-yyyy");
 %% 
 % When used in a Frame (used by default in a TimeFrame), one can select a sub-Frame 
 % using a _timerange_
@@ -307,7 +307,7 @@ tf = frames.TimeFrame(correlatedData,738336-nObs+1:738336,1:nVar);
 %%
 tf.cumsum().plot()  % apply a cumulative sum and then plot the result
 %%
-tf.corr().heatmap(CellLabelFormat='%.2f')  % compute the correlation matrix and plot it as a heatmap
+tf.corr().heatmap('CellLabelFormat','%.2f')  % compute the correlation matrix and plot it as a heatmap
 %% Rolling and Ewm
 % Computation on a rolling basis are available with the _.rolling()_ and the  
 % _.ewm()_ methods. _.rolling()_ applies computations on a rolling window basis.  
@@ -335,13 +335,13 @@ doc frames.internal.ExponentiallyWeightedMoving
 
 price = tf.compoundChange('log');  % assume tf contains log returns and compound them
 rollingMean = price.rolling(30).mean();  % 30-day moving average
-exponentialMean = price.ewm(Span=30).mean();  % 30-day exponentially moving average
+exponentialMean = price.ewm('Span',30).mean();  % 30-day exponentially moving average
 priceSmoothers = [price{:,1}, rollingMean{:,1}, exponentialMean{:,1}];  % group the first series
 priceSmoothers.columns = ["original", "rolling", "smooth"];  % assign new column names
 priceSmoothers.name = "smoothers";  % assign the name (it appears as the plot title)
-priceSmoothers.plot(Log=true)
+priceSmoothers.plot('Log',true)
 %%
-tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
+tf.ewm('Halflife',10).std().plot('Title','ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
 % One can apply a function to groups of columns in a Frame using the method  
 % _.split(groups).apply(@<function>)_.

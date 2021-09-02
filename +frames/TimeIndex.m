@@ -52,7 +52,7 @@ classdef TimeIndex < frames.Index
             if ~nameValue.Unique, nameValue.UniqueSorted = false; end
             
             value = getValue_from_local(value,nameValue.Format);
-            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted,Singleton=nameValue.Singleton);
+            obj = obj@frames.Index(value,'Name',nameValue.Name,'Unique',nameValue.Unique,'UniqueSorted',nameValue.UniqueSorted,'Singleton',nameValue.Singleton);
             obj.format = nameValue.Format;
         end
         
@@ -104,7 +104,7 @@ classdef TimeIndex < frames.Index
             if isduration(obj.value_)
                 value = obj.value_;
             else
-                value = datetime(obj.value_,ConvertFrom='datenum',Format=obj.format);
+                value = datetime(obj.value_,'ConvertFrom','datenum','Format',obj.format);
             end
         end
         function value = getValue_from(obj,value)
@@ -134,7 +134,7 @@ switch class(value)
     case 'datetime'
         value = datenum(value);
     case {'string','cell'}
-        value = datenum(datetime(value,Format=format));
+        value = datenum(datetime(value,'Format',format));
     case {'double','duration'}
         return
     otherwise

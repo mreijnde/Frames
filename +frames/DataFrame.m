@@ -133,14 +133,14 @@ classdef DataFrame
                     if isequal(index,[])
                         index = missingData('double');
                     end
-                    index = obj.getIndexObject(index,Singleton=true);
+                    index = obj.getIndexObject(index,'Singleton',true);
                 end
             else
                 if ~isa(index,'frames.Index')
                     if isequal(index,[])
                         index = obj.defaultIndex(size(data,1));
                     end
-                    index = obj.getIndexObject(index,Singleton=false);
+                    index = obj.getIndexObject(index,'Singleton',false);
                 end
             end
             if NameValueArgs.ColSeries
@@ -151,14 +151,14 @@ classdef DataFrame
                     if isequal(columns,[])
                         columns = missingData('string');
                     end
-                    columns = obj.getColumnsObject(columns,Singleton=true);
+                    columns = obj.getColumnsObject(columns,'Singleton',true);
                 end
             else
                 if ~isa(columns,'frames.Index')
                     if isequal(columns,[])
                         columns = obj.defaultColumns(size(data,2));
                     end
-                    columns = obj.getColumnsObject(columns,Singleton=false);
+                    columns = obj.getColumnsObject(columns,'Singleton',false);
                 end
             end
             
@@ -246,9 +246,9 @@ classdef DataFrame
             t = obj.getTable();
         end
         function s = get.identifierProperties(obj)
-            s.columns = publicProps2struct(obj.columns_,Skip="value");
+            s.columns = publicProps2struct(obj.columns_,'Skip',"value");
             s.columns.class = class(obj.columns_);
-            s.index = publicProps2struct(obj.index_,Skip="value");
+            s.index = publicProps2struct(obj.index_,'Skip',"value");
             s.index.class = class(obj.index_);
         end
         
@@ -745,7 +745,7 @@ classdef DataFrame
             title(params.Title)
             if params.Legend && ~any(ismissing(obj.columns_.value_))
                 cols = string(obj.columns);
-                legend(cols,Location='Best');
+                legend(cols,'Location','Best');
             end
             if params.WholeIndex
                 xlim([obj.index(1),obj.index(end)])
@@ -945,7 +945,7 @@ classdef DataFrame
         % minimum of the elements of the two input arguments
         % minOf(df1,df2), where df2 can be a frame or a matrix
         
-        function other = corr(obj), other=corrcov(obj,@corrcoef,Rows='pairwise'); end
+        function other = corr(obj), other=corrcov(obj,@corrcoef,'Rows','pairwise'); end
         % correlation matrix (pairwise)
         function other = cov(obj), other= corrcov(obj,@cov,'partialRows'); end
         % covariance matrix (pairwise)
@@ -1144,7 +1144,7 @@ classdef DataFrame
         function tb = getTable(obj)
             idx = indexForTable(obj.index);
             col = columnsForTable(obj.columns);
-            tb = array2table(obj.data,RowNames=idx,VariableNames=col);
+            tb = array2table(obj.data,'RowNames',idx,'VariableNames',col);
             if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.index_.name);
             end
@@ -1162,7 +1162,7 @@ classdef DataFrame
                 'columns do not have the same size as data')
         end
         function idx = getIndexObject(~,index,varargin)
-            idx = frames.Index(index,varargin{:},Unique=true);
+            idx = frames.Index(index,varargin{:},'Unique',true);
             idx.name = "Row";  % to be consistent with 'table' in which the default name of the index is 'Row'
         end
         function col = getColumnsObject(~,columns,varargin)
@@ -1302,7 +1302,7 @@ classdef DataFrame
         
         function other = corrcov(obj,fun,varargin)
             d = fun(obj.data_,varargin{:});
-            other = frames.DataFrame(d,obj.columns,obj.columns,Name=obj.name_);
+            other = frames.DataFrame(d,obj.columns,obj.columns,'Name',obj.name_);
         end
         
         function varargout = tableFunctions(obj,fun,outputClass,varargin)
@@ -1314,7 +1314,7 @@ classdef DataFrame
             if ~ismissing(outputClass)
                 datetype = varfun(@class,varargout{1},'OutputFormat','cell');
                 if all(strcmp(datetype,datetype{1}))
-                    varargout{1} = frames.(outputClass).fromTable(varargout{1},Unique=false);
+                    varargout{1} = frames.(outputClass).fromTable(varargout{1},'Unique',false);
                 end
             end
         end
@@ -1460,10 +1460,10 @@ classdef DataFrame
         end
         
         function other = ctranspose(obj)
-            other = frames.DataFrame(obj.data_',obj.columns_,obj.index_,Name=obj.name_);
+            other = frames.DataFrame(obj.data_',obj.columns_,obj.index_,'Name',obj.name_);
         end
         function other = transpose(obj)
-            other = frames.DataFrame(obj.data_.',obj.columns_,obj.index_,Name=obj.name_);
+            other = frames.DataFrame(obj.data_.',obj.columns_,obj.index_,'Name',obj.name_);
         end
         
         function obj = uminus(obj), obj.data_ = uminus(obj.data_); end

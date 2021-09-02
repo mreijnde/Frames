@@ -2,10 +2,10 @@ classdef seriesTest < matlab.unittest.TestCase
     
     properties
         df = frames.DataFrame([1 2;3 4]);
-        colseries = frames.DataFrame([1;3],ColSeries=true);
+        colseries = frames.DataFrame([1;3],'ColSeries',true);
         noSeries = frames.DataFrame([1;3]);
-        rowseries = frames.DataFrame([1 2],RowSeries=true);
-        useries = frames.DataFrame(1,RowSeries=true,ColSeries=true);
+        rowseries = frames.DataFrame([1 2],'RowSeries',true);
+        useries = frames.DataFrame(1,'RowSeries',true,'ColSeries',true);
     end
     
     methods(Test)
@@ -37,14 +37,14 @@ classdef seriesTest < matlab.unittest.TestCase
         end
         
         function indexTest(t)
-            idx1 = frames.Index([1,2,3],UniqueSorted=true);
-            idx2 = frames.Index(NaN,Unique=true,Singleton=true);
+            idx1 = frames.Index([1,2,3],'UniqueSorted',true);
+            idx2 = frames.Index(NaN,'Unique',true,'Singleton',true);
             
             t.verifyError(@notUnique,'frames:Index:setSingleton')
             function notUnique(), idx1.singleton=true; end
             t.verifyFalse(idx2.union(idx1).singleton)
             
-            idx3 = frames.Index(4,Unique=true);
+            idx3 = frames.Index(4,'Unique',true);
             idx3.singleton = true;
             t.verifyTrue(idx3.singleton)
         end

@@ -5,9 +5,9 @@ arguments
 end
 switch type
     case "unique"
-        index = frames.Index(index,Unique=true);
+        index = frames.Index(index,'Unique',true);
     case "sorted"
-        index = frames.Index(index,UniqueSorted=true);
+        index = frames.Index(index,'UniqueSorted',true);
     case "duplicate"
         index = frames.Index(index);
 end

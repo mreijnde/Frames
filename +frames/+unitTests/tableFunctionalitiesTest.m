@@ -315,7 +315,7 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             TotalItemsSold = [14 13 8 5 10 16 8 6 7 11]';
             TT = timetable(TimeStamps,Profit,TotalItemsSold);
             
-            TF = frames.TimeFrame.fromTable(TT,UniqueSorted=false);
+            TF = frames.TimeFrame.fromTable(TT,'UniqueSorted',false);
             G = groupsummary(TT,'TotalItemsSold',[0 4 8 12 16],'mean','Profit');
             G2 = groupsummary(TF,'TotalItemsSold',[0 4 8 12 16],'mean','Profit');
             t.verifyEqual(G,G2)
@@ -366,7 +366,7 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
                 2017 5 29; 2017 5 21]);
             profit = [2032 3071 1185 2587 1998 2899 3112 909 2619]';
             T = timetable(timeStamps,profit);
-            TF = frames.TimeFrame.fromTable(T,UniqueSorted=false);
+            TF = frames.TimeFrame.fromTable(T,'UniqueSorted',false);
             Gmax = groupfilter(T,'timeStamps','month',@(x) x == max(x));
             Gmax2 = groupfilter(TF,'timeStamps','month',@(x) x == max(x));
             t.verifyEqual(Gmax,Gmax2)
@@ -404,7 +404,7 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             percentComplete = [14.2 28.1 11.5 NaN NaN 19.3 46.1 51.2 30.3]';
             T = timetable(timeStamp,teamNumber,percentComplete);
             warning('off','frames:Index:notUnique')
-            TF = frames.TimeFrame.fromTable(T,Unique=false);
+            TF = frames.TimeFrame.fromTable(T,'Unique',false);
             G = grouptransform(T,'teamNumber','linearfill','percentComplete');
             G2 = grouptransform(TF,'teamNumber','linearfill','percentComplete');
             t.verifyEqual(G,G2.t)
@@ -418,7 +418,7 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
                 2017 3 29; 2017 3 21; 2017 3 18]);
             profit = [2032 3071 1185 2587 1998 2899 3112 909 2619 3085]';
             T = timetable(timeStamps,profit);
-            TF = frames.TimeFrame.fromTable(T,UniqueSorted=false);
+            TF = frames.TimeFrame.fromTable(T,'UniqueSorted',false);
             G = grouptransform(T,'timeStamps','dayname','norm');
             G2 = grouptransform(TF,'timeStamps','dayname','norm');
             t.verifyEqual(G,G2)
@@ -445,7 +445,7 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             Profit = [2032 3071 1185 2587 1998 2899 3112 909 2619 3085]';
             TotalItemsSold = [14 13 8 5 10 16 8 6 7 11]';
             TT = timetable(TimeStamps,Profit,TotalItemsSold);
-            TF = frames.TimeFrame.fromTable(TT,UniqueSorted=false);
+            TF = frames.TimeFrame.fromTable(TT,'UniqueSorted',false);
             G = groupcounts(TT,'TotalItemsSold',[0 4 8 12 16]);
             G2 = groupcounts(TF,'TotalItemsSold',[0 4 8 12 16]);
             t.verifyEqual(G,G2)
@@ -503,7 +503,7 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             
             TimeDuration = [hours(3) hours(2) hours(1) hours(5) hours(6)]';
             TT = timetable(TimeDuration,[98;97.5;97.9;98.1;101],[120;111;119;117;118]);
-            TF = frames.TimeFrame.fromTable(TT,UniqueSorted=false);
+            TF = frames.TimeFrame.fromTable(TT,'UniqueSorted',false);
             B = sortrows(TT,'TimeDuration');
             C = TF.sortIndex();
             t.verifyEqual(C.t,B)

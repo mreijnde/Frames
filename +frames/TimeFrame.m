@@ -130,15 +130,15 @@ classdef TimeFrame < frames.DataFrame
                     'TreatAsEmpty',{'N/A','NA'}, ...
                     'ReadVariableNames',true, ...
                     unmatched{:});
-                tf = frames.TimeFrame.fromTable(tb,Unique=namedArgs.Unique,UniqueSorted=namedArgs.UniqueSorted);
+                tf = frames.TimeFrame.fromTable(tb,'Unique',namedArgs.Unique,'UniqueSorted',namedArgs.UniqueSorted);
             else
                 tb = readtable(filePath,...
                     'TreatAsEmpty',{'N/A','NA'}, ...
                     'ReadVariableNames',true, ...
                     unmatched{:},'ReadRowNames',false);
-                ti = frames.TimeIndex(string(tb{:,1}),Format=namedArgs.TimeFormat, ...
-                    Unique=namedArgs.Unique,UniqueSorted=namedArgs.UniqueSorted, ...
-                    Name=string(tb.Properties.VariableNames{1}));
+                ti = frames.TimeIndex(string(tb{:,1}),'Format',namedArgs.TimeFormat, ...
+                    'Unique',namedArgs.Unique,'UniqueSorted',namedArgs.UniqueSorted, ...
+                    'Name',string(tb.Properties.VariableNames{1}));
                 tf = frames.TimeFrame(tb{:,2:end},ti,tb.Properties.VariableNames(2:end));
             end
         end
@@ -153,7 +153,7 @@ classdef TimeFrame < frames.DataFrame
             if ~nameValue.keepCellstr, cols = string(cols); end
             idx = t.Properties.RowTimes;
             idx.Format = string(idx.Format).replace('u','y');
-            idx = frames.TimeIndex(idx,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted);
+            idx = frames.TimeIndex(idx,'Unique',nameValue.Unique,'UniqueSorted',nameValue.UniqueSorted);
 
             tf = frames.TimeFrame(t.Variables,idx,cols);
             tf.index_.name = string(t.Properties.DimensionNames{1});
@@ -173,7 +173,7 @@ classdef TimeFrame < frames.DataFrame
         end
         function tb = getTable(obj)
             col = columnsForTable(obj.columns);
-            tb = array2timetable(obj.data,RowTimes=obj.index,VariableNames=col);
+            tb = array2timetable(obj.data,'RowTimes',obj.index,'VariableNames',col);
             if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.index_.name);
             end

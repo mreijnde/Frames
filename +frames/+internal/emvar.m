@@ -4,7 +4,7 @@ function q = emvar(data,alpha)
 % emvar_i = (1-alpha)*(emvar_(i-1) + alpha*d^2)
 % NaNs are ignored in the computation, ie they are removed before
 % computing.
-q = arrayfun(@(x) emvar_(data(:,x),alpha),1:size(data,2),UniformOutput=false);
+q = arrayfun(@(x) emvar_(data(:,x),alpha),1:size(data,2),'UniformOutput',false);
 q = cell2mat(q);
 end
 

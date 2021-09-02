@@ -38,21 +38,21 @@ classdef dataframeTest < matlab.unittest.TestCase
             % timeframe index
             t.verifyEqual(frames.TimeFrame(1,738316).index,datetime(2021,6,9))
             t.verifyEqual(frames.TimeFrame(1,"09-Jun-2021").index,datetime(2021,6,9))
-            t.verifyEqual(frames.TimeFrame(1,frames.TimeIndex("09.06.2021",Format="dd.MM.yyyy")).index,datetime(2021,6,9))
+            t.verifyEqual(frames.TimeFrame(1,frames.TimeIndex("09.06.2021",'Format',"dd.MM.yyyy")).index,datetime(2021,6,9))
             
             t.verifyError(@()frames.DataFrame(1,NaN),'frames:validators:mustBeFullVector')
             t.verifyError(@()frames.TimeFrame(1,NaN),'frames:validators:mustBeFullVector')
             t.verifyError(@()frames.TimeFrame(1,1,NaN),'frames:validators:mustBeFullVector')
             
             % from table
-            tb = array2table([1 2; 3 4],RowNames=["r1","r2"],VariableNames=["a","b"]);
+            tb = array2table([1 2; 3 4],'RowNames',["r1","r2"],'VariableNames',["a","b"]);
             t.verifyEqual(frames.DataFrame.fromTable(tb).columns,["a","b"])
             
             % from file
             pathfile = fullfile(t.dataPath,"f.txt");
-            tf1 = frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),Format='yyyy'));
+            tf1 = frames.TimeFrame(1,frames.TimeIndex(string(2010:2015),'Format','yyyy'));
             tf1.toFile(pathfile);
-            tf2 = frames.TimeFrame.fromFile(pathfile,TimeFormat='yyyy');
+            tf2 = frames.TimeFrame.fromFile(pathfile,'TimeFormat','yyyy');
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             
@@ -77,27 +77,27 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             warning('off','frames:Index:notUnique')
             pathfile = fullfile(t.dataPath,"k.txt");
-            tf1 = frames.TimeFrame(1,frames.TimeIndex([738316,738316],Unique=false),"a");
+            tf1 = frames.TimeFrame(1,frames.TimeIndex([738316,738316],'Unique',false),"a");
             tf1.toFile(pathfile);
-            tf2 = frames.TimeFrame.fromFile(pathfile,Unique=false);
-            tf3 = frames.TimeFrame.fromFile(pathfile,ReadVariableNames=false,Unique=false);
+            tf2 = frames.TimeFrame.fromFile(pathfile,'Unique',false);
+            tf3 = frames.TimeFrame.fromFile(pathfile,'ReadVariableNames',false,'Unique',false);
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
-            t.verifyEqual(tf3,frames.TimeFrame(1,frames.TimeIndex([738316,738316],Unique=false)));
+            t.verifyEqual(tf3,frames.TimeFrame(1,frames.TimeIndex([738316,738316],'Unique',false)));
             warning('on','frames:Index:notUnique')
             
             pathfile = fullfile(t.dataPath,"m.txt");
-            tf1 = frames.TimeFrame(1,frames.TimeIndex([738316 738315],UniqueSorted=false));
+            tf1 = frames.TimeFrame(1,frames.TimeIndex([738316 738315],'UniqueSorted',false));
             tf1.toFile(pathfile);
-            tf2 = frames.TimeFrame.fromFile(pathfile,UniqueSorted=false);
+            tf2 = frames.TimeFrame.fromFile(pathfile,'UniqueSorted',false);
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             
             warning('off','frames:Index:notUnique')
             pathfile = fullfile(t.dataPath,"n.txt");
-            tf1 = frames.TimeFrame([1 NaN],frames.TimeIndex([738315 738315],Unique=false,Format="dd%MMM**yyyy"));
+            tf1 = frames.TimeFrame([1 NaN],frames.TimeIndex([738315 738315],'Unique',false,'Format',"dd%MMM**yyyy"));
             tf1.toFile(pathfile);
-            tf2 = frames.TimeFrame.fromFile(pathfile,Unique=false,TimeFormat="dd%MMM**yyyy");
+            tf2 = frames.TimeFrame.fromFile(pathfile,'Unique',false,'TimeFormat',"dd%MMM**yyyy");
             delete(pathfile)
             t.verifyEqual(tf1,tf2)
             warning('on','frames:Index:notUnique')
@@ -109,7 +109,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             % with a modified name, and so reading the file does not have
             % duplicated names anymore.
             pathfile = fullfile(t.dataPath,"p.txt");
-            df1 = frames.DataFrame([1 NaN],frames.Index([738315 738315],Unique=false,Name="Row"));
+            df1 = frames.DataFrame([1 NaN],frames.Index([738315 738315],'Unique',false,'Name',"Row"));
             df1.toFile(pathfile);
             df2 = frames.DataFrame.fromFile(pathfile);
             delete(pathfile)
@@ -123,8 +123,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             warning('off','frames:Index:notUnique')
             duplicate = frames.Index([1 1 3]);
             warning('on','frames:Index:notUnique')
-            unique = frames.Index([6 5 4],Unique=true);
-            sorted = frames.Index([10 20 30],UniqueSorted=true);
+            unique = frames.Index([6 5 4],'Unique',true);
+            sorted = frames.Index([10 20 30],'UniqueSorted',true);
             d1 = [1 2 3;4 5 6;7 8 9];
             d2 = d1.*10;
             d3 = d1.*100;
@@ -149,7 +149,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             % can concatenate duplicates if same columns
             t.verifyEqual([ud;sd],frames.DataFrame([ud.data;sd.data],...
-                frames.Index([6 5 4 10 20 30],Unique=true),ud.getColumns_()))
+                frames.Index([6 5 4 10 20 30],'Unique',true),ud.getColumns_()))
             % cannot otherwise
             t.verifyError(@()[ud;su],'MATLAB:subsassigndimmismatch')
             
@@ -163,14 +163,14 @@ classdef dataframeTest < matlab.unittest.TestCase
             tmpdata([3,4,6],1:3) = su.data;
             tmpdata([5 2 1],[4 2 3]) = uu.data;
             t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
-                frames.Index([4 5 10 20 25 30],UniqueSorted=true),frames.Index([6 5 4 20],Unique=true)))
+                frames.Index([4 5 10 20 25 30],'UniqueSorted',true),frames.Index([6 5 4 20],'Unique',true)))
             % with sorted columns
             tmp = [ss;uutmp];
             tmpdata = NaN(6,5);
             tmpdata([3,4,6],3:5) = ss.data;
             tmpdata([5 2 1],[4 2 1]) = uu.data;
             t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
-                frames.Index([4 5 10 20 25 30],UniqueSorted=true),frames.Index([4 5 10 20 30],UniqueSorted=true)))
+                frames.Index([4 5 10 20 25 30],'UniqueSorted',true),frames.Index([4 5 10 20 30],'UniqueSorted',true)))
             
             % with empty
             t.verifyEqual([us;e;su;e],[us;su])
@@ -196,7 +196,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             tmpdata(1:3,1:3) = uud.data;
             tmpdata([3 1 4],4:end) = [sstmp.data,sstmp.data];
             t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
-                frames.Index([6 5 4 30],Unique=true),[uud.columns,sstmp.columns,sstmp.columns]))
+                frames.Index([6 5 4 30],'Unique',true),[uud.columns,sstmp.columns,sstmp.columns]))
             warning('off','frames:Index:notUnique')
             
             uutmp = us;
@@ -206,7 +206,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             tmpdata([2 3 1],4:end) = uutmp.data;
             tmp = [su,uutmp];
             t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
-                frames.Index([4 6 10 20 30],UniqueSorted=true),[unique;sorted]))
+                frames.Index([4 6 10 20 30],'UniqueSorted',true),[unique;sorted]))
             
             t.verifyError(@()[ss,su],'frames:Index:requireSortedFail')
             t.verifyEqual([su,ss],frames.DataFrame([su.data,ss.data],sorted,[unique;sorted]))
@@ -403,7 +403,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function indexSetterTest(t)
             df = frames.DataFrame([1 2; 2 5]);
-            df.index = frames.Index([3 5],UniqueSorted=true);
+            df.index = frames.Index([3 5],'UniqueSorted',true);
             t.verifyEqual(df.index,[3 5]')
             
             t.verifyError(@idxNotSorted,'frames:Index:requireSortedFail')
@@ -431,10 +431,10 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function indexAssignTest(t)
-            dfs = frames.DataFrame(1,frames.Index([1 2 3 10 20],UniqueSorted=true));
-            dfu = frames.DataFrame(1,frames.Index([1 2 3 10 20],Unique=true));
+            dfs = frames.DataFrame(1,frames.Index([1 2 3 10 20],'UniqueSorted',true));
+            dfu = frames.DataFrame(1,frames.Index([1 2 3 10 20],'Unique',true));
             warning('off','frames:Index:notUnique')
-            dfd = frames.DataFrame(1,frames.Index([1 2 3 10 10],Unique=false));
+            dfd = frames.DataFrame(1,frames.Index([1 2 3 10 10],'Unique',false));
             warning('on','frames:Index:notUnique')
             
             df1=dfs;
@@ -465,7 +465,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyWarning(@duplicate2,'frames:Index:subsagnNotUnique')
             function duplicate2, df3.index([3,1]) = [6,6]; end
             
-            dfcs = frames.DataFrame(1,[],frames.Index([1 2 3 10 20],UniqueSorted=true));
+            dfcs = frames.DataFrame(1,[],frames.Index([1 2 3 10 20],'UniqueSorted',true));
             df4=dfcs;
             df4.columns([3,1]) = [4,0];
             t.verifyEqual(df4.columns,[0 2 4 10 20])
@@ -511,7 +511,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             df.columns = ["3" "5"];
             t.verifyEqual(df.columns,["3" "5"])
             
-            df.columns = frames.Index([3 5],Unique=true);
+            df.columns = frames.Index([3 5],'Unique',true);
             t.verifyEqual(df.columns,[3 5])
             
             t.verifyError(@colsNotUnique,'frames:Index:requireUniqueFail')
@@ -559,7 +559,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df.extendIndex([2 1 2]),df);
             
             warning('off','frames:Index:notUnique')
-            dupli = frames.DataFrame([1 3 4 5]',frames.Index([1 3 4 5],Unique=false)).extendIndex([1 2 4]);
+            dupli = frames.DataFrame([1 3 4 5]',frames.Index([1 3 4 5],'Unique',false)).extendIndex([1 2 4]);
             warning('on','frames:Index:notUnique')
             t.verifyEqual(dupli.data, [1 3 4 5 NaN]');
             t.verifyEqual(dupli.index, [1 3 4 5 2]');
@@ -579,10 +579,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(wDuplicates.data, [1 2 3 4 5 6 NaN NaN]);
             t.verifyEqual(wDuplicates.columns, [1 3 1 4 5 4 2 2]);
             warning('on','frames:Index:notUnique')
-            sorted = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],UniqueSorted=true)).extendColumns([1 2 4]);
+            sorted = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],'UniqueSorted',true)).extendColumns([1 2 4]);
             t.verifyEqual(sorted.data, [1 NaN 3 4 5]);
             t.verifyEqual(sorted.columns, [1 2 3 4 5]);
-            uniq = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],Unique=true)).extendColumns([1 2 4]);
+            uniq = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],'Unique',true)).extendColumns([1 2 4]);
             t.verifyEqual(uniq.data, [1 3 4 5 NaN]);
             t.verifyEqual(uniq.columns, [1 3 4 5 2]);
         end
@@ -624,8 +624,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             solUnsorted = [frames.DataFrame([4 2;1 1],[1 3], [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
             expectedUnsorted = frames.DataFrame([4 2 4 2;1 1 NaN NaN;NaN NaN NaN 1],[1 3 2],[23 3 4 2]);
             t.verifyEqual(solUnsorted,expectedUnsorted)
-            solSorted = [frames.DataFrame([4 2;1 1],frames.Index([1 3],UniqueSorted=true), [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
-            expectedSorted = frames.DataFrame([4 2 4 2;NaN NaN NaN 1;1 1 NaN NaN],frames.Index([1 2 3],UniqueSorted=true),[23 3 4 2]);
+            solSorted = [frames.DataFrame([4 2;1 1],frames.Index([1 3],'UniqueSorted',true), [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
+            expectedSorted = frames.DataFrame([4 2 4 2;NaN NaN NaN 1;1 1 NaN NaN],frames.Index([1 2 3],'UniqueSorted',true),[23 3 4 2]);
             t.verifyEqual(solSorted,expectedSorted)
             
             % repeating
@@ -643,8 +643,8 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function vertcatTest(t)
-            sol = [frames.DataFrame([4 2;1 1],frames.Index([1 2],UniqueSorted=true),[23 3]);frames.DataFrame([4 2;1 1],[3 4],[3 44])];
-            expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.Index([1 2 3 4],UniqueSorted=true),[23 3 44]);
+            sol = [frames.DataFrame([4 2;1 1],frames.Index([1 2],'UniqueSorted',true),[23 3]);frames.DataFrame([4 2;1 1],[3 4],[3 44])];
+            expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.Index([1 2 3 4],'UniqueSorted',true),[23 3 44]);
             t.verifyEqual(sol,expected)
             
             % multiple concat with (un)sorted Frames
@@ -661,24 +661,24 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function vertcatIndexPropsTest(t)
-            df = frames.DataFrame([1 2;3 4],[1 2],frames.Index([1 3],UniqueSorted=true));
+            df = frames.DataFrame([1 2;3 4],[1 2],frames.Index([1 3],'UniqueSorted',true));
             df2 = frames.DataFrame([30,20],3,[3 2]);
             
-            t.verifyEqual([df;df2],frames.DataFrame([1 NaN 2;3 NaN 4;NaN 20 30],[1 2 3],frames.Index([1 2 3],UniqueSorted=true)))
+            t.verifyEqual([df;df2],frames.DataFrame([1 NaN 2;3 NaN 4;NaN 20 30],[1 2 3],frames.Index([1 2 3],'UniqueSorted',true)))
             
         end
         
         function resampleTest(t)
             sortedframe = frames.DataFrame([4 1 NaN 3; 2 NaN 4 NaN]',[1 4 10 20]).setIndexType("sorted");
-            ffi = sortedframe.resample([2 5],FirstValueFilling='ffillFromInterval');
+            ffi = sortedframe.resample([2 5],'FirstValueFilling','ffillFromInterval');
             t.verifyEqual(ffi, frames.DataFrame([4 1; 2 NaN]',[2 5]).setIndexType("sorted"));
-            ffi1 = sortedframe.resample([3 11],FirstValueFilling={'ffillFromInterval',1});
+            ffi1 = sortedframe.resample([3 11],'FirstValueFilling',{'ffillFromInterval',1});
             t.verifyEqual(ffi1, frames.DataFrame([NaN 1; NaN 4]',[3 11]).setIndexType("sorted"));
-            ffla = sortedframe.resample([13 14 15],FirstValueFilling='ffillLastAvailable');
+            ffla = sortedframe.resample([13 14 15],'FirstValueFilling','ffillLastAvailable');
             t.verifyEqual(ffla, frames.DataFrame([1 NaN NaN;4 NaN NaN]',[13 14 15]).setIndexType("sorted"));
-            noff = sortedframe.resample([13 14 15],FirstValueFilling='noFfill');
+            noff = sortedframe.resample([13 14 15],'FirstValueFilling','noFfill');
             t.verifyEqual(noff, frames.DataFrame([NaN NaN NaN;NaN NaN NaN]',[13 14 15]).setIndexType("sorted"));
-            noff2 = sortedframe.resample([4 14 15],FirstValueFilling='noFfill');
+            noff2 = sortedframe.resample([4 14 15],'FirstValueFilling','noFfill');
             t.verifyEqual(noff2, frames.DataFrame([1 NaN NaN;NaN 4 NaN]',[4 14 15]).setIndexType("sorted"));
         end
         
@@ -688,7 +688,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         end
         
         function sortIndexTest(t)
-            sol = frames.DataFrame([1 2 3; 2 5 3]', frames.Index([2 6 1],Unique=true,Name="Row")).sortIndex();
+            sol = frames.DataFrame([1 2 3; 2 5 3]', frames.Index([2 6 1],'Unique',true,'Name',"Row")).sortIndex();
             t.verifyEqual(sol,frames.DataFrame([3 1 2;3 2 5]',[1 2 6]))
         end
         
@@ -725,7 +725,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             % split without groupOfNames
             splitted = frames.DataFrame(1:5).split({"Var"+(1:2:5),"Var"+(4:-2:2)});
             t.verifyEqual(splitted.apply(@(x) x.sum(2)), frames.DataFrame([9,6],[],["Group1","Group2"]))
-            t.verifyEqual(splitted.apply(@(x) x.sum(1)), frames.DataFrame([1,3,5,4,2],NaN,"Var"+[1:2:5,4:-2:2],RowSeries=true))
+            t.verifyEqual(splitted.apply(@(x) x.sum(1)), frames.DataFrame([1,3,5,4,2],NaN,"Var"+[1:2:5,4:-2:2],'RowSeries',true))
         end
         
         function firstIndexTest(t)
@@ -755,9 +755,9 @@ classdef dataframeTest < matlab.unittest.TestCase
         function mathOperationsTest(t)
             mat1 = frames.DataFrame([1 2;3 4]);
             mat2 = frames.DataFrame([10 20;30 40],[],["a","b"]);
-            vecV = frames.DataFrame([6 7]',ColSeries=true);
-            vecV2 = frames.DataFrame([6 7]',ColSeries=true);
-            vecH = frames.DataFrame([6 7]',ColSeries=true);
+            vecV = frames.DataFrame([6 7]','ColSeries',true);
+            vecV2 = frames.DataFrame([6 7]','ColSeries',true);
+            vecH = frames.DataFrame([6 7]','ColSeries',true);
             tf = frames.TimeFrame([738331:738336;1:6]',738331:738336);
             
             tfOp = tf' * tf;
@@ -765,7 +765,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             mtimesM = mat1' * mat2;
             t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.getColumns_(),mat2.getColumns_()))
             mtimesV = mat1' * vecV2;
-            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.getColumns_(),vecV2.getColumns_(),ColSeries=true))
+            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.getColumns_(),vecV2.getColumns_(),'ColSeries',true))
             times = mat1 .* vecV;
             t.verifyEqual(times,frames.DataFrame([6 12;21 28],mat1.index,mat1.columns))
             plus1 = mat1 + vecH;
@@ -773,7 +773,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             plus2 = vecH + mat1;
             t.verifyEqual(plus2,frames.DataFrame([7 8;10 11],mat1.index,mat1.columns))
             plusSeries = vecV2 + vecV;
-            t.verifyEqual(plusSeries,frames.DataFrame([12;14],vecV2.index,vecV2.columns,ColSeries=true))
+            t.verifyEqual(plusSeries,frames.DataFrame([12;14],vecV2.index,vecV2.columns,'ColSeries',true))
             t.verifyError(@notAligned,'frames:matrixOpHandler:notAligned')
             function notAligned(), mat1*mat2; end %#ok<VUNUS>
             t.verifyError(@notSameColumns,'frames:elementWiseHandler:differentColumns')
@@ -790,7 +790,7 @@ classdef dataframeTest < matlab.unittest.TestCase
 
             % with arrays
             df = frames.DataFrame([1 2;3 4],["a" "b"],["one" "two"]);
-            two = frames.DataFrame(2,ColSeries=true,RowSeries=true);
+            two = frames.DataFrame(2,'ColSeries',true,'RowSeries',true);
             t.verifyEqual(df*2,frames.DataFrame(2*[1 2;3 4],["a" "b"],["one" "two"]))
             t.verifyEqual(2*df,df*2)
             t.verifyEqual(2*df,two.*df)
@@ -863,9 +863,9 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function anyTest(t)
             df=frames.DataFrame([false true; false false]);
-            t.verifyEqual(df.any(1),frames.DataFrame([false true],RowSeries=true));
+            t.verifyEqual(df.any(1),frames.DataFrame([false true],'RowSeries',true));
             t.verifyEqual(df.any(1).any(2),true);
-            t.verifyEqual(df.all(2),frames.DataFrame([false false]',ColSeries=true));
+            t.verifyEqual(df.all(2),frames.DataFrame([false false]','ColSeries',true));
         end
         
         function selectFromTimeRangeTest(t)
@@ -874,7 +874,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             tr = timerange("09-Jun-2021","14-Jun-2021",'closed');
             sel2 = tf(tr);
             sel3 = tf("-inf:14-Jun-2021");
-            sel4 = tf({-inf,datetime("14.06.2021",Format='dd.MM.yyyy')});
+            sel4 = tf({-inf,datetime("14.06.2021",'Format','dd.MM.yyyy')});
             sel5 = tf({"11-Jun-2021","14-Jun-2021"}); %#ok<CLARRSTR>
             sel6 = tf(738318:738318+3);
             expected = frames.TimeFrame(1,738318:738318+3);  % 11 June 2021 to 14 June 2021
@@ -899,8 +899,8 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function matrix2seriesTest(t)
             tf = t.tfMissing1;
-            t.verifyEqual(tf.sum(),frames.TimeFrame([12 13 12],[],tf.columns,RowSeries=true))
-            t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.getIndex_(),[],ColSeries=true))
+            t.verifyEqual(tf.sum(),frames.TimeFrame([12 13 12],[],tf.columns,'RowSeries',true))
+            t.verifyEqual(tf.sum(2),frames.TimeFrame([8 7 4 5 8 5]',tf.getIndex_(),[],'ColSeries',true))
             t.verifyEqual(tf.sum().sum(2),37)
         end
         
@@ -945,15 +945,15 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function dropMissingTest(t)
             df = frames.DataFrame([NaN NaN; NaN 1],string([1 2]),{'a','b'});
-            dany = df.dropMissing(How='any');
+            dany = df.dropMissing('How','any');
             t.verifyEqual(dany,frames.DataFrame(double.empty(0,2),string.empty(0,1),{'a','b'}));
-            dall = df.dropMissing(How='all');
+            dall = df.dropMissing('How','all');
             t.verifyEqual(dall,frames.DataFrame([NaN 1],string(2),{'a','b'}));
-            dall2 = df.dropMissing(How='all',Axis=2);
+            dall2 = df.dropMissing('How','all','Axis',2);
             t.verifyEqual(dall2,frames.DataFrame([NaN 1]',string([1 2]),{'b'}));
             dfstring = df;
             dfstring.data = string(df.data);
-            dall2string = dfstring.dropMissing(How='all',Axis=2);
+            dall2string = dfstring.dropMissing('How','all','Axis',2);
             t.verifyEqual(dall2string,frames.DataFrame(string([NaN 1]'),string([1 2]),{'b'}));
         end
         
@@ -963,23 +963,23 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             covdf = df.rolling(6).cov(df{:,3}.asColSeries());
             covVal = cov(df.data(:,[2,3]),'partialrows');
-            t.verifyEqual(covdf.data(end,2),covVal(1,2),AbsTol=t.tol)
+            t.verifyEqual(covdf.data(end,2),covVal(1,2),'AbsTol',t.tol)
             
             cordf = df.rolling(6).corr(df{:,2}.asColSeries());
-            corVal = corrcoef(df.data(:,[2,3]),Rows='pairwise');
-            t.verifyEqual(cordf.data(end,3),corVal(1,2),AbsTol=t.tol)
+            corVal = corrcoef(df.data(:,[2,3]),'Rows','pairwise');
+            t.verifyEqual(cordf.data(end,3),corVal(1,2),'AbsTol',t.tol)
             
-            beta23 = cov(df.dropMissing(How='any').data(2:end,[2,3]),'partialrows') ./ var(df.dropMissing(How='any').data(2:end,[2,3]));
+            beta23 = cov(df.dropMissing('How','any').data(2:end,[2,3]),'partialrows') ./ var(df.dropMissing('How','any').data(2:end,[2,3]));
             beta2y = df{:,2}.asColSeries().rolling(5).betaXY(df);
             beta3y = df{:,3}.asColSeries().rolling(5).betaXY(df);
             betax3 = df.rolling(5).betaXY(df{:,3}.asColSeries());
             
-            t.verifyEqual(beta2y.data(end,3),beta23(2,1),AbsTol=t.tol)
-            t.verifyEqual(beta3y.data(end,2),beta23(1,2),AbsTol=t.tol)
-            t.verifyEqual(betax3.data(end,2),beta23(2,1),AbsTol=t.tol)
+            t.verifyEqual(beta2y.data(end,3),beta23(2,1),'AbsTol',t.tol)
+            t.verifyEqual(beta3y.data(end,2),beta23(1,2),'AbsTol',t.tol)
+            t.verifyEqual(betax3.data(end,2),beta23(2,1),'AbsTol',t.tol)
             
-            t.verifyEqual(df.ewm(Alpha=0.3).var().data(1,:),[NaN NaN NaN])
-            t.verifyEqual(df.ewm(Alpha=0.3).mean().data,df.ewm(Window=2/0.3-1).mean().data,AbsTol=t.tol)
+            t.verifyEqual(df.ewm('Alpha',0.3).var().data(1,:),[NaN NaN NaN])
+            t.verifyEqual(df.ewm('Alpha',0.3).mean().data,df.ewm('Window',2/0.3-1).mean().data,'AbsTol',t.tol)
         end
         
     end
