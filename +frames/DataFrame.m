@@ -1161,7 +1161,7 @@ classdef DataFrame
                             if s(2).type=="()"
                                 obj = obj.modify(b, s(2).subs{1}, field);
                             else % "{}"
-                                colID = obj.columns_.positionOf(field);
+                                colID = obj.columns_.getSelector(field);
                                 obj = obj.modify(b, s(2).subs{1}, colID, true);
                             end
                         end
@@ -1206,8 +1206,8 @@ classdef DataFrame
         
         function obj = iloc_(obj,idxPosition,colPosition,userCall)
             if nargin < 4, userCall=false; end                        
-            idxID = obj.index_.positionOf(idxPosition,   userCall, 'onlyColSeries', true);
-            colID = obj.columns_.positionOf(colPosition, userCall, 'onlyRowSeries', true);              
+            idxID = obj.index_.getSelector(idxPosition,   userCall, 'onlyColSeries', true);
+            colID = obj.columns_.getSelector(colPosition, userCall, 'onlyRowSeries', true);              
             if ~iscolon(idxID)
                 obj.index_.value_ = obj.index_.value_(idxID);
             end    
@@ -1218,8 +1218,8 @@ classdef DataFrame
         end
         function obj = loc_(obj,idxName,colName,userCall)            
             if nargin < 4, userCall=false; end     
-            idxID = obj.index_.positionOf(idxName,   userCall, 'onlyColSeries');
-            colID = obj.columns_.positionOf(colName, userCall, 'onlyRowSeries');              
+            idxID = obj.index_.getSelector(idxName,   userCall, 'onlyColSeries');
+            colID = obj.columns_.getSelector(colName, userCall, 'onlyRowSeries');              
             if ~iscolon(idxName)                
                 obj.index_.value_ = obj.index_.value_(idxID);
             end
@@ -1260,16 +1260,16 @@ classdef DataFrame
         function obj = modify(obj,data,index,columns,fromPosition)
             % modify DataFrame selection by index and columns to supplied data
             if nargin<5; fromPosition = false; end
-            idx = obj.index_.positionOf(index,     true, 'onlyColSeries', fromPosition);
-            col = obj.columns_.positionOf(columns, true, 'onlyRowSeries', fromPosition);                     
+            idx = obj.index_.getSelector(index,     true, 'onlyColSeries', fromPosition);
+            col = obj.columns_.getSelector(columns, true, 'onlyRowSeries', fromPosition);                     
             % get data from DataFrame
             if isFrame(data)
                 indexColChecker(obj, data);
                 data = data.data_;
             end
             % check dimensions of supplied data
-            idxN = obj.index_.getSelectorItemCount(idx);
-            colN = obj.columns_.getSelectorItemCount(col);                
+            idxN = obj.index_.getSelectorCount(idx);
+            colN = obj.columns_.getSelectorCount(col);                
             if isvector(data)
                % match data vector direction with indexing
                if idxN==1 && colN>1, data = data(:)'; end

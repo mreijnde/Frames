@@ -141,49 +141,67 @@ classdef Index
             len = length(obj.value_);
         end
                 
-        
-        function pos = positionOf(obj,selector, userCall, allowedSeries, positionIndex)
-            % find position of selector in the Index            
+        function selector = getSelector(obj,selector, userCall, allowedSeries, positionIndex)
+            % get valid matlab indexer for array operations based on supplied selector
             % supports:
-            %    - colon      
+            %    - colon
             %    - index value array / index position array
             %    - logical array/ logical Series
+            % ----------------            
+            % Parameters:
+            %    - selector
+            %    - userCall       (logical):    perform full validation of selector
+            %    - allowedSeries: (string enum: 'all','onlyRowSeries','onlyColSeries')
+            %                                   accept only these logical dataframe series
+            %    - positionIndex  (logical):    selector is position index instead of value index
             %
             % output:
-            %    validated index position array (or colon)
+            %    validated array indexer (colon, logical array or position index array)
             %
             if nargin<3, userCall = false; end
             if nargin<4, allowedSeries = 'all'; end
             if nargin<5, positionIndex = false; end  
-            
+                        
             if iscolon(selector)
-                % colon selector
-                pos = selector;  % just keep it
+                % do nothing
             elseif islogical(selector) || isFrameSeries(selector)
-                %  logical selectors 
+                %  logical selectors
                 if userCall
                     obj.logicalIndexChecker(selector, allowedSeries);
                 end
                 selector = obj.getValue_from(selector);
-                pos = find(selector); %convert to position index
             elseif positionIndex
                 % position index selector
-                if userCall 
+                if userCall
                     obj.positionIndexChecker(selector);
                 end
-                pos = selector;                
             else
                 %  value selectors
-                selector = obj.getValue_andCheck(selector,userCall);           
-                if obj.requireUnique_            
+                selector = obj.getValue_andCheck(selector,userCall);
+                if obj.requireUnique_
                     assertFoundIn(selector,obj.value_)
-                    [~,~,pos] = intersect(selector,obj.value_,'stable');
+                    [~,~,selector] = intersect(selector,obj.value_,'stable');
                 else
-                    pos = findPositionIn(selector,obj.value_);
+                    selector = findPositionIn(selector,obj.value_);
                 end
-            end    
-        end
+            end
+        end        
         
+        function pos = positionOf(obj, selector, varargin)
+            % output position index array for given selector
+            %
+            % Parameters: see getSelector()
+            %
+            selector = obj.getSelector(selector, varargin{:});
+            if iscolon(selector)                
+                pos = 1:length(obj.value_);
+            elseif islogical(selector)                
+                pos = find(selector);
+            else
+                pos = selector;
+            end
+        end
+                 
         function pos = positionIn(obj,target,varargin)
             % find position of the Index into the target
             target = obj.getValue_andCheck(target,varargin{:});
@@ -283,7 +301,7 @@ classdef Index
         end
         
                                                    
-        function N = getSelectorItemCount(obj, selector)
+        function N = getSelectorCount(obj, selector)
             % get number of elements from matlab compatible selector            
             if iscolon(selector)
                 N = length(obj);
@@ -347,9 +365,9 @@ classdef Index
         end
         
        function logicalIndexChecker(obj, selector, allowedSeries)
-          % validate logical index array (or dataframe series)
+          % validate logical index array (or logical dataframe series)
             %  Parameters:
-            %     seriesType:  accept all/onlyRow/onlyCol logical dataframe series                                                 
+            %     seriesType:  accept all/onlyRow/onlyCol logical dataframe series              
             if nargin<3, allowedSeries = 'all'; end
             assert(ismember(allowedSeries,{'all','onlyRowSeries','onlyColSeries'}), "Unsupported SeriesType parameter.");                            
             if isFrameSeries(selector)
