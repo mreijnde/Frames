@@ -140,27 +140,50 @@ classdef Index
         function len = length(obj)
             len = length(obj.value_);
         end
+                
         
-        function pos = positionOf(obj,selector,varargin)
-            % find position of 'selector' in the Index
-            selector = obj.getValue_andCheck(selector,varargin{:});
-            if islogical(selector)
-                if length(selector) == length(obj.value_)
-                    % convert logical array to position array
-                    allpos = 1:length(obj.value_);                    
-                    pos = allpos(selector);
-                else
-                    %error('frames:Index:positionOf',...
-                    error('MATLAB:badsubscript', ...                
-                          'Logic array used for indexing should be of the same length as index itself.') 
-                end                
-            elseif obj.requireUnique_
-                assertFoundIn(selector,obj.value_)
-                [~,~,pos] = intersect(selector,obj.value_,'stable');
+        function pos = positionOf(obj,selector, userCall, allowedSeries, positionIndex)
+            % find position of selector in the Index            
+            % supports:
+            %    - colon      
+            %    - index value array / index position array
+            %    - logical array/ logical Series
+            %
+            % output:
+            %    validated index position array (or colon)
+            %
+            if nargin<3, userCall = false; end
+            if nargin<4, allowedSeries = 'all'; end
+            if nargin<5, positionIndex = false; end  
+            
+            if iscolon(selector)
+                % colon selector
+                pos = selector;  % just keep it
+            elseif islogical(selector) || isFrameSeries(selector)
+                %  logical selectors 
+                if userCall
+                    obj.logicalIndexChecker(selector, allowedSeries);
+                end
+                selector = obj.getValue_from(selector);
+                pos = find(selector); %convert to position index
+            elseif positionIndex
+                % position index selector
+                if userCall 
+                    obj.positionIndexChecker(selector);
+                end
+                pos = selector;                
             else
-                pos = findPositionIn(selector,obj.value_);
-            end
+                %  value selectors
+                selector = obj.getValue_andCheck(selector,userCall);           
+                if obj.requireUnique_            
+                    assertFoundIn(selector,obj.value_)
+                    [~,~,pos] = intersect(selector,obj.value_,'stable');
+                else
+                    pos = findPositionIn(selector,obj.value_);
+                end
+            end    
         end
+        
         function pos = positionIn(obj,target,varargin)
             % find position of the Index into the target
             target = obj.getValue_andCheck(target,varargin{:});
@@ -258,8 +281,25 @@ classdef Index
                 obj = builtin('subsasgn',obj,s,b);
             end
         end
-    end
+        
+                                                   
+        function N = getSelectorItemCount(obj, selector)
+            % get number of elements from matlab compatible selector            
+            if iscolon(selector)
+                N = length(obj);
+            elseif islogical(selector)
+                N = sum(selector);
+            else
+                N = length(selector);
+            end                
+        end
     
+      
+    
+
+    end
+
+
     methods(Access=protected)
         function valueChecker(obj,value,fromSubsAsgnIdx,b)
             if obj.singleton_
@@ -295,6 +335,42 @@ classdef Index
             end
         end
         
+        function positionIndexChecker(obj, selector)    
+            % validate position index
+            assert(isnumeric(selector) && all(selector>0) && all(floor(selector)==selector), ...
+                'frames:getValidMatlabSelector:InvalidPositionIndexType', ...
+                 "Only positive integers allowed as position index");
+            assert(all(selector<=length(obj)), 'frames:getValidMatlabSelector:PositionIndexOutOfRange', ...
+                "Position index out of range (%d)", length(obj));        
+            assert(~obj.requireUniqueSorted_ || issorted(selector), 'frames:Index:requireSortedFail', ...
+                'Index value is required to be sorted and unique.')            
+        end
+        
+       function logicalIndexChecker(obj, selector, allowedSeries)
+          % validate logical index array (or dataframe series)
+            %  Parameters:
+            %     seriesType:  accept all/onlyRow/onlyCol logical dataframe series                                                 
+            if nargin<3, allowedSeries = 'all'; end
+            assert(ismember(allowedSeries,{'all','onlyRowSeries','onlyColSeries'}), "Unsupported SeriesType parameter.");                            
+            if isFrameSeries(selector)
+                % convert logical series to logical array after checks
+                assert(islogical(selector.data_), 'frames:logicalIndexChecker:FrameSeriesRequired', ...
+                       "Only logical DataFrame-Series allowed for indexing");                    
+                assert(allowedSeries~="onlyColSeries" || selector.colseries, 'frames:logicalIndexChecker:noRowSeries', ...
+                       "Indexing of rows only allowed with DataFrame logical RowSeries.");
+                assert(allowedSeries~="onlyRowSeries" || selector.rowseries, 'frames:logicalIndexChecker:noColSeries', ...
+                       "Indexing of columns only allowed with DataFrame logical ColSeries.");
+                selector = selector.data_;
+            end
+            assert(islogical(selector), 'frames:logicalIndexChecker:FrameSeriesRequired', ...
+                       "Selector is not logical");                    
+            assert(length(selector)==length(obj.value_), 'frames:logicalIndexChecker:WrongDimension', ...
+                   "Logical index array should have same size as dimension.", length(obj.value_));
+            assert(isvector(selector), 'frames:logicalIndexChecker:VectorRequired', ...
+                   "Logical index array should be vector (no matrix)");                            
+        end    
+        
+        
         function u = unionData(obj,v1,v2)
             if obj.requireUnique_
                 if obj.requireUniqueSorted_
@@ -317,10 +393,9 @@ classdef Index
         function value = getValue_from(~,value)
             if isa(value,'frames.Index')
                 value = value.value_;
-            end
-            if isFrame(value)
+            elseif isFrame(value)
                 value = value.data_;
-            end
+            end    
             if isrow(value)
                 value = value';
             end

@@ -1090,33 +1090,7 @@ classdef DataFrame
                                 
             end
         end
-%         
-%         % ToDo rewrite subsref and subsasgn using the new tools when Matlab
-%         % release them
-%         function varargout = subsref(obj,s)
-%             if length(s)>1  % when there are several subsref
-%                 if strcmp(s(1).type,'.')
-%                     [varargout{1:nargout}] = builtin('subsref',obj,s);
-%                 else  % to handle the () and {} cases (Matlab struggles otherwise).
-%                     other = subsref(obj,s(1));
-%                     [varargout{1:nargout}] = subsref(other,s(2:end));
-%                 end
-%                 return
-%             end
-%             
-%             nargoutchk(0,1)
-%             switch s.type
-%                 case '()'
-%                     [idx,col] = getSelectorsFromSubs(s.subs);
-%                     varargout{1} = obj.loc(idx,col);
-%                 case '{}'
-%                     [idx,col] = getSelectorsFromSubs(s.subs);
-%                     varargout{1} = obj.iloc(idx,col);
-%                 case '.'
-%                     varargout{1} = obj.(s.subs);
-%             end
-%         end
-%         
+    
 
         function obj = subsasgn(obj,s,b)
             % assign values to dataframe by indexing: (),{},loc,iloc operations and support of column assign by dot columnname            % 
@@ -1126,12 +1100,12 @@ classdef DataFrame
                     if length(s)>1
                         error("Nested assign in combination with %s indexing operator not supported", s(1).type)
                     end
-                    if isFrame(s(1).subs{1}) || (length(s(1).subs)>1 && isFrame(s(1).subs{2}))
-                        % special case: dataframe with logical as indexing
-                        obj = obj.modifyFromDFbool(s(1).subs, b);
+                    if isLogicalSelector2D(s(1).subs{1})
+                        % special case: combined logical indexing of rows and columns (2d logical selector)
+                        obj = obj.modifyFromBool2D(s(1).subs, b);
                     else
                         % normal indexing with seperate index and cols
-                        [idx,col] = getSelectorsFromSubs(s(1).subs);
+                        [idx,col] = getSelectorsFromSubs(s(1).subs);                         
                         fromPosition = (s(1).type=="{}");
                         obj = obj.modify(b,idx,col, fromPosition);
                     end
@@ -1145,26 +1119,27 @@ classdef DataFrame
                          elseif length(s)>2
                              error("Nested assign in combination with .%s() indexing not supported", field);
                          end
-                         if isFrame(s(2).subs{1}) || (length(s(2).subs)>1 && isFrame(s(2).subs{2}))
-                            % special case: dataframe with logical as indexing
-                            obj = obj.modifyFromDFbool(s(2).subs, b);
+                         if isLogicalSelector2D(s(2).subs{1})
+                             % special case: combined logical indexing of rows and columns (2d logical selector)
+                             obj = obj.modifyFromBool2D(s(2).subs, b);                            
                          else
                            % normal indexing with seperate index and cols
                            [idx,col] = getSelectorsFromSubs(s(2).subs);
                            fromPosition = (field=="iloc");
-                           obj = obj.modify(b,idx, col, fromPosition);
+                           obj = obj.modify(b,idx,col, fromPosition);
                          end
-                    elseif ismember(field,  ["index","columns"])
+                         
+                    elseif ismember(field, ["index","columns"])
                         % assign index/ column (with/without) indexing
                         if length(s)>2
                             error("Nested assign of .%s in combination with () indexing not supported", field)
                         end
-                        mustBeNonempty(b);
-                        %mustBeFullVector(b);
+                        assert(~isempty(b), 'frames:indexValidation:mustBeNonempty', ...
+                            "assignment of %s not allowed to be empty", field);                        
                         if length(s)==1
                             obj.(field+"") = b;
                         else
-                            obj.(field + "_").value(s(2).subs{1}) = b;
+                            obj.(field+"_").value(s(2).subs{1}) = b;
                         end
                         
                     elseif obj.columns_.contains(field)
@@ -1198,11 +1173,11 @@ classdef DataFrame
                         % unknown, add as new data column
                         if length(s)>1
                             error("Indexing (or nested assignment) on a new (to-be-created) column ('%s') not supported", field);
-                        end
-                        % append column
-                        %(todo: handle with seperate function with error checking)
+                        end                        
                         if isFrame(b)
-                            b = b.data;
+                            assert(b.colseries, "DataFrame ColSeries required");                            
+                            indexColChecker(obj, b);
+                            b = b.data;                            
                         end
                         if length(b) ~= size(obj,1) && length(b) ~= 1
                             error("Invalid number of elements supplied, single value or same number of elements as dataframe index");
@@ -1210,6 +1185,11 @@ classdef DataFrame
                         obj.data_(:,end+1) = b;
                         obj.columns_.value(end+1) = field;
                     end
+            end
+            
+            function bool = isLogicalSelector2D(index)
+                bool = isFrame(index) && ~isFrameSeries(index) || ...
+                       (islogical( index) && ~isvector(index));
             end
         end
                 
@@ -1225,44 +1205,25 @@ classdef DataFrame
     methods(Hidden, Access=protected)
         
         function obj = iloc_(obj,idxPosition,colPosition,userCall)
-            if nargin < 4, userCall=false; end
-            if isFrame(idxPosition) && islogical(idxPosition.data_) || ...
-                       (islogical(idxPosition) && isvector(idxPosition))
-                idxPosition = obj.index_.positionOf(idxPosition);
+            if nargin < 4, userCall=false; end                        
+            idxID = obj.index_.positionOf(idxPosition,   userCall, 'onlyColSeries', true);
+            colID = obj.columns_.positionOf(colPosition, userCall, 'onlyRowSeries', true);              
+            if ~iscolon(idxID)
+                obj.index_.value_ = obj.index_.value_(idxID);
+            end    
+            if ~iscolon(colID)
+                obj.columns_.value_ = obj.columns_.value_(colID);
             end
-            if isFrame(colPosition) && islogical(colPosition.data_) || ...
-                       (islogical(colPosition) && isvector(colPosition))
-                colPosition = obj.columns_.positionOf(colPosition);
-            end
-            if userCall
-                assert(isvector(idxPosition) && isvector(colPosition), 'frames:iloc:notvectors', ...
-                    'Selectors must be vectors.')
-            end
-            if ~iscolon(idxPosition)
-                if ~userCall || islogical(idxPosition)
-                    obj.index_.value_ = obj.index_.value_(idxPosition);
-                else
-                    obj.index_.value = obj.index_.value_(idxPosition);
-                end
-            end
-            if ~iscolon(colPosition)
-                if ~userCall || islogical(colPosition)
-                    obj.columns_.value_ = obj.columns_.value_(colPosition);
-                else
-                    obj.columns_.value = obj.columns_.value_(colPosition);
-                end
-            end
-            obj.data_ = obj.data_(idxPosition,colPosition);
+            obj.data_ = obj.data_(idxID,colID);           
         end
-        function obj = loc_(obj,idxName,colName,userCall)
-            if nargin < 4, userCall=false; end
-            idxID = ':'; colID = ':';
-            if ~iscolon(idxName)
-                idxID = obj.index_.positionOf(idxName,userCall);
+        function obj = loc_(obj,idxName,colName,userCall)            
+            if nargin < 4, userCall=false; end     
+            idxID = obj.index_.positionOf(idxName,   userCall, 'onlyColSeries');
+            colID = obj.columns_.positionOf(colName, userCall, 'onlyRowSeries');              
+            if ~iscolon(idxName)                
                 obj.index_.value_ = obj.index_.value_(idxID);
             end
-            if ~iscolon(colName)
-                colID = obj.columns_.positionOf(colName,userCall);
+            if ~iscolon(colName)                
                 obj.columns_.value_ = obj.columns_.value_(colID);
             end
             obj.data_ = obj.data_(idxID,colID);
@@ -1297,81 +1258,77 @@ classdef DataFrame
         end
         
         function obj = modify(obj,data,index,columns,fromPosition)
+            % modify DataFrame selection by index and columns to supplied data
             if nargin<5; fromPosition = false; end
-            if ~fromPosition
-                [index,columns] = localizeSelectors(obj,index,columns);
+            idx = obj.index_.positionOf(index,     true, 'onlyColSeries', fromPosition);
+            col = obj.columns_.positionOf(columns, true, 'onlyRowSeries', fromPosition);                     
+            % get data from DataFrame
+            if isFrame(data)
+                indexColChecker(obj, data);
+                data = data.data_;
             end
-            if ~isvector(index) && islogical(index) && all(size(index)==size(obj.data_)) && iscolon(columns)
-                obj.data_(index) = data;
-                return
-            end
-            assert(isvector(index) && isvector(columns), 'frames:modify:notvectors', ...
-                'Selectors must be vectors.')
+            % check dimensions of supplied data
+            idxN = obj.index_.getSelectorItemCount(idx);
+            colN = obj.columns_.getSelectorItemCount(col);                
+            if isvector(data)
+               % match data vector direction with indexing
+               if idxN==1 && colN>1, data = data(:)'; end
+               if idxN>1 && colN==1, data = data(:); end
+            end 
+            assert( size(data,1) == idxN || size(data,1)<=1, 'frames:modify:WrongDataDimension', ...
+                "not matching number of rows in supplied data");
+            assert( size(data,2) == colN || size(data,2)<=1, 'frames:modify:WrongDataDimension', ...
+                "not matching number of cols in supplied data");            
             sizeDataBefore = size(obj.data_);
-            obj.data_(index,columns) = data;
-            
+            % update values with data
+            obj.data_(idx,col) = data;
+            % check if data dimensions after update
             badIndexing = size(obj.data_) > sizeDataBefore;
             if badIndexing(1)
                 error('frames:modify:badIndex','Row index exceeds frame dimensions')
             elseif badIndexing(2)
                 error('frames:modify:badColumns','Column index exceeds frame dimensions')
             end
-            
+            % handle indexes in case of deletion of data
             if isequal(data,[])
                 if iscolon(columns)
                     % matrix(:,:)=[] returns a 0xN matrix, so if both index
                     % and columns are empty, keep the columns
                     if iscolon(index)
-                        % vector(1:end) returns an 0x1 empty vector of the
-                        % same class, while vector(:) returns []
-                        index = true(length(obj.index_),1);
+                         % vector(1:end) returns an 0x1 empty vector of the
+                         % same class, while vector(:) returns []
+                         idx = true(length(obj.index_),1);
                     end
-                    obj.index_.value_(index) = [];
+                    obj.index_.value_(idx) = [];
                 else
-                    obj.columns_.value_(columns) = [];
+                    obj.columns_.value_(col) = [];
                 end
             end
         end
-        function [index,columns] = localizeSelectors(obj,index,columns)
-            if ~iscolon(index)
-                index = obj.index_.positionOf(index,true);
-            end
-            if ~iscolon(columns)
-                columns = obj.columns_.positionOf(columns,true);
-            end
-        end
-        function obj = modifyFromDFbool(obj,idxCol,b)
-            [idx,col] = getSelectorsFromSubs(idxCol);
-            if length(idxCol) > 1
-                if isFrame(idx) && ~idx.colseries
-                    error('frames:dfBoolSelection:needSeries', ...
-                        'The first selector must be a ColSeries.')
-                end
-            end
+
+        function obj = modifyFromBool2D(obj, subs, b)
+            assert( length(subs)==1, 'frames:modifyFromBool2D:OnlySingleSelectorAllowed' , ...
+                 'Only single 2d logical selector allowed');
+            idx = subs{1}; 
             other = obj.asColSeries(false).asRowSeries(false);
             if isFrame(idx)
+                % logical DataFrame selector 
+                assert( ~isFrameSeries(idx), 'frames:modifyFromBool2D:noDataFrameSeries', ...
+                    'The selector dataframe must not be a series')
                 indexColChecker(other,idx);
-                assert(isa(idx.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
+                assert(islogical(idx.data_),'frames:modifyFromBool2D:needLogical', ...
                     'The selector must be a logical.')
-                assert(~idx.rowseries,'frames:dfBoolSelection:noRowSeries', ...
-                    'The first selector can not be a RowSeries.')
-                if idx.colseries
-                    idx = idx.data_;
-                else
-                    obj.data_(idx.data_) = b;
-                    return
-                end
+                obj.data_(idx.data_) = b;
+            elseif islogical(idx)
+                % logical matrix selector
+                assert( all(size(idx)==size(obj.data_)), 'frames:modifyFromBool2D:WrongSize', ...
+                    'Logical matrix used as mask not same size as DataFrame');
+                obj.data_(idx) = b;
+            else
+                error('Unsupported first selector type: need logical DataFrame or logical matrix');                             
             end
-            if isFrame(col)
-                indexColChecker(other,col);
-                assert(isa(col.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
-                    'The selector must be a logical.')
-                assert(~col.colseries && col.rowseries,'frames:dfBoolSelection:needRowSeries', ...
-                    'The second selector must be a RowSeries.')
-                col = col.data_;
-            end
-            obj.data_(idx,col) = b;
         end
+         
         
         function series = matrix2series(obj,fun,canOmitNaNs,varargin)
             if ~isempty(varargin)
@@ -1623,11 +1580,21 @@ end
 
 %--------------------------------------------------------------------------
 function [idx, col] = getSelectorsFromSubs(subs)
-len = length(subs);
-if ~ismember(len, [1,2]); error('Error in reference for index and columns.'); end
-if len==1; col = ':'; else; col = subs{2}; end
-idx = subs{1};
+switch length(subs)
+    case 0
+       idx = ':'; 
+       col = ':';    
+    case 1
+       idx = subs{1};
+       col = ':';
+    case 2
+       idx = subs{1};
+       col = subs{2};
+    otherwise
+       error('Error in reference for index and columns.');
 end
+end
+
 
 %--------------------------------------------------------------------------
 function hasEntry = intervalHasEntry(data,selector)
