@@ -113,7 +113,9 @@ classdef DataFrame
         columns_  % Nx1 frames.Index
         name_  % textscalar, name of the frame
     end
-    
+    properties (Constant)
+      settings = frames.DataFrameSettings;
+    end
     methods
         function obj = DataFrame(data,index,columns,NameValueArgs)
             %DATAFRAME frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
@@ -1064,12 +1066,16 @@ classdef DataFrame
                         end
                         varargout{1} = builtin('subsref',obj,s(1));                                                                               
                     elseif iscolumnname                          
-                        % get data column
-                        dfcol = obj.loc(':', string(s(1).subs));
-                        if size(dfcol,2)>1
-                            error("Column name '%s' is not unique, cannot use dot notation to access data.", s(1).subs);
+                        if obj.settings.ColumnDotNotation
+                            % get data column
+                            dfcol = obj.loc(':', string(s(1).subs));
+                            if size(dfcol,2)>1
+                                error("Column name '%s' is not unique, cannot use dot notation to access data.", s(1).subs);
+                            end
+                            varargout{1} = dfcol.asColSeries(); % always output as column series
+                        else
+                            error("Accessing columns by dot notation not enabled: enable it by static property 'df.settings.ColumnDotNotation = true'.");
                         end
-                        varargout{1} = dfcol.asColSeries(); % always output as column series
                     else
                         error("unknown .dot reference '.%s'", s(1).subs);                        
                     end 
@@ -1167,13 +1173,18 @@ classdef DataFrame
                             obj.(field + "_").value(s(2).subs{1}) = b;
                         end
                         
-                    elseif obj.columns_.contains(field)
+                    elseif obj.columns_.contains(field)                        
                         % assign to existing column
                         if isprop(obj, field)
-                            warning("Ambiguous dot assign '." + field + "' detected. Data column with same " + ...
-                                "name as this builtin property also exists. Ignoring, assigning property.");
+                            if obj.settings.ColumnDotNotation
+                                warning("Ambiguous dot assign '." + field + "' detected. Data column with same " + ...
+                                    "name as this builtin property also exists. Ignoring, assigning property.");
+                            end    
                             obj = builtin('subsasgn',obj,s,b);
                             return
+                        end
+                        if ~obj.settings.ColumnDotNotation
+                            error("Assigning columns by dot notation not enabled: enable it by static property 'df.settings.ColumnDotNotation = true'.");
                         end
                         if length(s)>2 || (length(s)==2 && s(2).type==".")
                             error("Nested assign of data column (.%s) not supported", field)
