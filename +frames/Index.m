@@ -86,6 +86,9 @@ classdef Index
             if isa(value,'frames.Index')
                 error('frames:index:setvalue','value of Index cannot be an Index')
             end
+            if islogical(value)
+                error('frames:index:setvalueLogical','value of Index cannot be a logical')
+            end
             value = obj.getValue_andCheck(value,true);
             if isrow(value)
                 value = value';
