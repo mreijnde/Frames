@@ -1468,7 +1468,7 @@ classdef DataFrame
         
         function obj = uminus(obj), obj.data_ = uminus(obj.data_); end
         function obj = uplus(obj), obj.data_ = uplus(obj.data_); end
-        
+        function obj = not(obj), obj.data_ = not(obj.data_); end
     end
     
     methods(Hidden, Static, Access=protected)

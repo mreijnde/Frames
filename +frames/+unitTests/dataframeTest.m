@@ -810,6 +810,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             res = frames.DataFrame([1 2 3]',2:4,"u")*frames.DataFrame([1 2 3],"u",["a" "b" "c"]);
             t.verifyEqual(res.index,(2:4)')
             t.verifyEqual(res.columns,["a" "b" "c"])
+            
+            % logical operations
+            df = frames.DataFrame([true,false;false,true]);
+            t.verifyEqual(~df,frames.DataFrame([false,true;true,false]))
         end
         
         function mathOperationsMiscellaneousTest(t)
