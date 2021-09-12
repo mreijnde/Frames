@@ -298,14 +298,17 @@ classdef DataFrame
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             if nargin<3, colPosition=':'; end
+            [idxPosition,colPosition] = handleSelectionWithDF(obj,idxPosition,colPosition);
             obj = obj.iloc_(idxPosition,colPosition,true);
         end
+            
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
             % df.loc([2 4], ["a" "b"]) returns the rows named 2 and 4 of the columns named "a" and "b"
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
+            [idxName,colName] = handleSelectionWithDF(obj,idxName,colName);
             obj = obj.loc_(idxName,colName,true);
         end
         
@@ -1057,17 +1060,13 @@ classdef DataFrame
                     obj.([beingAssigned,'_']).value(selectors{1}) = b;
                     return
                 elseif any(locs)
-                    if locs(1)
-                        if any(isFrame(selectors{:}))
-                            obj = obj.modifyFromDFbool(selectors,b);
-                            return
-                        end
-                        fromPosition = true;
+                    fromPosition = locs(1);
+                    if any(isFrame(selectors{:}))
+                        obj = obj.modifyFromDFbool(selectors,b,fromPosition);
                     else
-                        fromPosition = false;
+                        [idx,col] = getSelectorsFromSubs(selectors);
+                        obj = obj.modify(b,idx,col,fromPosition);
                     end
-                    [idx,col] = getSelectorsFromSubs(selectors);
-                    obj = obj.modify(b,idx,col,fromPosition);
                     return
                 end
             end
@@ -1076,15 +1075,13 @@ classdef DataFrame
                 return
             end
             switch s.type
-                case '()'
-                    [idx,col] = getSelectorsFromSubs(s.subs);
-                    obj = obj.modify(b,idx,col);
-                case '{}'
+                case {'()','{}'}
+                    fromPosition = strcmp(s.type,'{}');
                     if any(isFrame(s.subs{:}))
-                        obj = obj.modifyFromDFbool(s.subs,b);
+                        obj = obj.modifyFromDFbool(s.subs,b,fromPosition);
                     else
                         [idx,col] = getSelectorsFromSubs(s.subs);
-                        obj = obj.modify(b,idx,col,true);
+                        obj = obj.modify(b,idx,col,fromPosition);
                     end
                 case '.'
                     if ismember(s(1).subs,properties(obj))
@@ -1129,13 +1126,11 @@ classdef DataFrame
         end
         function obj = loc_(obj,idxName,colName,userCall)
             if nargin < 4, userCall=false; end
-            idxID = ':'; colID = ':';
-            if ~iscolon(idxName)
-                idxID = obj.index_.positionOf(idxName,userCall);
+            [idxID,colID] = obj.localizeSelectors(idxName,colName,userCall);
+            if ~iscolon(idxID)
                 obj.index_.value_ = obj.index_.value_(idxID);
             end
-            if ~iscolon(colName)
-                colID = obj.columns_.positionOf(colName,userCall);
+            if ~iscolon(colID)
                 obj.columns_.value_ = obj.columns_.value_(colID);
             end
             obj.data_ = obj.data_(idxID,colID);
@@ -1172,7 +1167,7 @@ classdef DataFrame
         function obj = modify(obj,data,index,columns,fromPosition)
             if nargin<5; fromPosition = false; end
             if ~fromPosition
-                [index,columns] = localizeSelectors(obj,index,columns);
+                [index,columns] = obj.localizeSelectors(index,columns,true);
             end
             if ~isvector(index) && islogical(index) && all(size(index)==size(obj.data_)) && iscolon(columns)
                 obj.data_(index) = data;
@@ -1205,16 +1200,24 @@ classdef DataFrame
                 end
             end
         end
-        function [index,columns] = localizeSelectors(obj,index,columns)
-            if ~iscolon(index)
-                index = obj.index_.positionOf(index,true);
+        function [index,columns] = localizeSelectors(obj,index,columns,userCall)
+            if ~iscolon(index) && ~islogical(index)
+                index = obj.index_.positionOf(index,userCall);
             end
-            if ~iscolon(columns)
-                columns = obj.columns_.positionOf(columns,true);
+            if ~iscolon(columns) && ~islogical(columns)
+                columns = obj.columns_.positionOf(columns,userCall);
             end
         end
-        function obj = modifyFromDFbool(obj,idxCol,b)
+        function obj = modifyFromDFbool(obj,idxCol,b,fromPosition)
             [idx,col] = getSelectorsFromSubs(idxCol);
+            if ~fromPosition
+                if ~isFrame(idx) && ~iscolon(idx)
+                    idx = obj.index_.positionOf(idx);
+                end
+                if ~isFrame(col) && ~iscolon(col)
+                    col = obj.columns_.positionOf(col);
+                end
+            end
             if length(idxCol) > 1
                 if isFrame(idx) && ~idx.colseries
                     error('frames:dfBoolSelection:needSeries', ...
@@ -1223,11 +1226,7 @@ classdef DataFrame
             end
             other = obj.asColSeries(false).asRowSeries(false);
             if isFrame(idx)
-                indexColChecker(other,idx);
-                assert(isa(idx.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
-                    'The selector must be a logical.')
-                assert(~idx.rowseries,'frames:dfBoolSelection:noRowSeries', ...
-                    'The first selector can not be a RowSeries.')
+                checkDFboolSelector1(other,idx);
                 if idx.colseries
                     idx = idx.data_;
                 else
@@ -1236,11 +1235,7 @@ classdef DataFrame
                 end
             end
             if isFrame(col)
-                indexColChecker(other,col);
-                assert(isa(col.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
-                    'The selector must be a logical.')
-                assert(~col.colseries && col.rowseries,'frames:dfBoolSelection:needRowSeries', ...
-                    'The second selector must be a RowSeries.')
+                checkDFboolSelector2(other,col);
                 col = col.data_;
             end
             obj.data_(idx,col) = b;
@@ -1567,6 +1562,38 @@ end
 if ~df1.columns_.singleton_ && ~df2.columns_.singleton_
     assert(isequal(df1.columns_.value_,df2.columns_.value_), ...
         'frames:elementWiseHandler:differentColumns','Frames have different columns!')
+end
+end
+
+%--------------------------------------------------------------------------
+function checkDFboolSelector1(df,idxDF)
+assert(isa(idxDF.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
+    'The selector must be a logical.')
+assert(~idxDF.rowseries,'frames:dfBoolSelection:noRowSeries', ...
+    'The first selector can not be a RowSeries.')
+indexColChecker(df,idxDF);
+end
+
+%--------------------------------------------------------------------------
+function checkDFboolSelector2(df,colDF)
+assert(isa(colDF.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
+    'The selector must be a logical.')
+assert(~colDF.colseries && colDF.rowseries,'frames:dfBoolSelection:needRowSeries', ...
+    'The second selector must be a RowSeries.')
+indexColChecker(df,colDF);
+end
+
+%--------------------------------------------------------------------------
+function [idx,col] = handleSelectionWithDF(obj,idx,col)
+if isFrame(idx)
+    checkDFboolSelector1(obj,idx);
+    assert(idx.colseries,'frames:dfBoolSelection:needColSeries', ...
+        'The first selector must be a ColSeries.')
+    idx = idx.data_;
+end
+if isFrame(col)
+    checkDFboolSelector2(obj,col);
+    col = col.data_;
 end
 end
 

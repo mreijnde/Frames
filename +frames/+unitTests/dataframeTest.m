@@ -241,6 +241,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             df=frames.DataFrame([1 2 3; 2 5 NaN],[1 2], [11,22,33]);
             df(2,[22,33]) = 3.14;
             t.verifyEqual(df.data,[1 2 3; 2 3.14 3.14])
+            df(true,22) = 2.72;
+            t.verifyEqual(df.data,[1 2.72 3; 2 3.14 3.14])
             
             % end in selection
             df=frames.DataFrame([1 2;3 4;5 6]);
@@ -299,7 +301,13 @@ classdef dataframeTest < matlab.unittest.TestCase
             df.iloc(dfbool) = 33;
             t.verifyEqual(df,frames.DataFrame([1 33;33 4],frames.Index([1 2])))
             
-            df{seriesbool} = 10;
+            df{seriesbool} = 9;
+            t.verifyEqual(df,frames.DataFrame([1 33;9 9],frames.Index([1 2])))
+            
+            df.loc(seriesbool) = 8;
+            t.verifyEqual(df,frames.DataFrame([1 33;8 8],frames.Index([1 2])))
+            
+            df(seriesbool,["Var1","Var2"]) = 10;
             t.verifyEqual(df,frames.DataFrame([1 33;10 10],frames.Index([1 2])))
             
             df{seriesbool,vector} = 11;
@@ -336,6 +344,25 @@ classdef dataframeTest < matlab.unittest.TestCase
             sol = df(2,"b");
             expected = frames.DataFrame(5,2,"b");
             t.verifyEqual(sol,expected)
+            
+            % selection with logical
+            sol1 = df(true, [false true]);
+            sol2 = df{true, [false true]};
+            sol3 = df{1, [false true]};
+            sol4 = df(1, [false true]);
+            sol5 = df(1, frames.DataFrame([false true false],NaN,df.columns,RowSeries=true));
+            sol6 = df(frames.DataFrame([true false]',df.index,NaN,ColSeries=true), ...
+                frames.DataFrame([false true false],NaN,df.columns,RowSeries=true));
+            t.verifyEqual(sol1,sol2)
+            t.verifyEqual(sol1,sol3)
+            t.verifyEqual(sol1,sol4)
+            t.verifyEqual(sol1,sol5)
+            t.verifyEqual(sol1,sol6)
+            t.verifyEqual(sol1,frames.DataFrame(2,1,"b"))
+            t.verifyError(@() df(1, frames.DataFrame([false true],NaN,["a" "b"],RowSeries=true)), ...
+                'frames:elementWiseHandler:differentColumns')
+            t.verifyError(@() df(1, frames.DataFrame([false true],1,["a" "b"])), ...
+                'frames:dfBoolSelection:needRowSeries')
             
             % index only selection
             sol = df(2);
