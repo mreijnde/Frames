@@ -1383,7 +1383,9 @@ classdef DataFrame
                     % show content
                     disptable = obj.t;
                     if obj.colseries
-                       disptable.Properties.VariableNames{1} = 'NaN';
+                       disptable.Properties.VariableNames{1} = '<missing>';
+                    elseif obj.rowseries
+                       disptable.Properties.RowNames{1} = '<missing>';
                     end
                     disp(disptable);               
                     % description line
