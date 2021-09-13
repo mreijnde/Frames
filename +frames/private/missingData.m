@@ -1,3 +1,3 @@
-function bool = missingData(varargin)
-bool = frames.internal.missingData(varargin{:});
+function d = missingData(varargin)
+d = frames.internal.missingData(varargin{:});
 end
