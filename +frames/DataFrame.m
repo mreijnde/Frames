@@ -1381,13 +1381,7 @@ classdef DataFrame
             if all(size(obj) < [maxRows,maxCols])
                 try
                     % show content
-                    disptable = obj.t;
-                    if obj.colseries
-                       disptable.Properties.VariableNames{1} = missingDataDescription(obj.columns);
-                    elseif obj.rowseries
-                       disptable.Properties.RowNames{1} = missingDataDescription(obj.index);
-                    end
-                    disp(disptable);               
+                    disp(obj.t);               
                     % description line
                     line = class(obj);
                     if obj.colseries
@@ -1403,18 +1397,6 @@ classdef DataFrame
             else
                 details(obj);
             end
-            
-            
-            function str = missingDataDescription(value)                
-                if isnumeric(value) || isduration(value)
-                    str = 'NaN';
-                elseif isdatetime(value)
-                    str = 'NaT';
-                else                    
-                   str = '<missing>';                   
-                end
-            end
-                
         end
         
         function n = numArgumentsFromSubscript(varargin), n = 1; end
