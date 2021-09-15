@@ -63,11 +63,11 @@ classdef TimeIndex < frames.Index
             obj.format = format;
         end
         
-        function pos = positionOf(obj,selector,varargin)
+        function pos = getSelector(obj,selector,varargin)
             % find position of 'selector' in the Index
             % On can use a timerange to specify which values to select
-            % .positionOf(timerange)
-            % .positionOf("dateStart:dateEnd:dateFormat")
+            % .getSelector(timerange)
+            % .getSelector("dateStart:dateEnd:dateFormat")
             if isTextScalar(selector) && contains(selector,':')
                 selector = obj.getTimerange(selector);
             end
@@ -89,7 +89,7 @@ classdef TimeIndex < frames.Index
                 pos = ids(whichRows);
                 return
             end
-            pos = positionOf@frames.Index(obj,selector,varargin{:});
+            pos = getSelector@frames.Index(obj,selector,varargin{:});
         end
         
     end

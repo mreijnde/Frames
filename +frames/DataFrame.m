@@ -1105,42 +1105,25 @@ classdef DataFrame
     
     methods(Hidden, Access=protected)
         
-        function obj = iloc_(obj,idxPosition,colPosition,userCall)
+         function obj = loc_(obj,idxSelector,colSelector,userCall, positionIndex)            
             if nargin < 4, userCall=false; end
-            if userCall
-                assert(isvector(idxPosition) && isvector(colPosition), 'frames:iloc:notvectors', ...
-                    'Selectors must be vectors.')
-            end
-            if ~iscolon(idxPosition)
-                if ~userCall || islogical(idxPosition)
-                    obj.index_.value_ = obj.index_.value_(idxPosition);
-                else
-                    obj.index_.value = obj.index_.value_(idxPosition);
-                end
-            end
-            if ~iscolon(colPosition)
-                if ~userCall || islogical(colPosition)
-                    obj.columns_.value_ = obj.columns_.value_(colPosition);
-                else
-                    obj.columns_.value = obj.columns_.value_(colPosition);
-                end
-            end
-            obj.data_ = obj.data_(idxPosition,colPosition);
-        end
-        function obj = loc_(obj,idxName,colName,userCall)
-            if nargin < 4, userCall=false; end
-            idxID = ':'; colID = ':';
-            if ~iscolon(idxName)
-                idxID = obj.index_.positionOf(idxName,userCall);
+            if nargin < 5, positionIndex=false; end
+            idxID = obj.index_.getSelector(idxSelector,   userCall, 'onlyColSeries', positionIndex);
+            colID = obj.columns_.getSelector(colSelector, userCall, 'onlyRowSeries', positionIndex);              
+            if ~iscolon(idxSelector)
                 obj.index_.value_ = obj.index_.value_(idxID);
             end
-            if ~iscolon(colName)
-                colID = obj.columns_.positionOf(colName,userCall);
+            if ~iscolon(colSelector)                
                 obj.columns_.value_ = obj.columns_.value_(colID);
             end
             obj.data_ = obj.data_(idxID,colID);
-        end
-        
+         end
+         
+         function obj = iloc_(obj,idxPosition,colPosition,userCall)
+            if nargin < 4, userCall=false; end                        
+            obj = obj.loc_(idxPosition, colPosition, userCall, true); 
+         end
+                 
         function tb = getTable(obj)
             idx = indexForTable(obj.index);
             col = columnsForTable(obj.columns);
