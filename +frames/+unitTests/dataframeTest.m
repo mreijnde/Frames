@@ -325,10 +325,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@notAligned,'frames:elementWiseHandler:differentIndex')
             function notAligned, df{dfother} = 0; end
             
-            t.verifyError(@noTwoElements,'frames:dfBoolSelection:needSeries')
+            t.verifyError(@noTwoElements,'frames:modifyFromBool2D:OnlySingleSelectorAllowed')
             function noTwoElements, df{dfbool,:} = 0; end
             
-            t.verifyError(@noFirstCol,'frames:dfBoolSelection:noRowSeries')
+            t.verifyError(@noFirstCol,'frames:logicalIndexChecker:onlyColSeries')
             function noFirstCol, df{vector} = 0; end
         end
         
@@ -360,9 +360,9 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(sol1,sol6)
             t.verifyEqual(sol1,frames.DataFrame(2,1,"b"))
             t.verifyError(@() df(1, frames.DataFrame([false true],NaN,["a" "b"],RowSeries=true)), ...
-                'frames:elementWiseHandler:differentColumns')
+                'frames:logicalIndexChecker:differentColumns')
             t.verifyError(@() df(1, frames.DataFrame([false true],1,["a" "b"])), ...
-                'frames:dfBoolSelection:needRowSeries')
+                'frames:logicalIndexChecker:onlyRowSeries')
             
             % index only selection
             sol = df(2);
@@ -392,14 +392,14 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             t.verifyError(@selTooLarge,'MATLAB:badsubscript')
             function selTooLarge, df{[true true false true],:}; end %#ok<VUNUS>
-            t.verifyError(@selNotVector,'frames:iloc:notvectors')
+            t.verifyError(@selNotVector,'frames:logicalIndexChecker:VectorRequired')
             function selNotVector, df{[true false; true true]}; end %#ok<VUNUS>
             
-            t.verifyError(@modNotVector,'frames:modify:notvectors')
+            t.verifyError(@modNotVector,'frames:modifyFromBool2D:WrongSize')
             function modNotVector, df{[true false; true true; false false]} = 44; end
             t.verifyError(@modExceed,'frames:modify:badIndex')
             function modExceed, df{[true false true true]} = 44; end
-            t.verifyError(@modExceed2,'frames:modify:notvectors')
+            t.verifyError(@modExceed2,'frames:modifyFromBool2D:OnlySingleSelectorAllowed')
             function modExceed2, df{[true false; true true],true} = 44; end
             
             df{[true false; true true]} = 44;
@@ -506,10 +506,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.index=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty,'frames:indexValidation:mustBeNonempty')
             function cannotBeEmpty(), df.index(2)=[]; end
             
-            t.verifyError(@cannotBeEmpty2,'frames:indexValidation:wrongSize')
+            t.verifyError(@cannotBeEmpty2,'frames:indexValidation:mustBeNonempty')
             function cannotBeEmpty2(), df.index=[]; end
             
             t.verifyError(@notUnique1,'frames:Index:requireUniqueFail')
@@ -556,7 +556,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.columns=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty,'frames:indexValidation:mustBeNonempty')
             function cannotBeEmpty(), df.columns(2)=[]; end
             
             df.columns = [3 6];
