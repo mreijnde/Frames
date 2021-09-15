@@ -1142,8 +1142,8 @@ classdef DataFrame
         end
         
         function tb = getTable(obj)
-            idx = indexForTable(obj.index);
-            col = indexForTable(obj.columns);
+            idx = obj.index_.getValueForTable();
+            col = obj.columns_.getValueForTable();
             tb = array2table(obj.data,RowNames=idx,VariableNames=col);
             if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.index_.name);
