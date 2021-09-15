@@ -1143,7 +1143,7 @@ classdef DataFrame
         
         function tb = getTable(obj)
             idx = indexForTable(obj.index);
-            col = columnsForTable(obj.columns);
+            col = indexForTable(obj.columns);
             tb = array2table(obj.data,RowNames=idx,VariableNames=col);
             if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.index_.name);
@@ -1380,7 +1380,16 @@ classdef DataFrame
             maxCols = 50;  % Matlab struggles to show many columns
             if all(size(obj) < [maxRows,maxCols])
                 try
-                    disp(obj.t);
+                    % show content
+                    disp(obj.t);               
+                    % description line
+                    line = class(obj);
+                    if obj.colseries
+                        line = line + " - ColSeries";
+                    elseif obj.rowseries
+                        line = line + " - RowSeries";                        
+                    end
+                    disp(line);
                 catch
                     warning('Table cannot be displayed')
                     details(obj);
