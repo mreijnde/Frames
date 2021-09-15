@@ -223,6 +223,12 @@ classdef DataFrame
             if nargin<2, bool=true; end
             obj.index_.singleton = bool;
         end
+        function series = col(obj,colName)
+            series = obj.loc(':',colName).asColSeries();
+        end
+        function series = row(obj,indexName)
+            series = obj.loc(indexName,':').asRowSeries();
+        end
         
         function index = get.index(obj)
             index = obj.index_.value;
@@ -1052,6 +1058,7 @@ classdef DataFrame
                 [beingAssigned,selectors] = s.subs;
                 locs = strcmp(beingAssigned,["iloc","loc"]);
                 indexers = strcmp(beingAssigned,["index","columns"]);
+                series = strcmp(beingAssigned,["row","col"]);
                 if any(indexers)
                     mustBeNonempty(b);
                     obj.([beingAssigned,'_']).value(selectors{1}) = b;
@@ -1069,7 +1076,15 @@ classdef DataFrame
                     [idx,col] = getSelectorsFromSubs(selectors);
                     obj = obj.modify(b,idx,col,fromPosition);
                     return
+                elseif any(series)
+                    if series(1)
+                        obj = obj.modify(b,selectors{1},':',false);
+                    else
+                        obj = obj.modify(b,':',selectors{1},false);
+                    end
+                    return
                 end
+                    
             end
             if length(s)>1
                 obj = builtin('subsasgn',obj,s,b);
@@ -1180,6 +1195,10 @@ classdef DataFrame
             end
             assert(isvector(index) && isvector(columns), 'frames:modify:notvectors', ...
                 'Selectors must be vectors.')
+            if isFrame(data)
+                indexColChecker(obj.iloc(index,columns).asColSeries(false).asRowSeries(false),data);
+                data = data.data;
+            end
             sizeDataBefore = size(obj.data_);
             obj.data_(index,columns) = data;
             

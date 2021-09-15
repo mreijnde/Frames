@@ -284,6 +284,18 @@ classdef dataframeTest < matlab.unittest.TestCase
             expected = frames.DataFrame([],[],[1 2 3]);
             t.verifyEqual(df2,expected)
             
+            % data is a DF
+            df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1]);
+            data = df{[1 3]}*2;
+            df{[1 3],:} = data;
+            t.verifyEqual(df,frames.DataFrame([2 4 6; 2 5 NaN; NaN 0 2]))
+            
+            % col row
+            df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1]);
+            df.col("Var1") = df.col("Var2") + df.col("Var3");
+            t.verifyEqual(df,frames.DataFrame([5 2 3; NaN 5 NaN; 1 0 1]))
+            df.row(2) = 4;
+            t.verifyEqual(df,frames.DataFrame([5 2 3; 4 4 4; 1 0 1]))
         end
         
         function subsasgnWithDFTest(t)
@@ -346,6 +358,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             sol = df(1,["b","a"]);
             expected = frames.DataFrame([2 1 3],1,["b","a","a"]);
             t.verifyEqual(sol,expected)
+            
+            % col row
+            t.verifyEqual(df.col('b'),frames.DataFrame([2;5],[],string(missing),ColSeries=true))
+            t.verifyError(@() df.col('a'),'frames:Index:setSingleton')
+            t.verifyEqual(df.row(1),frames.DataFrame([1 2 3],NaN,["a","b","a"],RowSeries=true))
             warning('on','frames:Index:notUnique')
             
             % test empty selection
