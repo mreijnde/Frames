@@ -172,7 +172,7 @@ classdef TimeFrame < frames.DataFrame
             idx = frames.TimeIndex(index,varargin{:});
         end
         function tb = getTable(obj)
-            col = columnsForTable(obj.columns);
+            col = obj.columns_.getValueForTable();
             tb = array2timetable(obj.data,RowTimes=obj.index,VariableNames=col);
             if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.index_.name);

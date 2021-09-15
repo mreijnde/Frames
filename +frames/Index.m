@@ -137,6 +137,20 @@ classdef Index
             v = obj.value_;
         end
         
+        function val = getValueForTable(obj)
+            % convert value to strings to use with a table (note that
+            % timetable index does not need this conversion)
+            val = obj.value;
+            if isnumeric(val)
+                val = compose('%.10g',val);
+            elseif isscalar(val) && ismissing(val)
+                val = missingDataDisplayStr(val);
+            else
+                val = cellstr(string(val));
+            end
+            val = matlab.lang.makeUniqueStrings(val,{},namelengthmax());
+        end
+        
         function len = length(obj)
             len = length(obj.value_);
         end
