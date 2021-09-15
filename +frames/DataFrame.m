@@ -1240,48 +1240,7 @@ classdef DataFrame
                 error('Unsupported first selector type: need logical DataFrame or logical matrix');                             
             end
         end        
-        
-        function [index,columns] = localizeSelectors(obj,index,columns)
-            if ~iscolon(index)
-                index = obj.index_.positionOf(index,true);
-            end
-            if ~iscolon(columns)
-                columns = obj.columns_.positionOf(columns,true);
-            end
-        end
-        function obj = modifyFromDFbool(obj,idxCol,b)
-            [idx,col] = getSelectorsFromSubs(idxCol);
-            if length(idxCol) > 1
-                if isFrame(idx) && ~idx.colseries
-                    error('frames:dfBoolSelection:needSeries', ...
-                        'The first selector must be a ColSeries.')
-                end
-            end
-            other = obj.asColSeries(false).asRowSeries(false);
-            if isFrame(idx)
-                indexColChecker(other,idx);
-                assert(isa(idx.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
-                    'The selector must be a logical.')
-                assert(~idx.rowseries,'frames:dfBoolSelection:noRowSeries', ...
-                    'The first selector can not be a RowSeries.')
-                if idx.colseries
-                    idx = idx.data_;
-                else
-                    obj.data_(idx.data_) = b;
-                    return
-                end
-            end
-            if isFrame(col)
-                indexColChecker(other,col);
-                assert(isa(col.data_,'logical'),'frames:dfBoolSelection:needLogical', ...
-                    'The selector must be a logical.')
-                assert(~col.colseries && col.rowseries,'frames:dfBoolSelection:needRowSeries', ...
-                    'The second selector must be a RowSeries.')
-                col = col.data_;
-            end
-            obj.data_(idx,col) = b;
-        end
-        
+                       
         function series = matrix2series(obj,fun,canOmitNaNs,varargin)
             if ~isempty(varargin)
                 dim = varargin{end};  % end because std takes dimension value as argument after the weighting scheme, cf doc std versus doc sum
