@@ -1143,7 +1143,7 @@ classdef DataFrame
         
         function tb = getTable(obj)
             idx = indexForTable(obj.index);
-            col = columnsForTable(obj.columns);
+            col = indexForTable(obj.columns);
             tb = array2table(obj.data,RowNames=idx,VariableNames=col);
             if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.index_.name);

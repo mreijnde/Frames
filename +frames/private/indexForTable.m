@@ -1,4 +1,5 @@
 function indexOut = indexForTable(index)
+% convert DataFrame index (or columns) to strings to use with table
 if isnumeric(index)
     indexOut = compose('%.10g',index);
 elseif isscalar(index) && ismissing(index)
