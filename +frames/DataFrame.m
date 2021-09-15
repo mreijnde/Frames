@@ -224,9 +224,11 @@ classdef DataFrame
             obj.index_.singleton = bool;
         end
         function series = col(obj,colName)
+            % returns a colseries of the column name given
             series = obj.loc(':',colName).asColSeries();
         end
         function series = row(obj,indexName)
+            % returns a rowseries of the index name given
             series = obj.loc(indexName,':').asRowSeries();
         end
         
