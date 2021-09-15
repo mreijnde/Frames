@@ -293,6 +293,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df,frames.DataFrame([2 4 6; 3 4 5; NaN 0 2]))
             t.verifyError(@isnotseries,'frames:elementWiseHandler:differentIndex')
             function isnotseries, df(2) = frames.DataFrame([3 4 5]); end
+            df(2) = frames.DataFrame([3 4 6]).data;
+            t.verifyEqual(df,frames.DataFrame([2 4 6; 3 4 6; NaN 0 2]))
             
             % col row
             df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1]);
