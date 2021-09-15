@@ -296,6 +296,12 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df,frames.DataFrame([5 2 3; NaN 5 NaN; 1 0 1]))
             df.row(2) = 4;
             t.verifyEqual(df,frames.DataFrame([5 2 3; 4 4 4; 1 0 1]))
+            df.col("newCol") = df.col("Var2");
+            t.verifyEqual(df,frames.DataFrame([5 2 3 2; 4 4 4 4; 1 0 1 0],[],["Var1","Var2","Var3","newCol"]))
+            df.index = [1 3 4];
+            df = df.setIndexType('sorted');
+            df.row(2) = df.row(1);
+            t.verifyEqual(df,frames.DataFrame([5 2 3 2; 5 2 3 2; 4 4 4 4; 1 0 1 0],frames.Index(1:4,UniqueSorted=true,Name="Row"),["Var1","Var2","Var3","newCol"]))
         end
         
         function subsasgnWithDFTest(t)

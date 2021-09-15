@@ -1078,8 +1078,14 @@ classdef DataFrame
                     return
                 elseif any(series)
                     if series(1)
+                        if ~ismember(selectors{1},obj.index)
+                            obj = obj.extendIndex(selectors{1});
+                        end
                         obj = obj.modify(b,selectors{1},':',false);
                     else
+                        if ~ismember(selectors{1},obj.columns)
+                            obj = obj.extendColumns(selectors{1});
+                        end
                         obj = obj.modify(b,':',selectors{1},false);
                     end
                     return
