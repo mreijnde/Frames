@@ -298,6 +298,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             df{dfbool} = NaN;
             t.verifyEqual(df,frames.DataFrame([1 NaN;NaN 4],frames.Index([1 2])))
+            df(dfbool) = 44;
+            t.verifyEqual(df,frames.DataFrame([1 44;44 4],frames.Index([1 2])))
             df.iloc(dfbool) = 33;
             t.verifyEqual(df,frames.DataFrame([1 33;33 4],frames.Index([1 2])))
             
@@ -325,8 +327,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@notAligned,'frames:elementWiseHandler:differentIndex')
             function notAligned, df{dfother} = 0; end
             
-            t.verifyError(@noTwoElements,'frames:modifyFromBool2D:OnlySingleSelectorAllowed')
+            t.verifyError(@noTwoElements,'frames:subsasgn:OnlySingleIndexAllowed2DBool')
             function noTwoElements, df{dfbool,:} = 0; end
+            
+            t.verifyError(@noEmptyDataBool2D,'frames:modifyFromBool2D:mustBeNonempty')
+            function noEmptyDataBool2D, df{dfbool} = []; end
             
             t.verifyError(@noFirstCol,'frames:logicalIndexChecker:onlyColSeries')
             function noFirstCol, df{vector} = 0; end
@@ -385,6 +390,15 @@ classdef dataframeTest < matlab.unittest.TestCase
             df = df.setIndexType('sorted');
             t.verifyError(@() df([2 1]),'frames:Index:requireSortedFail')
             t.verifyError(@() df{[2 1]},'frames:Index:requireSortedFail')
+            
+            % unique index
+            df = frames.DataFrame([1 2;3 4],[1,2],["a","b"]);
+            t.verifyError(@() df{[2 1 2]},'frames:Index:requireUniqueFail')
+            t.verifyError(@() df([2 1 2]),'frames:Index:requireUniqueFail')
+            df = df.setIndexType('duplicate');
+            warning('off','frames:Index:notUnique')
+            t.verifyEqual(df([1 2 1],"b"),frames.DataFrame([2;4;2],frames.Index([1 2 1],unique=false,name="Row"),"b"))
+            warning('on','frames:Index:notUnique')
         end
         
         function modifyIlocFailTest(t)
@@ -399,7 +413,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             function modNotVector, df{[true false; true true; false false]} = 44; end
             t.verifyError(@modExceed,'frames:modify:badIndex')
             function modExceed, df{[true false true true]} = 44; end
-            t.verifyError(@modExceed2,'frames:modifyFromBool2D:OnlySingleSelectorAllowed')
+            t.verifyError(@modExceed2,'frames:subsasgn:OnlySingleIndexAllowed2DBool')
             function modExceed2, df{[true false; true true],true} = 44; end
             
             df{[true false; true true]} = 44;
@@ -595,6 +609,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         function dropIndexTest(t)
             df = frames.DataFrame([1 1;2 2;3 3;4 4],[1 2 3 4]);
             t.verifyEqual(df.dropIndex([2 3]).data, [1 1;4 4]);
+            t.verifyEqual(df.dropIndex([false true true false]).data, [1 1;4 4]);            
         end
         
         function extendColumnsTest(t)
@@ -618,6 +633,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             warning('off','frames:Index:notUnique')
             df = frames.DataFrame([1 1;2 2;3 3;4 4;5 5]',[],[1 2 4 2 5]);
             t.verifyEqual(df.dropColumns([2 5]).data, [1 1;3 3]');
+            t.verifyEqual(df.dropColumns([false true false true true]).data, [1 1;3 3]');
             warning('on','frames:Index:notUnique')
         end
         

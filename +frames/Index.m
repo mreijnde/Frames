@@ -331,14 +331,11 @@ classdef Index
         end
         
  function positionIndexChecker(obj, selector)    
-            % validate position index
-            assert(isnumeric(selector) && all(selector>0) && all(floor(selector)==selector), ...
-                'frames:positionIndexChecker:InvalidPositionIndexType', ...
-                 "Only positive integers allowed as position index");
-            assert(all(selector<=length(obj)), 'frames:positionIndexChecker:PositionIndexOutOfRange', ...
-                "Position index out of range (%d)", length(obj));        
+            % validate position index    
+            assert(~obj.requireUnique_ || isunique(selector), 'frames:Index:requireUniqueFail', ...
+                'Index value is required to be unique.')
             assert(~obj.requireUniqueSorted_ || issorted(selector), 'frames:Index:requireSortedFail', ...
-                'Index value is required to be sorted and unique.')            
+                'Index value is required to be sorted.')            
         end
         
        function logicalIndexChecker(obj, selector, allowedSeries)
@@ -348,9 +345,7 @@ classdef Index
             %
             if nargin<3, allowedSeries = 'all'; end            
             if isFrame(selector)
-                % convert logical series to logical array after checks
-                assert(islogical(selector.data_), 'frames:logicalIndexChecker:LogicalFrameSeriesRequired', ...
-                       "Only logical DataFrame-Series allowed for indexing");
+                % check logical series and convert to logical array
                 if allowedSeries=="onlyColSeries"   
                     assert(selector.colseries, 'frames:logicalIndexChecker:onlyColSeries', ...
                            "Indexing of rows only allowed with DataFrame logical colSeries.");
@@ -365,13 +360,14 @@ classdef Index
                     error("Unsupported allowedSeries parameter.");
                 end                
                 selector = selector.data_;
+            else
+                % check logical vector
+                assert(isvector(selector), 'frames:logicalIndexChecker:VectorRequired', ...
+                   "Logical index array should be vector (no matrix)");   
             end
-            assert(islogical(selector), 'frames:logicalIndexChecker:FrameSeriesRequired', ...
+            assert(islogical(selector), 'frames:logicalIndexChecker:LogicalRequired', ...
                        "Selector is not logical");                    
-            %assert(length(selector)==length(obj.value_), 'frames:logicalIndexChecker:WrongDimension', ...
-            %       "Logical index array should have same size as dimension.", length(obj.value_));
-            assert(isvector(selector), 'frames:logicalIndexChecker:VectorRequired', ...
-                   "Logical index array should be vector (no matrix)");                            
+                                     
         end    
                 
         function u = unionData(obj,v1,v2)
