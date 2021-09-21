@@ -1083,11 +1083,15 @@ classdef DataFrame
                         if ~ismember(selectors{1},obj.index)
                             obj = obj.extendIndex(selectors{1});
                         end
+                        assert(length(obj.index_.positionOf(selectors{1}))==1, ...
+                            'frames:subsasgn:rowMultiple','assigning with row expect to change a unique row');
                         obj = obj.modify(b,selectors{1},':',false);
                     else
                         if ~ismember(selectors{1},obj.columns)
                             obj = obj.extendColumns(selectors{1});
                         end
+                        assert(length(obj.columns_.positionOf(selectors{1}))==1, ...
+                            'frames:subsasgn:colMultiple','assigning with col expect to change a unique column');
                         obj = obj.modify(b,':',selectors{1},false);
                     end
                     return
