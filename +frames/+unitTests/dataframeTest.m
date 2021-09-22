@@ -241,6 +241,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             df=frames.DataFrame([1 2 3; 2 5 NaN],[1 2], [11,22,33]);
             df(2,[22,33]) = 3.14;
             t.verifyEqual(df.data,[1 2 3; 2 3.14 3.14])
+            df(true,22) = 2.72;
+            t.verifyEqual(df.data,[1 2.72 3; 2 3.14 3.14])
             
             % end in selection
             df=frames.DataFrame([1 2;3 4;5 6]);
@@ -322,10 +324,18 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             df{dfbool} = NaN;
             t.verifyEqual(df,frames.DataFrame([1 NaN;NaN 4],frames.Index([1 2])))
+            df(dfbool) = 44;
+            t.verifyEqual(df,frames.DataFrame([1 44;44 4],frames.Index([1 2])))
             df.iloc(dfbool) = 33;
             t.verifyEqual(df,frames.DataFrame([1 33;33 4],frames.Index([1 2])))
             
-            df{seriesbool} = 10;
+            df{seriesbool} = 9;
+            t.verifyEqual(df,frames.DataFrame([1 33;9 9],frames.Index([1 2])))
+            
+            df.loc(seriesbool) = 8;
+            t.verifyEqual(df,frames.DataFrame([1 33;8 8],frames.Index([1 2])))
+            
+            df(seriesbool,["Var1","Var2"]) = 10;
             t.verifyEqual(df,frames.DataFrame([1 33;10 10],frames.Index([1 2])))
             
             df{seriesbool,vector} = 11;
@@ -343,10 +353,13 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@notAligned,'frames:elementWiseHandler:differentIndex')
             function notAligned, df{dfother} = 0; end
             
-            t.verifyError(@noTwoElements,'frames:dfBoolSelection:needSeries')
+            t.verifyError(@noTwoElements,'frames:subsasgn:OnlySingleIndexAllowed2DBool')
             function noTwoElements, df{dfbool,:} = 0; end
             
-            t.verifyError(@noFirstCol,'frames:dfBoolSelection:noRowSeries')
+            t.verifyError(@noEmptyDataBool2D,'frames:modifyFromBool2D:mustBeNonempty')
+            function noEmptyDataBool2D, df{dfbool} = []; end
+            
+            t.verifyError(@noFirstCol,'frames:logicalIndexChecker:onlyColSeries')
             function noFirstCol, df{vector} = 0; end
         end
         
@@ -362,6 +375,25 @@ classdef dataframeTest < matlab.unittest.TestCase
             sol = df(2,"b");
             expected = frames.DataFrame(5,2,"b");
             t.verifyEqual(sol,expected)
+            
+            % selection with logical
+            sol1 = df(true, [false true]);
+            sol2 = df{true, [false true]};
+            sol3 = df{1, [false true]};
+            sol4 = df(1, [false true]);
+            sol5 = df(1, frames.DataFrame([false true false],NaN,df.columns,RowSeries=true));
+            sol6 = df(frames.DataFrame([true false]',df.index,NaN,ColSeries=true), ...
+                frames.DataFrame([false true false],NaN,df.columns,RowSeries=true));
+            t.verifyEqual(sol1,sol2)
+            t.verifyEqual(sol1,sol3)
+            t.verifyEqual(sol1,sol4)
+            t.verifyEqual(sol1,sol5)
+            t.verifyEqual(sol1,sol6)
+            t.verifyEqual(sol1,frames.DataFrame(2,1,"b"))
+            t.verifyError(@() df(1, frames.DataFrame([false true],NaN,["a" "b"],RowSeries=true)), ...
+                'frames:logicalIndexChecker:differentColumns')
+            t.verifyError(@() df(1, frames.DataFrame([false true],1,["a" "b"])), ...
+                'frames:logicalIndexChecker:onlyRowSeries')
             
             % index only selection
             sol = df(2);
@@ -389,6 +421,15 @@ classdef dataframeTest < matlab.unittest.TestCase
             df = df.setIndexType('sorted');
             t.verifyError(@() df([2 1]),'frames:Index:requireSortedFail')
             t.verifyError(@() df{[2 1]},'frames:Index:requireSortedFail')
+            
+            % unique index
+            df = frames.DataFrame([1 2;3 4],[1,2],["a","b"]);
+            t.verifyError(@() df{[2 1 2]},'frames:Index:requireUniqueFail')
+            t.verifyError(@() df([2 1 2]),'frames:Index:requireUniqueFail')
+            df = df.setIndexType('duplicate');
+            warning('off','frames:Index:notUnique')
+            t.verifyEqual(df([1 2 1],"b"),frames.DataFrame([2;4;2],frames.Index([1 2 1],unique=false,name="Row"),"b"))
+            warning('on','frames:Index:notUnique')
         end
         
         function modifyIlocFailTest(t)
@@ -396,14 +437,14 @@ classdef dataframeTest < matlab.unittest.TestCase
             
             t.verifyError(@selTooLarge,'MATLAB:badsubscript')
             function selTooLarge, df{[true true false true],:}; end %#ok<VUNUS>
-            t.verifyError(@selNotVector,'frames:iloc:notvectors')
+            t.verifyError(@selNotVector,'frames:logicalIndexChecker:VectorRequired')
             function selNotVector, df{[true false; true true]}; end %#ok<VUNUS>
             
-            t.verifyError(@modNotVector,'frames:modify:notvectors')
+            t.verifyError(@modNotVector,'frames:modifyFromBool2D:WrongSize')
             function modNotVector, df{[true false; true true; false false]} = 44; end
             t.verifyError(@modExceed,'frames:modify:badIndex')
             function modExceed, df{[true false true true]} = 44; end
-            t.verifyError(@modExceed2,'frames:modify:notvectors')
+            t.verifyError(@modExceed2,'frames:subsasgn:OnlySingleIndexAllowed2DBool')
             function modExceed2, df{[true false; true true],true} = 44; end
             
             df{[true false; true true]} = 44;
@@ -510,10 +551,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.index=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty,'frames:indexValidation:mustBeNonempty')
             function cannotBeEmpty(), df.index(2)=[]; end
             
-            t.verifyError(@cannotBeEmpty2,'frames:indexValidation:wrongSize')
+            t.verifyError(@cannotBeEmpty2,'frames:indexValidation:mustBeNonempty')
             function cannotBeEmpty2(), df.index=[]; end
             
             t.verifyError(@notUnique1,'frames:Index:requireUniqueFail')
@@ -560,7 +601,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.columns=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'MATLAB:validators:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty,'frames:indexValidation:mustBeNonempty')
             function cannotBeEmpty(), df.columns(2)=[]; end
             
             df.columns = [3 6];
@@ -599,6 +640,7 @@ classdef dataframeTest < matlab.unittest.TestCase
         function dropIndexTest(t)
             df = frames.DataFrame([1 1;2 2;3 3;4 4],[1 2 3 4]);
             t.verifyEqual(df.dropIndex([2 3]).data, [1 1;4 4]);
+            t.verifyEqual(df.dropIndex([false true true false]).data, [1 1;4 4]);            
         end
         
         function extendColumnsTest(t)
@@ -622,6 +664,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             warning('off','frames:Index:notUnique')
             df = frames.DataFrame([1 1;2 2;3 3;4 4;5 5]',[],[1 2 4 2 5]);
             t.verifyEqual(df.dropColumns([2 5]).data, [1 1;3 3]');
+            t.verifyEqual(df.dropColumns([false true false true true]).data, [1 1;3 3]');
             warning('on','frames:Index:notUnique')
         end
         
