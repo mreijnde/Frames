@@ -136,14 +136,14 @@ classdef DataFrame
                     if isequal(rows,[])
                         rows = missingData('double');
                     end
-                    rows = obj.getIndexObject(rows,Singleton=true);
+                    rows = obj.getRowsObject(rows,Singleton=true);
                 end
             else
                 if ~isa(rows,'frames.Index')
                     if isequal(rows,[])
-                        rows = obj.defaultIndex(size(data,1));
+                        rows = obj.defaultRows(size(data,1));
                     end
-                    rows = obj.getIndexObject(rows,Singleton=false);
+                    rows = obj.getRowsObject(rows,Singleton=false);
                 end
             end
             if NameValueArgs.ColSeries
@@ -1159,11 +1159,11 @@ classdef DataFrame
     
     methods(Hidden, Access=protected)
         
-         function obj = loc_(obj,idxSelector,colSelector,userCall, positionIndex)            
+         function obj = loc_(obj,idxSelector,colSelector,userCall,positionIndex)            
             if nargin < 4, userCall=false; end
-            if nargin < 5, positionIndex=false; end
-            idxID = obj.rows_.getSelector(idxSelector,   userCall, 'onlyColSeries', positionIndex);
-            colID = obj.columns_.getSelector(colSelector, userCall, 'onlyRowSeries', positionIndex);              
+            if nargin < 5, positionIndex=false; end             
+            idxID = obj.rows_.getSelector(idxSelector, positionIndex, 'onlyColSeries', userCall);
+            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall);              
             if ~iscolon(idxSelector)
                 obj.rows_.value_ = obj.rows_.value_(idxID);
             end
@@ -1209,8 +1209,8 @@ classdef DataFrame
         function obj = modify(obj,data,rows,columns,positionIndex)
             % modify data in selected rows and columns to supplied values
             if nargin<5; positionIndex = false; end
-            idx = obj.rows_.getSelector(rows, true, 'onlyColSeries', positionIndex);
-            col = obj.columns_.getSelector(columns, true, 'onlyRowSeries', positionIndex);                     
+            idx = obj.rows_.getSelector(rows, positionIndex, 'onlyColSeries', true);
+            col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', true);                     
             % get data from DataFrame
             if isFrame(data)
                 rowsColChecker(obj.iloc_(idx,col).asColSeries(false).asRowSeries(false), data);
