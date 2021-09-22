@@ -4,7 +4,7 @@ classdef TimeFrame < frames.DataFrame
 %   Its aim is to have properties of a matrix and a timetable at the same time.
 %
 %   Constructor:
-%   tf = frames.TimeFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
+%   tf = frames.TimeFrame([data,rows,columns,Name=name,RowSeries=logical,ColSeries=logical])
 %   If an argument is not specified, it will take a default value, so it
 %   is possible to only define some of the arguments:
 %   tf = frames.TimeFrame(data)  
@@ -17,18 +17,18 @@ classdef TimeFrame < frames.DataFrame
 %
 %   TIMEFRAME properties:
 %     data                   - Data                  TxN  (homogeneous data)
-%     index                  - Sorted Time Index     Tx1
+%     rows                   - Sorted Time Index     Tx1
 %     columns                - Columns               1xN
 %     t                      - Timetable built on the properties above.
 %     name                   - Name of the frame
 %     description            - Description of the frame
 %     rowseries              - logical, whether the Frame is treated as a
 %                              row series (ie not considering the value of
-%                              the 1-dimension index for operations)
+%                              the 1-dimension row for operations)
 %     colseries              - logical, whether the Frame is treated as a
 %                              column series (ie not considering the value of
 %                              the 1-dimension column for operations)
-%     identifierProperties   - structure of index and columns properties,
+%     identifierProperties   - structure of rows and columns properties,
 %                              namely whether they accept duplicates, 
 %                              require unique elements, or require unique 
 %                              and sorted elements
@@ -36,21 +36,21 @@ classdef TimeFrame < frames.DataFrame
 %
 %   Short overview of methods available:
 %
-%   - Selection and modification based on index/column names with () or the loc method:
-%     tf(indexNames,columnsNames)
-%     tf.loc(indexNames,columnsNames)
-%     tf(indexNames,columnsNames) = newData
-%     tf.loc(indexNames,columnsNames) = newData
-%   - One can also use a timerange in lieu of specific index names:
+%   - Selection and modification based on rows/column names with () or the loc method:
+%     tf(rowsNames,columnsNames)
+%     tf.loc(rowsNames,columnsNames)
+%     tf(rowsNames,columnsNames) = newData
+%     tf.loc(rowsNames,columnsNames) = newData
+%   - One can also use a timerange in lieu of specific rows names:
 %     tf(timerange,columnNames)
 %     tf("dateStart:dateEnd:dateFormat",columnNames)
 %     tf({dateStart,dateEnd},columnNames)
 %
 %   - Selection and modification based on position with {} or the iloc method:
-%     tf{indexPosition,columnsPosition}
-%     tf.iloc(indexPosition,columnsPosition)
-%     tf{indexPosition,columnsPosition} = newData
-%     tf.iloc(indexPosition,columnsPosition) = newData
+%     tf{rowsPosition,columnsPosition}
+%     tf.iloc(rowsPosition,columnsPosition)
+%     tf{rowsPosition,columnsPosition} = newData
+%     tf.iloc(rowsPosition,columnsPosition) = newData
 %
 %   - Operations between frames while checking that the two frames
 %     are aligned (to be sure to compare apples to apples):
@@ -68,12 +68,12 @@ classdef TimeFrame < frames.DataFrame
 %     tf.plot(), tf.heatmap()
 %
 %   - Setting properties is checked to insure the coherence of the frame.
-%     tf.index = newIndex,  will give an error if length(newIndex) ~=
-%     size(tf.data,1), or if newIndex is not sorted
+%     tf.rows = newRows,  will give an error if length(newRows) ~=
+%     size(tf.data,1), or if newRows is not sorted
 %
 %   - Concatenation of frames:
 %     newTF = [tf1,tf2] concatenates two frames horizontally, and will
-%     expand (unify) their index if they are not equal, inserting missing
+%     expand (unify) their rows if they are not equal, inserting missing
 %     values in the expansion
 %
 %   - Split a frame into groups based on its columns, and apply a function:
@@ -95,15 +95,15 @@ classdef TimeFrame < frames.DataFrame
 % See also: frames.DataFrame
     
     methods
-        function obj = setIndexFormat(obj,type)
+        function obj = setRowsFormat(obj,type)
             % set the time format of the TimeIndex
-            obj.index_.format = type;
+            obj.rows_.format = type;
         end
         function varargout = plot(obj,varargin)
-            durationExtension = obj.index(end)-obj.index(1);
+            durationExtension = obj.rows(end)-obj.rows(1);
             % add 2% of width at the end of the plot to be able to see the end well
-            obj = obj.extendIndex(obj.index(end) + 0.02*durationExtension); 
-            [varargout{1:nargout}] = plot@frames.DataFrame(obj,'WholeIndex',true,varargin{:});
+            obj = obj.extendRows(obj.rows(end) + 0.02*durationExtension); 
+            [varargout{1:nargout}] = plot@frames.DataFrame(obj,'WholeRows',true,varargin{:});
         end
         function toFile(obj,filePath,varargin)
             writetimetable(obj.t,filePath, ...
@@ -151,31 +151,31 @@ classdef TimeFrame < frames.DataFrame
             end
             cols = t.Properties.VariableNames;
             if ~nameValue.keepCellstr, cols = string(cols); end
-            idx = t.Properties.RowTimes;
-            idx.Format = string(idx.Format).replace('u','y');
-            idx = frames.TimeIndex(idx,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted);
+            row = t.Properties.RowTimes;
+            row.Format = string(row.Format).replace('u','y');
+            row = frames.TimeIndex(row,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted);
 
-            tf = frames.TimeFrame(t.Variables,idx,cols);
-            tf.index_.name = string(t.Properties.DimensionNames{1});
+            tf = frames.TimeFrame(t.Variables,row,cols);
+            tf.rows_.name = string(t.Properties.DimensionNames{1});
         end
     end
     
     methods(Hidden, Access=protected)
-        function indexValidation(obj,value)
+        function rowsValidation(obj,value)
             if isa(value,'frames.Index') && ~isa(value,'frames.TimeIndex')
-                error('frames:TimeFrame:indexObjNotTime', ...
-                    'TimeFrame can only accept a TimeIndex as index.')
+                error('frames:TimeFrame:rowsObjNotTime', ...
+                    'TimeFrame can only accept a TimeIndex as rows.')
             end
-            indexValidation@frames.DataFrame(obj,value);
+            rowsValidation@frames.DataFrame(obj,value);
         end
-        function idx = getIndexObject(~,index,varargin)
-            idx = frames.TimeIndex(index,varargin{:});
+        function row = getRowsObject(~,rows,varargin)
+            row = frames.TimeIndex(rows,varargin{:});
         end
         function tb = getTable(obj)
             col = obj.columns_.getValueForTable();
-            tb = array2timetable(obj.data,RowTimes=obj.index,VariableNames=col);
-            if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
-                tb.Properties.DimensionNames{1} = char(obj.index_.name);
+            tb = array2timetable(obj.data,RowTimes=obj.rows,VariableNames=col);
+            if ~isempty(obj.rows_.name) && ~strcmp(obj.rows_.name,"")
+                tb.Properties.DimensionNames{1} = char(obj.rows_.name);
             end
         end
     end
