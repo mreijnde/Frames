@@ -1069,7 +1069,20 @@ classdef DataFrame
                 case '.'
                     field = string(s(1).subs);
                     
-                    if isprop(obj,field)
+                    if ismember(field, ["index","columns"])
+                        % assign index/ column (with/without) indexing
+                        if length(s)>2
+                            error("Nested assign of .%s in combination with () indexing not supported", field)
+                        end
+                        assert(~isempty(b), 'frames:indexValidation:mustBeNonempty', ...
+                            "assignment of %s not allowed to be empty", field);                        
+                        if length(s)==1
+                            obj.(field+"") = b;
+                        else
+                            obj.(field+"_").value(s(2).subs{1}) = b;
+                        end
+                        
+                    elseif isprop(obj,field)
                         % assign to object property
                         obj = builtin('subsasgn',obj,s,b);
                         
@@ -1083,19 +1096,6 @@ classdef DataFrame
                          positionIndex = (field=="iloc");
                          assignDataToSelection(s(2).subs, positionIndex, b);
                          
-                    elseif ismember(field, ["index","columns"])
-                        % assign index/ column (with/without) indexing
-                        if length(s)>2
-                            error("Nested assign of .%s in combination with () indexing not supported", field)
-                        end
-                        assert(~isempty(b), 'frames:indexValidation:mustBeNonempty', ...
-                            "assignment of %s not allowed to be empty", field);                        
-                        if length(s)==1
-                            obj.(field+"") = b;
-                        else
-                            obj.(field+"_").value(s(2).subs{1}) = b;
-                        end
-                        
                     elseif ismember(field, ["row","col"])
                         % assign to row/col series
                         selector = s(2).subs{1};
