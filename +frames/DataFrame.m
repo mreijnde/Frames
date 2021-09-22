@@ -223,6 +223,14 @@ classdef DataFrame
             if nargin<2, bool=true; end
             obj.index_.singleton = bool;
         end
+        function series = col(obj,colName)
+            % returns a colseries of the column name given
+            series = obj.loc(':',colName).asColSeries();
+        end
+        function series = row(obj,indexName)
+            % returns a rowseries of the index name given
+            series = obj.loc(indexName,':').asRowSeries();
+        end
         
         function index = get.index(obj)
             index = obj.index_.value;
@@ -1060,7 +1068,12 @@ classdef DataFrame
      
                 case '.'
                     field = string(s(1).subs);
-                    if ismember(field, ["loc","iloc"])                        
+                    
+                    if isprop(obj,field)
+                        % assign to object property
+                        obj = builtin('subsasgn',obj,s,b);
+                        
+                    elseif ismember(field, ["loc","iloc"])                        
                          % assign to iloc() or loc() indexing
                          if length(s)==1
                              error("No arguments given for .%s()", field);
@@ -1082,10 +1095,26 @@ classdef DataFrame
                         else
                             obj.(field+"_").value(s(2).subs{1}) = b;
                         end
-                                                                    
-                    elseif isprop(obj,field)
-                        % assign to object property
-                        obj = builtin('subsasgn',obj,s,b);
+                        
+                    elseif ismember(field, ["row","col"])
+                        % assign to row/col series
+                        selector = s(2).subs{1};
+                        if strcmp(field, "row")
+                            if ~ismember(selector,obj.index)
+                                obj = obj.extendIndex(selector);
+                            end
+                            assert(length(obj.index_.positionOf(selector))==1, ...
+                                'frames:subsasgn:rowMultiple','assigning with row expected to change a unique row');
+                            obj = obj.modify(b,selector,':',false);
+                        else
+                            if ~ismember(selector,obj.columns)
+                                obj = obj.extendColumns(selector);
+                            end
+                            assert(length(obj.columns_.positionOf(selector))==1, ...
+                                'frames:subsasgn:colMultiple','assigning with col expected to change a unique column');
+                            obj = obj.modify(b,':',selector,false);
+                        end
+                        
                     else                       
                         error(('''%s'' is not a public property of the ''%s'' class.'),s(1).subs,class(obj));
                     end

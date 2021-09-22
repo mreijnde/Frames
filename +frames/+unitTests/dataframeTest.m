@@ -312,6 +312,15 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df,frames.DataFrame([5 2 3 2; 5 2 3 2; 4 4 4 4; 1 0 1 0],frames.Index(1:4,UniqueSorted=true,Name="Row"),["Var1","Var2","Var3","newCol"]))
             t.verifyError(@isnotseries2,'frames:elementWiseHandler:differentIndex')
             function isnotseries2, df.row(1) = df(2); end
+            
+            t.verifyError(@cannotMultAsgn,'frames:subsasgn:rowMultiple')
+            function cannotMultAsgn, df.row([1 2]) = 3; end
+            
+            warning('off','frames:Index:notUnique')
+            df = frames.DataFrame([1 2 3; 2 5 NaN],[],["a","b","a"]);
+            t.verifyError(@occursTwice,'frames:subsasgn:colMultiple')
+            function occursTwice, df.col("a") = 3; end
+            warning('on','frames:Index:notUnique')
         end
         
         function subsasgnWithDFTest(t)
