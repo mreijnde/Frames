@@ -17,7 +17,7 @@ classdef seriesTest < matlab.unittest.TestCase
             t.verifyTrue(t.rowseries.rowseries)
             t.verifyFalse(t.rowseries.getColumns_().singleton)
             t.verifyTrue(t.useries.rowseries)
-            t.verifyTrue(t.useries.getIndex_().singleton)
+            t.verifyTrue(t.useries.getRows_().singleton)
             t.verifyTrue(t.useries.getColumns_().singleton)
         end
         function operationTest(t)

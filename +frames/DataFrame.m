@@ -192,6 +192,7 @@ classdef DataFrame
             end
         end
         function obj = set.index(obj, value)
+            warning('index is being deprecated. Use rows instead.')
             obj.rows = value;
         end
         function obj = set.columns(obj,value)
@@ -242,6 +243,7 @@ classdef DataFrame
             rows = obj.rows_.value;
         end
         function index = get.index(obj)
+            warning('index is being deprecated. Use rows instead.')
             index = obj.rows;
         end
         function columns = get.columns(obj)
