@@ -269,9 +269,9 @@ classdef DataFrame
             s.rows.class = class(obj.rows_);
         end
         
-        function idx = getRows_(obj)
+        function row = getRows_(obj)
             % get the Index object underlying rows
-            idx = obj.rows_;
+            row = obj.rows_;
         end
         function col = getColumns_(obj)
             % get the Index object underlying columns
@@ -309,31 +309,31 @@ classdef DataFrame
         
         %------------------------------------------------------------------
         % Selection
-        function obj = iloc(obj,idxPosition,colPosition)
+        function obj = iloc(obj,rowPosition,colPosition)
             % selection based on position: df.iloc(rowsPosition[,columnsPosition])
             % df.iloc([5 9], [1 4]) returns the 5th and 9th rows of the 1st and 4th columns
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             if nargin<3, colPosition=':'; end
-            obj = obj.iloc_(idxPosition,colPosition,true);
+            obj = obj.iloc_(rowPosition,colPosition,true);
         end
-        function obj = loc(obj,idxName,colName)
+        function obj = loc(obj,rowName,colName)
             % selection based on names: df.loc(rowsNames[,columnsNames])
             % df.loc([2 4], ["a" "b"]) returns the rows named 2 and 4 of the columns named "a" and "b"
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
-            obj = obj.loc_(idxName,colName,true);
+            obj = obj.loc_(rowName,colName,true);
         end
         
         function obj = replace(obj,valToReplace,valNew)
             % REPLACE replace the a value in the data with another one
             if ismissing(valToReplace)
-                idx = ismissing(obj.data_);
+                row = ismissing(obj.data_);
             else
-                idx = obj.data_==valToReplace;
+                row = obj.data_==valToReplace;
             end
-            obj.data_(idx) = valNew;
+            obj.data_(row) = valNew;
         end
         
         function df = dropMissing(obj,nameValue)
@@ -378,11 +378,11 @@ classdef DataFrame
             newData = obj.defaultData(length(newRows),length(obj.columns_));
             
             if obj.rows_.requireUniqueSorted_
-                idx = obj.rows_.positionIn(newRows.value);
+                row = obj.rows_.positionIn(newRows.value);
             else
-                idx = 1:length(obj.rows_);
+                row = 1:length(obj.rows_);
             end
-            newData(idx,:) = obj.data_;
+            newData(row,:) = obj.data_;
             
             other = obj;
             other.data_ = newData;
@@ -390,9 +390,9 @@ classdef DataFrame
         end
         function other = dropRows(obj,rows)
             % drop the specified rows values
-            idxToRemove = obj.rows_.positionOf(rows);
-            idxToKeep = setdiff(1:length(obj.rows_),idxToRemove);
-            other = obj.iloc_(idxToKeep,':');
+            rowToRemove = obj.rows_.positionOf(rows);
+            rowToKeep = setdiff(1:length(obj.rows_),rowToRemove);
+            other = obj.iloc_(rowToKeep,':');
         end
         function other = extendColumns(obj,columns)
             % extend the columns with the new values
@@ -481,7 +481,7 @@ classdef DataFrame
         end
         function other = horzcat(obj,varargin)
             % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
-            idx = obj.rows_;
+            row = obj.rows_;
             sameRows = true;  % compute a merged rows, only in case they are not the same
             columnsNewVal = obj.columns_.value_;
             lenCols = zeros(length(varargin)+1,1);
@@ -489,13 +489,13 @@ classdef DataFrame
             for ii = 1:nargin-1
                 columnsNewVal = [columnsNewVal;varargin{ii}.columns_.value_]; %#ok<AGROW>
                 lenCols(ii+1) = length(varargin{ii}.columns_);
-                idx_ = varargin{ii}.rows_.value_;
-                if sameRows && isequaln(idx.value_,idx_)
+                row_ = varargin{ii}.rows_.value_;
+                if sameRows && isequaln(row.value_,row_)
                     continue
                 else
                     sameRows = false;
                 end
-                idx = idx.union(idx_);
+                row = row.union(row_);
             end
             
             % replace missing values from column series by default values
@@ -506,16 +506,16 @@ classdef DataFrame
             columnsNew.singleton_ = false;
             columnsNew.value = columnsNewVal;
 
-            % expand each DF with the new idx, and merge their data_
+            % expand each DF with the new row, and merge their data_
             sizeColumns = cumsum(lenCols);
-            dataH = obj.defaultData(length(idx),sizeColumns(end));
+            dataH = obj.defaultData(length(row),sizeColumns(end));
             
-            idxVal = idx.value;
+            rowVal = row.value;
             function df = getExtendedRowsDF(df)
-                % Expand DF, keeping the order of idx
+                % Expand DF, keeping the order of row
                 if ~sameRows
-                    testUniqueIndex(idx);
-                    df = df.extendRows(idxVal).loc_(idxVal,':');
+                    testUniqueIndex(row);
+                    df = df.extendRows(rowVal).loc_(rowVal,':');
                 end
             end
             other = getExtendedRowsDF(obj);
@@ -536,13 +536,13 @@ classdef DataFrame
             % frames must each have unique columns
             col = obj.columns_.value_;
             sameCols = true;  % compute a merged columns, only in case they are not the same
-            idxNew = obj.rows_;
+            rowNew = obj.rows_;
             testUniqueIndex(obj.rows_);
             lenIdx = zeros(length(varargin),1);
             lenIdx(1) = length(obj.rows_);
             for ii = 1:nargin-1
                 testUniqueIndex(varargin{ii}.rows_);
-                idxNew = idxNew.union(varargin{ii}.rows_);
+                rowNew = rowNew.union(varargin{ii}.rows_);
                 lenIdx(ii+1) = length(varargin{ii}.rows_);
                 col_ = varargin{ii}.columns_.value_;
                 if sameCols && isequal(col,col_)
@@ -559,7 +559,7 @@ classdef DataFrame
             sizeRows = cumsum(lenIdx);
             dataV = obj.defaultData(sizeRows(end),length(col));
             
-            if length(idxNew) ~= sizeRows(end)
+            if length(rowNew) ~= sizeRows(end)
                 error('frames:vertcat:rowsNotUnique', ...
                     'There must be no overlap in the rows of the Frames.')
             end
@@ -573,18 +573,18 @@ classdef DataFrame
             
             other = getExtendedColsDF(obj);
             
-            idData = other.rows_.positionIn(idxNew);
+            idData = other.rows_.positionIn(rowNew);
             dataV(idData,:) = other.data_;
             type = class(obj.data_);
             for ii = 1:nargin-1
                 extendedDF = getExtendedColsDF(varargin{ii});
                 assert(isa(extendedDF.data_,type),'frames:concat:differentDatatype', ...
                     'frames do not have the same data type')
-                idData = extendedDF.rows_.positionIn(idxNew);
+                idData = extendedDF.rows_.positionIn(rowNew);
                 dataV(idData,:) = extendedDF.data_;
             end
             other.data_ = dataV;
-            other.rows_ = idxNew;
+            other.rows_ = rowNew;
             other = other.resetUserProperties();
         end
         
@@ -650,12 +650,12 @@ classdef DataFrame
             [varargout{1:nargout}] = splitapply(fun,obj.t,groups);
         end
         
-        function [obj,idx] = sortrows(obj,varargin)
+        function [obj,row] = sortrows(obj,varargin)
             % cf table sortrows
-            [tb,idx] = sortrows(obj.t,varargin{:});
+            [tb,row] = sortrows(obj.t,varargin{:});
             obj.data = tb.Variables;
             obj.rows_.requireUniqueSorted = false;
-            obj.rows_.value_ = obj.rows_.value_(idx);
+            obj.rows_.value_ = obj.rows_.value_(row);
         end
         function bool = issortedrows(obj,varargin)
             % cf table issortedrows
@@ -828,8 +828,8 @@ classdef DataFrame
             %       the lag to compute the change as in d(i+lag)./d(i)-1
             % * overlapping : (logical), default true
             %       whether to return the frame with all the indices (true) or only the indices at n*lag (false)
-            [obj.data_,idx] = relativeChange(obj.data_,varargin{:});
-            obj.rows_.value_ = obj.rows_.value_(idx);
+            [obj.data_,row] = relativeChange(obj.data_,varargin{:});
+            obj.rows_.value_ = obj.rows_.value_(row);
         end
         function obj = compoundChange(obj,varargin)
             % compound relative changes
@@ -851,15 +851,15 @@ classdef DataFrame
             % replace the first 'window' valid data by a missing value
             obj.data_ = emptyStart(obj.data_,window);
         end
-        function idx = firstCommonRows(obj)
+        function row = firstCommonRows(obj)
             % returns the first rows where data are "all" not missing
             ix = find(all(~ismissing(obj.data_),2),1);
-            idx = obj.rows(ix);
+            row = obj.rows(ix);
         end
-        function idx = firstValidRows(obj)
+        function row = firstValidRows(obj)
             % returns the first rows where data are not "all missing"
             ix = find(any(~ismissing(obj.data_),2),1);
-            idx = obj.rows(ix);
+            row = obj.rows(ix);
         end
         
         function varargout = size(obj,varargin)
@@ -1054,11 +1054,11 @@ classdef DataFrame
             nargoutchk(0,1)
             switch s.type
                 case '()'
-                    [idx,col] = getSelectorsFromSubs(s.subs);
-                    varargout{1} = obj.loc(idx,col);
+                    [row,col] = getSelectorsFromSubs(s.subs);
+                    varargout{1} = obj.loc(row,col);
                 case '{}'
-                    [idx,col] = getSelectorsFromSubs(s.subs);
-                    varargout{1} = obj.iloc(idx,col);
+                    [row,col] = getSelectorsFromSubs(s.subs);
+                    varargout{1} = obj.iloc(row,col);
                 case '.'
                     varargout{1} = obj.(s.subs);
             end
@@ -1143,8 +1143,8 @@ classdef DataFrame
                     obj = obj.modifyFromBool2D(data, subs{1});
                 else
                     % normal indexing with seperate rows and cols
-                    [idx,col] = getSelectorsFromSubs(subs);
-                    obj = obj.modify(data, idx, col, positionIndex);
+                    [row,col] = getSelectorsFromSubs(subs);
+                    obj = obj.modify(data, row, col, positionIndex);
                 end
             end
         end
@@ -1159,29 +1159,29 @@ classdef DataFrame
     
     methods(Hidden, Access=protected)
         
-         function obj = loc_(obj,idxSelector,colSelector,userCall,positionIndex)            
+         function obj = loc_(obj,rowSelector,colSelector,userCall,positionIndex)            
             if nargin < 4, userCall=false; end
             if nargin < 5, positionIndex=false; end             
-            idxID = obj.rows_.getSelector(idxSelector, positionIndex, 'onlyColSeries', userCall);
+            rowID = obj.rows_.getSelector(rowSelector, positionIndex, 'onlyColSeries', userCall);
             colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall);              
-            if ~iscolon(idxSelector)
-                obj.rows_.value_ = obj.rows_.value_(idxID);
+            if ~iscolon(rowSelector)
+                obj.rows_.value_ = obj.rows_.value_(rowID);
             end
             if ~iscolon(colSelector)                
                 obj.columns_.value_ = obj.columns_.value_(colID);
             end
-            obj.data_ = obj.data_(idxID,colID);
+            obj.data_ = obj.data_(rowID,colID);
          end
          
-         function obj = iloc_(obj,idxPosition,colPosition,userCall)
+         function obj = iloc_(obj,rowPosition,colPosition,userCall)
             if nargin < 4, userCall=false; end                        
-            obj = obj.loc_(idxPosition, colPosition, userCall, true); 
+            obj = obj.loc_(rowPosition, colPosition, userCall, true); 
          end
                  
         function tb = getTable(obj)
-            idx = obj.rows_.getValueForTable();
+            row = obj.rows_.getValueForTable();
             col = obj.columns_.getValueForTable();
-            tb = array2table(obj.data,RowNames=idx,VariableNames=col);
+            tb = array2table(obj.data,RowNames=row,VariableNames=col);
             if ~isempty(obj.rows_.name) && ~strcmp(obj.rows_.name,"")
                 tb.Properties.DimensionNames{1} = char(obj.rows_.name);
             end
@@ -1198,9 +1198,9 @@ classdef DataFrame
             assert(length(value) == size(obj.data,2), 'frames:columnsValidation:wrongSize', ...
                 'columns do not have the same size as data')
         end
-        function idx = getRowsObject(~,rows,varargin)
-            idx = frames.Index(rows,varargin{:},Unique=true);
-            idx.name = "Row";  % to be consistent with 'table' in which the default name of the rows is 'Row'
+        function row = getRowsObject(~,rows,varargin)
+            row = frames.Index(rows,varargin{:},Unique=true);
+            row.name = "Row";  % to be consistent with 'table' in which the default name of the rows is 'Row'
         end
         function col = getColumnsObject(~,columns,varargin)
             col = frames.Index(columns,varargin{:});
@@ -1209,16 +1209,16 @@ classdef DataFrame
         function obj = modify(obj,data,rows,columns,positionIndex)
             % modify data in selected rows and columns to supplied values
             if nargin<5; positionIndex = false; end
-            idx = obj.rows_.getSelector(rows, positionIndex, 'onlyColSeries', true);
+            row = obj.rows_.getSelector(rows, positionIndex, 'onlyColSeries', true);
             col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', true);                     
             % get data from DataFrame
             if isFrame(data)
-                rowsColChecker(obj.iloc_(idx,col).asColSeries(false).asRowSeries(false), data);
+                rowsColChecker(obj.iloc_(row,col).asColSeries(false).asRowSeries(false), data);
                 data = data.data_;
             end            
             sizeDataBefore = size(obj.data_);
             % update values with data (in case of size mismatch, error will be generated by matlab)
-            obj.data_(idx,col) = data;
+            obj.data_(row,col) = data;
             % check data dimensions after update (to handle too large logical array or out of range position index)
             badIndexing = size(obj.data_) > sizeDataBefore;
             if badIndexing(1)
@@ -1234,9 +1234,9 @@ classdef DataFrame
                     if iscolon(rows)
                          % vector(1:end) returns an 0x1 empty vector of the
                          % same class, while vector(:) returns []
-                         idx = true(length(obj.rows_),1);
+                         row = true(length(obj.rows_),1);
                     end
-                    obj.rows_.value_(idx) = [];
+                    obj.rows_.value_(row) = [];
                 else
                     obj.columns_.value_(col) = [];
                 end
@@ -1350,13 +1350,13 @@ classdef DataFrame
             end
             switch type
                 case 'double'
-                    idx = double.empty(0,1);
+                    row = double.empty(0,1);
                 case 'string'
-                    idx = string.empty(0,1);
+                    row = string.empty(0,1);
                 case 'datetime'
-                    idx = datetime.empty(0,1); 
+                    row = datetime.empty(0,1); 
             end
-            df = frames.DataFrame([],idx,[],varargin{:});
+            df = frames.DataFrame([],row,[],varargin{:});
         end
         function df = fromFile(filePath, varargin)
             % construct a frame from reading a table from a file
@@ -1379,13 +1379,13 @@ classdef DataFrame
                 nameValue.UniqueSorted (1,1) logical = false                
             end
             cols = t.Properties.VariableNames;
-            idx = t.Properties.RowNames;
+            row = t.Properties.RowNames;
             if ~nameValue.keepCellstr
                 cols = string(cols);
-                idx = string(idx);
+                row = string(row);
             end
-            if isempty(idx), idx = []; end
-            df = frames.DataFrame(t.Variables,idx,cols);
+            if isempty(row), row = []; end
+            df = frames.DataFrame(t.Variables,row,cols);
             df.rows_.requireUniqueSorted = nameValue.UniqueSorted;
             df.rows_.requireUnique = nameValue.Unique;
             df.rows_.name = string(t.Properties.DimensionNames{1});
@@ -1499,8 +1499,8 @@ classdef DataFrame
     end
     
     methods(Hidden, Static, Access=protected)
-        function idx = defaultRows(len)
-            idx = defaultValue('double',len)';
+        function row = defaultRows(len)
+            row = defaultValue('double',len)';
         end
         function col = defaultColumns(len)
             col = defaultValue('string',len);
@@ -1509,11 +1509,11 @@ classdef DataFrame
 end
 
 %--------------------------------------------------------------------------
-function [idx, col] = getSelectorsFromSubs(subs)
+function [row, col] = getSelectorsFromSubs(subs)
 len = length(subs);
 if ~ismember(len, [1,2]); error('Error in reference for rows and columns.'); end
 if len==1; col = ':'; else; col = subs{2}; end
-idx = subs{1};
+row = subs{1};
 end
 
 %--------------------------------------------------------------------------
@@ -1536,25 +1536,25 @@ end
 end
 
 %--------------------------------------------------------------------------
-function [idx_,col_,df] = matrixOpHandler(df1,df2)
+function [row_,col_,df] = matrixOpHandler(df1,df2)
 df = df1;
 if isFrame(df2)
     if isFrame(df1)
         assert(isequal(df1.columns_.value,df2.rows_.value), ...
             'frames:matrixOpHandler:notAligned','Frames are not aligned!')
-        idx_ = df1.rows_;
+        row_ = df1.rows_;
         col_ = df2.columns_;
     else
         if size(df1,2)>1 && size(df1,2) == length(df2.rows_)
-            idx_ = df2.getRowsObject(df2.defaultRows(size(df1,1)));
+            row_ = df2.getRowsObject(df2.defaultRows(size(df1,1)));
         else
-            idx_ = df2.rows_;
+            row_ = df2.rows_;
         end
         col_ = df2.columns_;
         df = df2;
     end
 else
-    idx_ = df1.rows_;
+    row_ = df1.rows_;
     if size(df2,1)>1 && size(df2,1) == length(df1.columns_)
         col_ = df1.getColumnsObject(df1.defaultColumns(size(df2,2)));
     else
@@ -1564,23 +1564,23 @@ end
 end
 
 %--------------------------------------------------------------------------
-function [idx_,col_,df] = elementWiseHandler(df1,df2)
+function [row_,col_,df] = elementWiseHandler(df1,df2)
 df = df1;
 if isFrame(df2)
     if isFrame(df1)
         rowsColChecker(df1,df2);
         
-        idx_ = df1.rows_;
-        if size(df2,1)>size(df1,1), idx_ = df2.rows_; end
+        row_ = df1.rows_;
+        if size(df2,1)>size(df1,1), row_ = df2.rows_; end
         col_ = df1.columns_;
         if size(df2,2)>size(df1,2), col_ = df2.columns_; end
     else
-        idx_ = df2.rows_;
+        row_ = df2.rows_;
         col_ = df2.columns_;
         df = df2;
     end
 else
-    idx_ = df1.rows_;
+    row_ = df1.rows_;
     col_ = df1.columns_;
 end
 end
@@ -1599,10 +1599,10 @@ end
 
 %--------------------------------------------------------------------------
 function other = operator(fun,handler,df1,df2)
-[idx_,col_,other] = handler(df1,df2);
+[row_,col_,other] = handler(df1,df2);
 [v1,v2] = getData_(df1,df2);
 d = fun(v1,v2);
-other.data_ = d; other.rows_ = idx_; other.columns_ = col_;
+other.data_ = d; other.rows_ = row_; other.columns_ = col_;
 other.description = "";
 end
 
