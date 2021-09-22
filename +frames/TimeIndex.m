@@ -1,6 +1,6 @@
 classdef TimeIndex < frames.Index
-% TIMEINDEX belongs to the objects that support index property in a TimeFrame.
-% It is stored in the index_ property of TimeFrame.
+% TIMEINDEX belongs to the objects that support rows property in a TimeFrame.
+% It is stored in the rows_ property of TimeFrame.
 % It contains operations of selection and merging, and constrains.
 %
 % A TIMEINDEX has unique chronological values by default.
@@ -12,7 +12,7 @@ classdef TimeIndex < frames.Index
 % require unique and sorted values.
 %
 % If the length of value is equal to 1, the TIMEINDEX can be a
-% 'singleton', ie it represents the index of a series, which will allow
+% 'singleton', ie it represents the rows of a series, which will allow
 % operations between Frames with different indices (see TimeFrame.series)
 %
 % Use:
