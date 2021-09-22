@@ -1204,7 +1204,7 @@ classdef DataFrame
             col = obj.columns_.getSelector(columns, true, 'onlyRowSeries', positionIndex);                     
             % get data from DataFrame
             if isFrame(data)
-                indexColChecker(obj, data);
+                indexColChecker(obj.iloc_(idx,col).asColSeries(false).asRowSeries(false), data);
                 data = data.data_;
             end            
             sizeDataBefore = size(obj.data_);
