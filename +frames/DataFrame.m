@@ -1068,7 +1068,7 @@ classdef DataFrame
                         error("Nested assign in combination with %s indexing operator not supported", s(1).type)
                     end
                     positionIndex = (s(1).type=="{}");
-                    assignDataToSelection(s(1).subs, positionIndex, b);
+                    obj = assignDataToSelection(obj, s(1).subs, positionIndex, b);
      
                 case '.'
                     field = string(s(1).subs);
@@ -1081,7 +1081,7 @@ classdef DataFrame
                         assert(~isempty(b), 'frames:indexValidation:mustBeNonempty', ...
                             "assignment of %s not allowed to be empty", field);                        
                         if length(s)==1
-                            obj.(field+"") = b;
+                            obj.(field) = b;
                         else
                             obj.(field+"_").value(s(2).subs{1}) = b;
                         end
@@ -1098,7 +1098,7 @@ classdef DataFrame
                              error("Nested assign in combination with .%s() indexing not supported", field);
                          end
                          positionIndex = (field=="iloc");
-                         assignDataToSelection(s(2).subs, positionIndex, b);
+                         obj = assignDataToSelection(obj, s(2).subs, positionIndex, b);
                          
                     elseif ismember(field, ["row","col"])
                         % assign to row/col series
@@ -1124,12 +1124,7 @@ classdef DataFrame
                     end
             end
             
-            function bool = isLogicalSelector2D(index)
-                bool = (isFrame(index) && ~isFrameSeries(index)) || ...
-                       (islogical( index) && ~isvector(index));
-            end
-            
-            function assignDataToSelection(subs, positionIndex, data)
+            function obj = assignDataToSelection(obj, subs, positionIndex, data)
                 % assign data to DataFrame values selection based on subs selectors
                 if isLogicalSelector2D(subs{1})
                     % special case: combined logical indexing of rows and columns (2d logical selector)
@@ -1141,6 +1136,10 @@ classdef DataFrame
                     [idx,col] = getSelectorsFromSubs(subs);
                     obj = obj.modify(data,idx,col, positionIndex);
                 end
+            end
+            function bool = isLogicalSelector2D(index)
+                bool = (isFrame(index) && ~isFrameSeries(index)) || ...
+                       (islogical( index) && ~isvector(index));
             end
         end
                 
