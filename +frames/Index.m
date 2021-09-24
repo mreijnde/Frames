@@ -167,10 +167,10 @@ classdef Index
             % ----------------            
             % Parameters:
             %    - selector
-            %    - userCall       (logical):    perform full validation of selector
             %    - allowedSeries: (string enum: 'all','onlyRowSeries','onlyColSeries')
             %                                   accept only these logical dataframe series
             %    - positionIndex  (logical):    selector is position index instead of value index
+            %    - userCall       (logical):    perform full validation of selector
             %
             % output:
             %    validated array indexer (colon, logical array or position index array)

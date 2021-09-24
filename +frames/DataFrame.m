@@ -230,6 +230,10 @@ classdef DataFrame
             if nargin<2, bool=true; end
             obj.rows_.singleton = bool;
         end
+        function obj = asFrame(obj)
+            % sets .rowseries and .colseries to false
+            obj = obj.asColSeries(false).asRowSeries(false);
+        end
         function series = col(obj,colName)
             % returns a colseries of the column name given
             series = obj.loc(':',colName).asColSeries();
@@ -317,7 +321,7 @@ classdef DataFrame
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             if nargin<3, colPosition=':'; end
-            obj = obj.iloc_(rowPosition,colPosition,true);
+            obj = obj.loc_(rowPosition,colPosition,true,true);
         end
         function obj = loc(obj,rowName,colName)
             % selection based on names: df.loc(rowsNames[,columnsNames])
@@ -325,7 +329,7 @@ classdef DataFrame
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
-            obj = obj.loc_(rowName,colName,true);
+            obj = obj.loc_(rowName,colName,false,true);
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -479,6 +483,16 @@ classdef DataFrame
             if noFfill, other.data_(1,:) = dataStart; end
             if strcmp(FirstValueFilling{1}, "ffillFromInterval")
                 other = other.iloc_(2:length(other.rows_),':');
+            end
+            
+            % subfunction
+            function hasEntry = intervalHasEntry(data,selector)
+                hasEntry = true(length(selector),size(data,2));
+
+                isValid = ~ismissing(data);
+                for ii = 2:length(selector)
+                    hasEntry(ii,:) = any(isValid(selector(ii-1)+1:selector(ii),:),1);
+                end
             end
         end
         function other = horzcat(obj,varargin)
@@ -1076,7 +1090,6 @@ classdef DataFrame
                     end
                     positionRows = (s(1).type=="{}");
                     assignDataToSelection(s(1).subs, positionRows, b);
-     
                 case '.'
                     field = string(s(1).subs);
                     
@@ -1088,7 +1101,7 @@ classdef DataFrame
                         assert(~isempty(b), 'frames:indexValidation:mustBeNonempty', ...
                             "assignment of %s not allowed to be empty", field);                        
                         if length(s)==1
-                            obj.(field+"") = b;
+                            obj.(field) = b;
                         else
                             obj.(field+"_").value(s(2).subs{1}) = b;
                         end
@@ -1105,7 +1118,7 @@ classdef DataFrame
                              error("Nested assign in combination with .%s() indexing not supported", field);
                          end
                          positionRows = (field=="iloc");
-                         assignDataToSelection(s(2).subs, positionRows, b);
+                         obj = assignDataToSelection(obj, s(2).subs, positionRows, b);
                          
                     elseif ismember(field, ["row","col"])
                         % assign to row/col series
@@ -1131,12 +1144,7 @@ classdef DataFrame
                     end
             end
             
-            function bool = isLogicalSelector2D(index)
-                bool = (isFrame(index) && ~isFrameSeries(index)) || ...
-                       (islogical(index) && ~isvector(index));
-            end
-            
-            function assignDataToSelection(subs, positionIndex, data)
+            function obj = assignDataToSelection(obj, subs, positionIndex, data)
                 % assign data to DataFrame values selection based on subs selectors
                 if isLogicalSelector2D(subs{1})
                     % special case: combined logical indexing of rows and columns (2d logical selector)
@@ -1148,6 +1156,10 @@ classdef DataFrame
                     [row,col] = getSelectorsFromSubs(subs);
                     obj = obj.modify(data, row, col, positionIndex);
                 end
+            end
+            function bool = isLogicalSelector2D(index)
+                bool = (isFrame(index) && ~isFrameSeries(index)) || ...
+                       (islogical( index) && ~isvector(index));
             end
         end
                 
@@ -1175,9 +1187,8 @@ classdef DataFrame
             obj.data_ = obj.data_(rowID,colID);
          end
          
-         function obj = iloc_(obj,rowPosition,colPosition,userCall)
-            if nargin < 4, userCall=false; end                        
-            obj = obj.loc_(rowPosition, colPosition, userCall, true); 
+         function obj = iloc_(obj,rowPosition,colPosition)
+            obj = obj.loc_(rowPosition, colPosition, true, false); 
          end
                  
         function tb = getTable(obj)
@@ -1215,7 +1226,7 @@ classdef DataFrame
             col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', true);                     
             % get data from DataFrame
             if isFrame(data)
-                rowsColChecker(obj.iloc_(row,col).asColSeries(false).asRowSeries(false), data);
+                rowsColChecker(obj.iloc_(row,col).asFrame(), data);
                 data = data.data_;
             end            
             sizeDataBefore = size(obj.data_);
@@ -1247,14 +1258,13 @@ classdef DataFrame
                       
         function obj = modifyFromBool2D(obj, data, bool2d)
             % modify selected data by 2D logical (matrix or logical dataframe) to supplied data            
-            other = obj.asColSeries(false).asRowSeries(false);
             assert(~isempty(data), 'frames:modifyFromBool2D:mustBeNonempty', ...
                     'Data not allowed to be empty.')                
             if isFrame(bool2d)
                 % logical DataFrame selector 
                 assert(islogical(bool2d.data_),'frames:modifyFromBool2D:needLogical', ...
                     'The selector must be a logical.')                
-                rowsColChecker(other,bool2d);
+                rowsColChecker(other.asFrame(),bool2d);
                 obj.data_(bool2d.data_) = data;
             elseif islogical(bool2d)
                 % logical matrix selector
@@ -1516,16 +1526,6 @@ len = length(subs);
 if ~ismember(len, [1,2]); error('Error in reference for rows and columns.'); end
 if len==1; col = ':'; else; col = subs{2}; end
 row = subs{1};
-end
-
-%--------------------------------------------------------------------------
-function hasEntry = intervalHasEntry(data,selector)
-hasEntry = true(length(selector),size(data,2));
-
-isValid = ~ismissing(data);
-for ii = 2:length(selector)
-    hasEntry(ii,:) = any(isValid(selector(ii-1)+1:selector(ii),:),1);
-end
 end
 
 %--------------------------------------------------------------------------
