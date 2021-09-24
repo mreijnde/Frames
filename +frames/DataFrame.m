@@ -310,7 +310,7 @@ classdef DataFrame
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             if nargin<3, colPosition=':'; end
-            obj = obj.iloc_(idxPosition,colPosition,true);
+            obj = obj.loc_(idxPosition,colPosition,true,true);
         end
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
@@ -318,7 +318,7 @@ classdef DataFrame
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
-            obj = obj.loc_(idxName,colName,true);
+            obj = obj.loc_(idxName,colName,false,true);
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -1163,9 +1163,9 @@ classdef DataFrame
     
     methods(Hidden, Access=protected)
         
-         function obj = loc_(obj,idxSelector,colSelector,userCall, positionIndex)            
-            if nargin < 4, userCall=false; end
-            if nargin < 5, positionIndex=false; end
+         function obj = loc_(obj,idxSelector,colSelector,positionIndex,userCall)            
+            if nargin < 5, userCall=false; end
+            if nargin < 4, positionIndex=false; end
             idxID = obj.index_.getSelector(idxSelector, positionIndex, 'onlyColSeries', userCall);
             colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall);              
             if ~iscolon(idxSelector)
@@ -1177,9 +1177,8 @@ classdef DataFrame
             obj.data_ = obj.data_(idxID,colID);
          end
          
-         function obj = iloc_(obj,idxPosition,colPosition,userCall)
-            if nargin < 4, userCall=false; end                        
-            obj = obj.loc_(idxPosition, colPosition, userCall, true); 
+         function obj = iloc_(obj,idxPosition,colPosition)
+            obj = obj.loc_(idxPosition, colPosition, true, false); 
          end
                  
         function tb = getTable(obj)
