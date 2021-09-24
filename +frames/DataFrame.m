@@ -223,6 +223,10 @@ classdef DataFrame
             if nargin<2, bool=true; end
             obj.index_.singleton = bool;
         end
+        function obj = asFrame(obj)
+            % sets .rowseries and .colseries to false
+            obj = obj.asColSeries(false).asRowSeries(false);
+        end
         function series = col(obj,colName)
             % returns a colseries of the column name given
             series = obj.loc(':',colName).asColSeries();
@@ -1204,7 +1208,7 @@ classdef DataFrame
             col = obj.columns_.getSelector(columns, true, 'onlyRowSeries', positionIndex);                     
             % get data from DataFrame
             if isFrame(data)
-                indexColChecker(obj.iloc_(idx,col).asColSeries(false).asRowSeries(false), data);
+                indexColChecker(obj.iloc_(idx,col).asFrame(), data);
                 data = data.data_;
             end            
             sizeDataBefore = size(obj.data_);
@@ -1236,14 +1240,13 @@ classdef DataFrame
                       
         function obj = modifyFromBool2D(obj, data, bool2d)
             % modify selected data by 2D logical (matrix or logical dataframe) to supplied data            
-            other = obj.asColSeries(false).asRowSeries(false);
             assert(~isempty(data), 'frames:modifyFromBool2D:mustBeNonempty', ...
                     'Data not allowed to be empty.')                
             if isFrame(bool2d)
                 % logical DataFrame selector 
                 assert(islogical(bool2d.data_),'frames:modifyFromBool2D:needLogical', ...
                     'The selector must be a logical.')                
-                indexColChecker(other,bool2d);
+                indexColChecker(obj.asFrame(),bool2d);
                 obj.data_(bool2d.data_) = data;
             elseif islogical(bool2d)
                 % logical matrix selector
