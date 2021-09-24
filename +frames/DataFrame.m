@@ -473,6 +473,16 @@ classdef DataFrame
             if strcmp(FirstValueFilling{1}, "ffillFromInterval")
                 other = other.iloc_(2:length(other.index_),':');
             end
+            
+            % subfunction
+            function hasEntry = intervalHasEntry(data,selector)
+                hasEntry = true(length(selector),size(data,2));
+
+                isValid = ~ismissing(data);
+                for ii = 2:length(selector)
+                    hasEntry(ii,:) = any(isValid(selector(ii-1)+1:selector(ii),:),1);
+                end
+            end
         end
         function other = horzcat(obj,varargin)
             % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
@@ -1507,16 +1517,6 @@ len = length(subs);
 if ~ismember(len, [1,2]); error('Error in reference for index and columns.'); end
 if len==1; col = ':'; else; col = subs{2}; end
 idx = subs{1};
-end
-
-%--------------------------------------------------------------------------
-function hasEntry = intervalHasEntry(data,selector)
-hasEntry = true(length(selector),size(data,2));
-
-isValid = ~ismissing(data);
-for ii = 2:length(selector)
-    hasEntry(ii,:) = any(isValid(selector(ii-1)+1:selector(ii),:),1);
-end
 end
 
 %--------------------------------------------------------------------------
