@@ -310,7 +310,7 @@ classdef DataFrame
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             if nargin<3, colPosition=':'; end
-            obj = obj.iloc_(idxPosition,colPosition,true);
+            obj = obj.loc_(idxPosition,colPosition,true,true);
         end
         function obj = loc(obj,idxName,colName)
             % selection based on names: df.loc(indexNames[,columnsNames])
@@ -318,7 +318,7 @@ classdef DataFrame
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
-            obj = obj.loc_(idxName,colName,true);
+            obj = obj.loc_(idxName,colName,false,true);
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -472,6 +472,16 @@ classdef DataFrame
             if noFfill, other.data_(1,:) = dataStart; end
             if strcmp(FirstValueFilling{1}, "ffillFromInterval")
                 other = other.iloc_(2:length(other.index_),':');
+            end
+            
+            % subfunction
+            function hasEntry = intervalHasEntry(data,selector)
+                hasEntry = true(length(selector),size(data,2));
+
+                isValid = ~ismissing(data);
+                for ii = 2:length(selector)
+                    hasEntry(ii,:) = any(isValid(selector(ii-1)+1:selector(ii),:),1);
+                end
             end
         end
         function other = horzcat(obj,varargin)
@@ -1068,7 +1078,7 @@ classdef DataFrame
                         error("Nested assign in combination with %s indexing operator not supported", s(1).type)
                     end
                     positionIndex = (s(1).type=="{}");
-                    assignDataToSelection(s(1).subs, positionIndex, b);
+                    obj = assignDataToSelection(obj, s(1).subs, positionIndex, b);
      
                 case '.'
                     field = string(s(1).subs);
@@ -1081,7 +1091,7 @@ classdef DataFrame
                         assert(~isempty(b), 'frames:indexValidation:mustBeNonempty', ...
                             "assignment of %s not allowed to be empty", field);                        
                         if length(s)==1
-                            obj.(field+"") = b;
+                            obj.(field) = b;
                         else
                             obj.(field+"_").value(s(2).subs{1}) = b;
                         end
@@ -1098,7 +1108,7 @@ classdef DataFrame
                              error("Nested assign in combination with .%s() indexing not supported", field);
                          end
                          positionIndex = (field=="iloc");
-                         assignDataToSelection(s(2).subs, positionIndex, b);
+                         obj = assignDataToSelection(obj, s(2).subs, positionIndex, b);
                          
                     elseif ismember(field, ["row","col"])
                         % assign to row/col series
@@ -1124,12 +1134,7 @@ classdef DataFrame
                     end
             end
             
-            function bool = isLogicalSelector2D(index)
-                bool = (isFrame(index) && ~isFrameSeries(index)) || ...
-                       (islogical( index) && ~isvector(index));
-            end
-            
-            function assignDataToSelection(subs, positionIndex, data)
+            function obj = assignDataToSelection(obj, subs, positionIndex, data)
                 % assign data to DataFrame values selection based on subs selectors
                 if isLogicalSelector2D(subs{1})
                     % special case: combined logical indexing of rows and columns (2d logical selector)
@@ -1141,6 +1146,10 @@ classdef DataFrame
                     [idx,col] = getSelectorsFromSubs(subs);
                     obj = obj.modify(data,idx,col, positionIndex);
                 end
+            end
+            function bool = isLogicalSelector2D(index)
+                bool = (isFrame(index) && ~isFrameSeries(index)) || ...
+                       (islogical( index) && ~isvector(index));
             end
         end
                 
@@ -1154,11 +1163,11 @@ classdef DataFrame
     
     methods(Hidden, Access=protected)
         
-         function obj = loc_(obj,idxSelector,colSelector,userCall, positionIndex)            
-            if nargin < 4, userCall=false; end
-            if nargin < 5, positionIndex=false; end
-            idxID = obj.index_.getSelector(idxSelector,   userCall, 'onlyColSeries', positionIndex);
-            colID = obj.columns_.getSelector(colSelector, userCall, 'onlyRowSeries', positionIndex);              
+         function obj = loc_(obj,idxSelector,colSelector,positionIndex,userCall)            
+            if nargin < 5, userCall=false; end
+            if nargin < 4, positionIndex=false; end
+            idxID = obj.index_.getSelector(idxSelector, positionIndex, 'onlyColSeries', userCall);
+            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall);              
             if ~iscolon(idxSelector)
                 obj.index_.value_ = obj.index_.value_(idxID);
             end
@@ -1168,9 +1177,8 @@ classdef DataFrame
             obj.data_ = obj.data_(idxID,colID);
          end
          
-         function obj = iloc_(obj,idxPosition,colPosition,userCall)
-            if nargin < 4, userCall=false; end                        
-            obj = obj.loc_(idxPosition, colPosition, userCall, true); 
+         function obj = iloc_(obj,idxPosition,colPosition)
+            obj = obj.loc_(idxPosition, colPosition, true, false); 
          end
                  
         function tb = getTable(obj)
@@ -1204,8 +1212,8 @@ classdef DataFrame
         function obj = modify(obj,data,index,columns,positionIndex)
             % modify data in selected index and columns to supplied values
             if nargin<5; positionIndex = false; end
-            idx = obj.index_.getSelector(index,     true, 'onlyColSeries', positionIndex);
-            col = obj.columns_.getSelector(columns, true, 'onlyRowSeries', positionIndex);                     
+            idx = obj.index_.getSelector(index, positionIndex, 'onlyColSeries', true);
+            col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', true);                     
             % get data from DataFrame
             if isFrame(data)
                 indexColChecker(obj.iloc_(idx,col).asFrame(), data);
@@ -1508,16 +1516,6 @@ len = length(subs);
 if ~ismember(len, [1,2]); error('Error in reference for index and columns.'); end
 if len==1; col = ':'; else; col = subs{2}; end
 idx = subs{1};
-end
-
-%--------------------------------------------------------------------------
-function hasEntry = intervalHasEntry(data,selector)
-hasEntry = true(length(selector),size(data,2));
-
-isValid = ~ismissing(data);
-for ii = 2:length(selector)
-    hasEntry(ii,:) = any(isValid(selector(ii-1)+1:selector(ii),:),1);
-end
 end
 
 %--------------------------------------------------------------------------
