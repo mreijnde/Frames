@@ -1166,8 +1166,8 @@ classdef DataFrame
          function obj = loc_(obj,idxSelector,colSelector,userCall, positionIndex)            
             if nargin < 4, userCall=false; end
             if nargin < 5, positionIndex=false; end
-            idxID = obj.index_.getSelector(idxSelector,   userCall, 'onlyColSeries', positionIndex);
-            colID = obj.columns_.getSelector(colSelector, userCall, 'onlyRowSeries', positionIndex);              
+            idxID = obj.index_.getSelector(idxSelector, positionIndex, 'onlyColSeries', userCall);
+            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall);              
             if ~iscolon(idxSelector)
                 obj.index_.value_ = obj.index_.value_(idxID);
             end
@@ -1213,8 +1213,8 @@ classdef DataFrame
         function obj = modify(obj,data,index,columns,positionIndex)
             % modify data in selected index and columns to supplied values
             if nargin<5; positionIndex = false; end
-            idx = obj.index_.getSelector(index,     true, 'onlyColSeries', positionIndex);
-            col = obj.columns_.getSelector(columns, true, 'onlyRowSeries', positionIndex);                     
+            idx = obj.index_.getSelector(index, positionIndex, 'onlyColSeries', true);
+            col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', true);                     
             % get data from DataFrame
             if isFrame(data)
                 indexColChecker(obj.iloc_(idx,col).asFrame(), data);
