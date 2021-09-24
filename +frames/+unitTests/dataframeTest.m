@@ -286,6 +286,41 @@ classdef dataframeTest < matlab.unittest.TestCase
             expected = frames.DataFrame([],[],[1 2 3]);
             t.verifyEqual(df2,expected)
             
+            % data is a DF
+            df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1]);
+            data = df{[1 3]}*2;
+            df{[1 3],:} = data;
+            t.verifyEqual(df,frames.DataFrame([2 4 6; 2 5 NaN; NaN 0 2]))
+            df(2) = frames.DataFrame([3 4 5],NaN,RowSeries=true);
+            t.verifyEqual(df,frames.DataFrame([2 4 6; 3 4 5; NaN 0 2]))
+            t.verifyError(@isnotseries,'frames:elementWiseHandler:differentIndex')
+            function isnotseries, df(2) = frames.DataFrame([3 4 5]); end
+            df(2) = frames.DataFrame([3 4 6]).data;
+            t.verifyEqual(df,frames.DataFrame([2 4 6; 3 4 6; NaN 0 2]))
+            
+            % col row
+            df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1]);
+            df.col("Var1") = df.col("Var2") + df.col("Var3");
+            t.verifyEqual(df,frames.DataFrame([5 2 3; NaN 5 NaN; 1 0 1]))
+            df.row(2) = 4;
+            t.verifyEqual(df,frames.DataFrame([5 2 3; 4 4 4; 1 0 1]))
+            df.col("newCol") = df.col("Var2");
+            t.verifyEqual(df,frames.DataFrame([5 2 3 2; 4 4 4 4; 1 0 1 0],[],["Var1","Var2","Var3","newCol"]))
+            df.index = [1 3 4];
+            df = df.setIndexType('sorted');
+            df.row(2) = df.row(1);
+            t.verifyEqual(df,frames.DataFrame([5 2 3 2; 5 2 3 2; 4 4 4 4; 1 0 1 0],frames.Index(1:4,UniqueSorted=true,Name="Row"),["Var1","Var2","Var3","newCol"]))
+            t.verifyError(@isnotseries2,'frames:elementWiseHandler:differentIndex')
+            function isnotseries2, df.row(1) = df(2); end
+            
+            t.verifyError(@cannotMultAsgn,'frames:subsasgn:rowMultiple')
+            function cannotMultAsgn, df.row([1 2]) = 3; end
+            
+            warning('off','frames:Index:notUnique')
+            df = frames.DataFrame([1 2 3; 2 5 NaN],[],["a","b","a"]);
+            t.verifyError(@occursTwice,'frames:subsasgn:colMultiple')
+            function occursTwice, df.col("a") = 3; end
+            warning('on','frames:Index:notUnique')
         end
         
         function subsasgnWithDFTest(t)
@@ -378,6 +413,11 @@ classdef dataframeTest < matlab.unittest.TestCase
             sol = df(1,["b","a"]);
             expected = frames.DataFrame([2 1 3],1,["b","a","a"]);
             t.verifyEqual(sol,expected)
+            
+            % col row
+            t.verifyEqual(df.col('b'),frames.DataFrame([2;5],[],string(missing),ColSeries=true))
+            t.verifyError(@() df.col('a'),'frames:Index:setSingleton')
+            t.verifyEqual(df.row(1),frames.DataFrame([1 2 3],NaN,["a","b","a"],RowSeries=true))
             warning('on','frames:Index:notUnique')
             
             % test empty selection
