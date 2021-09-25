@@ -184,7 +184,7 @@ classdef DataFrame
         %------------------------------------------------------------------
         % Setters and Getters
         function obj = set.rows(obj, value)
-            obj.indexValidation(value)
+            obj.rowsValidation(value)
             if isa(value,'frames.Index')
                 obj.rows_ = value;
             else
@@ -1098,7 +1098,7 @@ classdef DataFrame
                         if length(s)>2
                             error("Nested assign of .%s in combination with () indexing not supported", field)
                         end
-                        assert(~isempty(b), 'frames:indexValidation:mustBeNonempty', ...
+                        assert(~isempty(b), 'frames:rowsValidation:mustBeNonempty', ...
                             "assignment of %s not allowed to be empty", field);                        
                         if length(s)==1
                             obj.(field) = b;
@@ -1203,7 +1203,7 @@ classdef DataFrame
             if nargin<4; type = class(obj.data); end
             d = repmat(missingData(type),lengthRows,lengthColumns);
         end
-        function indexValidation(obj,value)
+        function rowsValidation(obj,value)
             assert(length(value) == size(obj.data,1), 'frames:rowsValidation:wrongSize', ...
                 'rows does not have the same size as data')
         end

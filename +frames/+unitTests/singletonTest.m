@@ -62,7 +62,7 @@ classdef singletonTest < matlab.unittest.TestCase
             function assignEmtpyVali2, id.value(1) = []; end
         end
         function useInDFTest(t)
-            t.verifyEqual(frames.DataFrame(1,nan,RowSeries=true).index,NaN)
+            t.verifyEqual(frames.DataFrame(1,nan,RowSeries=true).rows,NaN)
             t.verifyError(@valueFail,"frames:Index:valueChecker:singleton")
             function valueFail, frames.DataFrame(1,1,RowSeries=true); end
             t.verifyEqual(frames.DataFrame(1,nan,RowSeries=true), ...
@@ -76,7 +76,7 @@ classdef singletonTest < matlab.unittest.TestCase
             function failIndex, frames.DataFrame(1,[],frames.Index("w"),ColSeries=true); end
             t.verifyEqual(frames.DataFrame(1,[],frames.Index(NaN,Singleton=true),ColSeries=true).columns,NaN)
     
-            t.verifyEqual(frames.TimeFrame(1,seconds(1)).asRowSeries().index,duration(missing))
+            t.verifyEqual(frames.TimeFrame(1,seconds(1)).asRowSeries().rows,duration(missing))
         end
 
     end

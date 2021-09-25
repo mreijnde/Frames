@@ -560,10 +560,10 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.rows=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'frames:indexValidation:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty,'frames:rowsValidation:mustBeNonempty')
             function cannotBeEmpty(), df.rows(2)=[]; end
             
-            t.verifyError(@cannotBeEmpty2,'frames:indexValidation:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty2,'frames:rowsValidation:mustBeNonempty')
             function cannotBeEmpty2(), df.rows=[]; end
             
             t.verifyError(@notUnique1,'frames:Index:requireUniqueFail')
@@ -610,7 +610,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
             function missing2(), df.columns=[NaN 1]'; end
             
-            t.verifyError(@cannotBeEmpty,'frames:indexValidation:mustBeNonempty')
+            t.verifyError(@cannotBeEmpty,'frames:rowsValidation:mustBeNonempty')
             function cannotBeEmpty(), df.columns(2)=[]; end
             
             df.columns = [3 6];
