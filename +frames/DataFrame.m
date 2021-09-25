@@ -1188,7 +1188,7 @@ classdef DataFrame
          end
          
          function obj = iloc_(obj,rowPosition,colPosition)
-            obj = obj.loc_(rowPosition, colPosition, true, false); 
+            obj = obj.loc_(rowPosition, colPosition, false, true); 
          end
                  
         function tb = getTable(obj)
