@@ -1204,8 +1204,8 @@ classdef DataFrame
             d = repmat(missingData(type),lengthRows,lengthColumns);
         end
         function indexValidation(obj,value)
-            assert(length(value) == size(obj.data,1), 'frames:indexValidation:wrongSize', ...
-                'index does not have the same size as data')
+            assert(length(value) == size(obj.data,1), 'frames:rowsValidation:wrongSize', ...
+                'rows does not have the same size as data')
         end
         function columnsValidation(obj,value)
             assert(length(value) == size(obj.data,2), 'frames:columnsValidation:wrongSize', ...
