@@ -105,7 +105,7 @@ classdef Split < dynamicprops
                         cols = [cols; obj.(props{ii}).getColumns_()]; %#ok<AGROW>
                     end
                 end
-                res = constructor(res,obj.(props{1}).index_,cols);
+                res = constructor(res,obj.(props{1}).rows_,cols);
             else
                 if isVectorOutput
                     res.columns_.singleton_ = false;

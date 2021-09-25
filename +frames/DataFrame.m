@@ -329,7 +329,7 @@ classdef DataFrame
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
-            obj = obj.loc_(rowName,colName,false,true);
+            obj = obj.loc_(rowName,colName,true,false);
         end
         
         function obj = replace(obj,valToReplace,valNew)
@@ -1089,7 +1089,7 @@ classdef DataFrame
                         error("Nested assign in combination with %s indexing operator not supported", s(1).type)
                     end
                     positionRows = (s(1).type=="{}");
-                    assignDataToSelection(s(1).subs, positionRows, b);
+                    obj = assignDataToSelection(obj, s(1).subs, positionRows, b);
                 case '.'
                     field = string(s(1).subs);
                     
@@ -1264,7 +1264,7 @@ classdef DataFrame
                 % logical DataFrame selector 
                 assert(islogical(bool2d.data_),'frames:modifyFromBool2D:needLogical', ...
                     'The selector must be a logical.')                
-                rowsColChecker(other.asFrame(),bool2d);
+                rowsColChecker(obj.asFrame(),bool2d);
                 obj.data_(bool2d.data_) = data;
             elseif islogical(bool2d)
                 % logical matrix selector
