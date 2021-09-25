@@ -1,10 +1,10 @@
 classdef DataFrame
-%DATAFRAME is a class to store and do operations on data matrices that are referenced by column and index identifiers.
+%DATAFRAME is a class to store and do operations on data matrices that are referenced by column and row identifiers.
 %   It is a convenient way to perform operations on labeled matrices.
 %   Its aim is to have properties of a matrix and a table at the same time.
 %
 %   Constructor:
-%   df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
+%   df = frames.DataFrame([data,rows,columns,Name=name,RowSeries=logical,ColSeries=logical])
 %   If an argument is not specified, it will take a default value, so it
 %   is possible to only define some of the arguments:
 %   df = frames.DataFrame(data)  
@@ -17,18 +17,18 @@ classdef DataFrame
 %
 %   DATAFRAME properties:
 %     data                   - Data matrix  TxN
-%     index                  - Index        Tx1
+%     rows                  - Index        Tx1
 %     columns                - Columns      1xN
 %     t                      - Table built on the properties above.
 %     name                   - Name of the frame
 %     description            - Description of the frame
 %     rowseries              - logical, whether the Frame is treated as a
 %                              row series (ie not considering the value of
-%                              the 1-dimension index for operations)
+%                              the 1-dimension row for operations)
 %     colseries              - logical, whether the Frame is treated as a
 %                              column series (ie not considering the value of
 %                              the 1-dimension column for operations)
-%     identifierProperties   - structure of index and columns properties,
+%     identifierProperties   - structure of rows and columns properties,
 %                              namely whether they accept duplicates, 
 %                              require unique elements, or require unique 
 %                              and sorted elements
@@ -36,17 +36,17 @@ classdef DataFrame
 %
 %   Short overview of methods available:
 %
-%   - Selection and modification based on index/column names with () or the loc method:
-%     df(indexNames,columnsNames)
-%     df.loc(indexNames,columnsNames)
-%     df(indexNames,columnsNames) = newData
-%     df.loc(indexNames,columnsNames) = newData
+%   - Selection and modification based on row/column names with () or the loc method:
+%     df(rowsNames,columnsNames)
+%     df.loc(rowsNames,columnsNames)
+%     df(rowsNames,columnsNames) = newData
+%     df.loc(rowsNames,columnsNames) = newData
 %
 %   - Selection and modification based on position with {} or the iloc method:
-%     df{indexPosition,columnsPosition}
-%     df.iloc(indexPosition,columnsPosition)
-%     df{indexPosition,columnsPosition} = newData
-%     df.iloc(indexPosition,columnsPosition) = newData
+%     df{rowsPosition,columnsPosition}
+%     df.iloc(rowsPosition,columnsPosition)
+%     df{rowsPosition,columnsPosition} = newData
+%     df.iloc(rowsPosition,columnsPosition) = newData
 %
 %   - Operations between frames while checking that the two frames
 %     are aligned (to be sure to compare apples to apples):
@@ -68,7 +68,7 @@ classdef DataFrame
 %
 %   - Concatenation of frames:
 %     newDF = [df1,df2] concatenates two frames horizontally, and will
-%     expand (unify) their index if they are not equal, inserting missing
+%     expand (unify) their rows if they are not equal, inserting missing
 %     values in the expansion
 %
 %   - Split a frame into groups based on its columns, and apply a function:
@@ -96,7 +96,7 @@ classdef DataFrame
         rows  % Tx1 vector
         columns  % 1xN vector
         name  % textscalar, name of the frame 
-        t  % table, dependent and built on data, index, columns
+        t  % table, dependent and built on data, rows, columns
         rowseries  % logical, whether the Frame is to be considered as a row series
         colseries  % logical, whether the Frame is to be considered as a column series
         identifierProperties  % structure of the properties of the Index objects underlying .rows and .columns
@@ -1159,7 +1159,7 @@ classdef DataFrame
             end
             function bool = isLogicalSelector2D(index)
                 bool = (isFrame(index) && ~isFrameSeries(index)) || ...
-                       (islogical( index) && ~isvector(index));
+                       (islogical(index) && ~isvector(index));
             end
         end
                 
