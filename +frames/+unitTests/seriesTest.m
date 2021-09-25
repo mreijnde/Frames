@@ -65,7 +65,7 @@ classdef seriesTest < matlab.unittest.TestCase
         
         function testOperation(t)
             t.verifyEqual(t.df-t.df.iloc(1).asRowSeries(),frames.DataFrame([0 0;2 2]))
-            t.verifyError(@() t.df-t.df.iloc(1),'frames:elementWiseHandler:differentIndex')
+            t.verifyError(@() t.df-t.df.iloc(1),'frames:elementWiseHandler:differentRows')
         end
     end
 end
