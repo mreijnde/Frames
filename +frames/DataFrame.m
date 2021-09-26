@@ -1510,6 +1510,19 @@ classdef DataFrame
         function obj = not(obj), obj.data_ = not(obj.data_); end
     end
     
+    methods(Hidden, Static)
+        function obj = loadobj(obj)
+            try
+                obj.rows;
+            catch
+                warning('An old version of frames was loaded. The "index" property is replaced by "rows" and will be deprecated.')
+                descr = obj.description;
+                obj = frames.DataFrame(obj.data_,obj.index_,obj.columns_,Name=obj.name_);
+                obj.description = descr;
+            end
+        end
+    end
+    
     methods(Hidden, Static, Access=protected)
         function row = defaultRows(len)
             row = defaultValue('double',len)';

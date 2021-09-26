@@ -179,5 +179,19 @@ classdef TimeFrame < frames.DataFrame
             end
         end
     end
+    
+        methods(Hidden, Static)
+        function obj = loadobj(obj)
+            try
+                obj.rows;
+            catch
+                warning('An old version of frames was loaded. The "index" property is replaced by "rows" and will be deprecated.')
+                descr = obj.description;
+                obj = frames.TimeFrame(obj.data_,obj.index_,obj.columns_,Name=obj.name_);
+                obj.description = descr;
+            end
+        end
+        end
+    
 end
 
