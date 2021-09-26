@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-08-23"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
+      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-09-26"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -80,6 +80,7 @@ df =
     1     1       2  
     2     3       4  
 
+frames.DataFrame
 </pre><p>or with a TimeFrame</p><pre class="codeinput">tf = frames.TimeFrame([1 2;3 4],[738336,738337],[<span class="string">"ts1"</span>,<span class="string">"ts2"</span>])
 </pre><pre class="codeoutput">
 tf = 
@@ -90,6 +91,7 @@ tf =
     29-Jun-2021     1      2 
     30-Jun-2021     3      4 
 
+frames.TimeFrame
 </pre><p>To view the properties of the object, type</p><pre class="codeinput">details(df)
 </pre><pre class="codeoutput">
   2&times;2 frames.DataFrame array with properties:
@@ -131,6 +133,7 @@ df =
     1    10    2
     2     3    4
 
+frames.DataFrame
 </pre><p>Frame will throw an error if the data entered are not coherent, e.g. the size is the matching the rest of the data:</p><pre class="codeinput"><span class="keyword">try</span>
     df.columns = [<span class="string">"a"</span>,<span class="string">"b"</span>,<span class="string">"c"</span>]
 <span class="keyword">catch</span> me
@@ -161,6 +164,7 @@ ans =
 
     1    10    2
 
+frames.DataFrame
 </pre><p>Modification</p><pre class="codeinput">df(1,:) = 11
 <span class="comment">% Or df.loc(1,:) = 11</span>
 </pre><pre class="codeoutput">
@@ -172,6 +176,7 @@ df =
     1    11    11
     2     3     4
 
+frames.DataFrame
 </pre><p>One can also drop a column/row with the empty assignment</p><pre class="codeinput">tmp = df;
 tmp(:,<span class="string">"b"</span>) = []
 </pre><pre class="codeoutput">
@@ -183,6 +188,7 @@ tmp =
     1    11
     2     3
 
+frames.DataFrame
 </pre><pre>Select and modify based on position with {} or the iloc method:
  *  df{indexPosition,columnsPosition}
  *  df.iloc(indexPosition,columnsPosition)
@@ -200,6 +206,7 @@ ans =
     1    11
     2     4
 
+frames.DataFrame
 </pre><pre class="codeinput">df{2,1} = 20
 <span class="comment">% or df.iloc(2,1) = 20</span>
 </pre><pre class="codeoutput">
@@ -211,6 +218,7 @@ df =
     1    11    11
     2    20     4
 
+frames.DataFrame
 </pre><pre class="codeinput">df.data = [1 2;3 4];  <span class="comment">% reset data to original example</span>
 </pre><h2 id="21">Operations</h2><p>Frames can be used like matrices for operations.</p><p>element-wise operation</p><pre class="codeinput">df + df
 </pre><pre class="codeoutput">
@@ -222,6 +230,7 @@ ans =
     1    2    4
     2    6    8
 
+frames.DataFrame
 </pre><p>Contrast this with Matlab table:</p><pre class="codeinput">tb = table([1;3],[2;4],<span class="string">'VariableNames'</span>,{<span class="string">'a'</span>,<span class="string">'b'</span>},<span class="string">'RowNames'</span>,{<span class="string">'1'</span>,<span class="string">'2'</span>});
 tb;
 <span class="keyword">try</span>
@@ -241,6 +250,7 @@ ans =
     1    2    3
     2    4    5
 
+frames.DataFrame
 </pre><p>transpose and matrix operation</p><pre class="codeinput">df' * df
 </pre><pre class="codeoutput">
 ans = 
@@ -251,6 +261,7 @@ ans =
     a    10    14
     b    14    20
 
+frames.DataFrame
 </pre><pre class="codeinput">vector = frames.DataFrame([1;2],[<span class="string">"a"</span>,<span class="string">"b"</span>],<span class="string">"vectorColumn"</span>);
 df * vector
 </pre><pre class="codeoutput">
@@ -262,6 +273,7 @@ ans =
     1          5     
     2         11     
 
+frames.DataFrame
 </pre><p>If Frames are not aligned, an element-wise operation will return an error:</p><pre class="codeinput">df2 = frames.DataFrame(1,[1 2],[<span class="string">"noMatch1"</span>,<span class="string">"noMatch2"</span>]);
 <span class="keyword">try</span>
     df ./ df2
@@ -288,6 +300,7 @@ ans =
     1    1    2
     2    6    8
 
+frames.DataFrame
 </pre><h2 id="29">Concatenation</h2><p>One can concatenate different Frames into one with the operator [].</p><p>The concatenation can be horizontal or vertical. The operation will align the Frames by expanding (unifying) their index or columns if they are not equal, inserting missing values in the expansion.</p><pre class="codeinput">tf1 = frames.TimeFrame(1,[<span class="string">"25-Jun-2021"</span>,<span class="string">"27-Jun-2021"</span>,<span class="string">"28-Jun-2021"</span>],[<span class="string">"ts1"</span>,<span class="string">"ts2"</span>]);
 tf2 = frames.TimeFrame(2,[<span class="string">"26-Jun-2021"</span>,<span class="string">"27-Jun-2021"</span>,<span class="string">"30-Jun-2021"</span>],<span class="string">"ts3"</span>);
 [tf1, tf2]
@@ -303,6 +316,7 @@ ans =
     28-Jun-2021      1      1    NaN
     30-Jun-2021    NaN    NaN      2
 
+frames.TimeFrame
 </pre><pre class="codeinput">tf3 = frames.TimeFrame(2,frames.TimeIndex([<span class="string">"29.06.2021"</span>,<span class="string">"30.06.2021"</span>],Format=<span class="string">"dd.MM.yyyy"</span>),[<span class="string">"ts2"</span>,<span class="string">"ts3"</span>]);
 [tf1; tf3]
 </pre><pre class="codeoutput">
@@ -317,6 +331,7 @@ ans =
     29-Jun-2021    NaN     2       2
     30-Jun-2021    NaN     2       2
 
+frames.TimeFrame
 </pre><h2 id="31">Index Object</h2><p>The <i>index</i> and <i>columns</i> properties can be assigned some properties themselves, namely whether they are required to have unique elements, and whether these are required to be sorted.</p><p>By default, the <i>columns</i> allow duplicates, while the <i>index</i> require unique elements. For TimeFrame, the <i>index</i> also requires sorted elements.</p><p>These can be changed by explicitely using the <i>Index</i> object that underlies the <i>index</i> and <i>columns</i> properties.</p><p>Here is an example of an Index:</p><pre>frames.Index(value,Unique=false,UniqueSorted=false,Singleton=false,Name="")</pre><pre class="codeinput">frames.Index([1,2])
 </pre><pre class="codeoutput">
 ans = 
@@ -352,6 +367,7 @@ ans =
     2    3    4
     1    1    2
 
+frames.DataFrame
 </pre><pre class="codeinput">dfSorted = df.setIndexType(<span class="string">"sorted"</span>);
 <span class="comment">% or df.index = frames.Index([1 2],UniqueSorted=true)</span>
 dfSorted.getIndex_()
@@ -381,23 +397,25 @@ sortedConcatenation = [df1,df2]
 </pre><pre class="codeoutput">
 unsortedConcatenation = 
 
-         x1     x2 
+          1      2 
          ___    ___
 
     1      1    NaN
     3      3      3
     2    NaN      2
 
+frames.DataFrame
 
 sortedConcatenation = 
 
-         x1     x2 
+          1      2 
          ___    ___
 
     1      1    NaN
     2    NaN      2
     3      3      3
 
+frames.DataFrame
 </pre><p>For TimeFrame, the Index object for <i>index</i> is a <b>TimeIndex</b>.</p><p>TimeIndex can read several kinds of arguments: datenum, datetime, and strings/cell together with a Format</p><pre>frames.TimeIndex(value,Unique=false,UniqueSorted=false,Singleton=false,Name="Time",Format="dd-MMM-yyyy")</pre><pre class="codeinput">frames.TimeIndex(738336)
 frames.TimeIndex(datetime(738336,<span class="string">'ConvertFrom'</span>,<span class="string">'datenum'</span>,Format=<span class="string">'dd-MMM-yyyy'</span>));
 frames.TimeIndex(<span class="string">"29-Jun-2021"</span>,Format=<span class="string">"dd-MMM-yyyy"</span>);
@@ -434,6 +452,7 @@ tf =
     28-Jun-2021     5  
     29-Jun-2021     6  
 
+frames.TimeFrame
 
 ans = 
 
@@ -444,6 +463,7 @@ ans =
     25-Jun-2021     2  
     26-Jun-2021     3  
 
+frames.TimeFrame
 </pre><h2 id="40">Methods Chaining</h2><p>Several methods are available. Again, please refer to the documentation for the full list</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
 doc <span class="string">frames.TimeFrame</span>
 </pre><p>Methods can be chained to apply them one after the other.</p><pre class="codeinput"><span class="comment">% Example: build random correlated data and apply functions to the TimeFrame.</span>
@@ -500,6 +520,7 @@ df =
     2    2    5    0
     3    3    3    1
 
+frames.DataFrame
 </pre><pre class="codeinput"><span class="comment">% simple example with cell</span>
 <span class="comment">% apply a sum horizontally in each group</span>
 x1 = df.split({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>},[<span class="string">"group1"</span>,<span class="string">"group2"</span>]).apply(@(x) x.sum(2))
@@ -513,6 +534,7 @@ x1 =
     2      2         5   
     3      4         3   
 
+frames.DataFrame
 </pre><pre class="codeinput"><span class="comment">% apply function using group names</span>
 <span class="comment">% multiply each group by 10 and 1 respectively</span>
 multiplier.group1 = 10;
@@ -528,6 +550,7 @@ x2 =
     2    20     0    5
     3    30    10    3
 
+frames.DataFrame
 </pre><pre class="codeinput"><span class="comment">% split with a structure</span>
 <span class="comment">% cap each group at 1.5 and 2.5 respectively</span>
 s = struct();
@@ -546,6 +569,7 @@ x3 =
     2    1.5      0    2.5
     3    1.5      1    2.5
 
+frames.DataFrame
 </pre><pre class="codeinput"><span class="comment">% split with a Group</span>
 <span class="comment">% take the maximum of each groups at each row</span>
 g = frames.Groups(df.columns,s);
@@ -553,44 +577,55 @@ x4 = df.split(g).apply(@(x) x.max(2))
 </pre><pre class="codeoutput">
 x4 = 
 
-         group1    group2
+         group2    group1
          ______    ______
 
-    1      5         2   
-    2      2         5   
+    1      2         5   
+    2      5         2   
     3      3         3   
 
+frames.DataFrame
 </pre><h2 id="56">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (+frames/+unitTests/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
 </pre><pre class="codeoutput">
 Methods for class frames.DataFrame:
 
-DataFrame         extendIndex       loc               shift             
-abs               ffill             log               sign              
-all               findgroups        max               size              
-any               firstCommonIndex  maxOf             sortBy            
-asColSeries       firstValidIndex   mean              sortIndex         
-asRowSeries       floor             median            split             
-bfill             getColumns_       min               splitapply        
-ceil              getIndex_         minOf             sqrt              
-clip              groupcounts       nansum            std               
-compoundChange    groupfilter       outerjoin         subsasgn          
-corr              groupsummary      plot              subsref           
-cov               grouptransform    relChg            sum               
-cumprod           head              replace           tail              
-cumsum            heatmap           replaceStartBy    tanh              
-diff              height            resample          toFile            
-dropColumns       horzcat           rolling           union             
-dropIndex         iloc              setColumnsName    var               
-dropMissing       innerjoin         setColumnsType    vertcat           
-emptyStart        intersect         setIndex          width             
-equals            isempty           setIndexName      
-ewm               ismember          setIndexType      
-exp               ismissing         setdiff           
-extendColumns     join              setxor            
+DataFrame            getIndex_            resample             
+abs                  groupcounts          resetUserProperties  
+all                  groupfilter          rolling              
+any                  groupsummary         row                  
+asColSeries          grouptransform       setColumnsName       
+asFrame              head                 setColumnsType       
+asRowSeries          heatmap              setIndex             
+bfill                height               setIndexName         
+ceil                 horzcat              setIndexType         
+clip                 iloc                 setdiff              
+col                  innerjoin            setxor               
+compoundChange       intersect            shift                
+corr                 isempty              sign                 
+cov                  ismember             size                 
+cumprod              ismissing            sortBy               
+cumsum               issortedrows         sortIndex            
+diff                 join                 sortrows             
+dropColumns          loc                  split                
+dropIndex            log                  splitapply           
+dropMissing          max                  sqrt                 
+emptyStart           maxOf                std                  
+equals               mean                 subsasgn             
+ewm                  median               subsref              
+exp                  min                  sum                  
+extendColumns        minOf                tail                 
+extendIndex          nansum               tanh                 
+ffill                oneify               toFile               
+findgroups           outerjoin            union                
+firstCommonIndex     plot                 var                  
+firstValidIndex      relChg               vertcat              
+floor                replace              width                
+getColumns_          replaceStartBy       
 
 Static methods:
 
-empty             fromFile          fromTable         
+empty                fromTable            
+fromFile             
 
 </pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2021a</a><br></p></div><!--
 ##### SOURCE BEGIN #####
