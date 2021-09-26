@@ -17,7 +17,7 @@ classdef DataFrame
 %
 %   DATAFRAME properties:
 %     data                   - Data matrix  TxN
-%     rows                  - Index        Tx1
+%     rows                   - Rows         Tx1
 %     columns                - Columns      1xN
 %     t                      - Table built on the properties above.
 %     name                   - Name of the frame
