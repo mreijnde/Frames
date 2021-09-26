@@ -1158,7 +1158,7 @@ classdef DataFrame
                 end
             end
             function bool = isLogicalSelector2D(index)
-                bool = (isFrame(index) && ~isFrameSeries(index)) || ...
+                bool = (isFrame(index) && ~index.colseries && ~index.rowseries) || ...
                        (islogical(index) && ~isvector(index));
             end
         end
