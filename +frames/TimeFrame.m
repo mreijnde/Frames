@@ -17,7 +17,7 @@ classdef TimeFrame < frames.DataFrame
 %
 %   TIMEFRAME properties:
 %     data                   - Data                  TxN  (homogeneous data)
-%     rows                   - Sorted Time Index     Tx1
+%     rows                   - Sorted Time Rows      Tx1
 %     columns                - Columns               1xN
 %     t                      - Timetable built on the properties above.
 %     name                   - Name of the frame
