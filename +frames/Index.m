@@ -25,17 +25,25 @@ classdef Index
 %
 % See also: TIMEINDEX
     
-    properties
-        name {mustBeTextScalar} = ""  % (textScalar) name of the Index
-    end
+    %properties
+    %    name = "" % {mustBeTextScalar} = ""  % (textScalar) name of the Index
+    %end
     properties(Dependent)
-        value  % Tx1 array
-        singleton  % (logical, default false) set it to true if the Index represents a series, cf DataFrame.series
-        requireUnique  % (logical, default false) whether the Index requires unique elements
-        requireUniqueSorted  % (logical, default false) whether the Index requires unique and sorted elements
+        value                % Tx1 array
+        singleton            % (logical, default false) set it to true if the Index represents a series, cf DataFrame.series
+        requireUnique        % (logical, default false) whether the Index requires unique elements
+        requireUniqueSorted  % (logical, default false) whether the Index requires unique and sorted elements  
+        name                 % (string array) names of index dimensions  
     end
-    properties(Hidden,Access={?frames.TimeIndex,?frames.DataFrame})
-        value_
+    properties(Dependent, Hidden)
+        value_uniq           % (cell array) stores unique values per dimension    
+        value_uniqind        % (int array) stores position index to unique value for every value      
+    end
+    properties      %TEMPORARY FOR DEBUGGING (NO ACCESS LIMITATIONS)
+        value_               % stores values   
+    end
+    properties(Hidden,Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex})  
+        name_                % store name
         singleton_
         requireUnique_
         requireUniqueSorted_
@@ -70,6 +78,11 @@ classdef Index
             obj.value = value;
         end
         
+        function obj=getSubIndex(obj,selector)
+            % get Index object of sub selection based on matlab selector
+            obj.value_ = obj.value_(selector);         
+        end
+        
         function idx = get.value(obj)
             idx = obj.getValue();
         end
@@ -83,18 +96,19 @@ classdef Index
             idx = obj.requireUniqueSorted_;
         end
         function obj = set.value(obj,value)
-            if isa(value,'frames.Index')
-                error('frames:index:setvalue','value of Index cannot be an Index')
-            end
-            if islogical(value)
-                error('frames:index:setvalueLogical','value of Index cannot be a logical')
-            end
-            value = obj.getValue_andCheck(value,true);
-            if isrow(value)
-                value = value';
-            end
-            obj.value_ = value;
+            % seperate method to overcome matlab's limitation on overloading setters/getters
+            obj = obj.setvalue(value); 
         end
+        
+        function obj = set.name(obj,value)
+            obj.name_ = value;
+        end
+        
+        function out = get.name(obj)
+            % seperate method to overcome matlab's limitation on overloading setters/getters
+            out = obj.getname();
+        end
+        
         function obj = set.singleton(obj,tf)
             arguments
                 obj, tf (1,1) {mustBeA(tf,'logical')}
@@ -219,6 +233,22 @@ classdef Index
             end
         end
         
+        function mask = getSelectorMask(obj, selector, varargin)
+            % output logical mask array for given selector
+            %
+            % Parameters: see getSelector()
+            %
+            selector = obj.getSelector(selector, varargin{:});   
+            if iscolon(selector)                
+                mask = true(obj.length(),1);
+            elseif islogical(selector)                
+                mask = selector;
+            else
+                mask = false(obj.length(),1);
+                mask(selector) = true;
+            end
+        end
+        
         function pos = positionIn(obj,target,varargin)
             % find position of the Index into the target
             target = obj.getValue_andCheck(target,varargin{:});
@@ -271,6 +301,16 @@ classdef Index
             bool = ismissing(obj.value_);
         end
         
+        function out = get.value_uniq(obj)
+            % seperate method to overcome matlab's limitation on overloading setters/getters            
+            out = getvalue_uniq(obj);                        
+        end
+        
+        function out = get.value_uniqind(obj)
+            % seperate method to overcome matlab's limitation on overloading setters/getters
+            out = getvalue_uniqind(obj);            
+        end        
+        
     end
     
     methods(Hidden)
@@ -310,6 +350,37 @@ classdef Index
     end
     
     methods(Access=protected)
+        function obj = setvalue(obj,value)
+            if isa(value,'frames.Index')
+                error('frames:index:setvalue','value of Index cannot be an Index')
+            end
+            if islogical(value)
+                error('frames:index:setvalueLogical','value of Index cannot be a logical')
+            end
+            value = obj.getValue_andCheck(value,true);
+            if isrow(value)
+                value = value';
+            end
+            obj.value_ = value;                  
+        end        
+        
+        function out = getname(obj)
+            out = obj.name_;
+        end
+
+        function out = getvalue_uniq(obj)
+            % get unique values
+            % (TODO: add some caching mechanism for performance, or recalculate at value change)
+            out = {unique(obj.value_,'stable')};  
+        end
+        
+        function out = getvalue_uniqind(obj)
+            % get index positions to unique values
+            % (TODO: add some caching mechanism for performance, or recalculate at value change)
+            [~,~,out] = unique(obj.value_,'stable');                        
+        end        
+        
+        
         function valueChecker(obj,value,fromSubsAsgnIdx,b)
             if obj.singleton_
                 assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...
@@ -344,7 +415,8 @@ classdef Index
             end
         end
         
- function positionIndexChecker(obj, selector)    
+        
+        function positionIndexChecker(obj, selector)    
             % validate position index    
             assert(~obj.requireUnique_ || isunique(selector), 'frames:Index:requireUniqueFail', ...
                 'Index value is required to be unique.')

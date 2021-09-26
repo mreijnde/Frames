@@ -1169,10 +1169,10 @@ classdef DataFrame
             idxID = obj.index_.getSelector(idxSelector, positionIndex, 'onlyColSeries', userCall);
             colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall);              
             if ~iscolon(idxSelector)
-                obj.index_.value_ = obj.index_.value_(idxID);
+                obj.index_ = obj.index_.getSubIndex(idxID);
             end
-            if ~iscolon(colSelector)                
-                obj.columns_.value_ = obj.columns_.value_(colID);
+            if ~iscolon(colSelector)                                
+                obj.columns_ = obj.columns_.getSubIndex(colID);
             end
             obj.data_ = obj.data_(idxID,colID);
          end
@@ -1185,8 +1185,10 @@ classdef DataFrame
             idx = obj.index_.getValueForTable();
             col = obj.columns_.getValueForTable();
             tb = array2table(obj.data,RowNames=idx,VariableNames=col);
-            if ~isempty(obj.index_.name) && ~strcmp(obj.index_.name,"")
-                tb.Properties.DimensionNames{1} = char(obj.index_.name);
+            % note: dimension names are not displayed by table
+            if ~isempty(obj.index_.name) && obj.index_.name(1)~=""
+                name = join(obj.index_.name, " "); %handle string array as name property
+                tb.Properties.DimensionNames{1} = char(name);
             end
         end
         function d = defaultData(obj,lengthIndex,lengthColumns,type)
@@ -1402,6 +1404,8 @@ classdef DataFrame
                 try
                     % show content
                     disp(obj.t);               
+                    % show row index dimension names (TODO, find better way to include this data)                    
+                    fprintf("row index name(s): %s\n\n", join(obj.index_.name,", ") )
                     % description line
                     line = class(obj);
                     if obj.colseries
@@ -1409,7 +1413,7 @@ classdef DataFrame
                     elseif obj.rowseries
                         line = line + " - RowSeries";                        
                     end
-                    disp(line);
+                    disp(line);                    
                 catch
                     warning('Table cannot be displayed')
                     details(obj);
