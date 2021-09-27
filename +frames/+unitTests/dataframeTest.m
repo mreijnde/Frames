@@ -813,9 +813,9 @@ classdef dataframeTest < matlab.unittest.TestCase
         
         function firstRowsTest(t)
             df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1;NaN NaN 33 44 55 66]');
-            t.verifyEqual(df.firstCommonRows(),4)
-            t.verifyEqual(df.firstValidRows(),2)
-            noCommon = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRows();
+            t.verifyEqual(df.firstCommonRow(),4)
+            t.verifyEqual(df.firstValidRow(),2)
+            noCommon = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRow();
             t.verifyEqual(noCommon,string.empty(0,1));
         end
         
