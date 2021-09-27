@@ -6,7 +6,7 @@ classdef TimeIndex < frames.Index
 % A TIMEINDEX has unique chronological values by default.
 %
 % This property can be defined explicitly in the constructor of TIMEINDEX,
-% or changed with the methods .setIndexType and .setColumnsType of
+% or changed with the methods .setRowsType and .setColumnsType of
 % TimeFrame.
 % An TIMEINDEX can 1) accept duplicate values, 2) require unique value, or 3)
 % require unique and sorted values.
@@ -20,7 +20,7 @@ classdef TimeIndex < frames.Index
 %
 % The value can be a datenum, a datetime, or a string, in which case one
 % needs to specify its format in the Format key-value argument.
-% It can also be modified with the .setIndexFormat method of TimeFrame.
+% It can also be modified with the .setRowsFormat method of TimeFrame.
 %
 % Copyright 2021 Benjamin Gaudin
 % Contact: frames.matlab@gmail.com
@@ -31,7 +31,7 @@ classdef TimeIndex < frames.Index
     end
     methods
         function obj = TimeIndex(value,nameValue)
-            % INDEX Index(value[,Name=name,Format=format])
+            % TIMEINDEX TimeIndex(value[,Name=name,Format=format])
             arguments
                 value
                 nameValue.Name = "Time"

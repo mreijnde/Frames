@@ -1082,7 +1082,7 @@ classdef DataFrame
 
         
         function obj = subsasgn(obj,s,b)
-            % assign values to dataframe by indexing: (),{},loc,iloc operations            
+            % assign values to dataframe by indexing: (),{},loc,iloc,col,row operations            
             switch s(1).type
                 case {'()','{}'}
                     if length(s)>1

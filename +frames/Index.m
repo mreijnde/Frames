@@ -1,5 +1,5 @@
 classdef Index
-% INDEX is the object that supports the index and columns properties in a DataFrame.
+% INDEX is the object that supports the rows and columns properties in a DataFrame.
 % They are stored in the rows_ and columns_ properties of DataFrame.
 % It contains operations of selection and merging, and constrains.
 %
@@ -7,7 +7,7 @@ classdef Index
 % The INDEX of the rows accepts only unique values by default.
 %
 % This property can be defined explicitly in the constructor of INDEX,
-% or changed with the methods .setIndexType and .setColumnsType of
+% or changed with the methods .setRowsType and .setColumnsType of
 % DataFrame.
 % An INDEX can 1) accept duplicate values, 2) require unique value, or 3)
 % require unique and sorted values.
