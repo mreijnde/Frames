@@ -384,7 +384,7 @@ classdef DataFrame
             newData = obj.defaultData(length(newRows),length(obj.columns_));
             
             if obj.rows_.requireUniqueSorted_
-                row = obj.rows_.positionIn(newRows.value);
+                row = obj.rows_.positionIn(newRows.value,false);
             else
                 row = 1:length(obj.rows_);
             end
@@ -407,7 +407,7 @@ classdef DataFrame
             newData = obj.defaultData(length(obj.rows_),length(newColumns));
             
             if obj.columns_.requireUniqueSorted_
-                col = obj.columns_.positionIn(newColumns.value);
+                col = obj.columns_.positionIn(newColumns.value,false);
             else
                 col = 1:length(obj.columns_);
             end
@@ -589,14 +589,14 @@ classdef DataFrame
             
             other = getExtendedColsDF(obj);
             
-            idData = other.rows_.positionIn(rowNew);
+            idData = other.rows_.positionIn(rowNew,false);
             dataV(idData,:) = other.data_;
             type = class(obj.data_);
             for ii = 1:nargin-1
                 extendedDF = getExtendedColsDF(varargin{ii});
                 assert(isa(extendedDF.data_,type),'frames:concat:differentDatatype', ...
                     'frames do not have the same data type')
-                idData = extendedDF.rows_.positionIn(rowNew);
+                idData = extendedDF.rows_.positionIn(rowNew,false);
                 dataV(idData,:) = extendedDF.data_;
             end
             other.data_ = dataV;
