@@ -20,6 +20,9 @@ classdef Split < dynamicprops
  %              property values are elements in each group. If namesOfGroups
  %              is not specified, the split use all properties of the 
  %              Group as namesOfGroups.
+ %          - frames.DataFrame: If groups change along the rows, one can
+ %              use a DataFrame that specifies to which group each element
+ %              belongs to. namesOfGroups is not used.
  %     * namesOfGroups: (string array) 
  %          group names into which we want to split the Frame
  %
@@ -32,11 +35,27 @@ classdef Split < dynamicprops
  % See also: frames.Groups
     properties(Access=private)
         nameOfProperties_
+        
+        isFrameSplitter = false;
+        groupDF
+        dataDF
     end
     
     methods (Access=?frames.DataFrame)
         function obj = Split(df,splitter,namesOfGroups)
             % Split(df,splitter[,namesOfGroups])
+            if frames.internal.isFrame(splitter)
+                obj.isFrameSplitter = true;
+                if splitter.rowseries
+                    constr = str2func(class(df));
+                    splitter = constr(splitter.data,df.getRows_(),splitter.getColumns_());
+                end
+                assert(isequaln(df.rows,splitter.rows) && isequaln(df.columns,splitter.columns), ...
+                    'frames:split:groupMisaligned', 'the group frame must be aligned with the data frame')
+                obj.groupDF = splitter;
+                obj.dataDF = df;
+                return
+            end
             if isa(splitter, 'frames.Groups') || isa(splitter,'struct')
                 if nargin < 3
                     namesOfGroups = string(fieldnames(splitter));
@@ -80,6 +99,10 @@ classdef Split < dynamicprops
 
         function res = apply(obj,fun,varargin)
             % APPLY apply a function to each sub-Frame, and returns a single Frame
+            if obj.isFrameSplitter
+                res = local_applyGroupDF(obj.dataDF,obj.groupDF,fun,varargin{:});
+                return
+            end
             props = obj.nameOfProperties_;
             isVectorOutput = true;  % if the output of fun returns a vector
             for ii = 1:length(props)
@@ -117,4 +140,49 @@ classdef Split < dynamicprops
         end
     end
     
+end
+
+function resDF = local_applyGroupDF(dataDF,groupsDF,fun,varargin)
+f = str2func(class(dataDF.data));
+res = repmat(f(missing),size(dataDF.data));
+groups = groupsDF.data;
+idxSameGroups = local_idxSameData(groups);
+for ii = 1:size(idxSameGroups,2)
+    idx = idxSameGroups(:,ii);
+    idx_ = idx(1):idx(2);
+    df_ = dataDF.iloc_(idx_,:);
+    groups_ = groups(idx(1),:);
+    groups_unique = unique(groups_);
+    groups_unique = groups_unique(~ismissing(groups_unique));
+    for g = groups_unique
+        g_ = groups(idx(1),:) == g;
+        res_ = fun(df_.iloc_(:,g_),varargin{:});
+        res_ = local_getData(res_);
+        res_ = repmat(res_, length(idx_)./size(res_,1), sum(g_)./size(res_,2));
+        res(idx_,g_) = local_getData(res_);
+    end
+end
+resDF = dataDF;
+resDF.data = res;
+end
+
+function idxOut = local_idxSameData(data)
+idxStart = local_linesOfChange(data);
+idxEnd = [idxStart(2:end)-1, size(data,1)];
+idxOut = [idxStart; idxEnd];
+end
+
+function idx = local_linesOfChange(data)
+idx_ = 1;
+idx = idx_;
+for ii = 2:size(data,1)
+    if ~isequaln(data(idx_,:), data(ii,:))
+        idx_ = ii;
+        idx = [idx, idx_];
+    end
+end
+end
+
+function data = local_getData(data)
+if frames.internal.isFrame(data), data = data.data; end
 end

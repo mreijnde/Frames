@@ -809,6 +809,18 @@ classdef dataframeTest < matlab.unittest.TestCase
             splitted = frames.DataFrame(1:5).split({"Var"+(1:2:5),"Var"+(4:-2:2)});
             t.verifyEqual(splitted.apply(@(x) x.sum(2)), frames.DataFrame([9,6],[],["Group1","Group2"]))
             t.verifyEqual(splitted.apply(@(x) x.sum(1)), frames.DataFrame([1,3,5,4,2],NaN,"Var"+[1:2:5,4:-2:2],RowSeries=true))
+            
+            % with a group frame
+            tf = frames.TimeFrame([1 2 3;4 5 6;4 5 6; 7 8 9]);
+            groups = frames.TimeFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN]);
+            g1 = tf.split(groups).apply(@mean,2);
+            g2 = tf.split(groups).apply(@(x) x.mean(2));
+            g3 = tf.split(groups).apply(@(x) mean(x.data,2));
+            t.verifyEqual(g1,frames.TimeFrame([1.5 1.5 3;4.5 4.5 6;5 5 5;7 8 NaN]))
+            t.verifyEqual(g1,g2)
+            t.verifyEqual(g1,g3)
+            f1 = tf.split(groups).apply(@mean,1);
+            t.verifyEqual(f1,frames.TimeFrame([2.5 3.5 4.5;2.5 3.5 4.5;4 5 6;7 8 NaN]))
         end
         
         function firstRowsTest(t)

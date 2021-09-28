@@ -812,6 +812,9 @@ classdef DataFrame
             %              property values are elements in each group. If groupNames
             %              is not specified, the split use all properties of the 
             %              Group as groupNames.
+            %          - frames.DataFrame: If groups change along the rows, one can
+            %              use a DataFrame that specifies to which group each element
+            %              belongs to. namesOfGroups is not used.
             %     * groupNames: (string array) 
             %          group names into which we want to split the Frame
             %
@@ -1171,7 +1174,7 @@ classdef DataFrame
         
     end
     
-    methods(Hidden, Access=protected)
+    methods(Hidden)  % Hidden and not protected, so that other classes in the package can use these methods, without the need to explicitly give them access. Not to be used outside.
         
          function obj = loc_(obj,rowSelector,colSelector,userCall,positionIndex)            
             if nargin < 4, userCall=false; end
@@ -1190,7 +1193,10 @@ classdef DataFrame
          function obj = iloc_(obj,rowPosition,colPosition)
             obj = obj.loc_(rowPosition, colPosition, false, true); 
          end
-                 
+    end
+         
+    methods(Hidden, Access=protected)
+        
         function tb = getTable(obj)
             row = obj.rows_.getValueForTable();
             col = obj.columns_.getValueForTable();
