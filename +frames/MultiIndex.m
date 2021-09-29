@@ -78,12 +78,12 @@ classdef MultiIndex < frames.Index
             elseif positionIndex
                 % position index selector (so no selector per dimension allowed)
                 assert(~iscell(selector),"No cell selector allowed in combination with position indexing.");
-                % use 1st dimension for indexing (all dimensions will give same result)
-                selector = obj.value_(1).getSelector(selector, positionIndex, allowedSeries, userCall);
+                % use 1st dimension for indexing (all dimensions will give same result)               
+                selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             elseif islogical(selector) || isFrameSeries(selector)
-                %  value selector (with logicals)
-                selector = obj.value_(1).getSelector(selector, positionIndex, allowedSeries, userCall);
+                %  value selector (with logicals)                
+                selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             else
                 %  value selector (with 'selector set(s)')
@@ -99,13 +99,13 @@ classdef MultiIndex < frames.Index
                 end
                 % calculate logical mask as selector
                 mask = false(obj.length(),1);
-                for iset = 1:length(selector)
-                    assert(length(selector)<=obj.Ndim, ...
-                        "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
-                        length(selector), iset, obj.Ndim);
+                for iset = 1:length(selector)                    
                     % get mask of maskset by looping over supplied dimensions
-                    maskset = true(obj.length(),1);
+                    maskset = true(obj.length(),1);                    
                     selectorset = selector{iset};
+                    assert(length(selectorset)<=obj.Ndim, ...
+                        "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
+                        length(selectorset), iset, obj.Ndim);
                     for j = 1:length(selectorset)
                         masklayer = obj.value_(j).getSelectorMask(selectorset{j},positionIndex, allowedSeries, userCall);
                         maskset = maskset & masklayer;
@@ -298,8 +298,7 @@ classdef MultiIndex < frames.Index
                 otherwise
                     error("unsupported type '%s'.", type);
             end
-        end
-        
+        end                
         
     end
     methods(Access=protected)

@@ -2,8 +2,8 @@
 %
 % (work in progress)
 
-clear
-
+clear all
+clc
 %% MultiIndex DataFrame with selection optins
 warning('off','frames:Index:notUnique');
 
@@ -30,8 +30,30 @@ df7 = df({ {':',3,"b"}, {':',[2 5 7],':'} })
 
 df8 = df{[3 4],1}
 
+mask = df.col("col1")<0.3;
+df9 = df( mask )
+df10 = df( mask.data)
 
-                         
+
+mask_error = mask;
+mask_error.index_.value_(2).value(3) = 22;
+try 
+df( mask_error )
+catch
+    disp("OK, mask_error catched");
+end
+
+% assign
+dfA = df;
+dfA({ {1,3,"b"}, {2,5,"b"}, {2,6,"a"} },"col2") = 55
+dfA([true false true false], "col1") = [77 88]
+dfA(mask) = 99
+
+mask2D = df<0.4;
+dfA(mask2D) = 11
+dfA(mask2D.data) = 12
+
+
                          
 %% Concatenate multi index                         
 mindex2 = frames.MultiIndex({[3 3 3 4 4], [5 6 7 5 6], ["a" "a" "b" "b" "a"]},name=["x","y","z"])
