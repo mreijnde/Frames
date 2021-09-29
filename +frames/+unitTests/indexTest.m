@@ -44,7 +44,7 @@ classdef indexTest < matlab.unittest.TestCase
             warning('off','frames:Index:notUnique')
             
             a = frames.TimeIndex(seconds(1):seconds(2):minutes(1));
-            t.verifyEqual(a.positionOf(seconds([5 3])),[3 2]')
+            t.verifyEqual(a.positionOf(seconds([3 5])),[2 3]')
         end
         
         function positionInTest(t)
@@ -63,7 +63,7 @@ classdef indexTest < matlab.unittest.TestCase
             warning('on','frames:Index:notUnique')
             
             a = frames.TimeIndex(seconds(1):seconds(2):seconds(4));
-            t.verifyEqual(a.positionIn(seconds([5 1 3])),[false true true]')
+            t.verifyEqual(a.positionIn(seconds([5 1 3]),false),[false true true]')
             
             a = frames.TimeIndex(seconds(1):seconds(2):seconds(4),Unique=false);
             t.verifyEqual(a.positionIn(seconds([5 1 3])),[2 3]')
