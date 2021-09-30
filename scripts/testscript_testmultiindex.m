@@ -62,12 +62,33 @@ mindex_new = [mindex; mindex2]
 
 %% Align and expand multiIndex
 
-% NOT YET WORKING, WRONG RESULT
+% sorted example
+mindexA = frames.MultiIndex({ [1 2 2 2 3 3 4 4 4 4 5 5 6 ], ...
+                              [1 1 2 3 1 2 1 2 3 4 1 2 1 ]}, name=["x","y"]);
 
-%mindexA = frames.MultiIndex({[ 1 1 1 1 1 1 2 2 2 2 2 2], [1 2 3 1 2 3 1 2 3 1 2 3], [ 1 1 1 2 2 2  1 1 1 2 2 2]}, name=["k", "x","y"])
-%mindexA = frames.MultiIndex({ [1 2 3 1 2 3 ], [1 1 1 2 2 2]}, name=["x","y"])
-%mindexB = frames.MultiIndex({ [2 2 2 1 1 1 1 1 1], [1 3 2 1 2 3 1 2 3], ["a" "b" "c" "d" "e" "f", "g", "h","i"]}, name=["y","x","z"])
+                          
+mindexB = frames.MultiIndex({ [ 1   1   2   3   4   4   4   5   6   6], ...
+                              ["a" "b" "c" "e" "f" "g" "h" "i" "j" "k" ]}, name=["x","k"]);
 
-%[mindexnew, row_ind1, row_ind2] = mindexA.alignIndex(mindexB)
+                          
+                          
+                          
+[mindexnew, row_ind1, row_ind2] = mindexA.alignIndex(mindexB)
+
+
+% non-sorted example
+                          
+mindexA_mixed = frames.MultiIndex({ [4 3 1 2 2 2 3 4 5 4 4 5 6 ], ...
+                                    [3 1 1 1 2 3 2 1 2 2 4 1 1 ]}, name=["x","y"])
+                          
+                          
+                          
+
+mindexB_mixed = frames.MultiIndex({ [5   6    6   1   2   1   4   3    4   4 ], ...
+                                    ["i" "k" "j" "f" "c" "a" "f" "e"  "g" "h"]}, name=["x","k"])
+                          
+                          
+
+[mindexnew, row_ind1, row_ind2] = mindexA_mixed.alignIndex(mindexB_mixed)
 
 

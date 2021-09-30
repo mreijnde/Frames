@@ -145,7 +145,7 @@ classdef MultiIndex < frames.Index
             %valueAll = obj1.concatRowValues(value1, value2);
             valueAll = [value1; value2];
             % get unique row ind for total
-            [rows_uniqval, rows_ind, val_uniq, val_ind] = frames.MultiIndex.uniqueCellRows(valueAll);
+            [rows_uniqval, rows_ind, val_uniq, val_ind] = uniqueCellRows(valueAll);
             % separate in both indexes
             N1 = length(obj1);
             rows_ind1 = rows_ind(1:N1);
@@ -159,7 +159,7 @@ classdef MultiIndex < frames.Index
         end
         
         
-        function [objnew, rows_ind1_new , rows_ind2_new] = alignIndex(obj1, obj2)
+        function [objnew, ind1_new , ind2_new] = alignIndex(obj1, obj2)
             % function to create new aligned MultiIndex based on common dimensions 
             % of both MultiIndex objects and implicit expansion of missing dimensions
             %
@@ -167,27 +167,48 @@ classdef MultiIndex < frames.Index
             %
             % find common dimensions            
             [dim_common, dim_common_ind1, dim_common_ind2, dim_unique_ind1, dim_unique_ind2] = obj1.getMatchingDims(obj2);           
+            
             % get matching rows of both MultiIndex objects
-            [rows_ind1_raw, rows_ind2_raw, mask1, mask2, rows_uniqval]  = obj1.getMatchingRows(obj2, dim_common);            
+            [id1_raw, id2_raw, mask1, mask2, rows_uniqval]  = obj1.getMatchingRows(obj2, dim_common);            
+            Nunique = size(rows_uniqval,1);
+            
             % (for now) limit to common rows (do not allow for missing values) (TODO: make more general)
-            rows_ind1 = rows_ind1_raw(mask1);
-            rows_ind2 = rows_ind2_raw(mask2);            
-            % get frequency of unique rows            
-            rows_freq1 = full(sparse(rows_ind1,1,1)); % alternative: histc(rows_ind1, unique(rows_ind1))
-            rows_freq2 = full(sparse(rows_ind2,1,1));    
-            % get new expanded row indices (BUG!, expansion is wrong)
-            rows_ind1_new = repelem(1:length(rows_ind1), rows_freq2(rows_ind1));
-            rows_ind2_new = repelem(1:length(rows_ind2), rows_freq1(rows_ind2));                        
+            id1 = id1_raw(mask1);
+            id2 = id2_raw(mask2);
+            
+            % get frequency of unique rows in obj2            
+            id_freq2 = histc(id2, 1:Nunique); %#ok<HISTC>
+            
+            % get row numbers of aligned (& expanded) index for obj1                        
+            ind1_new = repelem(1:length(id1), id_freq2(id1))';
+                                             
+            % get row numbers of aligned index for obj2            
+            ind2_cell = getPosIndicesSameValues(id2, Nunique);
+            ind2_cell_aligned = ind2_cell(id1);
+            ind2_new = vertcat(ind2_cell_aligned{:});
+                                          
             % create new expanded MultiIndex (with its existing dimensions)
-            objnew1 = obj1.getSubIndex(rows_ind1_new);
-            objnew2 = obj2.getSubIndex(rows_ind2_new);
+            objnew1 = obj1.getSubIndex(ind1_new);
+            objnew2 = obj2.getSubIndex(ind2_new);
+            
             % add new dimensions
             objnew = objnew1;
             for i=1:length(dim_unique_ind2)
                 dimind = dim_unique_ind2(i);
                 objnew = objnew.addDimension( objnew2.value_(dimind) );
-            end           
+            end   
+            
+            
+            function ind_cell = getPosIndicesSameValues(x, N)
+                % get cell array(N) with position indices grouped by values of vector x (in range 1 to N )
+                [X,ix] = sort(x);
+                c = histc(X, 1:N); %#ok<HISTC>
+                ind_cell = mat2cell(ix(:),c,1);
+            end
         end
+        
+        
+        
         
         function disp(obj)
             % display MultiIndex values and properties
@@ -457,39 +478,6 @@ classdef MultiIndex < frames.Index
         
     end
     
-    methods(Static)
-        
-             
-        
-        
-        function [rows_uniq, rows_uniqInd, val_uniq, val_ind] = uniqueCellRows(data)
-            % get unique row values of cell array
-            % (TODO: move to separate function)
-            %
-            % check input
-            assert( iscell(data), "needs to be cell array");
-            % get unique values per dimension
-            [Nrows, Ncols] = size(data);
-            val_uniq  = cell(1,Ncols);
-            val_ind   = zeros(Nrows,Ncols);
-            for i=1:Ncols
-                [val_uniq{i}, ~, val_ind(:,i)] = unique([data{:,i}],'stable');
-            end
-            % get unique rows index
-            [rows_valind, ~, rows_uniqInd] = unique(val_ind,'rows','stable');
-            % get unique row values as cell(Nrow,Ncol)
-            Nrows_uniq = size(rows_valind,1);
-            rows_uniq  = cell(Nrows_uniq ,Ncols);
-            for i=1:Ncols
-                colvalues = arrayfun(@(x) {x}, val_uniq{i}(rows_valind(:,i)));
-                rows_uniq(:,i) = colvalues;
-            end
-        end
-        
-
-        
-        
-    end
     
     
 end
