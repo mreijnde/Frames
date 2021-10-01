@@ -58,7 +58,7 @@ classdef Split < dynamicprops
             end
             if isa(splitter, 'frames.Groups') || isa(splitter,'struct')
                 if nargin < 3
-                    namesOfGroups = string(fieldnames(splitter));
+                    namesOfGroups = sort(string(fieldnames(splitter)));  % fieldnames does not return a stable order so force it to be sorted
                 else
                     assert(all(ismember(namesOfGroups,fieldnames(splitter))), ...
                         'The names of the properties must be found in the splitter');
