@@ -46,12 +46,12 @@ classdef Split < dynamicprops
             % Split(df,splitter[,namesOfGroups])
             if frames.internal.isFrame(splitter)
                 obj.isFrameSplitter = true;
-                if splitter.rowseries
-                    constr = str2func(class(df));
-                    splitter = constr(splitter.data,df.getRows_(),splitter.getColumns_());
+                assert(isequaln(df.columns,splitter.columns), ...
+                    'frames:split:groupColMisaligned', 'the group columns must be aligned with the data columns')
+                if ~splitter.rowseries
+                    assert(isequaln(df.rows,splitter.rows), ...
+                    'frames:split:groupRowMisaligned', 'the group rows must be aligned with the data rows')
                 end
-                assert(isequaln(df.rows,splitter.rows) && isequaln(df.columns,splitter.columns), ...
-                    'frames:split:groupMisaligned', 'the group frame must be aligned with the data frame')
                 obj.groupDF = splitter;
                 obj.dataDF = df;
                 return
@@ -99,14 +99,32 @@ classdef Split < dynamicprops
 
         function res = apply(obj,fun,varargin)
             % APPLY apply a function to each sub-Frame, and returns a single Frame
+            isflag = find(strcmp(varargin,'applyToFrame'),1);
+            applyToFrameFlag = ~isempty(isflag);
+            varargin(isflag) = [];
+            isflag = find(strcmp(varargin,'applyToData'),1);
+            applyToDataFlag = ~isempty(isflag);
+            varargin(isflag) = [];
+            condFlags = [applyToFrameFlag,applyToDataFlag];
+            if all(condFlags)
+                error('frames:splitapply:flag','Chose one flag only.')
+            elseif all(condFlags == [false true])
+                applyToFrame = false;
+            else
+                applyToFrame = true;
+            end
             if obj.isFrameSplitter
-                res = local_applyGroupDF(obj.dataDF,obj.groupDF,fun,varargin{:});
+                res = local_applyGroupDF(obj.dataDF,obj.groupDF,fun,applyToFrame,varargin{:});
                 return
             end
             props = obj.nameOfProperties_;
             isVectorOutput = true;  % if the output of fun returns a vector
             for ii = 1:length(props)
-                res_ = fun(obj.(props{ii}),varargin{:});
+                if applyToFrame
+                    res_ = fun(obj.(props{ii}),varargin{:});
+                else
+                    res_ = fun(obj.(props{ii}).data,varargin{:});
+                end
                 if ii == 1
                     res = res_;
                 else
@@ -142,24 +160,37 @@ classdef Split < dynamicprops
     
 end
 
-function resDF = local_applyGroupDF(dataDF,groupsDF,fun,varargin)
-f = str2func(class(dataDF.data));
-res = repmat(f(missing),size(dataDF.data));
+function resDF = local_applyGroupDF(dataDF,groupsDF,fun,applyToFrame,varargin)
+data = dataDF.data;
+dataType = str2func(class(data));
+res = repmat(dataType(missing),size(data));
 groups = groupsDF.data;
-idxSameGroups = local_idxSameData(groups);
+if groupsDF.rowseries
+    idxSameGroups = [1;size(data,1)];
+else
+    idxSameGroups = local_idxSameData(groups);
+end
 for ii = 1:size(idxSameGroups,2)
     idx = idxSameGroups(:,ii);
     idx_ = idx(1):idx(2);
-    df_ = dataDF.iloc_(idx_,:);
+    if applyToFrame
+        df_ = dataDF.iloc_(idx_,:);
+    else
+        df_ = data(idx_,:);
+    end
     groups_ = groups(idx(1),:);
     groups_unique = unique(groups_);
     groups_unique = groups_unique(~ismissing(groups_unique));
     for g = groups_unique
         g_ = groups(idx(1),:) == g;
-        res_ = fun(df_.iloc_(:,g_),varargin{:});
-        res_ = local_getData(res_);
+        if applyToFrame
+            res_ = fun(df_.iloc_(:,g_),varargin{:});
+            res_ = local_getData(res_);
+        else
+            res_ = fun(df_(:,g_),varargin{:});
+        end
         res_ = repmat(res_, length(idx_)./size(res_,1), sum(g_)./size(res_,2));
-        res(idx_,g_) = local_getData(res_);
+        res(idx_,g_) = res_;
     end
 end
 resDF = dataDF;
@@ -178,7 +209,7 @@ idx = idx_;
 for ii = 2:size(data,1)
     if ~isequaln(data(idx_,:), data(ii,:))
         idx_ = ii;
-        idx = [idx, idx_];
+        idx = [idx, idx_]; %#ok<AGROW>
     end
 end
 end
