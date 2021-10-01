@@ -798,6 +798,8 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(x5,frames.DataFrame([6 2 4;2 5 3]',[6 2 1],["d","e"]))
             x6 = df.split(g,["d","e"]).apply(@(x) sum(x.data,2));
             t.verifyEqual(x6,x5)
+            x65 = df.split(g,["d","e"]).apply(@(x) sum(x,2),'applyToData');
+            t.verifyEqual(x65,x5)
             x7 = df.split(g,["d","e"]).apply(@(x) x.data);
             t.verifyEqual(x7,df(:,[g.d,g.e]))
 
@@ -821,6 +823,23 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(g1,g3)
             f1 = tf.split(groups).apply(@mean,1);
             t.verifyEqual(f1,frames.TimeFrame([2.5 3.5 4.5;2.5 3.5 4.5;4 5 6;7 8 NaN]))
+            
+            % with flags
+            nObs = 2;
+            nVars = 1000;
+            nGroups = 3;
+            operatorData = @(x) std(x,1,2,'omitnan');
+            operatorFrame = @(x) x.std(2,1);
+            data = frames.DataFrame(rand(nObs,nVars));
+            groups = frames.DataFrame(ceil(nGroups*rand(nObs,nVars)));
+            s1 = data.split(groups).apply(operatorData,'applyToData');
+            s2 = data.split(groups).apply(operatorFrame,'applyToFrame');
+            t.verifyEqual(s1,s2)
+            s3 = data.split(groups.row(1)).apply(operatorData,'applyToData');
+            s4 = data.split(groups.row(1)).apply(operatorFrame,'applyToFrame');
+            t.verifyEqual(s3,s4)
+            t.verifyEqual(s1{1}.data,s4{1}.data,'AbsTol',t.tol)
+            
         end
         
         function firstRowsTest(t)
@@ -936,6 +955,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(df.std(),df.std(1))
             t.verifyEqual(df.std().data,std(df.data,'omitnan'))
             t.verifyEqual(df.std(2).data,std(df.data,[],2,'omitnan'))
+            t.verifyEqual(df.std(2,1).data,std(df.data,1,2,'omitnan'))
         end
         
         function equalsTest(t)
