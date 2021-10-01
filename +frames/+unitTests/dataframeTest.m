@@ -840,6 +840,15 @@ classdef dataframeTest < matlab.unittest.TestCase
             t.verifyEqual(s3,s4)
             t.verifyEqual(s1{1}.data,s4{1}.data,'AbsTol',t.tol)
             
+            % missing groups
+            groups = frames.DataFrame(string([4 NaN 2 4;NaN 3 1 3]));
+            data = frames.DataFrame([1 2 3 4;5 6 7 8]);
+            s1 = data.split(groups).apply(@(x) x.sum(2));
+            s2 = data.split(groups).apply(@(x) sum(x,2),'applyToData');
+            s3 = data.split(groups).apply(@(x) sum(x.data,2),'applyToFrame');
+            t.verifyEqual(s1,frames.DataFrame([5 NaN 3 5;NaN 14 7 14]))
+            t.verifyEqual(s1,s2)
+            t.verifyEqual(s1,s3)
         end
         
         function firstRowsTest(t)
