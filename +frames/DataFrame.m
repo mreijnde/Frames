@@ -812,6 +812,9 @@ classdef DataFrame
             %              property values are elements in each group. If groupNames
             %              is not specified, the split use all properties of the 
             %              Group as groupNames.
+            %          - frames.DataFrame: If groups change along the rows, one can
+            %              use a DataFrame that specifies to which group each element
+            %              belongs to. namesOfGroups is not used.
             %     * groupNames: (string array) 
             %          group names into which we want to split the Frame
             %
@@ -830,6 +833,10 @@ classdef DataFrame
             %   - split with a Group
             %       g = frames.Groups([1 4 3],s);
             %       x4 = df.split(g).apply(@(x) x.clip(ceiler.(x.name){:}));
+            %   - split with a group frame
+            %     g = frames.DataFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN]);
+            %     x5 = df.split(g).apply(@mean,2,'applyToFrame');
+            %     x6 = df.split(g).apply(@(x) x-mean(x,2),'applyToData');
             % See also: frames.Groups, frames.internal.Split
             s = frames.internal.Split(obj,varargin{:});
         end
@@ -1171,7 +1178,7 @@ classdef DataFrame
         
     end
     
-    methods(Hidden, Access=protected)
+    methods(Hidden)  % Hidden and not protected, so that other classes in the package can use these methods, without the need to explicitly give them access. Not to be used outside.
         
          function obj = loc_(obj,rowSelector,colSelector,userCall,positionIndex)            
             if nargin < 4, userCall=false; end
@@ -1190,7 +1197,10 @@ classdef DataFrame
          function obj = iloc_(obj,rowPosition,colPosition)
             obj = obj.loc_(rowPosition, colPosition, false, true); 
          end
-                 
+    end
+         
+    methods(Hidden, Access=protected)
+        
         function tb = getTable(obj)
             row = obj.rows_.getValueForTable();
             col = obj.columns_.getValueForTable();
