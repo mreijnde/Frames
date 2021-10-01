@@ -835,7 +835,7 @@ classdef dataframeTest < matlab.unittest.TestCase
             s1 = data.split(groups).apply(operatorData,'applyToData');
             s2 = data.split(groups).apply(operatorFrame,'applyToFrame');
             t.verifyEqual(s1,s2)
-            s3 = data.split(groups.row(1)).apply(operatorData,'applyToData');
+            s3 = data.split(groups.row(1)).apply(@std,1,2,'omitnan','applyToData');
             s4 = data.split(groups.row(1)).apply(operatorFrame,'applyToFrame');
             t.verifyEqual(s3,s4)
             t.verifyEqual(s1{1}.data,s4{1}.data,'AbsTol',t.tol)
