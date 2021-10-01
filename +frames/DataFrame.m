@@ -833,6 +833,10 @@ classdef DataFrame
             %   - split with a Group
             %       g = frames.Groups([1 4 3],s);
             %       x4 = df.split(g).apply(@(x) x.clip(ceiler.(x.name){:}));
+            %   - split with a group frame
+            %     g = frames.DataFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN]);
+            %     x5 = df.split(g).apply(@mean,2,'applyToFrame');
+            %     x6 = df.split(g).apply(@(x) x-mean(x,2),'applyToData');
             % See also: frames.Groups, frames.internal.Split
             s = frames.internal.Split(obj,varargin{:});
         end

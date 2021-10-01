@@ -99,6 +99,10 @@ classdef Split < dynamicprops
 
         function res = apply(obj,fun,varargin)
             % APPLY apply a function to each sub-Frame, and returns a single Frame
+            % flag, enum('applyToFrame','applyToData'): 'applyToFrame' (default)
+            % allows to use DataFrame methods, but may be slower than
+            % applying a function directly to the data with 'applyToData'
+            % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             isflag = find(strcmp(varargin,'applyToFrame'),1);
             applyToFrameFlag = ~isempty(isflag);
             varargin(isflag) = [];
@@ -185,7 +189,8 @@ for ii = 1:size(idxSameGroups,2)
         g_ = groups(idx(1),:) == g;
         if applyToFrame
             res_ = fun(df_.iloc_(:,g_),varargin{:});
-            res_ = local_getData(res_);
+            if ii==1 && g==groups_unique(1), isframe = frames.internal.isFrame(res_); end
+            if isframe, res_ = res_.data; end
         else
             res_ = fun(df_(:,g_),varargin{:});
         end
@@ -212,8 +217,4 @@ for ii = 2:size(data,1)
         idx = [idx, idx_]; %#ok<AGROW>
     end
 end
-end
-
-function data = local_getData(data)
-if frames.internal.isFrame(data), data = data.data; end
 end
