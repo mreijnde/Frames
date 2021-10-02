@@ -47,6 +47,9 @@ classdef Index
         singleton_
         requireUnique_
         requireUniqueSorted_
+        value_uniq_          % cached unique values
+        value_uniqind_       % cached indices to unique values
+        do_recalc_unique_ = true; % bool: trigger unique cache update after value change
     end
     
     methods
@@ -99,7 +102,11 @@ classdef Index
             % seperate method to overcome matlab's limitation on overloading setters/getters
             obj = obj.setvalue(value); 
         end
-        
+        function obj = set.value_(obj,value)
+            % set lowlevel value, and trigger cache update
+            obj.value_ = value;
+            obj.do_recalc_unique_= true;
+        end        
         function obj = set.name(obj,value)
             obj.name_ = value;
         end
@@ -369,17 +376,24 @@ classdef Index
         end
 
         function out = getvalue_uniq(obj)
-            % get unique values
-            % (TODO: add some caching mechanism for performance, or recalculate at value change)
-            out = {unique(obj.value_,'stable')};  
+            % get unique values (using cache for speedup)            
+            obj = obj.recalc_unique_cache();
+            out = {obj.value_uniq_};
         end
         
         function out = getvalue_uniqind(obj)
-            % get index positions to unique values
-            % (TODO: add some caching mechanism for performance, or recalculate at value change)
-            [~,~,out] = unique(obj.value_,'stable');                        
+            % get index positions to unique values (using cache for speedup)
+            obj = obj.recalc_unique_cache();            
+            out = obj.value_uniqind_;
         end        
         
+        function obj = recalc_unique_cache(obj)
+            % update cache with unique values and index
+            if obj.do_recalc_unique_
+                [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_,'stable');
+                obj.do_recalc_unique_ = false;            
+            end
+        end
         
         function valueChecker(obj,value,fromSubsAsgnIdx,b)
             if obj.singleton_
