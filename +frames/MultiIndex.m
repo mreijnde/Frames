@@ -373,6 +373,7 @@ classdef MultiIndex < frames.Index
                     error("unsupported type '%s'.", type);
             end
         end                
+                
         
     end
     methods(Access=protected)
@@ -466,6 +467,10 @@ classdef MultiIndex < frames.Index
             end
         end
         
+        function obj = recalc_unique_cache(obj)
+            % recalculate unique cache
+            % <do nothing at MultiIndex>
+        end
         
         function nameChecker(obj)
             % check if names of dimensions are valid

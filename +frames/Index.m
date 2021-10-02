@@ -48,8 +48,7 @@ classdef Index
         requireUnique_
         requireUniqueSorted_
         value_uniq_          % cached unique values
-        value_uniqind_       % cached indices to unique values
-        do_recalc_unique_ = true; % bool: trigger unique cache update after value change
+        value_uniqind_       % cached indices to unique values        
     end
     
     methods
@@ -105,7 +104,7 @@ classdef Index
         function obj = set.value_(obj,value)
             % set lowlevel value, and trigger cache update
             obj.value_ = value;
-            obj.do_recalc_unique_= true;
+            obj = obj.recalc_unique_cache();
         end        
         function obj = set.name(obj,value)
             obj.name_ = value;
@@ -316,7 +315,7 @@ classdef Index
         function out = get.value_uniqind(obj)
             % seperate method to overcome matlab's limitation on overloading setters/getters
             out = getvalue_uniqind(obj);            
-        end        
+        end                   
         
     end
     
@@ -376,25 +375,20 @@ classdef Index
         end
 
         function out = getvalue_uniq(obj)
-            % get unique values (using cache for speedup)            
-            obj = obj.recalc_unique_cache();
+            % get unique values (using cache for speedup)                        
             out = {obj.value_uniq_};
         end
         
         function out = getvalue_uniqind(obj)
-            % get index positions to unique values (using cache for speedup)
-            obj = obj.recalc_unique_cache();            
+            % get index positions to unique values (using cache for speedup)            
             out = obj.value_uniqind_;
-        end        
-        
-        function obj = recalc_unique_cache(obj)
-            % update cache with unique values and index
-            if obj.do_recalc_unique_
-                [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_,'stable');
-                obj.do_recalc_unique_ = false;            
-            end
         end
         
+        function obj = recalc_unique_cache(obj)
+            % recalculate unique cache based on stored value_           
+            [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_,'stable');
+        end
+                        
         function valueChecker(obj,value,fromSubsAsgnIdx,b)
             if obj.singleton_
                 assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...
