@@ -30,10 +30,24 @@ classdef MultiIndex < frames.Index
         end
         
         
-        function obj=getSubIndex(obj,selector)
+        function obj=getSubIndex(obj,selector, dimindex)
             % get Index object of sub selection based on (matlab) selector
-            for i=1:obj.Ndim
-                obj.value_(i) = obj.value_(i).getSubIndex(selector);
+            % 
+            % input:
+            %    - selector: valid matlab selector for rows
+            %    - dimindex: position index of dimensions select (default: all dimensions)
+            %
+            % output:
+            %    - MultiIndex object with subselection            
+            if nargin<3; dimindex=1:obj.Ndim; end            
+            for i=1:length(dimindex)
+                idim = dimindex(i);
+                obj.value_(idim) = obj.value_(idim).getSubIndex(selector);
+            end
+            % remove dims (if required)
+            if length(dimindex)<obj.Ndim
+                removedims=setdiff(1:obj.Ndim, dimindex);
+                obj.value_(removedims) = [];
             end
         end
         
@@ -77,8 +91,7 @@ classdef MultiIndex < frames.Index
                 
             elseif positionIndex
                 % position index selector (so no selector per dimension allowed)
-                assert(~iscell(selector),"No cell selector allowed in combination with position indexing.");
-                % use 1st dimension for indexing (all dimensions will give same result)               
+                assert(~iscell(selector),"No cell selector allowed in combination with position indexing.");                
                 selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             elseif islogical(selector) || isFrameSeries(selector)
@@ -159,51 +172,91 @@ classdef MultiIndex < frames.Index
         end
         
         
-        function [objnew, ind1_new , ind2_new] = alignIndex(obj1, obj2)
+        function [objnew, ind1_new , ind2_new] = alignIndex(obj1, obj2, alignMethod, allowDimExpansion)
             % function to create new aligned MultiIndex based on common dimensions 
             % of both MultiIndex objects and implicit expansion of missing dimensions
             %
-            % (TODO: make specific options on what kind of expansion to allow and what missing values to allow)
+            % input:
+            %    - obj1,obj2: MultiIndex objects to be aligned
             %
-            % find common dimensions            
-            [dim_common, dim_common_ind1, dim_common_ind2, dim_unique_ind1, dim_unique_ind2] = obj1.getMatchingDims(obj2);           
+            %    - alignMethod: (string enum) align method for common dimension(s)
+            %           "subset": remove rows that are not common in both
+            %           "keep":  keep rows as in obj1  (default)            
+            %           "full":   keep all items (allow missing in both obj1 and obj2)
+            %
+            %   - allowDimExpansion (bool) allow expansion to add new dimensions to obj1
+            %
             
+            % default parameters
+            if nargin<3, alignMethod="keep"; end
+            if nargin<4, allowDimExpansion=true; end
+            
+            % find common dimensions            
+            [dim_common, dim_common_ind1, dim_common_ind2, dim_unique_ind1, dim_unique_ind2] = obj1.getMatchingDims(obj2);                       
+            NextraDims2 = length(dim_unique_ind2);
+            NextraDims1 = length(dim_unique_ind1);
+            assert(allowDimExpansion | NextraDims2==0, ...
+                          "Dimension expansion disabled, while obj2 has new dimension(s)");
+                        
             % get matching rows of both MultiIndex objects
             [id1_raw, id2_raw, mask1, mask2, rows_uniqval]  = obj1.getMatchingRows(obj2, dim_common);            
             Nunique = size(rows_uniqval,1);
-            
-            % (for now) limit to common rows (do not allow for missing values) (TODO: make more general)
-            id1 = id1_raw(mask1);
-            id2 = id2_raw(mask2);
-            
-            % get frequency of unique rows in obj2            
-            id_freq2 = histc(id2, 1:Nunique); %#ok<HISTC>
-            
-            % get row numbers of aligned (& expanded) index for obj1                        
-            ind1_new = repelem(1:length(id1), id_freq2(id1))';
-                                             
+             
+            % define row ids in new index based on chosen alignment method
+            switch alignMethod
+                case "subset"
+                    id = id1_raw(mask1);                    
+                case "keep"
+                    id = id1_raw;                    
+                case "full"                                         
+                    id = [id1_raw; setdiff(id2_raw, id1_raw)];                                                            
+                otherwise 
+                    error("unsupported alignMethod '%s'",alignMethod);
+            end     
+           
+            % get row numbers of aligned index for obj1
+            id_freq2 = histc(id2_raw, 1:Nunique); %#ok<HISTC>   
+            replicate_count = max(id_freq2(id),1); % replicate rows in obj1 with freq obj2, keep minimal 1 copy            
+            ind1_new = repelem(1:length(id), replicate_count )'; 
+            ind1_new(ind1_new>length(id1_raw))=NaN; 
+                                                        
             % get row numbers of aligned index for obj2            
-            ind2_cell = getPosIndicesSameValues(id2, Nunique);
-            ind2_cell_aligned = ind2_cell(id1);
+            ind2_cell = getPosIndicesForEachValue(id2_raw, Nunique);
+            ind2_cell_aligned = ind2_cell(id);
             ind2_new = vertcat(ind2_cell_aligned{:});
-                                          
-            % create new expanded MultiIndex (with its existing dimensions)
-            objnew1 = obj1.getSubIndex(ind1_new);
-            objnew2 = obj2.getSubIndex(ind2_new);
-            
+                                                  
+            % create new expanded MultiIndex (with dimensions as in obj1)                        
+            assert( (NextraDims1==0 || ~any(isnan(ind1_new)) ) && ...
+                    (NextraDims2==0 || ~any(isnan(ind2_new)) ), ...
+                    "Cannot expand dimensions in case rows exist in output index that are not common in both objects.");                    
+            if ~any(isnan(ind1_new))
+                % only a combination of rows in ob1
+                objnew = obj1.getSubIndex(ind1_new);
+            else
+               % combination of both MultiIndex
+               mask_rows_from_obj2 = isnan(ind1_new);
+               objnew1 = obj1.getSubIndex(ind1_new(~mask_rows_from_obj2), dim_common_ind1);
+               objnew2 = obj2.getSubIndex(ind2_new(mask_rows_from_obj2), dim_common_ind2);
+               objnew = [objnew1; objnew2];
+            end
+                                    
             % add new dimensions
-            objnew = objnew1;
-            for i=1:length(dim_unique_ind2)
-                dimind = dim_unique_ind2(i);
-                objnew = objnew.addDimension( objnew2.value_(dimind) );
-            end   
+            if NextraDims2>0
+                objnew2 = obj2.getSubIndex(ind2_new);
+                for i=1:NextraDims2
+                    dimind = dim_unique_ind2(i);
+                    objnew = objnew.addDimension( objnew2.value_(dimind) );
+                end   
+            end
             
             
-            function ind_cell = getPosIndicesSameValues(x, N)
-                % get cell array(N) with position indices grouped by values of vector x (in range 1 to N )
-                [X,ix] = sort(x);
-                c = histc(X, 1:N); %#ok<HISTC>
+            function ind_cell = getPosIndicesForEachValue(x, N)
+                % get cell array(N) with cell(i) the position indices of vector x with value i
+                % (values of vector x has to be in range 1 to N)
+                [~,ix] = sort(x);
+                c = histc(x, 1:N); %#ok<HISTC>
                 ind_cell = mat2cell(ix(:),c,1);
+                ind_cell( cellfun(@isempty, ind_cell) ) = {NaN}; % convert missing values to NaN
             end
         end
         

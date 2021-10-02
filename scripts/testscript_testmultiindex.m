@@ -62,33 +62,72 @@ mindex_new = [mindex; mindex2]
 
 %% Align and expand multiIndex
 
-% sorted example
-mindexA = frames.MultiIndex({ [1 2 2 2 3 3 4 4 4 4 5 5 6 ], ...
-                              [1 1 2 3 1 2 1 2 3 4 1 2 1 ]}, name=["x","y"]);
-
-                          
-mindexB = frames.MultiIndex({ [ 1   1   2   3   4   4   4   5   6   6], ...
-                              ["a" "b" "c" "e" "f" "g" "h" "i" "j" "k" ]}, name=["x","k"]);
-
-                          
-                          
-                          
-[mindexnew, row_ind1, row_ind2] = mindexA.alignIndex(mindexB)
 
 
-% non-sorted example
-                          
-mindexA_mixed = frames.MultiIndex({ [4 3 1 2 2 2 3 4 5 4 4 5 6 ], ...
-                                    [3 1 1 1 2 3 2 1 2 2 4 1 1 ]}, name=["x","y"])
-                          
-                          
-                          
 
-mindexB_mixed = frames.MultiIndex({ [5   6    6   1   2   1   4   3    4   4 ], ...
-                                    ["i" "k" "j" "f" "c" "a" "f" "e"  "g" "h"]}, name=["x","k"])
-                          
-                          
+mA_base = frames.MultiIndex({ [1 2 2 2 3 3 4 4 4 4 5 5 6 ], ...
+                              [1 1 2 3 1 2 1 2 3 4 1 2 1 ]}, name=["x","y"]);                         
 
-[mindexnew, row_ind1, row_ind2] = mindexA_mixed.alignIndex(mindexB_mixed)
+mA_less = frames.MultiIndex({ [2 2 2 3 3 4 4 5 5 6 ], ...
+                              [1 2 3 1 2 2 3 1 2 1 ]}, name=["x","y"]);                          
+
+mA_more = frames.MultiIndex({ [1 2 2 7 2 3 2 3 4 4 9 9 4 4 5 5 6 ], ...
+                              [1 1 2 4 3 1 5 2 1 2 1 2 3 4 1 2 1 ]}, name=["x","y"]);                         
+
+mA_moreless = frames.MultiIndex({ [1 2 2 7 2 3 2 3 9 9 5 5 6 ], ...
+                                  [1 1 2 4 3 1 5 2 1 2 1 2 1 ]}, name=["x","y"]);            
+                          
+                          
+%mB_base = frames.MultiIndex({ [ 1   1   2   3   4   4   4   5   6   6], ...
+%                              ["a" "b" "c" "e" "f" "g" "h" "i" "j" "k" ]}, name=["x","k"]);
+
+                          
+mB_base = frames.MultiIndex({ [5   6    6   1   2   1   4   3    4   4 ], ...
+                                    ["i" "k" "j" "f" "c" "a" "f" "e"  "g" "h"]}, name=["x","k"]);
+                                                                   
+
+mB_moreless = frames.MultiIndex({ [5    6    9   6   9   1   2   9   9   1   4   3   10  10   4   4 ], ...
+                                            ["i"  "k" "a" "j" "b" "f" "c" "c" "d" "a" "f" "e"  "a" "b" "g" "h"]}, name=["x","k"]);
+
+                                        
+mC_base = frames.MultiIndex({ [4 7 3 7 1 8 2 8 8 2 2 3 4 5 4 4 5 6 ], ...
+                              [3 2 1 1 1 1 1 2 3 2 3 2 1 2 2 4 1 1 ],...
+                              [1 2 3 1 2 3 1 2 3 1 2 3 1 2 3 4 5 6]...                                            
+                             }, name=["x","y","k"]);
+                                                    
+
+mC_less = frames.MultiIndex({ [4 7 7 1 8 2 8 8 2 2 4 5 4 5 6 ], ...
+                              [3 2 1 1 1 1 2 3 2 3 1 2 4 1 1 ],...
+                              [1 2 1 2 3 1 2 3 1 2 1 2 4 5 6]...                                            
+                             }, name=["x","y","k"]);
+                         
+                         
+
+                                        
+%% example (1 common dimension, no extra dim)                         
+[mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mA_more, "full")
+[mindexnew, row_ind1, row_ind2] = mA_moreless.alignIndex(mA_base, "full")
+
+%% example (1 common dimension, extra dim)                         
+[mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mB_base)
+[mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mB_moreless)
+[mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mB_moreless, 'keep')
+
+%% example (2 common dimensions, extra dim obj1)
+[mindexnew, row_ind1, row_ind2] = mC_base.alignIndex(mA_base, "full")
+[mindexnew, row_ind1, row_ind2] = mC_base.alignIndex(mA_more, "subset")
+
+%% example (2 common dimensions, extra dim obj2)
+[mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mC_base , "full")
+[mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mC_less , "subset")
+
+
+
+%% non-sorted with missing example (1 common dimensions, extra dim obj1 & obj2)
+try
+   [mindexnew, row_ind1, row_ind2] = mA_mixed.alignIndex(mB_mixed_missing , "full")
+catch
+    disp("OK, alignIndex error catched");
+end
 
 
