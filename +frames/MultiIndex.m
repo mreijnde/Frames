@@ -449,7 +449,7 @@ classdef MultiIndex < frames.Index
         function out = getvalue_uniq(obj)
             % get unique values of every dimension (from Index Objects)
             if obj.Ndim>0
-                out = [obj.value.value_uniq];
+                out = [obj.value_.value_uniq];
             else
                 out = {};
             end
