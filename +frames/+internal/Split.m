@@ -199,7 +199,7 @@ for ii = 1:size(idxSameGroups,2)
     end
 end
 resDF = dataDF;
-resDF.data = res;
+resDF.data_ = res;
 end
 
 function idxOut = local_idxSameData(data)
