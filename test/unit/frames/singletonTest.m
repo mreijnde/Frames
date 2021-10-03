@@ -1,4 +1,5 @@
-classdef singletonTest < matlab.unittest.TestCase
+classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
+        singletonTest < matlab.unittest.TestCase
     
     methods(Test)
         

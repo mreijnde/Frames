@@ -1,4 +1,5 @@
-classdef indexTest < matlab.unittest.TestCase
+classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
+        indexTest < matlab.unittest.TestCase
     
     methods(Test)
         function constructorTest(t)

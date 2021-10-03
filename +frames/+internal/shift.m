@@ -1,10 +1,11 @@
-function s = shift(x,lag) 
-    if nargin == 1
+function s = shift(x,lag,dim) 
+    if nargin < 2
         lag = 1;
     end
-    xIsRow = false;
-    if isrow(x)
-        xIsRow = true;
+    if nargin < 3
+        dim = 1;
+    end
+    if dim == 2
         x = x';
     end
 
@@ -16,7 +17,7 @@ function s = shift(x,lag)
     else
         s = x;
     end
-    if xIsRow
+    if dim == 2
         s = s';
     end
 end

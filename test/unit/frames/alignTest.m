@@ -1,4 +1,5 @@
-classdef alignTest < matlab.unittest.TestCase
+classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
+        alignTest < matlab.unittest.TestCase
     
     properties
 
