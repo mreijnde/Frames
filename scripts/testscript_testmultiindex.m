@@ -60,10 +60,7 @@ mindex2 = frames.MultiIndex({[3 3 3 4 4], [5 6 7 5 6], ["a" "a" "b" "b" "a"]},na
 mindex_new = [mindex; mindex2]
 
 
-%% Align and expand multiIndex
-
-
-
+%% Test align and expand multiIndex
 
 mA_base = frames.MultiIndex({ [1 2 2 2 3 3 4 4 4 4 5 5 6 ], ...
                               [1 1 2 3 1 2 1 2 3 4 1 2 1 ]}, name=["x","y"]);                         
@@ -76,58 +73,88 @@ mA_more = frames.MultiIndex({ [1 2 2 7 2 3 2 3 4 4 9 9 4 4 5 5 6 ], ...
 
 mA_moreless = frames.MultiIndex({ [1 2 2 7 2 3 2 3 9 9 5 5 6 ], ...
                                   [1 1 2 4 3 1 5 2 1 2 1 2 1 ]}, name=["x","y"]);            
-                          
-                          
-%mB_base = frames.MultiIndex({ [ 1   1   2   3   4   4   4   5   6   6], ...
-%                              ["a" "b" "c" "e" "f" "g" "h" "i" "j" "k" ]}, name=["x","k"]);
-
-                          
+                                                                             
 mB_base = frames.MultiIndex({ [5   6    6   1   2   1   4   3    4   4 ], ...
-                                    ["i" "k" "j" "f" "c" "a" "f" "e"  "g" "h"]}, name=["x","k"]);
-                                                                   
+                             ["i" "k" "j" "f" "c" "a" "f" "e"  "g" "h"]}, name=["x","k"]);                                                                   
 
 mB_moreless = frames.MultiIndex({ [5    6    9   6   9   1   2   9   9   1   4   3   10  10   4   4 ], ...
-                                            ["i"  "k" "a" "j" "b" "f" "c" "c" "d" "a" "f" "e"  "a" "b" "g" "h"]}, name=["x","k"]);
-
+                              ["i"  "k" "a" "j" "b" "f" "c" "c" "d" "a" "f" "e"  "a" "b" "g" "h"]}, name=["x","k"]);
                                         
 mC_base = frames.MultiIndex({ [4 7 3 7 1 8 2 8 8 2 2 3 4 5 4 4 5 6 ], ...
                               [3 2 1 1 1 1 1 2 3 2 3 2 1 2 2 4 1 1 ],...
                               [1 2 3 1 2 3 1 2 3 1 2 3 1 2 3 4 5 6]...                                            
-                             }, name=["x","y","k"]);
-                                                    
+                             }, name=["x","y","k"]);                                                    
 
 mC_less = frames.MultiIndex({ [4 7 7 1 8 2 8 8 2 2 4 5 4 5 6 ], ...
                               [3 2 1 1 1 1 2 3 2 3 1 2 4 1 1 ],...
                               [1 2 1 2 3 1 2 3 1 2 1 2 4 5 6]...                                            
                              }, name=["x","y","k"]);
-                         
-                         
-
-                                        
-%% example (1 common dimension, no extra dim)                         
+                                                                 
+% example (1 common dimension, no extra dim)                         
 [mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mA_more, "full")
 [mindexnew, row_ind1, row_ind2] = mA_moreless.alignIndex(mA_base, "full")
 
-%% example (1 common dimension, extra dim)                         
+% example (1 common dimension, extra dim)                         
 [mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mB_base)
 [mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mB_moreless)
 [mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mB_moreless, 'keep')
 
-%% example (2 common dimensions, extra dim obj1)
+% example (2 common dimensions, extra dim obj1)
 [mindexnew, row_ind1, row_ind2] = mC_base.alignIndex(mA_base, "full")
 [mindexnew, row_ind1, row_ind2] = mC_base.alignIndex(mA_more, "subset")
 
-%% example (2 common dimensions, extra dim obj2)
+% example (2 common dimensions, extra dim obj2)
 [mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mC_base , "full")
 [mindexnew, row_ind1, row_ind2] = mA_base.alignIndex(mC_less , "subset")
 
-
-
-%% non-sorted with missing example (1 common dimensions, extra dim obj1 & obj2)
+% example (1 common dimensions with missing (gives error), extra dim obj1 & obj2)
 try
-   [mindexnew, row_ind1, row_ind2] = mA_mixed.alignIndex(mB_mixed_missing , "full")
-catch
-    disp("OK, alignIndex error catched");
+   [mindexnew, row_ind1, row_ind2] = mA_less.alignIndex(mB_base , "full")
+catch err    
+    disp(err)
 end
 
+
+%%
+% linear axes
+x = 1:4;
+y = 1:3;
+z = 1:3;
+xl = x(1:end-1); 
+yl = y(1:end-1); 
+zl = z(1:end-1); 
+
+% Index objects 
+sx = frames.Index(x,name="x");
+sy = frames.Index(y,name="y");
+sz = frames.Index(z,name="z");
+mX = frames.MultiIndex({x},name="x");
+mY = frames.MultiIndex({y},name="y");
+mZ = frames.MultiIndex({z},name="z");
+mXl = frames.MultiIndex({xl},name="x");
+mYl = frames.MultiIndex({yl},name="y");
+mZl = frames.MultiIndex({zl},name="z");
+
+
+% combined MultiIndex
+mXY = mX.alignIndex(mY);
+mXZ = mX.alignIndex(mZ);
+mXYZ = mXY.alignIndex(mZ);
+
+mXl.alignIndex(mXY,"full");
+
+% dataframes
+rng('default');
+dfX = frames.DataFrame( randi(10,length(x),2), mX, ["A","B"]);
+dfXl = frames.DataFrame( randi(10,length(xl),2), mXl, ["A","B"]);
+dfY = frames.DataFrame( randi(20,length(y),2), mY, ["A","B"]);
+dfXY = frames.DataFrame( randi(20,length(y)*length(x),2), mXY, ["A","B"]);
+dfZ = frames.DataFrame( randi(20,length(z),2), mZ, ["A","B"]);
+dfXs = frames.DataFrame( randi(10,length(x),2), sx, ["A","B"]);
+
+
+% perform operations
+df1 = dfXY.performElementWiseOperation_MultiIndex(dfX,  @plus, "full", true)
+df2 = dfXY.performElementWiseOperation_MultiIndex(dfXs, @plus, "full", true)
+df3 = dfX.performElementWiseOperation_MultiIndex( dfY,  @plus, "full", true)
 

@@ -1159,6 +1159,62 @@ classdef DataFrame
                 'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
         end
         
+        function df = reorder(obj, rowindex, rowind, colindex, colind )
+            % internal function to reordered DF based on new index objects and position index
+            % (rowind and colind are allowed to have NaN, the corresponding values are set NaN)
+            %
+            % TODO:
+            %  - move to hidden/protected access
+            %  - implement column reorder: for now use all columns
+            df = obj;
+            df.index_ = rowindex;
+            data = nan(length(df.index), length(df.columns));
+            mask = ~isnan(rowind);
+            data(mask,:) = obj.data( rowind(mask),: );
+            df.data_ = data;
+        end
+                
+        function [dfnew1,dfnew2, rowmask, colmask] = getAlignedDFs(df1,df2, alignMethod, allowDimExpansion, dofillmissing)
+            % internal function to get aligned DF for element wise operation
+            %             
+            % TODO: 
+            %  - add handling columns alignment
+            %  - move to hidden/protected
+            %
+            if nargin<3, alignMethod="keep"; end
+            if nargin<4, allowDimExpansion=true; end
+            if nargin<5, dofillmissing=true; end
+            
+            assert( isMultiIndex(df1.index_), "Index is no multiIndex");
+            
+            [mrow, rowind1, rowind2] = df1.index_.alignIndex(df2.index_, alignMethod, allowDimExpansion);
+            dfnew1 = df1.reorder(mrow, rowind1);
+            dfnew2 = df2.reorder(mrow, rowind2);
+            rowmask = ~isnan(rowind1) & ~isnan(rowind2);
+            if dofillmissing
+                % fill missing rows by values of other dataframe                
+                fillmask1 = isnan(rowind1);
+                dfnew1.data_(fillmask1,:) = dfnew2.data_(fillmask1,:);
+                fillmask2 = isnan(rowind2);
+                dfnew2.data_(fillmask2,:) = dfnew1.data_(fillmask2,:);
+            end
+        end
+        
+        function df = performElementWiseOperation_MultiIndex(obj,df2, func, alignMethod, allowDimExpansion)
+            % internal function to perform element wise operations between MultiIndex DataFrames
+            %
+            % TODO: ....
+            if nargin<4, alignMethod="keep"; end
+            if nargin<5, allowDimExpansion=true; end
+            % get aligned dataframes
+            [df1_aligned, df2_aligned, rowmask] = getAlignedDFs(obj, df2, alignMethod, allowDimExpansion);
+            % apply element wise function (to aligned subset of data)
+            df = df1_aligned;
+            df.data_(rowmask,:) = func( df1_aligned.data_(rowmask,:), df2_aligned.data_(rowmask,:));
+        end
+
+       
+        
     end
     
     methods(Hidden, Access=protected)
