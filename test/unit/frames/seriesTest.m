@@ -1,4 +1,5 @@
-classdef seriesTest < matlab.unittest.TestCase
+classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
+        seriesTest < matlab.unittest.TestCase
     
     properties
         df = frames.DataFrame([1 2;3 4]);

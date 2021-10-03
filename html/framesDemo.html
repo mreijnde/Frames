@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-09-26"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
+      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-10-03"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -487,12 +487,12 @@ correlation =
 
 </pre><pre class="codeinput">tf.cumsum().plot()  <span class="comment">% apply a cumulative sum and then plot the result</span>
 </pre><img vspace="5" hspace="5" src="framesDemo_01.png" alt=""> <pre class="codeinput">tf.corr().heatmap(CellLabelFormat=<span class="string">'%.2f'</span>)  <span class="comment">% compute the correlation matrix and plot it as a heatmap</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <h2 id="44">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
+</pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <h2 id="44">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
  * .rolling(window[,windowNaN]).&lt;method&gt;
  * .ewm(&lt;DecayType&gt;=value).&lt;method&gt;</pre><p>Please refer to the documentation for details on arguments and methods.</p><pre class="codeinput">doc <span class="string">frames.DataFrame.rolling</span>
 <span class="comment">% or</span>
 doc <span class="string">frames.internal.Rolling</span>
-</pre><pre class="codeinput">doc <span class="string">frames.DataFrame.ewm</span>
+</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <pre class="codeinput">doc <span class="string">frames.DataFrame.ewm</span>
 <span class="comment">% or</span>
 doc <span class="string">frames.internal.ExponentiallyWeightedMoving</span>
 </pre><p>Below, we give a few examples on how these methods can be used, using our previous TimeFrame.</p><pre class="codeinput">price = tf.compoundChange(<span class="string">'log'</span>);  <span class="comment">% assume tf contains log returns and compound them</span>
@@ -503,8 +503,8 @@ priceSmoothers.columns = [<span class="string">"original"</span>, <span class="s
 priceSmoothers.name = <span class="string">"smoothers"</span>;  <span class="comment">% assign the name (it appears as the plot title)</span>
 priceSmoothers.plot(Log=true)
 </pre><pre class="codeoutput">Warning: Index value is not unique. 
-</pre><img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <h2 id="50">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The groups of columns can be expressed in different ways.
+</pre><img vspace="5" hspace="5" src="framesDemo_05.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
+</pre><img vspace="5" hspace="5" src="framesDemo_06.png" alt=""> <h2 id="50">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The groups of columns can be expressed in different ways.
  * (cellArrayOfGroupLists,groupNames)
  * structure: fields are group names and values are elements in each group
  * frames.Group: Group whose property  are group names and property
@@ -577,15 +577,15 @@ x4 = df.split(g).apply(@(x) x.max(2))
 </pre><pre class="codeoutput">
 x4 = 
 
-         group2    group1
+         group1    group2
          ______    ______
 
-    1      2         5   
-    2      5         2   
+    1      5         2   
+    2      2         5   
     3      3         3   
 
 frames.DataFrame
-</pre><h2 id="56">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (+frames/+unitTests/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
+</pre><h2 id="56">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (test/unit/frames/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
 </pre><pre class="codeoutput">
 Methods for class frames.DataFrame:
 
@@ -617,8 +617,8 @@ extendColumns        minOf                tail
 extendRows           nansum               tanh                 
 ffill                oneify               toFile               
 findgroups           outerjoin            union                
-firstCommonRows      plot                 var                  
-firstValidRows       relChg               vertcat              
+firstCommonRow       plot                 var                  
+firstValidRow        relChg               vertcat              
 floor                replace              width                
 getColumns_          replaceStartBy       
 
@@ -1024,7 +1024,7 @@ x4 = df.split(g).apply(@(x) x.max(2))
 % above for some of them. 
 % 
 % Refer to the documentation for detailed information. You can also refer to 
-% the unit tests (+frames/+unitTests/) for some examples.
+% the unit tests (test/unit/frames/) for some examples.
 
 methods('frames.DataFrame')
 ##### SOURCE END #####

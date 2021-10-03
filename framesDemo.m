@@ -393,6 +393,6 @@ x4 = df.split(g).apply(@(x) x.max(2))
 % above for some of them. 
 % 
 % Refer to the documentation for detailed information. You can also refer to 
-% the unit tests (+frames/+unitTests/) for some examples.
+% the unit tests (test/unit/frames/) for some examples.
 
 methods('frames.DataFrame')
