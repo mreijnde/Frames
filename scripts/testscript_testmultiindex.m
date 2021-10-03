@@ -152,9 +152,9 @@ dfXY = frames.DataFrame( randi(20,length(y)*length(x),2), mXY, ["A","B"]);
 dfZ = frames.DataFrame( randi(20,length(z),2), mZ, ["A","B"]);
 dfXs = frames.DataFrame( randi(10,length(x),2), sx, ["A","B"]);
 
-
 % perform operations
-df1 = dfXY.performElementWiseOperation_MultiIndex(dfX,  @plus, "full", true)
-df2 = dfXY.performElementWiseOperation_MultiIndex(dfXs, @plus, "full", true)
-df3 = dfX.performElementWiseOperation_MultiIndex( dfY,  @plus, "full", true)
-
+df1 = dfXY + dfX
+df2 = dfXY + dfXs
+df3 = dfX - dfY
+df4 = dfXY .* dfXl
+df5 = (dfX+dfY).*dfZ

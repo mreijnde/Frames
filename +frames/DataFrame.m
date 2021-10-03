@@ -1651,6 +1651,12 @@ end
 
 %--------------------------------------------------------------------------
 function other = operator(fun,handler,df1,df2)
+% HACK for MultiIndex (temporary to show behavior)
+if isMultiIndex(df1.index_) && isFrame(df2)
+    other = performElementWiseOperation_MultiIndex(df1, df2, fun, "full", true);
+    return
+end
+
 [idx_,col_,other] = handler(df1,df2);
 [v1,v2] = getData_(df1,df2);
 d = fun(v1,v2);
