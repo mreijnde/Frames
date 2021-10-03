@@ -283,8 +283,14 @@ classdef MultiIndex < frames.Index
         end
         
         
-        function obj = setIndex(obj, value, name)
+        function obj = setIndex(obj, value, name)            
             % assign index and dimension names
+            %
+            if isIndex(value)
+                % accept (linear) Index object as single index
+                name = value.name; %override name
+                value = {value.value_};                
+            end
             obj.value = value;
             assert(isstring(name) && length(name)==obj.Ndim, "Name should be string array with Ndim values.");
             % assign name strings to Index objects
