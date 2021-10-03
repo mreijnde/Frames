@@ -180,8 +180,9 @@ classdef MultiIndex < frames.Index
             %    - obj1,obj2: MultiIndex objects to be aligned
             %
             %    - alignMethod: (string enum) align method for common dimension(s)
+            %           "strict": both need to have same values (else error thrown)
             %           "subset": remove rows that are not common in both
-            %           "keep":  keep rows as in obj1  (default)            
+            %           "keep":   keep rows as in obj1  (default)            
             %           "full":   keep all items (allow missing in both obj1 and obj2)
             %
             %   - allowDimExpansion (bool) allow expansion to add new dimensions to obj1
@@ -190,6 +191,13 @@ classdef MultiIndex < frames.Index
             % default parameters
             if nargin<3, alignMethod="keep"; end
             if nargin<4, allowDimExpansion=true; end
+            
+            % check and convert input
+            assert(isIndex(obj2), "obj2 is not a Index object.");                        
+            if ~isMultiIndex(obj2)
+                % convert from linear Index to MultiIndex
+                obj2 = frames.MultiIndex(obj2);
+            end
             
             % find common dimensions            
             [dim_common, dim_common_ind1, dim_common_ind2, dim_unique_ind1, dim_unique_ind2] = obj1.getMatchingDims(obj2);                       
@@ -209,7 +217,11 @@ classdef MultiIndex < frames.Index
                 case "keep"
                     id = id1_raw;                    
                 case "full"                                         
-                    id = [id1_raw; setdiff(id2_raw, id1_raw)];                                                            
+                    id = [id1_raw; setdiff(id2_raw, id1_raw)];
+                case "strict"
+                    assert( all(mask1) & all(mask2), ...
+                        "Unequal values in common dimension not allowed in strict align method");
+                    id = id1_raw;
                 otherwise 
                     error("unsupported alignMethod '%s'",alignMethod);
             end     
