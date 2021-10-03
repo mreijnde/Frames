@@ -4,8 +4,7 @@ function s = shift(x,lag,dim)
     end
     if nargin < 3
         dim = 1;
-    end
-    if dim == 2
+    elseif dim == 2
         x = x';
     end
 
