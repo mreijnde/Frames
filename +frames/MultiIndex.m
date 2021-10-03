@@ -274,7 +274,10 @@ classdef MultiIndex < frames.Index
         
         function val = getValueForTable(obj)
             % convert value to strings to use with a table
-            val = join(string(obj.value)," ");
+            val = string(obj.value);
+            if ~isvector(val)
+               val = join(val," ");
+            end
             val = matlab.lang.makeUniqueStrings(val,{},namelengthmax());
             val = cellstr(val);
         end
