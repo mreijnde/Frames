@@ -25,7 +25,7 @@ classdef MultiIndex < frames.Index
                 nameValue.UniqueSorted (1,1) = false
                 nameValue.Singleton (1,1) = false
             end
-            %obj = obj@frames.Index(value); % name-value options ignored
+            obj = obj@frames.Index([]); % name-value options ignored
             obj = obj.setIndex(value, nameValue.Name);
         end
         
@@ -480,15 +480,17 @@ classdef MultiIndex < frames.Index
         
         function valueChecker(obj,fromSubsAsgnIdx,b)
             % validate current multiindex values
-            %
-            % check if rows are unique
-            Nindex = obj.length();
-            rows_uniqind = unique(obj.value_uniqind,'rows','stable');
-            if size(rows_uniqind,1)~= Nindex
-                rows_not_unique = setdiff(1:Nindex, rows_uniqind);
-                error("Combination of dimension values should be unique. " + ...
-                    "The following multi-index rows are not unique: " + ...
-                    num2str(rows_not_unique));
+            %            
+            if obj.requireUnique_
+                % check if rows are unique
+                Nindex = obj.length();
+                rows_uniqind = unique(obj.value_uniqind,'rows','stable');
+                if size(rows_uniqind,1)~= Nindex
+                    rows_not_unique = setdiff(1:Nindex, rows_uniqind);
+                    error("Combination of dimension values should be unique. " + ...
+                        "The following multi-index rows are not unique: " + ...
+                        num2str(rows_not_unique));
+                end
             end
         end
         
