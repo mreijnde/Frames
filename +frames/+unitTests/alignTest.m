@@ -16,6 +16,7 @@ classdef alignTest < matlab.unittest.TestCase
             
             df1aSingleOutput = frames.align(df1,df2,df1,df1,df2);
             t.verifyEqual(df1a,df1aSingleOutput);
+t.verifyEqual(1,2)
         end
         
     end
