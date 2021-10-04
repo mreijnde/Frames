@@ -115,46 +115,30 @@ catch err
 end
 
 
-%%
+%% Examples of arithmetic with MultiIndex DataFrames
+
 % linear axes
 x = 1:4;
 y = 1:3;
 z = 1:3;
-xl = x(1:end-1); 
-yl = y(1:end-1); 
-zl = z(1:end-1); 
-
-% Index objects 
-sx = frames.Index(x,name="x");
-sy = frames.Index(y,name="y");
-sz = frames.Index(z,name="z");
-mX = frames.MultiIndex({x},name="x");
-mY = frames.MultiIndex({y},name="y");
-mZ = frames.MultiIndex({z},name="z");
-mXl = frames.MultiIndex({xl},name="x");
-mYl = frames.MultiIndex({yl},name="y");
-mZl = frames.MultiIndex({zl},name="z");
-
-
-% combined MultiIndex
-mXY = mX.alignIndex(mY);
-mXZ = mX.alignIndex(mZ);
-mXYZ = mXY.alignIndex(mZ);
-
-mXl.alignIndex(mXY,"full");
 
 % dataframes
 rng('default');
-dfX = frames.DataFrame( randi(10,length(x),2), mX, ["A","B"]);
-dfXl = frames.DataFrame( randi(10,length(xl),2), mXl, ["A","B"]);
-dfY = frames.DataFrame( randi(20,length(y),2), mY, ["A","B"]);
-dfXY = frames.DataFrame( randi(20,length(y)*length(x),2), mXY, ["A","B"]);
-dfZ = frames.DataFrame( randi(20,length(z),2), mZ, ["A","B"]);
-dfXs = frames.DataFrame( randi(10,length(x),2), sx, ["A","B"]);
+dfX = frames.DataFrame( randi(10,length(x),2), frames.MultiIndex({x},name="x"), ["A","B"]);
+dfY = frames.DataFrame( randi(20,length(y),2), frames.MultiIndex({y},name="y"), ["A","B"]);
+dfZ = frames.DataFrame( randi(20,length(z),2), frames.MultiIndex({z},name="z"), ["A","B"]);
+
+dfXsubset = dfX{1:end-1};
+dfXs = frames.DataFrame( dfX.data, frames.Index(x,name="x"), ["A","B"]);
+dfYs = frames.DataFrame( dfY.data, frames.Index(y,name="y"), ["A","B"]);
+dfXY = dfX + dfY;
+
+
 
 % perform operations
 df1 = dfXY + dfX
 df2 = dfXY + dfXs
 df3 = dfX - dfY
-df4 = dfXY .* dfXl
-df5 = (dfX+dfY).*dfZ
+df4 = dfXY .* dfXsubset
+df5 = (dfX+dfY).*dfZ + dfXY
+df6 = (dfX+dfYs).*dfZ + dfXY
