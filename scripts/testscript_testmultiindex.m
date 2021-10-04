@@ -4,8 +4,9 @@
 
 clear all
 clc
-%% MultiIndex DataFrame with selection optins
 warning('off','frames:Index:notUnique');
+%% MultiIndex DataFrame with selection optins
+
 
 % define some multi-index
 mindex = frames.MultiIndex({ [1    1   1   2   2   1   1   1   2   2], ...
@@ -133,8 +134,6 @@ dfXs = frames.DataFrame( dfX.data, frames.Index(x,name="x"), ["A","B"]);
 dfYs = frames.DataFrame( dfY.data, frames.Index(y,name="y"), ["A","B"]);
 dfXY = dfX + dfY;
 
-
-
 % perform operations
 df1 = dfXY + dfX
 df2 = dfXY + dfXs
@@ -142,3 +141,29 @@ df3 = dfX - dfY
 df4 = dfXY .* dfXsubset
 df5 = (dfX+dfY).*dfZ + dfXY
 df6 = (dfX+dfYs).*dfZ + dfXY
+
+
+
+%% DataFrame with both rows as columns MultiIndex
+
+dfsm = frames.DataFrame( magic(4), frames.Index(1:4,name="x"), ...
+                                  frames.MultiIndex({[1 1 2 2],["a" "b" "a" "b"]},name=["A", "B"]))
+
+dfmm1 = frames.DataFrame( magic(4), frames.MultiIndex({1:4},name="x"), ...
+                                  frames.MultiIndex({[1 1 2 2],["a" "b" "a" "b"]},name=["A", "B"]))
+                              
+dfmm2 = frames.DataFrame( magic(4), frames.MultiIndex({11:14},name="y"), ...
+                                  frames.MultiIndex({[1 1 2 2],["a" "b" "a" "b"]},name=["A", "B"]))
+
+dfmm3 = frames.DataFrame( magic(2), frames.MultiIndex({11:12},name="y"), ...
+                                  frames.MultiIndex({[2 2],["a" "b"]},name=["A", "B"]))
+                                                          
+dfsm + dfmm1
+dfmm1 + dfmm3
+dfmm2 + dfmm3*1000
+
+
+% sub selection
+df = dfmm1+dfmm2
+df( {':',11} , {':',"b"})
+
