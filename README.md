@@ -7,14 +7,14 @@
 ## Purpose of the package
 **Frames** is a package that introduces a new kind of data type for Matlab, the **DataFrame**. Demo: [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) 
 
-This data type (or _class_) helps when working with data matrices that are referenced by column and index identifiers (e.g. time series which have variable and observation names).
+This data type (or _class_) helps when working with data matrices that are referenced by column and row identifiers (e.g. time series which have variable and observation names).
 
 Matlab currently provide matrices and tables, but they do not work well together:
    - Matlab native matrices are not aware of row and column names; when data represents observations of variables, it is always tricky to make sure the data is not misaligned (i.e. how to make sure that the ith row in matrices A and B represents the same observation).
    - Matlab (time)tables have row and column names, but do not provide simple operations like addition (`table1+table2` is not possible). 
 
-**DataFrame aims at being both a matrix and a table**, allowing intuitive operations on and between Frames, while applying sanity checks on index and columns.
-For example, `frame1+frame2` is possible, and it will give an error if the index or columns are misaligned.
+**DataFrame aims at being both a matrix and a table**, allowing intuitive operations on and between Frames, while applying sanity checks on rows and columns.
+For example, `frame1+frame2` is possible, and it will give an error if the rows or columns are misaligned.
 
 There are many more operations and tools to discover in the package. 
 
@@ -33,7 +33,7 @@ Use a frame when:
 - you want to use matrix operations in a robust way (plus, times, mtimes, etc.)
 - your data contains missing values, and you want to handle them directly (cf. dropMissing, ffill, resample) or you want your calculations not to be messed up by them (cumprod, sum, relChange, etc. ignore NaNs, but keep them in the result where they appeared, instead of replacing them by zero or applying a forward fill like Matlab does)
 - you care about simple code, the fewer lines the better (e.g. dataFrame.log().plot() plots the logarithm of your dataFrame with a minimum of code)
-- you need the index (or columns) to have properties forcing it to be all the time sorted, or unique, or on the contrary allow it to have duplicate values. Tables only allow unique values (except for the index of timetables which can contain duplicates).
+- you need the rows (or columns) to have properties forcing it to be all the time sorted, or unique, or on the contrary allow it to have duplicate values. Tables only allow unique values (except for the rows of timetables which can contain duplicates).
 - you want to use a specific method in frames (e.g. you work with time series and want to access the rolling and ewm computations)
 
 Use a table when:

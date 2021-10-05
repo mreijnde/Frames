@@ -1,18 +1,18 @@
 classdef TimeIndex < frames.Index
-% TIMEINDEX belongs to the objects that support index property in a TimeFrame.
-% It is stored in the index_ property of TimeFrame.
+% TIMEINDEX belongs to the objects that support rows property in a TimeFrame.
+% It is stored in the rows_ property of TimeFrame.
 % It contains operations of selection and merging, and constrains.
 %
 % A TIMEINDEX has unique chronological values by default.
 %
 % This property can be defined explicitly in the constructor of TIMEINDEX,
-% or changed with the methods .setIndexType and .setColumnsType of
+% or changed with the methods .setRowsType and .setColumnsType of
 % TimeFrame.
 % An TIMEINDEX can 1) accept duplicate values, 2) require unique value, or 3)
 % require unique and sorted values.
 %
 % If the length of value is equal to 1, the TIMEINDEX can be a
-% 'singleton', ie it represents the index of a series, which will allow
+% 'singleton', ie it represents the rows of a series, which will allow
 % operations between Frames with different indices (see TimeFrame.series)
 %
 % Use:
@@ -20,7 +20,7 @@ classdef TimeIndex < frames.Index
 %
 % The value can be a datenum, a datetime, or a string, in which case one
 % needs to specify its format in the Format key-value argument.
-% It can also be modified with the .setIndexFormat method of TimeFrame.
+% It can also be modified with the .setRowsFormat method of TimeFrame.
 %
 % Copyright 2021 Benjamin Gaudin
 % Contact: frames.matlab@gmail.com
@@ -31,7 +31,7 @@ classdef TimeIndex < frames.Index
     end
     methods
         function obj = TimeIndex(value,nameValue)
-            % INDEX Index(value[,Name=name,Format=format])
+            % TIMEINDEX TimeIndex(value[,Name=name,Format=format])
             arguments
                 value
                 nameValue.Name = "Time"

@@ -1,4 +1,5 @@
-classdef tableFunctionalitiesTest < matlab.unittest.TestCase
+classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
+        tableFunctionalitiesTest < matlab.unittest.TestCase
     %Examples from Matlab public documentation
     methods(Test)
         function joinTest(t)
@@ -484,15 +485,15 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             
             tblA = table(Age,Height,Weight,BloodPressure,'RowNames',LastName);
             DF = frames.DataFrame.fromTable(tblA);
-            [DF2,index2] = sortrows(DF,'RowNames');
-            [DF3,index3] = DF.sortIndex();
-            t.verifyEqual({DF2,index2},{DF3,index3})
+            [DF2,rows2] = sortrows(DF,'RowNames');
+            [DF3,rows3] = DF.sortRows();
+            t.verifyEqual({DF2,rows2},{DF3,rows3})
             
-            [tblB,indexB] = sortrows(tblA,"Height");
-            [DF2,index2] = DF.sortrows("Height");
-            [DF3,index3] = DF.sortBy("Height");
-            t.verifyEqual({DF2,index2},{DF3,index3})
-            t.verifyEqual({tblB,indexB},{DF3.t,index3})
+            [tblB,rowsB] = sortrows(tblA,"Height");
+            [DF2,rows2] = DF.sortrows("Height");
+            [DF3,rows3] = DF.sortBy("Height");
+            t.verifyEqual({DF2,rows2},{DF3,rows3})
+            t.verifyEqual({tblB,rowsB},{DF3.t,rows3})
             
             Weight = [176;NaN;131;133;NaN];
             tblA = table(Age,Height,Weight,BloodPressure,'RowNames',LastName);
@@ -505,7 +506,7 @@ classdef tableFunctionalitiesTest < matlab.unittest.TestCase
             TT = timetable(TimeDuration,[98;97.5;97.9;98.1;101],[120;111;119;117;118]);
             TF = frames.TimeFrame.fromTable(TT,UniqueSorted=false);
             B = sortrows(TT,'TimeDuration');
-            C = TF.sortIndex();
+            C = TF.sortRows();
             t.verifyEqual(C.t,B)
             
         end

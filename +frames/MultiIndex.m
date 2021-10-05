@@ -94,7 +94,7 @@ classdef MultiIndex < frames.Index
                 assert(~iscell(selector),"No cell selector allowed in combination with position indexing.");                
                 selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
-            elseif islogical(selector) || isFrameSeries(selector)
+            elseif islogical(selector) || isFrame(selector)
                 %  value selector (with logicals)                
                 selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
@@ -323,7 +323,7 @@ classdef MultiIndex < frames.Index
             %    name: string with dimension name            
             %
             if nargin<3, name=""; end
-            if isa(values,'frames.Index')
+            if isIndex(values)
                 % use existing Index object
                 newIndexObj = values;
                 if name~="", newIndexObj.name=name; end                

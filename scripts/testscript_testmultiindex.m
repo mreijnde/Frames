@@ -37,7 +37,7 @@ df10 = df( mask.data)
 
 
 mask_error = mask;
-mask_error.index_.value_(2).value(3) = 22;
+mask_error.rows_.value_(2).value(3) = 22;
 try 
 df( mask_error )
 catch
