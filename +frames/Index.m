@@ -116,17 +116,8 @@ classdef Index
         end
         
         function obj = set.singleton(obj,tf)
-            arguments
-                obj, tf (1,1) {mustBeA(tf,'logical')}
-            end
-            if tf
-                assert(length(obj.value_)==1,'frames:Index:setSingleton',...
-                    'Index must contain 1 element to be a singleton')
-                obj.value_ = missingData(class(obj.value_));
-            elseif ~tf && obj.singleton_
-                obj.value_ = defaultValue(class(obj.value_));
-            end
-            obj.singleton_ = tf;
+            % seperate method to overcome matlab's limitation on overloading setters/getters
+            obj = obj.setsingleton(tf);
         end
         function obj = set.requireUnique(obj,tf)
             arguments
@@ -386,10 +377,30 @@ classdef Index
         end
         
         function obj = recalc_unique_cache(obj)
-            % recalculate unique cache based on stored value_                       
-            [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_, 'sorted');
+            % recalculate unique cache based on stored value_
+            if obj.length()>0 && ~any(ismissing(obj.value_))
+                [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_, 'sorted');
+            else
+                obj.value_uniq_=[];
+                obj.value_uniqind_=[];
+            end
         end
-                        
+                 
+        function obj = setsingleton(obj,tf)
+            arguments
+                obj, tf (1,1) {mustBeA(tf,'logical')}
+            end
+            if tf
+                assert(obj.length(),'frames:Index:setSingleton',...
+                    'Index must contain 1 element to be a singleton')
+                obj.value_ = missingData(class(obj.value_));
+            elseif ~tf && obj.singleton_
+                obj.value_ = defaultValue(class(obj.value_));
+            end
+            obj.singleton_ = tf;
+        end
+        
+        
         function valueChecker(obj,value,fromSubsAsgnIdx,b)
             if obj.singleton_
                 assert(isSingletonValue(value),'frames:Index:valueChecker:singleton', ...

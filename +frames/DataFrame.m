@@ -1493,8 +1493,10 @@ classdef DataFrame
                     % show content
                     disp(obj.t);               
                     % show row index dimension names
-                    fprintf("row index name(s): %s\n", join(obj.rows_.name,", ") )
-                    if isMultiIndex(obj.columns_)
+                    if ~obj.rows_.singleton
+                       fprintf("row index name(s): %s\n", join(obj.rows_.name,", ") )
+                    end
+                    if isMultiIndex(obj.columns_) && ~obj.columns_.singleton
                         fprintf("column index name(s): %s\n\n", join(obj.columns_.name,", ") )
                     end
                     % description line

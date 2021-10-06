@@ -296,6 +296,7 @@ classdef MultiIndex < frames.Index
             if ~iscolumn(val)
                val = join(val," ");
             end
+            val(ismissing(val))="<missing>";
             val = matlab.lang.makeUniqueStrings(val,{},namelengthmax());
             val = cellstr(val);
         end
@@ -434,7 +435,7 @@ classdef MultiIndex < frames.Index
             indices = frames.Index();
             for i = 1:Ndims
                 val = value{i};
-                if length(val)==1 && isa(val, frames.Index)
+                if length(val)==1 && isIndex(val)
                     % linear index should not be unique
                     indices(i) = val.requireUnique(false);
                 else
@@ -526,6 +527,21 @@ classdef MultiIndex < frames.Index
             % TODO
             valueOut = value;
         end
+        
+        
+       function obj = setsingleton(obj,tf)
+            arguments
+                obj, tf (1,1) {mustBeA(tf,'logical')}
+            end
+            if tf
+                assert(obj.length(),'frames:Index:setSingleton',...
+                    'Index must contain 1 element to be a singleton')                
+                obj.value_ = frames.Index(missing, Singleton=true);
+            elseif ~tf && obj.singleton_
+                obj.value_ = defaultValue(class(obj.value_));
+            end
+            obj.singleton_ = tf;
+        end        
         
     end
     
