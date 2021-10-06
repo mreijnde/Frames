@@ -174,5 +174,13 @@ mind.value(2,:) = {55, "xx"}
 mind.value(3:4,:) = {66, "yy"; 77 "zz"}
 mind.value{1,:} = [11, "aa"]
 
+%% Check isunique and issorted()
+df = dfmm1+dfmm2;;
+sortedtest = df.rows_.issorted()
+df.rows_.value(7) = [1 15];
+notsortedtest = df.rows_.issorted()
 
+uniquetest = df.rows_.isunique()
+df.rows_.value(3) = [1 11];
+notuniquetest = df.rows_.isunique()
 

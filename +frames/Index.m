@@ -386,8 +386,8 @@ classdef Index
         end
         
         function obj = recalc_unique_cache(obj)
-            % recalculate unique cache based on stored value_           
-            [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_,'stable');
+            % recalculate unique cache based on stored value_                       
+            [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_, 'sorted');
         end
                         
         function valueChecker(obj,value,fromSubsAsgnIdx,b)

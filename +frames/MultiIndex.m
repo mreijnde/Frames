@@ -25,7 +25,8 @@ classdef MultiIndex < frames.Index
                 nameValue.UniqueSorted (1,1) = false
                 nameValue.Singleton (1,1) = false
             end
-            obj = obj@frames.Index([]); % name-value options ignored
+            obj = obj@frames.Index(Unique=nameValue.Unique, UniqueSorted=nameValue.UniqueSorted, ...
+                                   Singleton=nameValue.Singleton);
             obj = obj.setIndex(value, nameValue.Name);
         end
         
@@ -593,6 +594,24 @@ classdef MultiIndex < frames.Index
             % assign to MultiIndex
             obj = obj.setvalue(num2cell(newvalue));
         end
+        
+        function bool = isunique(obj)
+            if obj.requireUnique_
+                bool = true;
+            else 
+                % check if rows are unique                
+                rows_uniqind = unique(obj.value_uniqind,'rows');
+                bool = (size(rows_uniqind,1)== obj.length());  
+            end                
+        end
+        function bool = issorted(obj)
+            if obj.requireUniqueSorted_
+                bool = true;
+            else
+                % check if rows are sorted
+                bool = issorted(obj.value_uniqind, 'rows');
+            end
+        end        
         
     end
     
