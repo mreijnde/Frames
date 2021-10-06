@@ -100,7 +100,12 @@ classdef MultiIndex < frames.Index
                 
             else
                 %  value selector (with 'selector set(s)')
-                assert(iscell(selector),"Need cell selector in case of value indexing in MultiIndex.");
+                if ~iscell(selector)                    
+                    % single value selector (allowed in case of single dimension, like in Index)
+                    assert(obj.Ndim<=1, ...
+                        "Cell selector required in case of value-indexing in MultiIndex with more than 1 dimension.");
+                    selector = {{selector}}; 
+                end                
                 isnestedcell = cellfun(@iscell, selector);
                 if ~any(isnestedcell)
                     % add celllayer (simplifies processing)
