@@ -167,3 +167,12 @@ dfmm2 + dfmm3*1000
 df = dfmm1+dfmm2
 df( {':',11} , {':',"b"})
 
+
+%% Assign value to MultiIndex by .value (using subsassign)
+mind = df.columns_;
+mind.value(2,:) = {55, "xx"}
+mind.value(3:4,:) = {66, "yy"; 77 "zz"}
+mind.value{1,:} = [11, "aa"]
+
+
+

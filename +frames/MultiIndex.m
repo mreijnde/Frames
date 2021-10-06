@@ -528,6 +528,38 @@ classdef MultiIndex < frames.Index
         
     end
     
+    methods(Hidden)
+        function obj = subsasgn(obj,s,b)
+            if length(s) == 2 && (strcmp([s.type],'.()') || strcmp([s.type],'.{}'))  && strcmp(s(1).subs,'value')
+                idxNew = s(2).subs{1};
+                assert(length(s(2).subs)==1 || iscolon(s(2).subs{2}), ...
+                       "Dimension sub-selection not supported for value assignment operation");                
+                if isequal(b,[])
+                    % remove selected item(s) from every dimension index                    
+                    for i=1:obj.Ndim
+                       obj.value_(i).value_(idxNew) = [];
+                    end
+                    if obj.singleton_
+                        assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
+                            'The value of a singleton Index must be missing.')
+                    end
+                else
+                    % update value(s) in underlying dimensions indices
+                    b_ = obj.getValue_from(b);
+                    if isrow(b), b_=b_'; end
+                    if ~iscell(b_),  b_ = num2cell(b_); end                    
+                    assert(size(b_,2)==obj.Ndim, ...
+                         "Number of columns in new value (b) not equal to number of dimensions.");
+                    for i=1:size(b_,2)
+                       obj.value_(i).value_(idxNew) = [b_{:,i}]; 
+                    end                    
+                end
+            else
+                obj = builtin('subsasgn',obj,s,b);
+            end
+        end
+    end
+    
     
     
     methods
