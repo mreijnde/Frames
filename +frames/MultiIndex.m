@@ -596,6 +596,37 @@ classdef MultiIndex < frames.Index
             obj = obj.setvalue(num2cell(newvalue));
         end
         
+        function pos = positionIn(obj,target,userCall)
+            % find position of the Index into the target
+            if nargin < 3, userCall = true; end
+            [~, pos]= getMatchingRows(target, obj, obj.name);
+            % todo: handle requireUnique/requireUniqueSorted (?)
+        end
+        
+        
+        function obj = union(obj,index2)
+            % unify two indices           
+            obj.singleton_ = false;            
+            if obj.requireUnique_
+                if obj.requireUniqueSorted_
+                    obj.requireUniqueSorted = false;
+                    obj = unique([obj; index2], 'sorted');                   
+                    obj.requireUniqueSorted = true;
+                else
+                    obj.requireUnique = false;
+                    obj = unique([obj; index2], 'stable');
+                    obj.requireUnique = true;
+                end                
+            else
+                obj = [v1; v2];
+                %if ~isunique(v2) || any(ismember(v2,v1))
+                %    warning('frames:Index:notUnique','Index value is not unique.')
+                %end
+            end
+            
+            
+        end
+        
         function bool = isunique(obj)
             if obj.requireUnique_
                 bool = true;
