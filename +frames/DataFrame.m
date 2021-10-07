@@ -1313,16 +1313,16 @@ classdef DataFrame
                 if obj.colseries
                     obj = data;
                 else
-                    obj.data_ = data;
-                    obj.rows_.value_ = obj.rows_.value_(1);
+                    obj.data_ = data;                    
+                    obj.rows_ = obj.rows_.getSubIndex(1);
                     obj.rows_.singleton = true;
                 end
             else
                 if obj.rowseries
                     obj = data;
                 else
-                    obj.data_ = data;
-                    obj.columns_.value_ = obj.columns_.value_(1);
+                    obj.data_ = data;                    
+                    obj.columns_ = obj.columns_.getSubIndex(1);
                     obj.columns_.singleton = true;
                 end
             end

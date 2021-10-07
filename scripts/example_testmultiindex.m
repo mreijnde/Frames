@@ -5,6 +5,7 @@
 clear all
 clc
 warning('off','frames:Index:notUnique');
+
 %% MultiIndex DataFrame with selection optins
 
 
@@ -183,4 +184,29 @@ notsortedtest = df.rows_.issorted()
 uniquetest = df.rows_.isunique()
 df.rows_.value(3) = [1 11];
 notuniquetest = df.rows_.isunique()
+
+
+%% Reduction functions
+df = (dfX+dfY);
+df.maxOf(100+df)
+df.abs().std()
+df.sum(2)
+
+
+%% Concatination
+% row: 3 dim, cols: 1 dim
+df = (dfX+dfY);
+df = df.setRowsType('unique');
+
+[df{1:3} ;df{8:9}]
+
+% row: 2 dim, cols: 2 dim
+df = dfmm1+dfmm2;
+df = df.setRowsType('unique');
+%[df{1:3} ; df{8:9}] % <== does not work yet
+
+
+
+
+
 
