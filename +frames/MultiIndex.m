@@ -526,22 +526,7 @@ classdef MultiIndex < frames.Index
         function valueOut = getValue_andCheck(obj,value,userCall)
             % TODO
             valueOut = value;
-        end
-        
-        
-       function obj = setsingleton(obj,tf)
-            arguments
-                obj, tf (1,1) {mustBeA(tf,'logical')}
-            end
-            if tf
-                assert(obj.length(),'frames:Index:setSingleton',...
-                    'Index must contain 1 element to be a singleton')                
-                obj.value_ = frames.Index(missing, Singleton=true);
-            elseif ~tf && obj.singleton_
-                obj.value_ = defaultValue(class(obj.value_));
-            end
-            obj.singleton_ = tf;
-        end        
+        end                
         
     end
     

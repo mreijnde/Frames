@@ -116,9 +116,19 @@ classdef Index
         end
         
         function obj = set.singleton(obj,tf)
-            % seperate method to overcome matlab's limitation on overloading setters/getters
-            obj = obj.setsingleton(tf);
+            arguments
+                obj, tf (1,1) {mustBeA(tf,'logical')}
+            end
+            if tf
+                assert(obj.length()==1,'frames:Index:setSingleton',...
+                    'Index must contain 1 element to be a singleton')
+                obj.value_ = missingData(class(obj.value_));
+            elseif ~tf && obj.singleton_
+                obj.value_ = defaultValue(class(obj.value_));
+            end
+            obj.singleton_ = tf;
         end
+        
         function obj = set.requireUnique(obj,tf)
             arguments
                 obj, tf (1,1) {mustBeA(tf,'logical')}
@@ -384,22 +394,7 @@ classdef Index
                 obj.value_uniq_=[];
                 obj.value_uniqind_=[];
             end
-        end
-                 
-        function obj = setsingleton(obj,tf)
-            arguments
-                obj, tf (1,1) {mustBeA(tf,'logical')}
-            end
-            if tf
-                assert(obj.length()==1,'frames:Index:setSingleton',...
-                    'Index must contain 1 element to be a singleton')
-                obj.value_ = missingData(class(obj.value_));
-            elseif ~tf && obj.singleton_
-                obj.value_ = defaultValue(class(obj.value_));
-            end
-            obj.singleton_ = tf;
-        end
-        
+        end                        
         
         function valueChecker(obj,value,fromSubsAsgnIdx,b)
             if obj.singleton_
