@@ -133,7 +133,7 @@ classdef Index
             arguments
                 obj, tf (1,1) {mustBeA(tf,'logical')}
             end
-            if tf && ~isunique(obj.value_)
+            if tf && ~obj.isunique()
                 error('frames:Index:setRequireUnique',...
                     'Index value must be unique.')
             elseif ~tf && obj.requireUniqueSorted_
@@ -147,7 +147,7 @@ classdef Index
                 obj, tf (1,1) {mustBeA(tf,'logical')}
             end
             if tf
-                if ~issorted(obj.value_)
+                if ~obj.issorted()
                     error('frames:Index:setrequireUniqueSorted',...
                         'Index must be unique and sorted.')
                 end
@@ -317,7 +317,20 @@ classdef Index
         function out = get.value_uniqind(obj)
             % seperate method to overcome matlab's limitation on overloading setters/getters
             out = getvalue_uniqind(obj);            
-        end                   
+        end     
+        
+        function [obj, sortindex] = sort(obj)
+            % get sorted index (and corresponding position index)
+            [~, sortindex] = sortrows(obj.value_uniqind);
+            obj = obj.getSubIndex(sortindex);            
+        end
+        
+        function [obj, sortindex] = unique(obj, ordering)
+            % get unique (sorted) index (and corresponding position index)
+            if nargin<2; ordering='sorted'; end
+            [~, sortindex] = unique(obj.value_uniqind, ordering, 'rows');
+            obj = obj.getSubIndex(sortindex);            
+        end
         
     end
     
