@@ -391,7 +391,7 @@ classdef Index
                 obj, tf (1,1) {mustBeA(tf,'logical')}
             end
             if tf
-                assert(obj.length(),'frames:Index:setSingleton',...
+                assert(obj.length()==1,'frames:Index:setSingleton',...
                     'Index must contain 1 element to be a singleton')
                 obj.value_ = missingData(class(obj.value_));
             elseif ~tf && obj.singleton_
