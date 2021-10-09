@@ -1,10 +1,8 @@
-classdef Groups < dynamicprops
+classdef Groups
  % GROUPS split a list by assigning its elements to predefined groups.
- % Use: groups = frames.Groups(listToSplit[,groupStructure])
- % The properties of groups are the fields of the groupStructure.
+ % Use: groups = frames.Groups(groups[,listToSplit])
  %
- % Use a Groups in df.split(groups[,desiredGroups]) to split df into
- % groups, column-wise.
+ % Use a Groups in df.split(groups) to split df into groups, column-wise.
  %
  % ----------------
  % Parameters:
@@ -21,54 +19,123 @@ classdef Groups < dynamicprops
  % Contact: frames.matlab@gmail.com
  %
  % See also: frames.internal.Split
-    properties(Access=protected)
-        protectedStructure_
+    properties(SetAccess=protected)
+        keys
+        values = {}
+        isColumnGroups = false
+        constantGroups = false
+        frame
     end
-    methods(Access=protected, Static)
-        function s = defineGroups(varargin)
-            % group structure can be defined in a subclass
-            % Must return a struct with group names as fields and a list of
-            % the elements in a group as values: : s.groupName = listOfelementsInGroup
-            s = varargin{:};
-        end
-    end
+
     methods
-        function obj=Groups(listOfElements,varargin)
-            % Groups(listOfElements[,groupStructure])
-            narginchk(1,2)
-            obj.protectedStructure_ = obj.getGroupStructure(varargin{:});
+        function obj = Groups(groups)
+            % Groups(groups)
+            if iscell(groups) && isFrame(groups{1})
+                groups = local_findgroups(groups{:});
+            end
+            if isFrame(groups) && ~groups.rowseries && ~groups.colseries
+                obj.constantGroups = false;
+                obj = obj.setFrameSplit(groups);
+            else
+                [obj.keys, obj.values] = local_groupToKeyVal(groups);
+            end
             
-            areValid = ismember(listOfElements,obj.getAllElements());  % check if all inputs are found somewhere in the groups
+        end
+        
+        function obj = select(obj, keys)
+            %SELECT select a subset of Groups
+            % returns a Groups
+            toKeep = findPositionIn(keys,obj.keys);
+            obj.keys = obj.keys(toKeep);
+            obj.values = obj.values(toKeep);
+        end
+        function values = get(obj, key)
+            %GET get the values associated with the key
+            values = obj.values(find(string(key)==string(obj.keys),1));
+        end
+        
+        function obj = assignElements(obj, elementsToGroup)
+            %returns a Group wiht only the keys and values contained in the list elementsToGroup
+            areValid = ismember(elementsToGroup,obj.getAllElements());  % check if all inputs are found somewhere in the groups
             if ~all(areValid)
-                error("[%s] are not valid.", listOfElements(~areValid));
+                error("[%s] are not valid.", elementsToGroup(~areValid));
             end
-            s = obj.protectedStructure_;
-            for f = fields(s)'  % put elements of listOfElements into groups (properties)
-                f_ = f{1};
-                obj.addprop(f_);
-                obj.(f_) = obj.isinGroup(listOfElements,s.(f_));
+            toKeep = [];
+            for ii = 1:length(obj.keys)
+                elementsToKeep = local_foundIn(elementsToGroup, obj.values{ii});
+                if ~isempty(elementsToKeep)
+                    toKeep = [toKeep, ii]; %#ok<AGROW>
+                    obj.values{ii} = elementsToKeep;
+                end
             end
-            % ToDo: With Matlab2021a, the order of dynamic properties 
-            % (from fieldnames(obj)) seem to be stable, but not alphabetical.
-            % Make sure in future versions there is no change.
+            obj.keys = obj.keys(toKeep);
+            obj.values = obj.values(toKeep);
         end
-        function allNames = getAllElements(obj)
-            s = obj.protectedStructure_;
-            allValues = cellfun(@(f)s.(f),fieldnames(s),'uni',0);
-            allNames = unique([allValues{:}]);
-        end
+        
     end
     
-    methods(Access=private)
-        function s = getGroupStructure(obj,varargin)
-            s = obj.defineGroups(varargin{:});
-            assert(isstruct(s), 'defineGroups must return a struct')
+    methods(Access=protected)
+        function allElements = getAllElements(obj)
+            allElements = unique([obj.values{:}], 'stable');
         end
-    end
-    methods(Access=private, Static)
-        function li = isinGroup(listOfElements,group)
-            belongsTo = ismember(listOfElements,group);
-            li = listOfElements(belongsTo);
+        
+        function obj = setFrameSplit(obj, groups)
+            % If groups change along both axis, the values are sparse
+            % logical matrices. The index and columns of the original frame
+            % are saved as properties.
+            gdata = groups.data;
+            grps = unique(gdata);
+            grps(ismissing(grps)) = [];
+            grps = grps(:)';
+            obj.keys = grps;
+            if iscell(grps)
+                grps = string(grps);
+                gdata = string(gdata);
+            end
+            for ii = 1:length(grps)
+                obj.values{ii} = sparse(gdata == grps(ii));
+            end
+            obj.frame.rows = groups.getRowsObj();
+            obj.frame.columns = groups.getColumnsObj();
         end
+        
     end
+
+end
+
+function li = local_foundIn(listOfElements,group)
+belongsTo = ismember(listOfElements,group);
+li = listOfElements(belongsTo);
+end
+
+function [keys, values] = local_groupToKeyVal(g)
+switch class(g)
+    case 'struct'
+        keys = fieldnames(g)';
+        values = struct2cell(g)';
+    case 'cell'
+        keys = "Group" + (1:length(g));
+        values = g;
+    case 'containers.Map'
+        keys = keys(g); %#ok<NODEF>
+        values = values(g); %#ok<NODEF>
+    case 'frames.DataFrame'
+        [keys,~,ikeys] = unique(g.data,'stable');
+        keys(ismissing(keys)) = [];
+        values = cell(1,length(keys));
+        dfcols = g.columns;
+        for ii = 1:length(keys)
+            values{ii} = dfcols(ikeys==ii);
+        end
+end
+end
+
+function gps = local_findgroups(varargin)
+for ii = 1:nargin, varargin{ii}.data = string(varargin{ii}.data); end
+[dfs{1:nargin}] = frames.align(varargin{:});
+dfsdata = cell(1,nargin);
+for ii = 1:nargin, dfsdata{ii} = dfs{ii}.data(:); end
+gps = findgroups(dfsdata{:});
+gps = reshape(gps,size(dfs{1}));
+gps = dfs{1}.constructor(gps,dfs{1}.getRowsObj(),dfs{1}.getColumnsObj());
 end

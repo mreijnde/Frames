@@ -103,6 +103,7 @@ classdef DataFrame
     end
     properties(Dependent, Hidden)
         index
+        constructor
     end
     properties
         description {mustBeText} = ""  % text description of the object
@@ -274,12 +275,15 @@ classdef DataFrame
             s.rows = publicProps2struct(obj.rows_,Skip="value");
             s.rows.class = class(obj.rows_);
         end
+        function c = get.constructor(obj)
+            c = str2func(class(obj));
+        end
         
-        function row = getRows_(obj)
+        function row = getRowsObj(obj)
             % get the Index object underlying rows
             row = obj.rows_;
         end
-        function col = getColumns_(obj)
+        function col = getColumnsObj(obj)
             % get the Index object underlying columns
             col = obj.columns_;
         end
@@ -794,9 +798,9 @@ classdef DataFrame
             if nargout == 1, varargout{1} = p; end
         end
         
-        function s = split(obj,varargin)
+        function s = split(obj,group)
             % SPLIT split the frame into column-based groups to apply a function separately
-            % Use: .split(groups[,groupNames]).apply(@fun)
+            % Use: .split(group).apply(@fun,args,flag)
             %
             % ----------------
             % Parameters:
@@ -838,7 +842,7 @@ classdef DataFrame
             %     x5 = df.split(g).apply(@mean,2,'applyToFrame');
             %     x6 = df.split(g).apply(@(x) x-mean(x,2),'applyToData');
             % See also: frames.Groups, frames.internal.Split
-            s = frames.internal.Split(obj,varargin{:});
+            s = frames.internal.Split(obj,group);
         end
                 
         function obj = relChg(obj,varargin)
