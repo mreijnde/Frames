@@ -34,7 +34,7 @@ classdef Split < dynamicprops
  %
  % See also: frames.Groups
     properties(Access=private)
-        group  % frames.Groups
+        groups  % frames.Groups
         df  % frames.DataFrame
     end
     
@@ -44,15 +44,15 @@ classdef Split < dynamicprops
             obj.groups = groups;
             if groups.constantGroups
                 allCols = [groups.values{:}];
-                if frames.internal.isunique(allCols)
+                if ~frames.internal.isunique(allCols)
                     warning('frames:SplitOverlap','There are overlaps in Split')
                 end
                 if any(~ismember(df.columns,allCols))
                     warning('frames:SplitNonexhaustive','Split is not exhaustive')
                 end
             else
-                assert(isequaln(groups.rows,df.rows)) % ToDo message
-                assert(isequaln(groups.columns,df.columns))
+                assert(isequaln(groups.frame.rows,df.getRowsObj())) % ToDo message
+                assert(isequaln(groups.frame.columns,df.getColumnsObj))
             end
         end
     end
@@ -131,7 +131,7 @@ classdef Split < dynamicprops
                         firstIteration = false;
                     end
                     if reduceDim
-                        out(idx,colID) = res_;
+                        out(idx,ii) = res_;
                     else
                         [lenIdx,lenCol] = size(val);
                         out(idx,colID) = repmat(res_,1+lenIdx-size(res_,1),1+lenCol-size(res_,2));
@@ -199,5 +199,5 @@ end
 end
 
 function data = local_getData(data)
-if isframe(data), data = data.data; end
+if frames.internal.isFrame(data), data = data.data; end
 end

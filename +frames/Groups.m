@@ -22,8 +22,8 @@ classdef Groups
     properties(SetAccess=protected)
         keys
         values = {}
-        isColumnGroups = false
-        constantGroups = false
+        isColumnGroups = true
+        constantGroups = true
         frame
     end
 
