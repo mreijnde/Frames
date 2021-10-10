@@ -28,8 +28,15 @@ classdef Groups
     end
 
     methods
-        function obj = Groups(groups)
-            % Groups(groups)
+        function obj = Groups(groups, dimensionFlag)
+            % Groups(groups,dimensionFlag)
+            if nargin == 2
+                assert(ismember(dimensionFlag, ["columnGroups","rowGroups"]), 'frames:Groups:flag', ...
+                    'The dimension flag must be in ["columnGroups","rowGroups"]')
+                if flagDimension == "rowGroups"
+                    obj.isColumnGroups = false;
+                end
+            end
             if iscell(groups) && isFrame(groups{1})
                 groups = local_findgroups(groups{:});
             end
@@ -108,7 +115,7 @@ belongsTo = ismember(listOfElements,group);
 li = listOfElements(belongsTo);
 end
 
-function [keys, values] = local_groupToKeyVal(g)
+function [keys, values] = local_groupToKeyVal(g,isColumnGroups)
 switch class(g)
     case 'struct'
         keys = fieldnames(g)';
@@ -123,9 +130,9 @@ switch class(g)
         [keys,~,ikeys] = unique(g.data,'stable');
         keys(ismissing(keys)) = [];
         values = cell(1,length(keys));
-        dfcols = g.columns;
+        if isColumnGroups, vals = g.columns; else, vals = g.rows; end
         for ii = 1:length(keys)
-            values{ii} = dfcols(ikeys==ii);
+            values{ii} = vals(ikeys==ii);
         end
 end
 end

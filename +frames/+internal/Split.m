@@ -43,11 +43,12 @@ classdef Split < dynamicprops
             obj.df = df;
             obj.groups = groups;
             if groups.constantGroups
-                allCols = [groups.values{:}];
-                if ~frames.internal.isunique(allCols)
+                allElements = [groups.values{:}];
+                if ~frames.internal.isunique(allElements)
                     warning('frames:SplitOverlap','There are overlaps in Split')
                 end
-                if any(~ismember(df.columns,allCols))
+                if groups.isColumnGroups, toSplit=df.columns; else, toSplit=df.rows; end
+                if any(~ismember(toSplit,allElements))
                     warning('frames:SplitNonexhaustive','Split is not exhaustive')
                 end
             else
@@ -66,7 +67,11 @@ classdef Split < dynamicprops
         function other = aggregate(obj,fun,varargin)
             out = obj.computeFunction(fun,true,varargin{:});
             constructor = str2func(class(obj.df));
-            other = constructor(out, obj.df.getRowsObj(), obj.groups.keys);
+            if obj.groups.isColumnGroups
+                other = constructor(out, obj.df.getRowsObj(), obj.groups.keys);
+            else
+                other = constructor(out, obj.groups.keys, obj.df.getColumnsObj());
+            end
         end
         function out = computeFunction(obj,fun,reduceDim,varargin)
             % APPLY apply a function to each sub-Frame, and returns a single Frame
@@ -91,35 +96,32 @@ classdef Split < dynamicprops
             
             dfdata = obj.df.data;
             df_ = obj.df;
-            keyiscell = iscell(obj.groups.keys);
+            if applyToFrame
+                keyiscell = iscell(obj.groups.keys);
+            end
             
             if obj.groups.constantGroups
                 indexLoop = ':';
             else
-                indexLoop = 1:size(dfdata,1);
+                indexLoop = 1:size(dfdata,1);  % kk, 2
             end
             firstIteration = true;
             for ii = 1:length(obj.groups.values)
                 gVal = obj.groups.values{ii};
                 if applyToFrame
-                    if keyiscell
-                        df_.description = obj.groups.keys{ii};
-                    else
-                        df_.description = obj.groups.keys(ii);
-                    end
+                    if keyiscell, df_.description = obj.groups.keys{ii}; 
+                    else, df_.description = obj.groups.keys(ii); end
                 end
                 for idx = indexLoop
                     if obj.groups.constantGroups
-                        colID = obj.df.getColumnsObj().positionOf(gVal);
+                        colID = obj.df.getColumnsObj().positionOf(gVal);  % kk Rows
                     else
-                        colID = gVal(idx,:);
-                        if ~any(colID)
-                            continue
-                        end
+                        colID = gVal(idx,:);  % kk (:,col)
+                        if ~any(colID), continue; end
                     end
                     
                     if applyToFrame
-                        val = df_.iloc_(idx,colID);
+                        val = df_.iloc_(idx,colID);  % todo iterate faster
                         res_ = fun(val,varargin{:});
                         res_ = local_getData(res_);
                     else
@@ -129,14 +131,14 @@ classdef Split < dynamicprops
                     if firstIteration
                         dataType = str2func(class(res_));
                         if reduceDim
-                            out = repmat(dataType(missing),size(dfdata,1),length(obj.groups.keys));
+                            out = repmat(dataType(missing),size(dfdata,1),length(obj.groups.keys));  % kk len, ,2
                         else
                             out = repmat(dataType(missing),size(dfdata));
                         end
                         firstIteration = false;
                     end
                     if reduceDim
-                        out(idx,ii) = res_;
+                        out(idx,ii) = res_;  % ii,idx
                     else
                         [lenIdx,lenCol] = size(val);
                         out(idx,colID) = repmat(res_,1+lenIdx-size(res_,1),1+lenCol-size(res_,2));
