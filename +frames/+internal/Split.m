@@ -91,6 +91,7 @@ classdef Split < dynamicprops
             
             dfdata = obj.df.data;
             df_ = obj.df;
+            keyiscell = iscell(obj.groups.keys);
             
             if obj.groups.constantGroups
                 indexLoop = ':';
@@ -101,7 +102,11 @@ classdef Split < dynamicprops
             for ii = 1:length(obj.groups.values)
                 gVal = obj.groups.values{ii};
                 if applyToFrame
-                    df_.name = obj.groups.keys(ii);
+                    if keyiscell
+                        df_.description = obj.groups.keys{ii};
+                    else
+                        df_.description = obj.groups.keys(ii);
+                    end
                 end
                 for idx = indexLoop
                     if obj.groups.constantGroups

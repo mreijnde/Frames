@@ -106,7 +106,7 @@ classdef DataFrame
         constructor
     end
     properties
-        description {mustBeText} = ""  % text description of the object
+        description = ""  % text description of the object
     end
     properties(Hidden, Access=protected)
         % Encapsulation. Internal use, there are no tests in the getters
