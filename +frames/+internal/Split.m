@@ -113,35 +113,53 @@ classdef Split < dynamicprops
                     else, df_.description = obj.groups.keys(ii); end
                 end
                 for idx = indexLoop
+                    if obj.groups.isColumnGroups, rowID=idx; else, colID=idx; end
                     if obj.groups.constantGroups
-                        colID = obj.df.getColumnsObj().positionOf(gVal);  % kk Rows
+                        if obj.groups.isColumnGroups
+                            colID = obj.df.getColumnsObj().positionOf(gVal);  % kk Rows
+                        else
+                            rowID = obj.df.getRowsObj().positionOf(gVal);  % kk Rows
+                        end
                     else
-                        colID = gVal(idx,:);  % kk (:,col)
-                        if ~any(colID), continue; end
+                        if obj.groups.isColumnGroups
+                            colID = gVal(idx,:);  % kk (:,col)
+                            if ~any(colID), continue; end
+                        else
+                            rowID = gVal(:,idx);  % kk (:,col)
+                            if ~any(rowID), continue; end
+                        end
                     end
                     
                     if applyToFrame
-                        val = df_.iloc_(idx,colID);  % todo iterate faster
-                        res_ = fun(val,varargin{:});
-                        res_ = local_getData(res_);
+                        val = df_.iloc_(rowID,colID);  % todo iterate faster
+                        res = fun(val,varargin{:});
+                        res = local_getData(res);
                     else
-                        val = dfdata(idx,colID);
-                        res_ = fun(val,varargin{:});
+                        val = dfdata(rowID,colID);
+                        res = fun(val,varargin{:});
                     end
                     if firstIteration
-                        dataType = str2func(class(res_));
+                        dataType = str2func(class(res));
                         if reduceDim
-                            out = repmat(dataType(missing),size(dfdata,1),length(obj.groups.keys));  % kk len, ,2
+                            if obj.groups.isColumnGroups
+                                out = repmat(dataType(missing),size(dfdata,1),length(obj.groups.keys));  % kk len, ,2
+                            else
+                                out = repmat(dataType(missing),length(obj.groups.keys),size(dfdata,2));  % kk len, ,2
+                            end
                         else
                             out = repmat(dataType(missing),size(dfdata));
                         end
                         firstIteration = false;
                     end
                     if reduceDim
-                        out(idx,ii) = res_;  % ii,idx
+                        if obj.groups.isColumnGroups
+                            out(idx,ii) = res;  % ii,idx
+                        else
+                            out(ii,idx) = res;  % ii,idx
+                        end
                     else
                         [lenIdx,lenCol] = size(val);
-                        out(idx,colID) = repmat(res_,1+lenIdx-size(res_,1),1+lenCol-size(res_,2));
+                        out(rowID,colID) = repmat(res,1+lenIdx-size(res,1),1+lenCol-size(res,2));
                     end
                 end
             end

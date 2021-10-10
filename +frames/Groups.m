@@ -44,7 +44,7 @@ classdef Groups
                 obj.constantGroups = false;
                 obj = obj.setFrameSplit(groups);
             else
-                [obj.keys, obj.values] = local_groupToKeyVal(groups);
+                [obj.keys, obj.values] = local_groupToKeyVal(groups,obj.isColumnGroups);
             end
             
         end
