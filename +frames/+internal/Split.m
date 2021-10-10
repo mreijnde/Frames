@@ -112,7 +112,7 @@ classdef Split < dynamicprops
             firstIteration = true;
             for ii = 1:length(obj.groups.values)
                 gVal = obj.groups.values{ii};
-                if obj.groups.isColumnGroups
+                if ~obj.groups.constantGroups
                     gVal = full(gVal);  % for performance reasons
                 end
                 if applyToFrame
