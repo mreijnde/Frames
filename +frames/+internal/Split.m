@@ -70,7 +70,7 @@ classdef Split < dynamicprops
             if obj.groups.isColumnGroups
                 other = constructor(out, obj.df.getRowsObj(), obj.groups.keys);
             else
-                other = constructor(out, obj.groups.keys, obj.df.getColumnsObj());
+                other = frames.DataFrame(out, obj.groups.keys, obj.df.getColumnsObj());  % not constructor as groups are an ordinary Index
             end
         end
         function out = computeFunction(obj,fun,reduceDim,varargin)
@@ -87,11 +87,11 @@ classdef Split < dynamicprops
             varargin(isflag) = [];
             condFlags = [applyToFrameFlag,applyToDataFlag];
             if all(condFlags)
-                error('frames:splitapply:flag','Chose one flag only.')
-            elseif all(condFlags == [false true])
-                applyToFrame = false;
-            else
+                error('frames:splitapply:flag','Choose one flag only.')
+            elseif condFlags(1)
                 applyToFrame = true;
+            else
+                applyToFrame = false;
             end
             
             dfdata = obj.df.data;
