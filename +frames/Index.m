@@ -284,8 +284,9 @@ classdef Index
 %         
        function obj = union(obj,index2)
            % unify two indices
-           if ~isIndex(index2)                    
-               index2 =frames.Index().setvalue(index2, false);  %skip value checks/ unique warning
+           if ~isIndex(index2)
+               % convert to index
+               index2 = frames.Index().setvalue(index2, false); %skip value checks/ unique warning
            end
            obj = obj.union_({index2});
            obj.singleton_ = false;
@@ -358,18 +359,18 @@ classdef Index
         end
 
         
-        function [obj_new, ind_obj, ind_cell] = union_(obj, others_cell, forceUnique, forceSort)
+        function [obj_new, ind_cell] = union_(obj, others_cell, forceUnique, forceSort)
             % Internal union function to combine all supplied index objects
             %
-            % It will choose method depending on obj settings
+            % Methods:
+            %   - non-unique:
+            %         concatenate all values 
             %   - unique output (in case of obj requireUnique set or forceUnique)
             %         only unique values in output, last item used in case of double values
             %
-            %   - non-unique:
-            %         concatenate all values 
             %
             % The resulting index will be sorted if required (in case of obj requireUniqueSorted or forceSort).
-                        %
+            %
             % input:
             %    others_cell:  cell array with (one or more) index objects to unite
             %    forceUnique: logical, force unique even without requireUnique of obj set
@@ -378,36 +379,28 @@ classdef Index
             % output:
             %   obj_new: Index object with new united index
             %   ind_cell: cell array with position index per supplied index object
-            %             (position index describes position of each original line in the newly created index,
-            %              if value is not present, it will be NaN)
-            
+            %             (position index describes position of each original line in the newly created index)            
             %
             % default values            
             if nargin<3, forceUnique=false; end
-            if nargin<4, forceSort=false; end    
-            
+            if nargin<4, forceSort=false; end                
             makeUnique = forceUnique || obj.requireUnique;
             makeSorted = forceSort || obj.requireUniqueSorted;
             % concat all inputs
             lengths = [obj.length() cellfun(@length, others_cell)];            
-            obj_temp = obj;
-            obj_temp.requireUniqueSorted = false;
-            obj_temp.requireUnique = false;
-            obj_new = obj_temp.vertcat_(others_cell{:});
+            obj_new = obj.vertcat_(others_cell{:});
             % create index            
             ind = (1:obj_new.length())';   
             % adjust concatenated index if required
             if makeUnique 
                 if makeSorted
-                   % create new index with only unique values (sorted, keep last value)               
-                   [~, ia, ind] = unique(obj_new.value_uniqind, 'rows', 'last');                                      
+                   % create new index with only unique values (sorted)               
+                   [~, ia, ind] = unique(obj_new.value_uniqind, 'rows', 'sorted');                                      
                 else                                      
                    % create new index with only unique values (do not change order)
-                   [~, ia,~] = unique(obj_new.value_uniqind, 'rows', 'stable');                   
+                   [~, ia, ind] = unique(obj_new.value_uniqind, 'rows', 'stable');                    
                 end
                 obj_new = obj_new.getSubIndex(ia);
-                mask = ismember(ind,ia);                
-                ind(~mask) = NaN;
                 
             elseif makeSorted
                   % get sorted Index object
@@ -417,13 +410,7 @@ classdef Index
                   [~,ind] = sort(sortind);
             end                         
             % slice full index for each input            
-            ind_cell = mat2cell( ind, lengths, 1);
-            ind_obj = ind_cell{1};
-            ind_cell = ind_cell(2:end);
-            % restore settings
-            obj_new.requireUnique = obj.requireUnique;
-            obj_new.requireUniqueSorted = obj.requireUniqueSorted;
-            
+            ind_cell = mat2cell( ind, lengths, 1);        
         end         
         
     end
@@ -578,21 +565,21 @@ classdef Index
                                      
         end    
                 
-        function u = unionData(obj,v1,v2)
-            if obj.requireUnique_
-                if obj.requireUniqueSorted_
-                    u = union(v1,v2,'sorted');  % sorts by default
-                else
-                    u = union(v1,v2,'stable');
-                end
-                if isrow(u), u=u'; end
-            else
-                u = [v1; v2];
-                if ~isunique(v2) || any(ismember(v2,v1))
-                    warning('frames:Index:notUnique','Index value is not unique.')
-                end
-            end
-        end
+%         function u = unionData(obj,v1,v2)
+%             if obj.requireUnique_
+%                 if obj.requireUniqueSorted_
+%                     u = union(v1,v2,'sorted');  % sorts by default
+%                 else
+%                     u = union(v1,v2,'stable');
+%                 end
+%                 if isrow(u), u=u'; end
+%             else
+%                 u = [v1; v2];
+%                 if ~isunique(v2) || any(ismember(v2,v1))
+%                     warning('frames:Index:notUnique','Index value is not unique.')
+%                 end
+%             end
+%         end
         
         function value = getValue(obj)
             value = obj.value_;

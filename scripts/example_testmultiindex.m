@@ -208,28 +208,38 @@ df = df.setRowsType('unique');
 
 %% Union index
 
-% single index
-si1 = frames.Index([2 5 3]);
-si2 = frames.Index([1 7 3 4 8]);
-si3 = frames.Index([9 7]);
+% % single index
+% si1 = frames.Index([2 5 3]);
+% si2 = frames.Index([1 7 3 4 8]);
+% si3 = frames.Index([9 7]);
+% 
+% [si_unique, ind_unique] = si1.union_( {si2,si3}, true);
+% [si_uniquesort, ind_uniquesort] = si1.union_( {si2,si3}, true, true);
+% [si, ind] = si1.union_( {si2,si3}, false);
+% [si_sort, ind_sort] = si1.union_( {si2,si3}, false, true);
+% 
+% 
+% % multi index
+% mi1 = frames.MultiIndex({[2 5 3],[1 2 3]},name=["a","b"]);
+% mi2 = frames.MultiIndex({[1 7 3 4 8],[1 2 3 4 5]},name=["a","b"]);
+% mi3 = frames.MultiIndex({[9 7],[1 2]},name=["a","b"]);
+% 
+% [mi_unique, ind_unique] = mi1.union_( {mi2,mi3}, true);
+% [mi_uniquesort, ind_uniquesort] = mi1.union_( {mi2,mi3}, true, true);
+% [mi, ind] = mi1.union_( {mi2,mi3}, false);
+% [mi_sort, ind_sort] = mi1.union_( {mi2,mi3}, false, true);
 
-[si_unique, ind_unique] = si1.union_( {si2,si3}, true);
-[si_uniquesort, ind_uniquesort] = si1.union_( {si2,si3}, true, true);
-[si, ind] = si1.union_( {si2,si3}, false);
-[si_sort, ind_sort] = si1.union_( {si2,si3}, false, true);
+%% Concatination test
+df1 = frames.DataFrame(3*ones(3));
+df2 = frames.DataFrame(5*ones(5));
+df3 = frames.DataFrame(2*ones(2));
+df4 = frames.DataFrame(23*ones(2,3));
 
+dfs = {df2 df3, df1};
 
-% multi index
-mi1 = frames.MultiIndex({[2 5 3],[1 2 3]},name=["a","b"]);
-mi2 = frames.MultiIndex({[1 7 3 4 8],[1 2 3 4 5]},name=["a","b"]);
-mi3 = frames.MultiIndex({[9 7],[1 2]},name=["a","b"]);
+df1.cattest(dfs, false)
 
-[mi_unique, ind_unique] = mi1.union_( {mi2,mi3}, true);
-[mi_uniquesort, ind_uniquesort] = mi1.union_( {mi2,mi3}, true, true);
-[mi, ind] = mi1.union_( {mi2,mi3}, false);
-[mi_sort, ind_sort] = mi1.union_( {mi2,mi3}, false, true)
-
-
+df1.cattest(dfs, true)
 
 
 

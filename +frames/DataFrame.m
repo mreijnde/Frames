@@ -495,6 +495,35 @@ classdef DataFrame
                 end
             end
         end
+        
+        
+        
+        function dfnew = cattest(obj, dfs, forceColsUnique)
+            % concatenate dataframe
+            %            
+            % get index objects            
+            rows = cellfun(@(x) {x.rows_}, dfs);
+            cols = cellfun(@(x) {x.columns_}, dfs);
+            % get new index objects and position index          
+            [rowsnew, rowsnew_ind] = obj.rows_.union_(rows);
+            [colsnew, colsnew_ind] = obj.columns_.union_(cols, forceColsUnique);            
+            % get empty dataframe           
+            dfnew = frames.DataFrame(NaN, rowsnew, colsnew);
+            % add object itself to the list
+            dfs = [{obj} dfs];            
+            % assign data from each dataframe
+            for i=1:length(dfs)
+                rowind = rowsnew_ind{i};
+                colind = colsnew_ind{i};
+                dfnew.data_(rowind,colind) = dfs{i}.data_;           
+            end
+        end
+        
+        
+        
+        
+        
+        
         function other = horzcat(obj,varargin)
             % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
             row = obj.rows_;
