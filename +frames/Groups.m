@@ -31,9 +31,9 @@ classdef Groups
         function obj = Groups(groups, dimensionFlag)
             % Groups(groups,dimensionFlag)
             if nargin == 2
-                assert(ismember(dimensionFlag, ["columnGroups","rowGroups"]), 'frames:Groups:flag', ...
+                assert(ismember(dimensionFlag, ["columnGroups","rowGroups"]), 'frames:Groups:dimensionFlag', ...
                     'The dimension flag must be in ["columnGroups","rowGroups"]')
-                if flagDimension == "rowGroups"
+                if dimensionFlag == "rowGroups"
                     obj.isColumnGroups = false;
                 end
             end
@@ -111,6 +111,7 @@ classdef Groups
 end
 
 function li = local_foundIn(listOfElements,group)
+listOfElements = listOfElements(:)';
 belongsTo = ismember(listOfElements,group);
 li = listOfElements(belongsTo);
 end
@@ -127,10 +128,10 @@ switch class(g)
         keys = keys(g); %#ok<NODEF>
         values = values(g); %#ok<NODEF>
     case 'frames.DataFrame'
-        [keys,~,ikeys] = unique(g.data,'stable');
+        [keys,~,ikeys] = unique(g.data(:)','stable');
         keys(ismissing(keys)) = [];
         values = cell(1,length(keys));
-        if isColumnGroups, vals = g.columns; else, vals = g.rows; end
+        if isColumnGroups, vals = g.columns; else, vals = g.rows(:)'; end
         for ii = 1:length(keys)
             values{ii} = vals(ikeys==ii);
         end

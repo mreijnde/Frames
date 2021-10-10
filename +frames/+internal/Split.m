@@ -103,7 +103,11 @@ classdef Split < dynamicprops
             if obj.groups.constantGroups
                 indexLoop = ':';
             else
-                indexLoop = 1:size(dfdata,1);  % kk, 2
+                if obj.groups.isColumnGroups
+                    indexLoop = 1:size(dfdata,1);  % kk, 2
+                else
+                    indexLoop = 1:size(dfdata,2);  % kk, 2
+                end
             end
             firstIteration = true;
             for ii = 1:length(obj.groups.values)
