@@ -112,6 +112,9 @@ classdef Split < dynamicprops
             firstIteration = true;
             for ii = 1:length(obj.groups.values)
                 gVal = obj.groups.values{ii};
+                if obj.groups.isColumnGroups
+                    gVal = full(gVal);  % for performance reasons
+                end
                 if applyToFrame
                     if keyiscell, df_.description = obj.groups.keys{ii}; 
                     else, df_.description = obj.groups.keys(ii); end
