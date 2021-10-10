@@ -282,11 +282,8 @@ classdef Index
             obj.singleton_ = false;
         end
         function obj = vertcat(obj,varargin)
-            % concatenation
-            val = obj.value_;
-            for ii = 1:nargin-1
-                val = [val;varargin{ii}.value_]; %#ok<AGROW>
-            end
+            % concatenation            
+            val = [obj.value_; [varargin{:}.value_] ];
             obj.singleton_ = false;
             obj.value = val;  % check if properties are respected
         end
