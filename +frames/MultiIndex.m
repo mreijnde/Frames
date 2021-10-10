@@ -406,7 +406,7 @@ classdef MultiIndex < frames.Index
     end
     methods(Access=protected)
         
-        function obj = setvalue(obj, value)
+        function obj = setvalue(obj, value, userCall)
             % SETVALUE: store index values of every dimension as Index objects and validate row uniqueness
             %
             % input value: 
@@ -418,14 +418,14 @@ classdef MultiIndex < frames.Index
             %
             % each dimension should have the same number of elements, and combination of values has to be unique
             %
+            if nargin<3, userCall=true; end
             if isempty(value)
                 % in case no value, just add empty Index object
                 obj.value_=frames.Index();
                 return;
             end
             if all( arrayfun(@(x) isa(x,'frames.Index'), value))
-                % handle array of Index objects by first converting to cell array
-                % (TODO: find more elegant solution)
+                % handle array of Index objects by first converting to cell array                
                 value = num2cell(value);
             end
             assert( iscell(value), "Not a cell array.");
@@ -435,16 +435,17 @@ classdef MultiIndex < frames.Index
             indices = frames.Index();
             for i = 1:Ndims
                 val = value{i};
-                if length(val)==1 && isIndex(val)
+                if numel(val)==1 && isIndex(val)
                     % linear index should not be unique
-                    indices(i) = val.requireUnique(false);
+                    val.requireUnique=false;
+                    indices(i) = val;
                 else
                     % convert to linear index
                     indices(i) = frames.Index(val, Unique=false);
                 end
                 % get default names (TODO: think better about behavior)
                 if indices(i).name==""
-                    if length(obj.value_) >= i
+                    if numel(obj.value_) >= i && obj.value_(i).name~=""
                         % use name of existing dimension
                         indices(i).name = obj.value_(i).name;
                     else
@@ -455,8 +456,10 @@ classdef MultiIndex < frames.Index
             % assign new values
             obj.value_ = indices;
             % check dimension names and uniqueness of rows
-            obj.valueChecker();
-            obj.nameChecker();
+            if userCall
+               obj.valueChecker();
+               obj.nameChecker();
+            end
         end
         
         
@@ -580,8 +583,8 @@ classdef MultiIndex < frames.Index
         end
                
         
-        function obj = vertcat(obj,varargin)
-            % concatenate multiple MultiIndex objects with same dimensions
+        function obj = vertcat_(obj,varargin)
+            % concatenate multiple MultiIndex objects with same dimensions (limited checks)
             newvalue=obj.value_;
             % combine indices
             for i=1:length(varargin)
@@ -589,11 +592,17 @@ classdef MultiIndex < frames.Index
                 assert(isa(item,'frames.MultiIndex'), "error, can only concatenate MultiIndex objects");
                 assert(all(obj.name==item.name), "error, dimensions not equal");
                 for j=1:obj.Ndim
-                    newvalue(j) = newvalue(j).vertcat(item.value_(j));
+                    newvalue(j) = newvalue(j).vertcat_(item.value_(j));
                 end
             end
             % assign to MultiIndex
-            obj = obj.setvalue(num2cell(newvalue));
+            obj = obj.setvalue(num2cell(newvalue), false); %skip value checks / unique warning            
+        end
+        
+        function obj = vertcat(obj,varargin)
+            % concatenate multiple MultiIndex objects with same dimensions
+            obj = obj.vertcat_(varargin{:});
+            obj.setvalue(obj.value_); % check if properties are respected    
         end
         
         function pos = positionIn(obj,target,userCall)
@@ -603,29 +612,30 @@ classdef MultiIndex < frames.Index
             % todo: handle requireUnique/requireUniqueSorted (?)
         end
         
+
         
-        function obj = union(obj,index2)
-            % unify two indices           
-            obj.singleton_ = false;            
-            if obj.requireUnique_
-                if obj.requireUniqueSorted_
-                    obj.requireUniqueSorted = false;
-                    obj = unique([obj; index2], 'sorted');                   
-                    obj.requireUniqueSorted = true;
-                else
-                    obj.requireUnique = false;
-                    obj = unique([obj; index2], 'stable');
-                    obj.requireUnique = true;
-                end                
-            else
-                obj = [v1; v2];
-                %if ~isunique(v2) || any(ismember(v2,v1))
-                %    warning('frames:Index:notUnique','Index value is not unique.')
-                %end
-            end
-            
-            
-        end
+%         function obj = union(obj,index2)
+%             % unify two indices           
+%             obj.singleton_ = false;            
+%             if obj.requireUnique_
+%                 if obj.requireUniqueSorted_
+%                     obj.requireUniqueSorted = false;
+%                     obj = unique([obj; index2], 'sorted');                   
+%                     obj.requireUniqueSorted = true;
+%                 else
+%                     obj.requireUnique = false;
+%                     obj = unique([obj; index2], 'stable');
+%                     obj.requireUnique = true;
+%                 end                
+%             else
+%                 obj = [v1; v2];
+%                 %if ~isunique(v2) || any(ismember(v2,v1))
+%                 %    warning('frames:Index:notUnique','Index value is not unique.')
+%                 %end
+%             end
+%             
+%             
+%         end
         
         function bool = isunique(obj)
             if obj.requireUnique_
