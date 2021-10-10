@@ -62,7 +62,7 @@ classdef Groups
         end
         
         function obj = assignElements(obj, elementsToGroup)
-            %returns a Group wiht only the keys and values contained in the list elementsToGroup
+            %returns a Group with only the keys and values contained in the list elementsToGroup
             areValid = ismember(elementsToGroup,obj.getAllElements());  % check if all inputs are found somewhere in the groups
             if ~all(areValid)
                 error("[%s] are not valid.", elementsToGroup(~areValid));
