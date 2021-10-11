@@ -1,33 +1,20 @@
 classdef Split < dynamicprops
- % SPLIT split a Frame into column-based groups to apply a function separately
- % Use: split = frames.Split(df,splitter[,namesOfGroups])
- % The properties of split are the elements in namesOfGroups, or the 
- % fields of the splitter if namesOfGroups is not provided.
+ % SPLIT split a Frame into groups to apply a function separately group by group
+ % Use: dfsplit = df.split(frames.Groups).<apply,aggregate>(func[,args,flag])
  %
  % ----------------
  % Parameters:
- %     * df: (Frame)
- %     * splitter: (cell array,struct,frames.Group) 
- %          Contain the list of elements in each group. Can be of different
- %          types:
- %          - cell array: cell array of lists of elements in groups
- %              In this case, namesOfGroups is required
- %              e.g. splitter={list1,list2}; namesOfGroups=["name1","name2"]
- %          - struct: structure whose fields are group names and values are
- %              elements in each group. If namesOfGroups is not specified, 
- %              the split use all fields of the structure as namesOfGroups.
- %          - frames.Group: Group whose property names are group names and
- %              property values are elements in each group. If namesOfGroups
- %              is not specified, the split use all properties of the 
- %              Group as namesOfGroups.
- %          - frames.DataFrame: If groups change along the rows, one can
- %              use a DataFrame that specifies to which group each element
- %              belongs to. namesOfGroups is not used.
- %     * namesOfGroups: (string array) 
- %          group names into which we want to split the Frame
+ %     * df (Frame)
+ %     * groups (frames.Groups)
+ %          Object that contains keys and values describing
+ %          groups. Please refer to the documentation of
+ %          frames.Groups for more details.
  %
- % SPLIT method:
- %  apply   - apply a function to each sub-Frame, and returns a single Frame
+ % Methods:
+ %     * apply      
+ %           apply a function to each sub-Frame, and returns a single Frame. Maintains the structure of the original Frame.
+ %     * aggregate  
+ %           apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
  %
  % Copyright 2021 Benjamin Gaudin
  % Contact: frames.matlab@gmail.com
@@ -40,6 +27,7 @@ classdef Split < dynamicprops
     
     methods
         function obj = Split(df, groups)
+            % SPLIT Split(df,groups)
             obj.df = df;
             obj.groups = groups;
             if groups.constantGroups
@@ -60,11 +48,23 @@ classdef Split < dynamicprops
     
     methods
         function other = apply(obj,fun,varargin)
+            % APPLY apply a function to each sub-Frame, and returns a single Frame. Maintains the structure of the original Frame.
+            %  * fun: function to apply
+            %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
+            %       allows to use DataFrame methods, but may be slower than
+            %       applying a function directly to the data with 'applyToData'
+            % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,false,varargin{:});
             constructor = str2func(class(obj.df));
             other = constructor(out, obj.df.getRowsObj(), obj.df.getColumnsObj());
         end
         function other = aggregate(obj,fun,varargin)
+            % AGGREGATE apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
+            %  * fun: function to apply
+            %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
+            %       allows to use DataFrame methods, but may be slower than
+            %       applying a function directly to the data with 'applyToData'
+            % e.g. .aggregate(@(x) sum(x,2),'applyToData') vs .aggregate(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,true,varargin{:});
             constructor = str2func(class(obj.df));
             if obj.groups.isColumnGroups
@@ -73,12 +73,10 @@ classdef Split < dynamicprops
                 other = frames.DataFrame(out, obj.groups.keys, obj.df.getColumnsObj());  % not constructor as groups are an ordinary Index
             end
         end
+    end
+    methods(Access=protected)
         function out = computeFunction(obj,fun,reduceDim,varargin)
-            % APPLY apply a function to each sub-Frame, and returns a single Frame
-            % flag, enum('applyToFrame','applyToData'): 'applyToFrame' (default)
-            % allows to use DataFrame methods, but may be slower than
-            % applying a function directly to the data with 'applyToData'
-            % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
+            
             isflag = find(strcmp(varargin,'applyToFrame'),1);
             applyToFrameFlag = ~isempty(isflag);
             varargin(isflag) = [];

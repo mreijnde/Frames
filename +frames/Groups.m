@@ -1,20 +1,36 @@
 classdef Groups
- % GROUPS split a list by assigning its elements to predefined groups.
- % Use: groups = frames.Groups(groups[,listToSplit])
+ % GROUPS provide a uniform object for key-value groups.
+ % Use: groups = frames.Groups(groups[,dimensionFlag])
  %
- % Use a Groups in df.split(groups) to split df into groups, column-wise.
+ % Use a Groups in df.split(groups) to split a DataFrame into groups, to then apply
+ % a function group by group.
  %
  % ----------------
- % Parameters:
- %     * listOfElements: (string)
- %          List of elements we want to split into groups
- %     * groupStructure: (structure) 
- %          Structure a the groups. Fields are group names, values are the
- %          elements belonging to each group: s.groupName = listOfelementsInGroup.
- %          One can derive a class from Groups to directly specify the
- %          groupStructure by overriding the method 'defineGroups'. In such
- %          a case, 'groupStructure' is not required.
+ % Properties:
+ %     * keys: List of the names of the groups
+ %     * values (cell): Elements in each group, with the same order as
+ %     their corresponding key.
+ %     * isColumnGroups (logical): whether groups represent columns or rows
+ %     * constantGroups (logical): whether groups are constant
  %
+ % Parameters:
+ %     * groups: enum(struct,containers.Map,cell,frames.DataFrame)
+ %          - struct: keys and values are resp. fields and values of the struct
+ %          - containers.Map: keys and values are resp. keys and values of the containers.Map
+ %          - cell: keys are generic ["Group1","Group2",...] and values are the elements in the cell
+ %          - frames.DataFrame (series): keys are unique data values, values are lists of index elements related to the same key
+ %          - frames.DataFrame:  keys are unique data values, values are sparse logical matrices of the position of the related key
+ %
+ %     * dimensionFlag: enum("columnGroups","rowGroups") specify whether groups represent columns or rows
+ %
+ % Methods:
+ %     * select
+ %           select a subset of Groups from keys
+ %     * get 
+ %           get the values associated with the key
+ %     * assignElements 
+ %           return a Groups with only values contained in the given list and their related keys
+ 
  % Copyright 2021 Benjamin Gaudin
  % Contact: frames.matlab@gmail.com
  %
@@ -29,7 +45,7 @@ classdef Groups
 
     methods
         function obj = Groups(groups, dimensionFlag)
-            % Groups(groups,dimensionFlag)
+            % GROUPS Groups(groups[,dimensionFlag])
             if nargin == 2
                 assert(ismember(dimensionFlag, ["columnGroups","rowGroups"]), 'frames:Groups:dimensionFlag', ...
                     'The dimension flag must be in ["columnGroups","rowGroups"]')
@@ -62,7 +78,7 @@ classdef Groups
         end
         
         function obj = assignElements(obj, elementsToGroup)
-            %returns a Group with only the keys and values contained in the list elementsToGroup
+            % return a Groups with only values contained in the list elementsToGroup and their related keys
             areValid = ismember(elementsToGroup,obj.getAllElements());  % check if all inputs are found somewhere in the groups
             if ~all(areValid)
                 error("[%s] are not valid.", elementsToGroup(~areValid));

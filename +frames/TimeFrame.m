@@ -77,8 +77,8 @@ classdef TimeFrame < frames.DataFrame
 %     values in the expansion
 %
 %   - Split a frame into groups based on its columns, and apply a function:
-%     tf.split(groups).apply(@(x) x.sum(2))  sums the data on the dimension
-%     2, group by group, so the result is a Txlength(group) frame
+%     tf.split(groups).aggregate(@(x) x.sum(2))  sums the data on the dimension
+%     2, group by group, so the result is a T x numberOfGroups frame
 %
 %   - Rolling window methods:
 %     tf.rolling(30).mean() computes the rolling mean with a 30 step
