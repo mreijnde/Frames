@@ -238,12 +238,12 @@ frames.Index([1,2])
 % These properties impact the operations of selection, modification, and alignment/concatenation.
 
 % Selection
-df.getRows_()  % gets the underlying Index object
+df.getRowsObj()  % gets the underlying Index object
 df([2 1])
 %%
 dfSorted = df.setRowsType("sorted");
 % or df.rows = frames.Index([1 2],UniqueSorted=true)
-dfSorted.getRows_()
+dfSorted.getRowsObj()
 try
     dfSorted([2 1])
 catch me
@@ -344,35 +344,31 @@ priceSmoothers.plot(Log=true)
 tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
 % One can apply a function to groups of columns in a Frame using the method  
-% _.split(groups).apply(@<function>)_.
+% _.split(groups).<apply,aggregate>(@<function>)_.
 %%
 % 
-%  The groups of columns can be expressed in different ways.
-%   * (cellArrayOfGroupLists,groupNames)
-%   * structure: fields are group names and values are elements in each group
-%   * frames.Group: Group whose property  are group names and property
-%       values are elements in each group. See 'doc frames.Group' for more
-%       details.
+%  The groups are frames.Groups, an object that provide a uniform object for key-value groups. They can be expressed in different ways.
+%     - struct: keys and values are resp. fields and values of the struct
+%     - containers.Map: keys and values are resp. keys and values of the containers.Map
+%     - cell: keys are generic ["Group1","Group2",...] and values are the elements in the cell
+%     - frames.DataFrame (series): keys are unique data values, values are lists of index elements related to the same key
+%     - frames.DataFrame:  keys are unique data values, values are sparse logical matrices of the position of the related key
+%   See 'doc frames.Group' for more details.
 %
 
 df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],["a" "b" "c"])
-%% 
-% 
-
+%%
 % simple example with cell
-% apply a sum horizontally in each group
-x1 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.sum(2))
-%% 
-% 
-
+% apply a sum horizontally in each group and aggregate data by group
+g1 = frames.Groups({["a" "c"],"b"});
+x1 = df.split(g1).aggregate(@(x) sum(x,2))
+%%
 % apply function using group names 
 % multiply each group by 10 and 1 respectively
-multiplier.group1 = 10;
-multiplier.group2 = 1;
-x2 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.*multiplier.(x.name))
-%% 
-% 
-
+multiplier.Group1 = 10;
+multiplier.Group2 = 1;
+x2 = df.split(g1).apply(@(x) x.*multiplier.(x.description),'applyToFrame')
+%%
 % split with a structure
 % cap each group at 1.5 and 2.5 respectively
 s = struct();
@@ -380,14 +376,12 @@ s.group1 = ["a" "c"];
 s.group2 = "b";
 ceiler.group1 = 1.5;
 ceiler.group2 = 2.5;
-x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
-%% 
-% 
-
+g3 = frames.Groups(s);
+x3 = df.split(g3).apply(@(x) x.clip(ceiler.(x.description)),'applyToFrame')
+%%
 % split with a Group 
 % take the maximum of each groups at each row
-g = frames.Groups(df.columns,s);
-x4 = df.split(g).apply(@(x) x.max(2))
+x4 = df.split(g3).aggregate(@(x) x.max(2),'applyToFrame')
 %% Other Methods
 % We list here all the methods available in the DataFrame. We provided a demo 
 % above for some of them. 
