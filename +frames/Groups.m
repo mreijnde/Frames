@@ -125,8 +125,8 @@ switch class(g)
         keys = "Group" + (1:length(g));
         values = g;
     case 'containers.Map'
-        keys = keys(g); %#ok<NODEF>
-        values = values(g); %#ok<NODEF>
+        keys = g.keys;
+        values = g.values;
     case 'frames.DataFrame'
         [keys,~,ikeys] = unique(g.data(:)','stable');
         keys(ismissing(keys)) = [];
