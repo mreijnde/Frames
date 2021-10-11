@@ -135,7 +135,7 @@ switch class(value)
         value = datenum(value);
     case {'string','cell'}
         value = datenum(datetime(value,Format=format));
-    case {'double','duration'}
+    case {'double','duration','logical'}
         return
     otherwise
         error('type of time index not recognized')
