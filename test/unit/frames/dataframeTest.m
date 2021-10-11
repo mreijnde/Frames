@@ -421,6 +421,12 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyEqual(df.row(1),frames.DataFrame([1 2 3],NaN,["a","b","a"],RowSeries=true))
             warning('on','frames:Index:notUnique')
             
+            % tf test
+            tf = frames.TimeFrame([1:5;11:15]',50001:50005);
+            tfexp = frames.TimeFrame((12:2:15)',50002:2:50005,"Var2");
+            t.verifyEqual(tf.iloc([false true false true], [false true]),tfexp)
+            t.verifyEqual(tf([false true false true], [false true]),tfexp)
+            
             % test empty selection
             df = frames.DataFrame([1 2;3 4],[1,2],["a","b"]);
             t.verifyEqual(df{:,double.empty(1,0)},frames.DataFrame([],[1,2]))
