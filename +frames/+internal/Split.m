@@ -102,12 +102,6 @@ classdef Split < dynamicprops
             
             if obj.groups.constantGroups
                 indexLoop = ':';
-            else
-                if obj.groups.isColumnGroups
-                    indexLoop = 1:size(dfdata,1);
-                else
-                    indexLoop = 1:size(dfdata,2);
-                end
             end
             firstIteration = true;
             for ii = 1:length(obj.groups.values)
@@ -115,9 +109,9 @@ classdef Split < dynamicprops
                 if ~obj.groups.constantGroups
                     gVal = full(gVal);  % for performance reasons, better to work with non sparse matrices
                     if obj.groups.isColumnGroups
-                        indexLoop = local_idxSameData(gVal);  % faster when groups are constant by blocks
+                        [uniqueGroups,sameVals,indexLoop] = local_idxSameData(gVal);
                     else
-                        indexLoop = local_idxSameData(gVal');
+                        [uniqueGroups,sameVals,indexLoop] = local_idxSameData(gVal');
                     end
                 end
                 if applyToFrame
@@ -125,19 +119,22 @@ classdef Split < dynamicprops
                     else, df_.description = obj.groups.keys(ii); end
                 end
                 for idx = indexLoop
-                    if obj.groups.isColumnGroups, rowID=idx(1):idx(end); else, colID=idx(1):idx(end); end
                     if obj.groups.constantGroups
                         if obj.groups.isColumnGroups
+                            rowID = idx;
                             colID = obj.df.getColumnsObj().positionOf(gVal);
                         else
+                            colID = idx;
                             rowID = obj.df.getRowsObj().positionOf(gVal);
                         end
                     else
                         if obj.groups.isColumnGroups
-                            colID = gVal(idx(1),:);
+                            rowID = sameVals==idx;
+                            colID = uniqueGroups(idx,:);
                             if ~any(colID), continue; end
                         else
-                            rowID = gVal(:,idx(1));
+                            colID = sameVals==idx;
+                            rowID = uniqueGroups(idx,:);
                             if ~any(rowID), continue; end
                         end
                     end
@@ -183,22 +180,12 @@ classdef Split < dynamicprops
 end
 
 
-function idxOut = local_idxSameData(data)
-idxStart = local_linesOfChange(data);
-idxEnd = [idxStart(2:end)-1, size(data,1)];
-idxOut = [idxStart; idxEnd];
+function [uniqueGroups,sameVals,idxOut] = local_idxSameData(data)
+[uniqueGroups,~,sameVals] = unique(data,'rows','stable');
+sameVals = sameVals(:)';
+idxOut = unique(sameVals,'stable');
 end
 
-function idx = local_linesOfChange(data)
-idx_ = 1;
-idx = idx_;
-for ii = 2:size(data,1)
-    if ~isequaln(data(idx_,:), data(ii,:))
-        idx_ = ii;
-        idx = [idx, idx_]; %#ok<AGROW>
-    end
-end
-end
 
 function data = local_getData(data)
 if frames.internal.isFrame(data), data = data.data; end
