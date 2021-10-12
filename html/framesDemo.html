@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-10-03"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
+      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-10-11"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -345,7 +345,7 @@ ans =
     requireUniqueSorted: 0
 
 </pre><div><ul><li>The <i>singleton</i> property is related to the series property of the DataFrame. If the Frame is set to be a <i>rowseries</i>, the Index object underlying the <i>rows</i> will be a <i>singleton</i>. If the Frame is set to be a <i>colseries</i>, then it will be that underlying the <i>columns</i>.</li><li>If <i>requireUnique</i> is set to <i>true</i>, then <i>value</i> is required to have unique elements (otherwise it throws an error).</li><li>If <i>requireUniqueSorted</i> is set to <i>true</i>, then <i>value</i> is required to have unique and sorted elements.</li></ul></div><p>These properties impact the operations of selection, modification, and alignment/concatenation.</p><pre class="codeinput"><span class="comment">% Selection</span>
-df.getRows_()  <span class="comment">% gets the underlying Index object</span>
+df.getRowsObj()  <span class="comment">% gets the underlying Index object</span>
 df([2 1])
 </pre><pre class="codeoutput">
 ans = 
@@ -370,7 +370,7 @@ ans =
 frames.DataFrame
 </pre><pre class="codeinput">dfSorted = df.setRowsType(<span class="string">"sorted"</span>);
 <span class="comment">% or df.rows = frames.Index([1 2],UniqueSorted=true)</span>
-dfSorted.getRows_()
+dfSorted.getRowsObj()
 <span class="keyword">try</span>
     dfSorted([2 1])
 <span class="keyword">catch</span> me
@@ -487,12 +487,12 @@ correlation =
 
 </pre><pre class="codeinput">tf.cumsum().plot()  <span class="comment">% apply a cumulative sum and then plot the result</span>
 </pre><img vspace="5" hspace="5" src="framesDemo_01.png" alt=""> <pre class="codeinput">tf.corr().heatmap(CellLabelFormat=<span class="string">'%.2f'</span>)  <span class="comment">% compute the correlation matrix and plot it as a heatmap</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <h2 id="44">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
+</pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <h2 id="44">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
  * .rolling(window[,windowNaN]).&lt;method&gt;
  * .ewm(&lt;DecayType&gt;=value).&lt;method&gt;</pre><p>Please refer to the documentation for details on arguments and methods.</p><pre class="codeinput">doc <span class="string">frames.DataFrame.rolling</span>
 <span class="comment">% or</span>
 doc <span class="string">frames.internal.Rolling</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <pre class="codeinput">doc <span class="string">frames.DataFrame.ewm</span>
+</pre><pre class="codeinput">doc <span class="string">frames.DataFrame.ewm</span>
 <span class="comment">% or</span>
 doc <span class="string">frames.internal.ExponentiallyWeightedMoving</span>
 </pre><p>Below, we give a few examples on how these methods can be used, using our previous TimeFrame.</p><pre class="codeinput">price = tf.compoundChange(<span class="string">'log'</span>);  <span class="comment">% assume tf contains log returns and compound them</span>
@@ -503,13 +503,14 @@ priceSmoothers.columns = [<span class="string">"original"</span>, <span class="s
 priceSmoothers.name = <span class="string">"smoothers"</span>;  <span class="comment">% assign the name (it appears as the plot title)</span>
 priceSmoothers.plot(Log=true)
 </pre><pre class="codeoutput">Warning: Index value is not unique. 
-</pre><img vspace="5" hspace="5" src="framesDemo_05.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_06.png" alt=""> <h2 id="50">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).apply(@&lt;function&gt;)</i>.</p><pre>The groups of columns can be expressed in different ways.
- * (cellArrayOfGroupLists,groupNames)
- * structure: fields are group names and values are elements in each group
- * frames.Group: Group whose property  are group names and property
-     values are elements in each group. See 'doc frames.Group' for more
-     details.</pre><pre class="codeinput">df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],[<span class="string">"a"</span> <span class="string">"b"</span> <span class="string">"c"</span>])
+</pre><img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
+</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <h2 id="50">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).&lt;apply,aggregate&gt;(@&lt;function&gt;)</i>.</p><pre>The groups are frames.Groups, an object that provide a uniform object for key-value groups. They can be expressed in different ways.
+   - struct: keys and values are resp. fields and values of the struct
+   - containers.Map: keys and values are resp. keys and values of the containers.Map
+   - cell: keys are generic ["Group1","Group2",...] and values are the elements in the cell
+   - frames.DataFrame (series): keys are unique data values, values are lists of index elements related to the same key
+   - frames.DataFrame:  keys are unique data values, values are sparse logical matrices of the position of the related key
+ See 'doc frames.Group' for more details.</pre><pre class="codeinput">df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],[<span class="string">"a"</span> <span class="string">"b"</span> <span class="string">"c"</span>])
 </pre><pre class="codeoutput">
 df = 
 
@@ -521,13 +522,12 @@ df =
     3    3    3    1
 
 frames.DataFrame
-</pre><pre class="codeinput"><span class="comment">% simple example with cell</span>
-<span class="comment">% apply a sum horizontally in each group</span>
-x1 = df.split({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>},[<span class="string">"group1"</span>,<span class="string">"group2"</span>]).apply(@(x) x.sum(2))
+</pre><p>simple example with cell apply a sum horizontally in each group and aggregate data by group</p><pre class="codeinput">g1 = frames.Groups({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>});
+x1 = df.split(g1).aggregate(@(x) sum(x,2))
 </pre><pre class="codeoutput">
 x1 = 
 
-         group1    group2
+         Group1    Group2
          ______    ______
 
     1      6         2   
@@ -535,45 +535,39 @@ x1 =
     3      4         3   
 
 frames.DataFrame
-</pre><pre class="codeinput"><span class="comment">% apply function using group names</span>
-<span class="comment">% multiply each group by 10 and 1 respectively</span>
-multiplier.group1 = 10;
-multiplier.group2 = 1;
-x2 = df.split({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>},[<span class="string">"group1"</span>,<span class="string">"group2"</span>]).apply(@(x) x.*multiplier.(x.name))
+</pre><p>apply function using group names multiply each group by 10 and 1 respectively</p><pre class="codeinput">multiplier.Group1 = 10;
+multiplier.Group2 = 1;
+x2 = df.split(g1).apply(@(x) x.*multiplier.(x.description),<span class="string">'applyToFrame'</span>)
 </pre><pre class="codeoutput">
 x2 = 
 
-         a     c     b
-         __    __    _
+         a     b    c 
+         __    _    __
 
-    1    10    50    2
-    2    20     0    5
-    3    30    10    3
+    1    10    2    50
+    2    20    5     0
+    3    30    3    10
 
 frames.DataFrame
-</pre><pre class="codeinput"><span class="comment">% split with a structure</span>
-<span class="comment">% cap each group at 1.5 and 2.5 respectively</span>
-s = struct();
+</pre><p>split with a structure cap each group at 1.5 and 2.5 respectively</p><pre class="codeinput">s = struct();
 s.group1 = [<span class="string">"a"</span> <span class="string">"c"</span>];
 s.group2 = <span class="string">"b"</span>;
 ceiler.group1 = 1.5;
 ceiler.group2 = 2.5;
-x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
+g3 = frames.Groups(s);
+x3 = df.split(g3).apply(@(x) x.clip(ceiler.(x.description)),<span class="string">'applyToFrame'</span>)
 </pre><pre class="codeoutput">
 x3 = 
 
-          a      c      b 
+          a      b      c 
          ___    ___    ___
 
-    1      1    1.5      2
-    2    1.5      0    2.5
-    3    1.5      1    2.5
+    1      1      2    1.5
+    2    1.5    2.5      0
+    3    1.5    2.5      1
 
 frames.DataFrame
-</pre><pre class="codeinput"><span class="comment">% split with a Group</span>
-<span class="comment">% take the maximum of each groups at each row</span>
-g = frames.Groups(df.columns,s);
-x4 = df.split(g).apply(@(x) x.max(2))
+</pre><p>split with a Group take the maximum of each groups at each row</p><pre class="codeinput">x4 = df.split(g3).aggregate(@(x) x.max(2),<span class="string">'applyToFrame'</span>)
 </pre><pre class="codeoutput">
 x4 = 
 
@@ -589,7 +583,7 @@ frames.DataFrame
 </pre><pre class="codeoutput">
 Methods for class frames.DataFrame:
 
-DataFrame            getRows_             resample             
+DataFrame            getRowsObj           resample             
 abs                  groupcounts          resetUserProperties  
 all                  groupfilter          rolling              
 any                  groupsummary         row                  
@@ -620,7 +614,7 @@ findgroups           outerjoin            union
 firstCommonRow       plot                 var                  
 firstValidRow        relChg               vertcat              
 floor                replace              width                
-getColumns_          replaceStartBy       
+getColumnsObj        replaceStartBy       
 
 Static methods:
 
@@ -869,12 +863,12 @@ frames.Index([1,2])
 % These properties impact the operations of selection, modification, and alignment/concatenation.
 
 % Selection
-df.getRows_()  % gets the underlying Index object
+df.getRowsObj()  % gets the underlying Index object
 df([2 1])
 %%
 dfSorted = df.setRowsType("sorted");
 % or df.rows = frames.Index([1 2],UniqueSorted=true)
-dfSorted.getRows_()
+dfSorted.getRowsObj()
 try
     dfSorted([2 1])
 catch me
@@ -975,35 +969,31 @@ priceSmoothers.plot(Log=true)
 tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
 % One can apply a function to groups of columns in a Frame using the method  
-% _.split(groups).apply(@<function>)_.
+% _.split(groups).<apply,aggregate>(@<function>)_.
 %%
 % 
-%  The groups of columns can be expressed in different ways.
-%   * (cellArrayOfGroupLists,groupNames)
-%   * structure: fields are group names and values are elements in each group
-%   * frames.Group: Group whose property  are group names and property
-%       values are elements in each group. See 'doc frames.Group' for more
-%       details.
+%  The groups are frames.Groups, an object that provide a uniform object for key-value groups. They can be expressed in different ways.
+%     - struct: keys and values are resp. fields and values of the struct
+%     - containers.Map: keys and values are resp. keys and values of the containers.Map
+%     - cell: keys are generic ["Group1","Group2",...] and values are the elements in the cell
+%     - frames.DataFrame (series): keys are unique data values, values are lists of index elements related to the same key
+%     - frames.DataFrame:  keys are unique data values, values are sparse logical matrices of the position of the related key
+%   See 'doc frames.Group' for more details.
 %
 
 df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],["a" "b" "c"])
-%% 
-% 
-
+%%
 % simple example with cell
-% apply a sum horizontally in each group
-x1 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.sum(2))
-%% 
-% 
-
+% apply a sum horizontally in each group and aggregate data by group
+g1 = frames.Groups({["a" "c"],"b"});
+x1 = df.split(g1).aggregate(@(x) sum(x,2))
+%%
 % apply function using group names 
 % multiply each group by 10 and 1 respectively
-multiplier.group1 = 10;
-multiplier.group2 = 1;
-x2 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.*multiplier.(x.name))
-%% 
-% 
-
+multiplier.Group1 = 10;
+multiplier.Group2 = 1;
+x2 = df.split(g1).apply(@(x) x.*multiplier.(x.description),'applyToFrame')
+%%
 % split with a structure
 % cap each group at 1.5 and 2.5 respectively
 s = struct();
@@ -1011,14 +1001,12 @@ s.group1 = ["a" "c"];
 s.group2 = "b";
 ceiler.group1 = 1.5;
 ceiler.group2 = 2.5;
-x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
-%% 
-% 
-
+g3 = frames.Groups(s);
+x3 = df.split(g3).apply(@(x) x.clip(ceiler.(x.description)),'applyToFrame')
+%%
 % split with a Group 
 % take the maximum of each groups at each row
-g = frames.Groups(df.columns,s);
-x4 = df.split(g).apply(@(x) x.max(2))
+x4 = df.split(g3).aggregate(@(x) x.max(2),'applyToFrame')
 %% Other Methods
 % We list here all the methods available in the DataFrame. We provided a demo 
 % above for some of them. 
