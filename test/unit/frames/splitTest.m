@@ -154,6 +154,9 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
                 'frames:SplitNonexhaustive')
             t.verifyError(@() df.split(frames.Groups({[1 2 3 5], [4 5]})), ...
                 'frames:SplitOverlap')
+
+            t.verifyEqual(df.split(frames.Groups({[1 2 3 5], [4 5]}),'allowOverlaps').aggregate(@sum,2).data,[11,9])
+            t.verifyEqual(df.split(frames.Groups({[1 2 3 5]}),'isNonExhaustive').aggregate(@sum,2).data,11)
         end
     end
 end
