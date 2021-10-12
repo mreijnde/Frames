@@ -125,6 +125,36 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
                 frames.DataFrame([21;31;28;31;30;31;29],...
                 {'December','January','February','March','April','May','June'}))
         end
+        
+        function unordedgroupsTest(t)
+            groups = frames.Groups(frames.DataFrame([5 5;5 5;NaN 1; 1 1;NaN NaN; 5 1]));
+            data = frames.DataFrame([1 2;3 4;5 6;7 8;9 10;11 12]);
+            sol = data.split(groups).apply(@(x) sum(x,2));
+            expected = [3 3;7 7;NaN 6;15 15;NaN NaN; 11 12];
+            expected = frames.DataFrame(expected);
+            
+            t.verifyEqual(sol,expected)
+            
+            sol = data.split(groups).aggregate(@(x) sum(x,2));
+            expected = [NaN 3;NaN 7;6 NaN;15 NaN;NaN NaN; 12 11];
+            expected = frames.DataFrame(expected,[],[1 5]);
+            
+            t.verifyEqual(sol,expected)
+            
+            groups = frames.Groups(frames.DataFrame([5 5;5 5;NaN 1; 1 1;NaN NaN; 5 1]),'rowGroups');
+            sol = data.split(groups).aggregate(@sum);
+            expected = frames.DataFrame([7 26;15 6],[1 5]);
+            
+            t.verifyEqual(sol,expected)
+        end
+        
+        function spanErrorTest(t)
+            df = frames.DataFrame([1 2 3 4 5],[],[1 2 3 4 5]);
+            t.verifyError(@() df.split(frames.Groups({[1 2 3 5]})), ...
+                'frames:SplitNonexhaustive')
+            t.verifyError(@() df.split(frames.Groups({[1 2 3 5], [4 5]})), ...
+                'frames:SplitOverlap')
+        end
     end
 end
 

@@ -796,7 +796,7 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             s.d = [4 3]; s.e = 1;
             x3 = df.split(frames.Groups(s)).apply(@(x) x.clip(ceiler.(x.description){:}), 'applyToFrame');
             % split with a Group
-            g2 = frames.Groups(s).assignElements([1 4 3]);
+            g2 = frames.Groups(s).shrink([1 4 3]);
             x4 = df.split(g2).apply(@(x) x.clip(ceiler.(x.description){:}), 'applyToFrame');
             expected = frames.DataFrame([2.5 2.5 3;2 2.6 2.6;4.5 2.5 2.5]',[6,2,1],[4 1 3]);
             t.verifyEqual(x2,expected)

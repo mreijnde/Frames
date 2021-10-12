@@ -15,6 +15,7 @@ classdef Groups
  %
  % Parameters:
  %     * groups: enum(struct,containers.Map,cell,frames.DataFrame)
+ %          Used to assign Groups keys and values properties.
  %          - struct: keys and values are resp. fields and values of the struct
  %          - containers.Map: keys and values are resp. keys and values of the containers.Map
  %          - cell: keys are generic ["Group1","Group2",...] and values are the elements in the cell
@@ -28,8 +29,8 @@ classdef Groups
  %           select a subset of Groups from keys
  %     * get 
  %           get the values associated with the key
- %     * assignElements 
- %           return a Groups with only values contained in the given list and their related keys
+ %     * shrink 
+            % return a shrunk Groups with only a subset of values and their associated keys
  
  % Copyright 2021 Benjamin Gaudin
  % Contact: frames.matlab@gmail.com
@@ -77,15 +78,16 @@ classdef Groups
             values = obj.values(find(string(key)==string(obj.keys),1));
         end
         
-        function obj = assignElements(obj, elementsToGroup)
-            % return a Groups with only values contained in the list elementsToGroup and their related keys
-            areValid = ismember(elementsToGroup,obj.getAllElements());  % check if all inputs are found somewhere in the groups
+        function obj = shrink(obj, valueSubset)
+            % return a shrunk Groups with only the subset of values contained in the list 'valueSubset' and their associated keys
+            areValid = ismember(valueSubset,obj.getAllElements());  % check if all inputs are found somewhere in the groups
             if ~all(areValid)
-                error("[%s] are not valid.", elementsToGroup(~areValid));
+                error("[%s] are not valid.", valueSubset(~areValid));
             end
+            valueSubset = valueSubset(:)';
             toKeep = [];
             for ii = 1:length(obj.keys)
-                elementsToKeep = local_foundIn(elementsToGroup, obj.values{ii});
+                elementsToKeep = intersect(valueSubset, obj.values{ii}, 'stable');
                 if ~isempty(elementsToKeep)
                     toKeep = [toKeep, ii]; %#ok<AGROW>
                     obj.values{ii} = elementsToKeep;
@@ -126,31 +128,32 @@ classdef Groups
 
 end
 
-function li = local_foundIn(listOfElements,group)
-listOfElements = listOfElements(:)';
-belongsTo = ismember(listOfElements,group);
-li = listOfElements(belongsTo);
-end
 
 function [keys, values] = local_groupToKeyVal(g,isColumnGroups)
-switch class(g)
-    case 'struct'
-        keys = fieldnames(g)';
-        values = struct2cell(g)';
-    case 'cell'
-        keys = "Group" + (1:length(g));
-        values = g;
-    case 'containers.Map'
-        keys = g.keys;
-        values = g.values;
-    case 'frames.DataFrame'
-        [keys,~,ikeys] = unique(g.data(:)','stable');
-        keys(ismissing(keys)) = [];
-        values = cell(1,length(keys));
-        if isColumnGroups, vals = g.columns; else, vals = g.rows(:)'; end
-        for ii = 1:length(keys)
-            values{ii} = vals(ikeys==ii);
-        end
+if isFrame(g)
+    data = g.data(:)';
+    missingData = ismissing(data);
+    [keys,~,ikeys] = unique(data(~missingData),'stable');
+    values = cell(1,length(keys));
+    if isColumnGroups, vals = g.columns; else, vals = g.rows(:)'; end
+    vals = vals(~missingData);
+    for ii = 1:length(keys)
+        values{ii} = vals(ikeys==ii);
+    end
+else
+    switch class(g)
+        case 'struct'
+            keys = fieldnames(g)';
+            values = struct2cell(g)';
+        case 'cell'
+            keys = "Group" + (1:length(g));
+            values = g;
+        case 'containers.Map'
+            keys = g.keys;
+            values = g.values;  
+        otherwise
+            error('frames:Groups:setKeyVal', 'format must be struct, cell, containers.Map, or DataFrame')
+    end 
 end
 end
 

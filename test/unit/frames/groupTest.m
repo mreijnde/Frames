@@ -10,9 +10,9 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             
             s.key1 = [6 3 5];
             s.another = [2 4];
-            g2 = frames.Groups({[6 3 5],[2 4]}).assignElements([2 5 3]);
-            g3 = frames.Groups(s).assignElements([2 5 3]);
-            g3b = frames.Groups(containers.Map({'key2','another'},{[6 3 5],[2 4]})).assignElements([2 5 3]);
+            g2 = frames.Groups({[6 3 5],[2 4]}).shrink([2 5 3]);
+            g3 = frames.Groups(s).shrink([2 5 3]);
+            g3b = frames.Groups(containers.Map({'key2','another'},{[6 3 5],[2 4]})).shrink([2 5 3]);
             t.verifyEqual(g2.keys,["Group1","Group2"])
             t.verifyEqual(g2.values,{[5 3],2})
             t.verifyEqual(g3.keys,{'key1' 'another'})
@@ -22,8 +22,8 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             
             rowseries = frames.DataFrame(["grp2" "grp1" "grp2" "grp2"], RowSeries=true);
             g4 = frames.Groups(rowseries);
-            g5 = g4.assignElements(["Var4" "Var2" "Var3"]);
-            g6 = g4.assignElements(["Var4" "Var3"]);
+            g5 = g4.shrink(["Var4" "Var2" "Var3"]);
+            g6 = g4.shrink(["Var4" "Var3"]);
             t.verifyEqual(g4.keys,["grp2","grp1"])
             t.verifyEqual(g4.values,{["Var1" "Var3" "Var4"],"Var2"})
             t.verifyEqual(g5.keys,["grp2","grp1"])
@@ -33,7 +33,7 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             
             rowseries.data = cellstr(rowseries.data);
             rowseries.columns = cellstr(rowseries.columns);
-            g7 = frames.Groups(rowseries).assignElements({'Var4' 'Var2' 'Var3'});
+            g7 = frames.Groups(rowseries).shrink({'Var4' 'Var2' 'Var3'});
             t.verifyEqual(g7.keys,{'grp2' 'grp1'})
             t.verifyEqual(g7.values,{{'Var4' 'Var3'},{'Var2'}})
             
@@ -72,8 +72,8 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             
             rowseries = frames.DataFrame(["grp2" "grp1" "grp2" "grp2"]', ColSeries=true);
             g4 = frames.Groups(rowseries,'rowGroups');
-            g5 = g4.assignElements([4 2 3]);
-            g6 = g4.assignElements([4 3]');
+            g5 = g4.shrink([4 2 3]);
+            g6 = g4.shrink([4 3]');
             t.verifyEqual(g4.keys,["grp2","grp1"])
             t.verifyEqual(g4.values,{[1 3 4],2})
             t.verifyEqual(g5.keys,["grp2","grp1"])

@@ -26,18 +26,23 @@ classdef Split < dynamicprops
     end
     
     methods
-        function obj = Split(df, groups)
+        function obj = Split(df, groups, varargin)
             % SPLIT Split(df,groups)
+            assert(isa(groups,'frames.Groups'),'group must be a frames.Group')
             obj.df = df;
             obj.groups = groups;
             if groups.constantGroups
+                isflag = find(strcmp(varargin,'allowOverlaps'),1);
+                allowOverlaps = ~isempty(isflag);
+                isflag = find(strcmp(varargin,'isNonExhaustive'),1);
+                isNonExhaustive = ~isempty(isflag);
                 allElements = [groups.values{:}];
-                if ~frames.internal.isunique(allElements)
-                    warning('frames:SplitOverlap','There are overlaps in Split')
+                if ~allowOverlaps && ~frames.internal.isunique(allElements)
+                    error('frames:SplitOverlap','There are overlaps in Split')
                 end
                 if groups.isColumnGroups, toSplit=df.columns; else, toSplit=df.rows; end
-                if any(~ismember(toSplit,allElements))
-                    warning('frames:SplitNonexhaustive','Split is not exhaustive')
+                if ~isNonExhaustive && any(~ismember(toSplit,allElements))
+                    error('frames:SplitNonexhaustive','Split is not exhaustive')
                 end
             else
                 assert(isequaln(groups.frame.rows,df.getRowsObj())) % ToDo message
@@ -49,7 +54,7 @@ classdef Split < dynamicprops
     methods
         function other = apply(obj,fun,varargin)
             % APPLY apply a function to each sub-Frame, and returns a single Frame. Maintains the structure of the original Frame.
-            %  * fun: function to apply
+            %  * fun: function to apply, must be applicable to a matrix
             %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
             %       allows to use DataFrame methods, but may be slower than
             %       applying a function directly to the data with 'applyToData'
@@ -60,7 +65,7 @@ classdef Split < dynamicprops
         end
         function other = aggregate(obj,fun,varargin)
             % AGGREGATE apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
-            %  * fun: function to apply
+            %  * fun: function to apply, must be applicable to a matrix
             %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
             %       allows to use DataFrame methods, but may be slower than
             %       applying a function directly to the data with 'applyToData'

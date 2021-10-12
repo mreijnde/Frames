@@ -798,7 +798,7 @@ classdef DataFrame
             if nargout == 1, varargout{1} = p; end
         end
         
-        function s = split(obj,group)
+        function s = split(obj,group,varargin)
             % SPLIT split a Frame into groups to apply a function separately group by group
             % Use: dfsplit = df.split(frames.Groups).<apply,aggregate>(func[,args,flag])
             %
@@ -808,6 +808,11 @@ classdef DataFrame
             %          Object that contains keys and values describing
             %          groups. Please refer to the documentation of
             %          frames.Groups for more details.
+            %     * flags: 'allowOverlaps', 'isNonExhaustive'
+            %          Split throws an error if there are overlaps in the
+            %          group values, and if thery do not span the whole set
+            %          of the Index values. Allow these cases by respectively
+            %          added the flags 'allowOverlaps' and 'isNonExhaustive'
             %
             % Methods:
             %     * apply      
@@ -816,7 +821,7 @@ classdef DataFrame
             %           apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
             %
             % Method parameters:
-            %     * fun: function to apply
+            %     * fun: function to apply, must be applicable to a matrix
             %     * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
             %           allows to use DataFrame methods, but may be slower than
             %           applying a function directly to the data with 'applyToData'
