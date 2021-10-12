@@ -800,7 +800,7 @@ classdef DataFrame
         
         function s = split(obj,group,varargin)
             % SPLIT split a Frame into groups to apply a function separately group by group
-            % Use: dfsplit = df.split(frames.Groups).<apply,aggregate>(func[,args,flag])
+            % Use: dfsplit = df.split(frames.Groups[,flags]).<apply,aggregate>(func[,args,flag])
             %
             % ----------------
             % Parameters:
