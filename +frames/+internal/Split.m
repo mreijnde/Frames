@@ -1,4 +1,4 @@
-classdef Split < dynamicprops
+classdef Split
  % SPLIT split a Frame into groups to apply a function separately group by group
  % Use: dfsplit = df.split(frames.Groups[,flags]).<apply,aggregate>(func[,args,flag])
  %
