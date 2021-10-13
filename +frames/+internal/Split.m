@@ -60,8 +60,7 @@ classdef Split
             %       applying a function directly to the data with 'applyToData'
             % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,false,varargin{:});
-            constructor = str2func(class(obj.df));
-            other = constructor(out, obj.df.getRowsObj(), obj.df.getColumnsObj());
+            other = obj.df.constructor(out, obj.df.getRowsObj(), obj.df.getColumnsObj());
         end
         function other = aggregate(obj,fun,varargin)
             % AGGREGATE apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
@@ -71,9 +70,8 @@ classdef Split
             %       applying a function directly to the data with 'applyToData'
             % e.g. .aggregate(@(x) sum(x,2),'applyToData') vs .aggregate(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,true,varargin{:});
-            constructor = str2func(class(obj.df));
             if obj.groups.isColumnGroups
-                other = constructor(out, obj.df.getRowsObj(), obj.groups.keys);
+                other = obj.df.constructor(out, obj.df.getRowsObj(), obj.groups.keys);
             else
                 other = frames.DataFrame(out, obj.groups.keys, obj.df.getColumnsObj());  % not constructor as groups are an ordinary Index
             end
