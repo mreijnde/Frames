@@ -1,3 +1,3 @@
-function bool = isunique(x)
-bool = numel(x)==numel(unique(x));
+function bool = isunique(x,varargin)
+bool = numel(x)==numel(unique(x,varargin{:}));
 end

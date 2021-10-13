@@ -1,5 +1,5 @@
 function colsStart = findColumnStart(data)
-% ix : index of data where the last missing value on each column is found
+% ix : rows of data where the last missing value on each column is found
 % c  : columns where the data starts whith at least one missing value
 [idx,c] = findIxStartLastMissing(data);
 [xi,xc] = size(data);

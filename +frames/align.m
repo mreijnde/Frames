@@ -8,8 +8,8 @@ concatenate = [dfs{:}];  % align
 warning('on','frames:Index:notUnique')
 colID = 1;
 for ii=1:nargin  % split into varargout
-    nbCols = length(dfs{ii}.columns);
-    varargout{ii} = concatenate.iloc(':',colID:colID+nbCols-1); %#ok<AGROW>
+    nbCols = size(dfs{ii}.data_,2);
+    varargout{ii} = concatenate.iloc_(':',colID:colID+nbCols-1); %#ok<AGROW>
     colID=colID+nbCols;
 end
 

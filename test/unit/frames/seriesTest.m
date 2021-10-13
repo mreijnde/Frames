@@ -1,4 +1,5 @@
-classdef seriesTest < matlab.unittest.TestCase
+classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
+        seriesTest < matlab.unittest.TestCase
     
     properties
         df = frames.DataFrame([1 2;3 4]);
@@ -12,13 +13,13 @@ classdef seriesTest < matlab.unittest.TestCase
         function propertyTest(t)
             t.verifyTrue(t.colseries.colseries)
             t.verifyFalse(t.colseries.rowseries)
-            t.verifyTrue(t.colseries.getColumns_().singleton)
+            t.verifyTrue(t.colseries.getColumnsObj().singleton)
             t.verifyFalse(t.noSeries.colseries)
             t.verifyTrue(t.rowseries.rowseries)
-            t.verifyFalse(t.rowseries.getColumns_().singleton)
+            t.verifyFalse(t.rowseries.getColumnsObj().singleton)
             t.verifyTrue(t.useries.rowseries)
-            t.verifyTrue(t.useries.getIndex_().singleton)
-            t.verifyTrue(t.useries.getColumns_().singleton)
+            t.verifyTrue(t.useries.getRowsObj().singleton)
+            t.verifyTrue(t.useries.getColumnsObj().singleton)
         end
         function operationTest(t)
             plusV = t.df + t.colseries;
@@ -65,7 +66,7 @@ classdef seriesTest < matlab.unittest.TestCase
         
         function testOperation(t)
             t.verifyEqual(t.df-t.df.iloc(1).asRowSeries(),frames.DataFrame([0 0;2 2]))
-            t.verifyError(@() t.df-t.df.iloc(1),'frames:elementWiseHandler:differentIndex')
+            t.verifyError(@() t.df-t.df.iloc(1),'frames:elementWiseHandler:differentRows')
         end
     end
 end

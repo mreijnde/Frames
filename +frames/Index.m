@@ -1,20 +1,20 @@
 classdef Index
-% INDEX is the object that supports the index and columns properties in a DataFrame.
-% They are stored in the index_ and columns_ properties of DataFrame.
+% INDEX is the object that supports the rows and columns properties in a DataFrame.
+% They are stored in the rows_ and columns_ properties of DataFrame.
 % It contains operations of selection and merging, and constrains.
 %
 % The INDEX of the columns accepts duplicate values by default.
-% The INDEX of the index accepts only unique values by default.
+% The INDEX of the rows accepts only unique values by default.
 %
 % This property can be defined explicitly in the constructor of INDEX,
-% or changed with the methods .setIndexType and .setColumnsType of
+% or changed with the methods .setRowsType and .setColumnsType of
 % DataFrame.
 % An INDEX can 1) accept duplicate values, 2) require unique value, or 3)
 % require unique and sorted values.
 %
 %
 % If the length of value is equal to 1, the INDEX can be a
-% 'singleton', ie it represents the index of a series, which will allow
+% 'singleton', ie it represents the rows of a series, which will allow
 % operations between Frames with different indices (see DataFrame.series)
 %
 % Use:
@@ -142,7 +142,7 @@ classdef Index
         
         function val = getValueForTable(obj)
             % convert value to strings to use with a table (note that
-            % timetable index does not need this conversion)
+            % timetable rows does not need this conversion)
             val = obj.value;
             if isnumeric(val)
                 val = compose('%.10g',val);
@@ -175,7 +175,7 @@ classdef Index
             % output:
             %    validated array indexer (colon, logical array or position index array)
             %
-            if nargin<5, userCall = false; end
+            if nargin<5, userCall = true; end
             if nargin<4, allowedSeries = 'all'; end
             if nargin<3, positionIndex = false; end  
                         
@@ -219,9 +219,10 @@ classdef Index
             end
         end
         
-        function pos = positionIn(obj,target,varargin)
+        function pos = positionIn(obj,target,userCall)
             % find position of the Index into the target
-            target = obj.getValue_andCheck(target,varargin{:});
+            if nargin < 3, userCall = true; end
+            target = obj.getValue_andCheck(target,userCall);
             if obj.requireUnique_
                 assertFoundIn(obj.value_,target)
                 if obj.requireUniqueSorted_
@@ -344,7 +345,7 @@ classdef Index
             end
         end
         
- function positionIndexChecker(obj, selector)    
+        function positionIndexChecker(obj, selector)    
             % validate position index    
             assert(~obj.requireUnique_ || isunique(selector), 'frames:Index:requireUniqueFail', ...
                 'Index value is required to be unique.')
@@ -363,7 +364,7 @@ classdef Index
                 if allowedSeries=="onlyColSeries"   
                     assert(selector.colseries, 'frames:logicalIndexChecker:onlyColSeries', ...
                            "Indexing of rows only allowed with DataFrame logical colSeries.");
-                    assert( isequal(obj.value_,selector.index_.value_), 'frames:logicalIndexChecker:differentIndex', ...
+                    assert( isequal(obj.value_,selector.rows_.value_), 'frames:logicalIndexChecker:differentIndex', ...
                            "colSeries Selector has different index");
                 elseif allowedSeries=="onlyRowSeries"                   
                     assert(selector.rowseries, 'frames:logicalIndexChecker:onlyRowSeries', ...
@@ -414,7 +415,6 @@ classdef Index
             end
         end
         function valueOut = getValue_andCheck(obj,value,userCall)
-            if nargin<3, userCall=false; end
             valueOut = obj.getValue_from(value);
             if userCall, obj.valueChecker(valueOut); end
         end

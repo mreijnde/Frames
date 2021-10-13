@@ -1,6 +1,6 @@
 %% *Frames* package
 % The *frames* package contains a class to store and do operations on data matrices 
-% that are referenced by column and index identifiers.
+% that are referenced by column and row identifiers.
 % 
 % Matlab currently provide matrices and tables, but they do not work well together:
 % 
@@ -31,7 +31,7 @@
 % The main properties of these classes are:
 %% 
 % * data: TxN, data matrix
-% * index: Tx1
+% * rows: Tx1
 % * columns: 1xN
 % * t: dependent table built on the properties above.
 %% 
@@ -47,7 +47,7 @@ doc frames.TimeFrame
 % Construct a Frame as follows:
 %%
 % 
-%  df = frames.DataFrame([data,index,columns,Name=name,RowSeries=logical,ColSeries=logical])
+%  df = frames.DataFrame([data,rows,columns,Name=name,RowSeries=logical,ColSeries=logical])
 %
 
 % Example:
@@ -84,21 +84,21 @@ catch me
     disp(me.message)
 end
 %% 
-% Or an example with an attempt to assign a duplicate index:
+% Or an example with an attempt to assign duplicate rows:
 
 try
-    df.index = [1 1]
+    df.rows = [1 1]
 catch me
     disp(me.message)
 end
 %% Sub-Frame Access and Modification
 %%
 % 
-%  Select and modify based on index/column names with () or the loc method:
-%   * df(indexNames,columnsNames)
-%   * df.loc(indexNames,columnsNames)
-%   * df(indexNames,columnsNames) = newData
-%   * df.loc(indexNames,columnsNames) = newData
+%  Select and modify based on row/column names with () or the loc method:
+%   * df(rowsNames,columnsNames)
+%   * df.loc(rowsNames,columnsNames)
+%   * df(rowsNames,columnsNames) = newData
+%   * df.loc(rowsNames,columnsNames) = newData
 %
 
 % Selection
@@ -120,10 +120,10 @@ tmp(:,"b") = []
 %%
 % 
 %  Select and modify based on position with {} or the iloc method:
-%   *  df{indexPosition,columnsPosition}
-%   *  df.iloc(indexPosition,columnsPosition)
-%   *  df{indexPosition,columnsPosition} = newData
-%   *  df.iloc(indexPosition,columnsPosition) = newData
+%   *  df{rowsPosition,columnsPosition}
+%   *  df.iloc(rowsPosition,columnsPosition)
+%   *  df{rowsPosition,columnsPosition} = newData
+%   *  df.iloc(rowsPosition,columnsPosition) = newData
 %
 
 df{1:end,2}
@@ -198,7 +198,7 @@ df .* series
 % One can concatenate different Frames into one with the operator [].
 % 
 % The concatenation can be horizontal or vertical. The operation will align 
-% the Frames by expanding (unifying) their index or columns if they are not equal, 
+% the Frames by expanding (unifying) their rows or columns if they are not equal, 
 % inserting missing values in the expansion.
 
 tf1 = frames.TimeFrame(1,["25-Jun-2021","27-Jun-2021","28-Jun-2021"],["ts1","ts2"]);
@@ -208,15 +208,15 @@ tf2 = frames.TimeFrame(2,["26-Jun-2021","27-Jun-2021","30-Jun-2021"],"ts3");
 tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"],Format="dd.MM.yyyy"),["ts2","ts3"]);
 [tf1; tf3]
 %% Index Object
-% The _index_ and _columns_ properties can be assigned some properties themselves, 
+% The _rows_ and _columns_ properties can be assigned some properties themselves, 
 % namely whether they are required to have unique elements, and whether these 
 % are required to be sorted.
 % 
-% By default, the _columns_ allow duplicates, while the _index_ require unique 
-% elements. For TimeFrame, the _index_ also requires sorted elements.
+% By default, the _columns_ allow duplicates, while the _rows_ require unique 
+% elements. For TimeFrame, the _rows_ also requires sorted elements.
 % 
 % These can be changed by explicitely using the _Index_ object that underlies 
-% the _index_ and _columns_ properties.
+% the _rows_ and _columns_ properties.
 % 
 % Here is an example of an Index:
 %%
@@ -227,7 +227,7 @@ tf3 = frames.TimeFrame(2,frames.TimeIndex(["29.06.2021","30.06.2021"],Format="dd
 frames.Index([1,2])
 %% 
 % * The _singleton_ property is related to the series property of the DataFrame. 
-% If the Frame is set to be a _rowseries_, the Index object underlying the _index_ 
+% If the Frame is set to be a _rowseries_, the Index object underlying the _rows_ 
 % will be a _singleton_. If the Frame is set to be a _colseries_, then it will 
 % be that underlying the _columns_.
 % * If _requireUnique_ is set to _true_, then _value_ is required to have unique 
@@ -238,12 +238,12 @@ frames.Index([1,2])
 % These properties impact the operations of selection, modification, and alignment/concatenation.
 
 % Selection
-df.getIndex_()  % gets the underlying Index object
+df.getRowsObj()  % gets the underlying Index object
 df([2 1])
 %%
-dfSorted = df.setIndexType("sorted");
-% or df.index = frames.Index([1 2],UniqueSorted=true)
-dfSorted.getIndex_()
+dfSorted = df.setRowsType("sorted");
+% or df.rows = frames.Index([1 2],UniqueSorted=true)
+dfSorted.getRowsObj()
 try
     dfSorted([2 1])
 catch me
@@ -259,7 +259,7 @@ df1 = frames.DataFrame([1 3]',frames.Index([1 3],UniqueSorted=true),1);
 df2 = frames.DataFrame([2 3]',frames.Index([2 3],UniqueSorted=true),2);
 sortedConcatenation = [df1,df2]
 %% 
-% For TimeFrame, the Index object for _index_ is a *TimeIndex*.
+% For TimeFrame, the Index object for _rows_ is a *TimeIndex*.
 % 
 % TimeIndex can read several kinds of arguments: datenum, datetime, and strings/cell 
 % together with a Format
@@ -344,35 +344,31 @@ priceSmoothers.plot(Log=true)
 tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
 % One can apply a function to groups of columns in a Frame using the method  
-% _.split(groups).apply(@<function>)_.
+% _.split(groups).<apply,aggregate>(@<function>)_.
 %%
 % 
-%  The groups of columns can be expressed in different ways.
-%   * (cellArrayOfGroupLists,groupNames)
-%   * structure: fields are group names and values are elements in each group
-%   * frames.Group: Group whose property  are group names and property
-%       values are elements in each group. See 'doc frames.Group' for more
-%       details.
+%  The groups are frames.Groups, an object that provide a uniform object for key-value groups. They can be expressed in different ways.
+%     - struct: keys and values are resp. fields and values of the struct
+%     - containers.Map: keys and values are resp. keys and values of the containers.Map
+%     - cell: keys are generic ["Group1","Group2",...] and values are the elements in the cell
+%     - frames.DataFrame (series): keys are unique data values, values are lists of index elements related to the same key
+%     - frames.DataFrame:  keys are unique data values, values are sparse logical matrices of the position of the related key
+%   See 'doc frames.Group' for more details.
 %
 
 df = frames.DataFrame([1 2 3;2 5 3;5 0 1]',[],["a" "b" "c"])
-%% 
-% 
-
+%%
 % simple example with cell
-% apply a sum horizontally in each group
-x1 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.sum(2))
-%% 
-% 
-
+% apply a sum horizontally in each group and aggregate data by group
+g1 = frames.Groups({["a" "c"],"b"});
+x1 = df.split(g1).aggregate(@(x) sum(x,2))
+%%
 % apply function using group names 
 % multiply each group by 10 and 1 respectively
-multiplier.group1 = 10;
-multiplier.group2 = 1;
-x2 = df.split({["a" "c"],"b"},["group1","group2"]).apply(@(x) x.*multiplier.(x.name))
-%% 
-% 
-
+multiplier.Group1 = 10;
+multiplier.Group2 = 1;
+x2 = df.split(g1).apply(@(x) x.*multiplier.(x.description),'applyToFrame')
+%%
 % split with a structure
 % cap each group at 1.5 and 2.5 respectively
 s = struct();
@@ -380,19 +376,17 @@ s.group1 = ["a" "c"];
 s.group2 = "b";
 ceiler.group1 = 1.5;
 ceiler.group2 = 2.5;
-x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name)))
-%% 
-% 
-
+g3 = frames.Groups(s);
+x3 = df.split(g3).apply(@(x) x.clip(ceiler.(x.description)),'applyToFrame')
+%%
 % split with a Group 
 % take the maximum of each groups at each row
-g = frames.Groups(df.columns,s);
-x4 = df.split(g).apply(@(x) x.max(2))
+x4 = df.split(g3).aggregate(@(x) x.max(2),'applyToFrame')
 %% Other Methods
 % We list here all the methods available in the DataFrame. We provided a demo 
 % above for some of them. 
 % 
 % Refer to the documentation for detailed information. You can also refer to 
-% the unit tests (+frames/+unitTests/) for some examples.
+% the unit tests (test/unit/frames/) for some examples.
 
 methods('frames.DataFrame')
