@@ -528,65 +528,7 @@ classdef DataFrame
                 dfnew.data_(rowind,colind) = dfs{i}.data_;
             end            
         end
-        
-        
-        
-        
-        
-        
-%         function other = horzcat(obj,varargin)
-%             % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
-%             row = obj.rows_;
-%             sameRows = true;  % compute a merged rows, only in case they are not the same
-%             columnsNewVal = obj.columns_.value_;
-%             lenCols = zeros(length(varargin)+1,1);
-%             lenCols(1) = length(obj.columns_);
-%             for ii = 1:nargin-1
-%                 columnsNewVal = [columnsNewVal;varargin{ii}.columns_.value_]; %#ok<AGROW>
-%                 lenCols(ii+1) = length(varargin{ii}.columns_);
-%                 row_ = varargin{ii}.rows_.value_;
-%                 if sameRows && isequaln(row.value_,row_)
-%                     continue
-%                 else
-%                     sameRows = false;
-%                 end
-%                 row = row.union(row_);
-%             end
-%             
-%             % replace missing values from column series by default values
-%             ism = ismissing(columnsNewVal);
-%             if ism, columnsNewVal(ism) = defaultValue(class(columnsNewVal)); end
-%             
-%             columnsNew = obj.columns_;
-%             columnsNew.singleton_ = false;
-%             columnsNew.value = columnsNewVal;
-% 
-%             % expand each DF with the new row, and merge their data_
-%             sizeColumns = cumsum(lenCols);
-%             dataH = obj.defaultData(length(row),sizeColumns(end));
-%             
-%             rowVal = row.value;
-%             function df = getExtendedRowsDF(df)
-%                 % Expand DF, keeping the order of row
-%                 if ~sameRows
-%                     testUniqueIndex(row);
-%                     df = df.extendRows(rowVal).loc_(rowVal,':');
-%                 end
-%             end
-%             other = getExtendedRowsDF(obj);
-%             dataH(:,1:lenCols(1)) = other.data_;
-%             type = class(obj.data_);
-%             for ii = 1:nargin-1
-%                 extendedDF = getExtendedRowsDF(varargin{ii});
-%                 assert(isa(extendedDF.data_,type),'frames:concat:differentDatatype', ...
-%                     'frames do not have the same data type')
-%                 dataH(:,sizeColumns(ii)+1:sizeColumns(ii+1)) = extendedDF.data_;
-%             end
-%             other.data_ = dataH;
-%             other.columns_ = columnsNew;
-%             other = other.resetUserProperties();
-%         end
-        
+               
         function other = horzcat(obj,varargin)
             % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
             % 
@@ -625,62 +567,6 @@ classdef DataFrame
             %end            
         end
         
-%         function other = vertcat(obj,varargin)
-%             % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
-%             % frames must each have unique columns
-%             col = obj.columns_.value_;
-%             sameCols = true;  % compute a merged columns, only in case they are not the same
-%             rowNew = obj.rows_;
-%             testUniqueIndex(obj.rows_);
-%             lenIdx = zeros(length(varargin),1);
-%             lenIdx(1) = length(obj.rows_);
-%             for ii = 1:nargin-1
-%                 testUniqueIndex(varargin{ii}.rows_);
-%                 rowNew = rowNew.union(varargin{ii}.rows_);
-%                 lenIdx(ii+1) = length(varargin{ii}.rows_);
-%                 col_ = varargin{ii}.columns_.value_;
-%                 if sameCols && isequal(col,col_)
-%                     continue
-%                 else
-%                     sameCols = false;
-%                 end
-%                 col = union(col,col_,'stable');  % requires unique columns
-%             end
-%             if obj.columns_.requireUniqueSorted
-%                 col = sort(col);
-%             end
-%             
-%             sizeRows = cumsum(lenIdx);
-%             dataV = obj.defaultData(sizeRows(end),length(col));
-%             
-%             if length(rowNew) ~= sizeRows(end)
-%                 error('frames:vertcat:rowsNotUnique', ...
-%                     'There must be no overlap in the rows of the Frames.')
-%             end
-%             
-%             function df = getExtendedColsDF(df)
-%                 % Expand DF, keeping the order of col
-%                 if ~sameCols
-%                     df = df.extendColumns(col).loc_(':',col);
-%                 end
-%             end
-%             
-%             other = getExtendedColsDF(obj);
-%             
-%             idData = other.rows_.positionIn(rowNew,false);
-%             dataV(idData,:) = other.data_;
-%             type = class(obj.data_);
-%             for ii = 1:nargin-1
-%                 extendedDF = getExtendedColsDF(varargin{ii});
-%                 assert(isa(extendedDF.data_,type),'frames:concat:differentDatatype', ...
-%                     'frames do not have the same data type')
-%                 idData = extendedDF.rows_.positionIn(rowNew,false);
-%                 dataV(idData,:) = extendedDF.data_;
-%             end
-%             other.data_ = dataV;
-%             other.rows_ = rowNew;
-%             other = other.resetUserProperties();
-%         end
         
         %==================================================================
         % table related functions
