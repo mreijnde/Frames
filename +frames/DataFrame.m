@@ -910,6 +910,33 @@ classdef DataFrame
             end
         end
         
+        function bool = isaligned(obj,varargin)
+            isflag = find(strcmp(varargin,'rows'),1);
+            checkRows = ~isempty(isflag);
+            varargin(isflag) = [];
+            isflag = find(strcmp(varargin,'columns'),1);
+            checkCols = ~isempty(isflag);
+            varargin(isflag) = [];
+            if ~any([checkCols,checkRows])
+                checkCols = true; checkRows = true;
+            end
+            bool = true;
+            if checkRows
+                row = obj.rows;
+                for v = varargin
+                    bool = isequaln(row,v{1}.rows);
+                    if ~bool; return; end
+                end
+            end
+            if checkCols
+                col = obj.columns;
+                for v = varargin
+                    bool = isequaln(col,v{1}.columns);
+                    if ~bool; return; end
+                end
+            end
+        end
+        
         % these function overloads are to make chaining possible
         % e.g. df.abs().sqrt()
         function obj = abs(obj), obj.data_ = abs(obj.data_); end

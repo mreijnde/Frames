@@ -973,6 +973,19 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyEqual(df.std(2,1).data,std(df.data,1,2,'omitnan'))
         end
         
+        function isalignedTest(t)
+            df = frames.DataFrame([1 2;10 0]);
+            t.verifyTrue(df.isaligned(df,df,df))
+            df2 = frames.DataFrame([1 2;10 0],[2 3]);
+            t.verifyFalse(df.isaligned(df2))
+            t.verifyTrue(df.isaligned(df2,'columns'))
+            t.verifyFalse(df.isaligned(df2,'rows'))
+            df3 = frames.DataFrame([1 2;10 0],[2 3],[1,2]);
+            t.verifyFalse(df2.isaligned(df3))
+            t.verifyFalse(df2.isaligned(df3,'columns'))
+            t.verifyTrue(df2.isaligned(df3,'rows'))
+        end
+        
         function equalsTest(t)
             df=frames.DataFrame([1 2;3 4]);
             df2=frames.DataFrame([1 2;3 4])+0.5;
