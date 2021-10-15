@@ -524,12 +524,22 @@ classdef DataFrame
             % add object itself to the list
             dfs = [{obj} dfs];            
             % assign data from each dataframe
+            elements_assigned = false(size(dfnew));
             for i=1:length(dfs)
+                % get position indices                
                 rowind = rowsnew_ind{i};
                 colind = colsnew_ind{i};
+                % assign values
+                dfnew.data_(rowind,colind) = dfs{i}.data_;
+                % checks
                 assert(isa(dfs{i}.data_,type),'frames:concat:differentDatatype', ...
                      'frames do not have the same data type')
-                dfnew.data_(rowind,colind) = dfs{i}.data_;
+                if any(elements_assigned(rowind,colind),'all')
+                    warning('frames:concat:overlap', ...
+                      "Overlapping values (with same row and column index) between different dataframes detected. " + ...
+                      "Value of last dataframe will be used.");                   
+                end
+                elements_assigned(rowind,colind)= true;     
             end            
         end
                
@@ -553,22 +563,17 @@ classdef DataFrame
             % 
             % calc concatenated dataframe
             other = obj.combine(varargin, "duplicate", "unique_allow_duplicate");            
+            % extra checks for backwards compatiblity (still needed?)
+            %
             % check if no overlapping rows
             inputRows = obj.height() + sum( cellfun(@height, varargin ));            
             if other.height() ~= inputRows
                 error('frames:vertcat:rowsNotUnique', ... 
                     'There must be no overlap in the rows of the Frames.')
-            end
-            %extra checks for backwards compatiblity (still needed?)
-            %
+            end            
             % check if rows are unique (why ??)
             testUniqueIndex(obj.rows_)
-            cellfun(@(x) testUniqueIndex(x.rows_), varargin);            
-            % if columns are not equal, they have to be unique (why??)
-            %if length(other.columns_)~=length(obj.columns_)               
-            %    testUniqueIndex(obj.columns_)
-            %   cellfun(@(x) testUniqueIndex(x.columns_), varargin);     
-            %end            
+            cellfun(@(x) testUniqueIndex(x.rows_), varargin);                      
         end
         
         
@@ -1676,3 +1681,4 @@ if ~indexObj.requireUnique && length(indexObj.value_)>0
     error('frames:requireUniqueIndex','The function requires an Index of unique values.')
 end
 end
+ 
