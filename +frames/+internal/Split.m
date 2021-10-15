@@ -23,14 +23,24 @@ classdef Split
     properties(Access=private)
         groups  % frames.Groups
         df  % frames.DataFrame
+        
+        dfIsCell = false
     end
     
     methods
         function obj = Split(df, groups, varargin)
             % SPLIT Split(df,groups)
+            if iscell(df)
+                assert(isa(df{1},'frames.DataFrame'),'df must be a cell of frames.DataFrame')
+                assert(isaligned(df{:},'dfs must be aligned'))
+                obj.dfIsCell = true;
+            else
+                assert(isa(df,'frames.DataFrame'),'df must be a frames.DataFrame')
+            end
             assert(isa(groups,'frames.Groups'),'group must be a frames.Group')
             obj.df = df;
             obj.groups = groups;
+            
             if groups.constantGroups
                 isflag = find(strcmp(varargin,'allowOverlaps'),1);
                 allowOverlaps = ~isempty(isflag);
@@ -40,13 +50,19 @@ classdef Split
                 if ~allowOverlaps && ~frames.internal.isunique(allElements)
                     error('frames:SplitOverlap','There are overlaps in Split')
                 end
-                if groups.isColumnGroups, toSplit=df.columns; else, toSplit=df.rows; end
+                if groups.isColumnGroups 
+                    toSplit = obj.applyToPotentialCell(df, @(x) x.columns, true); 
+                else
+                    toSplit = obj.applyToPotentialCell(df, @(x) x.rows, true); 
+                end
                 if ~isNonExhaustive && any(~ismember(toSplit,allElements))
                     error('frames:SplitNonexhaustive','Split is not exhaustive')
                 end
             else
-                assert(isequaln(groups.frame.rows,df.getRowsObj())) % ToDo message
-                assert(isequaln(groups.frame.columns,df.getColumnsObj))
+                rows = obj.applyToPotentialCell(df, @(x) x.getRowsObj(), true); 
+                cols = obj.applyToPotentialCell(df, @(x) x.getColumnsObj(), true); 
+                assert(isequaln(groups.frame.rows,rows),'groups must be aligned with the DataFrame')
+                assert(isequaln(groups.frame.columns,cols),'groups must be aligned with the DataFrame')
             end
         end
     end
@@ -63,7 +79,10 @@ classdef Split
             %       line instead that on a matrix
             % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,false,varargin{:});
-            other = obj.df.constructor(out, obj.df.getRowsObj(), obj.df.getColumnsObj());
+            rows = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj(), true); 
+            cols = obj.applyToPotentialCell(obj.df, @(x) x.getColumnsObj(), true); 
+            constructor = obj.applyToPotentialCell(obj.df, @(x) x.constructor, true); 
+            other = constructor(out, rows, cols);
         end
         function other = aggregate(obj,fun,varargin)
             % AGGREGATE apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
@@ -74,9 +93,12 @@ classdef Split
             % e.g. .aggregate(@(x) sum(x,2),'applyToData') vs .aggregate(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,true,varargin{:});
             if obj.groups.isColumnGroups
-                other = obj.df.constructor(out, obj.df.getRowsObj(), obj.groups.keys);
+                rows = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj(), true); 
+                constructor = obj.applyToPotentialCell(obj.df, @(x) x.constructor, true); 
+                other = constructor(out, rows, obj.groups.keys);
             else
-                other = frames.DataFrame(out, obj.groups.keys, obj.df.getColumnsObj());  % not constructor as groups are an ordinary Index
+                cols = obj.applyToPotentialCell(obj.df, @(x) x.getColumnsObj(), true); 
+                other = frames.DataFrame(out, obj.groups.keys, cols);  % not constructor as groups are an ordinary Index
             end
         end
     end
@@ -101,25 +123,26 @@ classdef Split
             applyByLine = ~isempty(isflag);
             varargin(isflag) = [];
             
-            dfdata = obj.df.data;
-            df_ = obj.df;
+            dfdata = obj.applyToPotentialCell(obj.df, @(x) x.data, false); 
+            dfdata1 = obj.applyToPotentialCell(dfdata, @(x) x, true); 
+            if applyByLine
+                if obj.groups.isColumnGroups
+                    indexLoop = 1:size(dfdata1,1);
+                else
+                    indexLoop = 1:size(dfdata1,2);
+                end
+            elseif obj.groups.constantGroups
+                indexLoop = ':';
+            end
+            
             if applyToFrame
                 keyiscell = iscell(obj.groups.keys);
             end
             
-            if obj.groups.constantGroups
-                indexLoop = ':';
-            end
             firstIteration = true;
             for ii = 1:length(obj.groups.values)
                 gVal = obj.groups.values{ii};
-                if applyByLine
-                    if obj.groups.isColumnGroups
-                        indexLoop = 1:size(dfdata,1);
-                    else
-                        indexLoop = 1:size(dfdata,2);
-                    end
-                elseif ~obj.groups.constantGroups
+                if ~applyByLine && ~obj.groups.constantGroups
                     gVal = full(gVal);  % for performance reasons, better to work with non sparse matrices
                     if obj.groups.isColumnGroups
                         [uniqueGroups,sameVals,indexLoop] = local_idxSameData(gVal);
@@ -128,17 +151,19 @@ classdef Split
                     end
                 end
                 if applyToFrame
-                    if keyiscell, df_.description = obj.groups.keys{ii}; 
-                    else, df_.description = obj.groups.keys(ii); end
+                    if keyiscell, description = obj.groups.keys{ii}; 
+                    else, description = obj.groups.keys(ii); end
+                    s.type = '.'; s.subs = 'description';
+                    obj.df = obj.applyToPotentialCell(obj.df, @(x) x.subsasgn(s,description), false); 
                 end
                 for idx = indexLoop
                     if obj.groups.constantGroups
                         if obj.groups.isColumnGroups
                             rowID = idx;
-                            colID = obj.df.getColumnsObj().positionOf(gVal);
+                            colID = obj.applyToPotentialCell(obj.df, @(x) x.getColumnsObj().positionOf(gVal), true); 
                         else
                             colID = idx;
-                            rowID = obj.df.getRowsObj().positionOf(gVal);
+                            rowID = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj().positionOf(gVal), true); 
                         end
                     else
                         if applyByLine
@@ -163,23 +188,23 @@ classdef Split
                     if applyToFrame
                         % ToDo: unecessary selection of rows and columns
                         % slow down the computation
-                        val = df_.iloc_(rowID,colID);
+                        val = obj.applyToPotentialCell(obj.df, @(x) x.iloc_(rowID,colID), false); 
                         res = fun(val,varargin{:});
                         res = local_getData(res);
                     else
-                        val = dfdata(rowID,colID);
+                        val =  obj.applyToPotentialCell(dfdata, @(x) x(rowID,colID), false); 
                         res = fun(val,varargin{:});
                     end
                     if firstIteration
                         dataType = str2func(class(res));
                         if reduceDim
                             if obj.groups.isColumnGroups
-                                out = repmat(dataType(missing),size(dfdata,1),length(obj.groups.keys));
+                                out = repmat(dataType(missing),size(dfdata1,1),length(obj.groups.keys));
                             else
-                                out = repmat(dataType(missing),length(obj.groups.keys),size(dfdata,2));
+                                out = repmat(dataType(missing),length(obj.groups.keys),size(dfdata1,2));
                             end
                         else
-                            out = repmat(dataType(missing),size(dfdata));
+                            out = repmat(dataType(missing),size(dfdata1));
                         end
                         firstIteration = false;
                     end
@@ -196,6 +221,21 @@ classdef Split
                 end
             end
         end
+        
+        function varargout = applyToPotentialCell(obj,data,func,onlyFirst)
+            if ~obj.dfIsCell
+                [varargout{1:nargout}] = func(data);
+            elseif onlyFirst
+                [varargout{1:nargout}] = func(data{1});
+            else
+                varargout = cell(1,numel(data));
+                for ii = 1:numel(data)
+                    varargout{ii} = func(data{ii});
+                end
+                %     varargout{1} = out;
+            end
+        end
+
     end
     
 end
@@ -211,3 +251,4 @@ end
 function data = local_getData(data)
 if frames.internal.isFrame(data), data = data.data; end
 end
+
