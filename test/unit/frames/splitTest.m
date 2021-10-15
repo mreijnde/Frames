@@ -1,6 +1,10 @@
-classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
-        splitTest < matlab.unittest.TestCase
+classdef     splitTest < matlab.unittest.TestCase
     
+    methods(TestMethodSetup)
+        function setupPath(t)
+            t.applyFixture(matlab.unittest.fixtures.PathFixture('../../../'))
+        end
+    end
     methods(Test)
         
         function splitApplyTest(t)
@@ -157,6 +161,27 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
 
             t.verifyEqual(df.split(frames.Groups({[1 2 3 5], [4 5]}),'allowOverlaps').aggregate(@sum,2).data,[11,9])
             t.verifyEqual(df.split(frames.Groups({[1 2 3 5]}),'isNonExhaustive').aggregate(@sum,2).data,11)
+        end
+        
+        function byLine(t)
+            df = frames.DataFrame([1 2 3 4 5],[1 2 3 4],[1 2 3 4 5]);
+            groups = frames.Groups({[1 2], [3 4 5]});
+            sol1 = df.split(groups).apply(@(x) mean(x,2),'applyByLine');
+            t.verifyEqual(df.split(groups).apply(@(x) mean(x),'applyByLine'), sol1)
+            t.verifyEqual(frames.DataFrame([1.5 1.5 4 4 4],[1 2 3 4],[1 2 3 4 5]), sol1)
+            
+            df = frames.DataFrame([1 2 3 4 5]',[1 2 3 4 5],[1 2 3 4]);
+            groups = frames.Groups({[1 2], [3 4 5]},'rowGroups');
+            sol1 = df.split(groups).apply(@(x) mean(x,1),'applyByLine');
+            t.verifyEqual(df.split(groups).apply(@(x) mean(x),'applyByLine'), sol1)
+            t.verifyEqual(frames.DataFrame([1.5 1.5 4 4 4]',[1 2 3 4 5],[1 2 3 4]), sol1)
+            
+            df = frames.DataFrame([1 2 3 4 5],[1 2],[1 2 3 4 5]);
+            groups = frames.Groups(frames.DataFrame([1 1 2 2 2; 1 1 1 2 2],[1 2],[1 2 3 4 5]));
+            t.verifyEqual(df.split(groups).apply(@(x) x.mean(2),'applyByLine','applyToFrame'), ...
+                frames.DataFrame([1.5 1.5 4 4 4;2 2 2 4.5 4.5],[1 2],[1 2 3 4 5]))
+
+
         end
     end
 end

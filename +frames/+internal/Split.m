@@ -58,6 +58,9 @@ classdef Split
             %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
             %       allows to use DataFrame methods, but may be slower than
             %       applying a function directly to the data with 'applyToData'
+            %  * flag 'applyByLine':
+            %       allows to pass a function that will be applied line by
+            %       line instead that on a matrix
             % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,false,varargin{:});
             other = obj.df.constructor(out, obj.df.getRowsObj(), obj.df.getColumnsObj());
@@ -94,6 +97,9 @@ classdef Split
             else
                 applyToFrame = false;
             end
+            isflag = find(strcmp(varargin,'applyByLine'),1);
+            applyByLine = ~isempty(isflag);
+            varargin(isflag) = [];
             
             dfdata = obj.df.data;
             df_ = obj.df;
@@ -107,7 +113,13 @@ classdef Split
             firstIteration = true;
             for ii = 1:length(obj.groups.values)
                 gVal = obj.groups.values{ii};
-                if ~obj.groups.constantGroups
+                if applyByLine
+                    if obj.groups.isColumnGroups
+                        indexLoop = 1:size(dfdata,1);
+                    else
+                        indexLoop = 1:size(dfdata,2);
+                    end
+                elseif ~obj.groups.constantGroups
                     gVal = full(gVal);  % for performance reasons, better to work with non sparse matrices
                     if obj.groups.isColumnGroups
                         [uniqueGroups,sameVals,indexLoop] = local_idxSameData(gVal);
@@ -129,7 +141,15 @@ classdef Split
                             rowID = obj.df.getRowsObj().positionOf(gVal);
                         end
                     else
-                        if obj.groups.isColumnGroups
+                        if applyByLine
+                            if obj.groups.isColumnGroups
+                                rowID = idx;
+                                colID = gVal(idx,:);
+                            else
+                                colID = idx;
+                                rowID = gVal(:,idx);
+                            end
+                        elseif obj.groups.isColumnGroups
                             rowID = sameVals==idx;
                             colID = uniqueGroups(idx,:);
                             if ~any(colID), continue; end
