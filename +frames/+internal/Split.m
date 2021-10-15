@@ -1,108 +1,85 @@
-classdef Split < dynamicprops
- % SPLIT split a Frame into column-based groups to apply a function separately
- % Use: split = frames.Split(df,splitter[,namesOfGroups])
- % The properties of split are the elements in namesOfGroups, or the 
- % fields of the splitter if namesOfGroups is not provided.
+classdef Split
+ % SPLIT split a Frame into groups to apply a function separately group by group
+ % Use: dfsplit = df.split(frames.Groups[,flags]).<apply,aggregate>(func[,args,flag])
  %
  % ----------------
  % Parameters:
- %     * df: (Frame)
- %     * splitter: (cell array,struct,frames.Group) 
- %          Contain the list of elements in each group. Can be of different
- %          types:
- %          - cell array: cell array of lists of elements in groups
- %              In this case, namesOfGroups is required
- %              e.g. splitter={list1,list2}; namesOfGroups=["name1","name2"]
- %          - struct: structure whose fields are group names and values are
- %              elements in each group. If namesOfGroups is not specified, 
- %              the split use all fields of the structure as namesOfGroups.
- %          - frames.Group: Group whose property names are group names and
- %              property values are elements in each group. If namesOfGroups
- %              is not specified, the split use all properties of the 
- %              Group as namesOfGroups.
- %          - frames.DataFrame: If groups change along the rows, one can
- %              use a DataFrame that specifies to which group each element
- %              belongs to. namesOfGroups is not used.
- %     * namesOfGroups: (string array) 
- %          group names into which we want to split the Frame
+ %     * df (Frame)
+ %     * groups (frames.Groups)
+ %          Object that contains keys and values describing
+ %          groups. Please refer to the documentation of
+ %          frames.Groups for more details.
  %
- % SPLIT method:
- %  apply   - apply a function to each sub-Frame, and returns a single Frame
+ % Methods:
+ %     * apply      
+ %           apply a function to each sub-Frame, and returns a single Frame. Maintains the structure of the original Frame.
+ %     * aggregate  
+ %           apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
  %
  % Copyright 2021 Benjamin Gaudin
  % Contact: frames.matlab@gmail.com
  %
  % See also: frames.Groups
     properties(Access=private)
-        nameOfProperties_
-        
-        isFrameSplitter = false;
-        groupDF
-        dataDF
+        groups  % frames.Groups
+        df  % frames.DataFrame
     end
     
-    methods (Access=?frames.DataFrame)
-        function obj = Split(df,splitter,namesOfGroups)
-            % Split(df,splitter[,namesOfGroups])
-            if frames.internal.isFrame(splitter)
-                obj.isFrameSplitter = true;
-                assert(isequaln(df.columns,splitter.columns), ...
-                    'frames:split:groupColMisaligned', 'the group columns must be aligned with the data columns')
-                if ~splitter.rowseries
-                    assert(isequaln(df.rows,splitter.rows), ...
-                    'frames:split:groupRowMisaligned', 'the group rows must be aligned with the data rows')
+    methods
+        function obj = Split(df, groups, varargin)
+            % SPLIT Split(df,groups)
+            assert(isa(groups,'frames.Groups'),'group must be a frames.Group')
+            obj.df = df;
+            obj.groups = groups;
+            if groups.constantGroups
+                isflag = find(strcmp(varargin,'allowOverlaps'),1);
+                allowOverlaps = ~isempty(isflag);
+                isflag = find(strcmp(varargin,'isNonExhaustive'),1);
+                isNonExhaustive = ~isempty(isflag);
+                allElements = [groups.values{:}];
+                if ~allowOverlaps && ~frames.internal.isunique(allElements)
+                    error('frames:SplitOverlap','There are overlaps in Split')
                 end
-                obj.groupDF = splitter;
-                obj.dataDF = df;
-                return
-            end
-            if isa(splitter, 'frames.Groups') || isa(splitter,'struct')
-                if nargin < 3
-                    namesOfGroups = sort(string(fieldnames(splitter)));  % fieldnames does not return a stable order so force it to be sorted
-                else
-                    assert(all(ismember(namesOfGroups,fieldnames(splitter))), ...
-                        'The names of the properties must be found in the splitter');
+                if groups.isColumnGroups, toSplit=df.columns; else, toSplit=df.rows; end
+                if ~isNonExhaustive && any(~ismember(toSplit,allElements))
+                    error('frames:SplitNonexhaustive','Split is not exhaustive')
                 end
-                splitter_ = {};  % turn it into a cell
-                for ii=1:length(namesOfGroups)
-                    splitter_{ii} = splitter.(string(namesOfGroups(ii))); %#ok<AGROW>
-                end
-                splitter = splitter_;
             else
-                if nargin < 3
-                    namesOfGroups = "Group" + (1:length(splitter));
-                end
-            end
-            assert(length(namesOfGroups) == length(splitter), ...
-                'The names of the properties are not of the same length as the splitter')
-            obj.nameOfProperties_ = namesOfGroups;
-            for ii = 1:length(splitter)  % groups df into properties
-                cols = splitter{ii};
-                propName = obj.nameOfProperties_{ii};
-                propValue = df(:,cols);
-                propValue.name = propName;
-                obj.addprop(propName);
-                obj.(propName) = propValue;
-            end
-            
-            splitterData = [splitter{:}];
-            if ~frames.internal.isunique(splitterData)
-                warning('frames:SplitOverlap','There are overlaps in Split')
-            end
-            if any(~ismember(df.columns,splitterData))
-                warning('frames:SplitNonexhaustive','Split is not exhaustive')
+                assert(isequaln(groups.frame.rows,df.getRowsObj())) % ToDo message
+                assert(isequaln(groups.frame.columns,df.getColumnsObj))
             end
         end
     end
     
     methods
-
-        function res = apply(obj,fun,varargin)
-            % APPLY apply a function to each sub-Frame, and returns a single Frame
-            % flag, enum('applyToFrame','applyToData'): 'applyToFrame' (default)
-            % allows to use DataFrame methods, but may be slower than
-            % applying a function directly to the data with 'applyToData'
+        function other = apply(obj,fun,varargin)
+            % APPLY apply a function to each sub-Frame, and returns a single Frame. Maintains the structure of the original Frame.
+            %  * fun: function to apply, must be applicable to a matrix
+            %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
+            %       allows to use DataFrame methods, but may be slower than
+            %       applying a function directly to the data with 'applyToData'
             % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
+            out = obj.computeFunction(fun,false,varargin{:});
+            other = obj.df.constructor(out, obj.df.getRowsObj(), obj.df.getColumnsObj());
+        end
+        function other = aggregate(obj,fun,varargin)
+            % AGGREGATE apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
+            %  * fun: function to apply, must be applicable to a matrix
+            %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
+            %       allows to use DataFrame methods, but may be slower than
+            %       applying a function directly to the data with 'applyToData'
+            % e.g. .aggregate(@(x) sum(x,2),'applyToData') vs .aggregate(@(x) x.sum(2),'applyToFrame')
+            out = obj.computeFunction(fun,true,varargin{:});
+            if obj.groups.isColumnGroups
+                other = obj.df.constructor(out, obj.df.getRowsObj(), obj.groups.keys);
+            else
+                other = frames.DataFrame(out, obj.groups.keys, obj.df.getColumnsObj());  % not constructor as groups are an ordinary Index
+            end
+        end
+    end
+    methods(Access=protected)
+        function out = computeFunction(obj,fun,reduceDim,varargin)
+            
             isflag = find(strcmp(varargin,'applyToFrame'),1);
             applyToFrameFlag = ~isempty(isflag);
             varargin(isflag) = [];
@@ -111,110 +88,106 @@ classdef Split < dynamicprops
             varargin(isflag) = [];
             condFlags = [applyToFrameFlag,applyToDataFlag];
             if all(condFlags)
-                error('frames:splitapply:flag','Chose one flag only.')
-            elseif all(condFlags == [false true])
-                applyToFrame = false;
-            else
+                error('frames:splitapply:flag','Choose one flag only.')
+            elseif condFlags(1)
                 applyToFrame = true;
+            else
+                applyToFrame = false;
             end
-            if obj.isFrameSplitter
-                res = local_applyGroupDF(obj.dataDF,obj.groupDF,fun,applyToFrame,varargin{:});
-                return
+            
+            dfdata = obj.df.data;
+            df_ = obj.df;
+            if applyToFrame
+                keyiscell = iscell(obj.groups.keys);
             end
-            props = obj.nameOfProperties_;
-            isVectorOutput = true;  % if the output of fun returns a vector
-            for ii = 1:length(props)
-                if applyToFrame
-                    res_ = fun(obj.(props{ii}),varargin{:});
-                else
-                    res_ = fun(obj.(props{ii}).data,varargin{:});
-                end
-                if ii == 1
-                    res = res_;
-                else
-                    warning('off','frames:Index:notUnique')
-                    res = [res,res_]; %#ok<AGROW>
-                end
-                if (frames.internal.isFrame(res_) && ~res_.colseries) ...
-                        || (~frames.internal.isFrame(res_) && size(res_,2)>1)
-                    isVectorOutput = false;
-                end
+            
+            if obj.groups.constantGroups
+                indexLoop = ':';
             end
-            if ~frames.internal.isFrame(res)
-                constructor = str2func(class(obj.(props{1})));
-                if isVectorOutput
-                    cols = props;
-                else
-                    cols = obj.(props{1}).getColumns_();
-                    for ii = 2:length(props)
-                        cols = [cols; obj.(props{ii}).getColumns_()]; %#ok<AGROW>
+            firstIteration = true;
+            for ii = 1:length(obj.groups.values)
+                gVal = obj.groups.values{ii};
+                if ~obj.groups.constantGroups
+                    gVal = full(gVal);  % for performance reasons, better to work with non sparse matrices
+                    if obj.groups.isColumnGroups
+                        [uniqueGroups,sameVals,indexLoop] = local_idxSameData(gVal);
+                    else
+                        [uniqueGroups,sameVals,indexLoop] = local_idxSameData(gVal');
                     end
                 end
-                res = constructor(res,obj.(props{1}).rows_,cols);
-            else
-                if isVectorOutput
-                    res.columns_.singleton_ = false;
-                    res.columns = props;
+                if applyToFrame
+                    if keyiscell, df_.description = obj.groups.keys{ii}; 
+                    else, df_.description = obj.groups.keys(ii); end
+                end
+                for idx = indexLoop
+                    if obj.groups.constantGroups
+                        if obj.groups.isColumnGroups
+                            rowID = idx;
+                            colID = obj.df.getColumnsObj().positionOf(gVal);
+                        else
+                            colID = idx;
+                            rowID = obj.df.getRowsObj().positionOf(gVal);
+                        end
+                    else
+                        if obj.groups.isColumnGroups
+                            rowID = sameVals==idx;
+                            colID = uniqueGroups(idx,:);
+                            if ~any(colID), continue; end
+                        else
+                            colID = sameVals==idx;
+                            rowID = uniqueGroups(idx,:);
+                            if ~any(rowID), continue; end
+                        end
+                    end
+                    
+                    if applyToFrame
+                        % ToDo: unecessary selection of rows and columns
+                        % slow down the computation
+                        val = df_.iloc_(rowID,colID);
+                        res = fun(val,varargin{:});
+                        res = local_getData(res);
+                    else
+                        val = dfdata(rowID,colID);
+                        res = fun(val,varargin{:});
+                    end
+                    if firstIteration
+                        dataType = str2func(class(res));
+                        if reduceDim
+                            if obj.groups.isColumnGroups
+                                out = repmat(dataType(missing),size(dfdata,1),length(obj.groups.keys));
+                            else
+                                out = repmat(dataType(missing),length(obj.groups.keys),size(dfdata,2));
+                            end
+                        else
+                            out = repmat(dataType(missing),size(dfdata));
+                        end
+                        firstIteration = false;
+                    end
+                    if reduceDim
+                        if obj.groups.isColumnGroups
+                            out(rowID,ii) = res;
+                        else
+                            out(ii,colID) = res;
+                        end
+                    else
+                        [lenIdx,lenCol] = size(val);
+                        out(rowID,colID) = repmat(res,1+lenIdx-size(res,1),1+lenCol-size(res,2));
+                    end
                 end
             end
-            res = res.resetUserProperties();
-            warning('on','frames:Index:notUnique')
         end
     end
     
 end
 
-function resDF = local_applyGroupDF(dataDF,groupsDF,fun,applyToFrame,varargin)
-data = dataDF.data;
-dataType = str2func(class(data));
-res = repmat(dataType(missing),size(data));
-groups = groupsDF.data;
-if groupsDF.rowseries
-    idxSameGroups = [1;size(data,1)];
-else
-    idxSameGroups = local_idxSameData(groups);
-end
-for ii = 1:size(idxSameGroups,2)
-    idx = idxSameGroups(:,ii);
-    idx_ = idx(1):idx(2);
-    if applyToFrame
-        df_ = dataDF.iloc_(idx_,:);
-    else
-        df_ = data(idx_,:);
-    end
-    groups_ = groups(idx(1),:);
-    groups_unique = unique(groups_);
-    groups_unique = groups_unique(~ismissing(groups_unique));
-    for g = groups_unique
-        g_ = groups(idx(1),:) == g;
-        if applyToFrame
-            res_ = fun(df_.iloc_(:,g_),varargin{:});
-            if ii==1 && g==groups_unique(1), isframe = frames.internal.isFrame(res_); end
-            if isframe, res_ = res_.data; end
-        else
-            res_ = fun(df_(:,g_),varargin{:});
-        end
-        res_ = repmat(res_, length(idx_)./size(res_,1), sum(g_)./size(res_,2));
-        res(idx_,g_) = res_;
-    end
-end
-resDF = dataDF;
-resDF.data_ = res;
+
+function [uniqueGroups,sameVals,idxOut] = local_idxSameData(data)
+[uniqueGroups,~,sameVals] = unique(data,'rows','stable');
+sameVals = sameVals(:)';
+idxOut = unique(sameVals,'stable');
 end
 
-function idxOut = local_idxSameData(data)
-idxStart = local_linesOfChange(data);
-idxEnd = [idxStart(2:end)-1, size(data,1)];
-idxOut = [idxStart; idxEnd];
-end
 
-function idx = local_linesOfChange(data)
-idx_ = 1;
-idx = idx_;
-for ii = 2:size(data,1)
-    if ~isequaln(data(idx_,:), data(ii,:))
-        idx_ = ii;
-        idx = [idx, idx_]; %#ok<AGROW>
-    end
-end
+function data = local_getData(data)
+if frames.internal.isFrame(data), data = data.data; end
 end

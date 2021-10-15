@@ -72,8 +72,8 @@ classdef DataFrame
 %     values in the expansion
 %
 %   - Split a frame into groups based on its columns, and apply a function:
-%     df.split(groups).apply(@(x) x.sum(2))  sums the data on the dimension
-%     2, group by group, so the result is a Txlength(group) frame
+%     df.split(groups).aggregate(@(x) x.sum(2))  sums the data on the dimension
+%     2, group by group, so the result is a T x numberOfGroups frame
 %
 %   - Rolling window methods:
 %     df.rolling(30).mean() computes the rolling mean with a 30 step
@@ -103,9 +103,10 @@ classdef DataFrame
     end
     properties(Dependent, Hidden)
         index
+        constructor
     end
     properties
-        description {mustBeText} = ""  % text description of the object
+        description = ""  % text description of the object
     end
     properties(Hidden, Access=protected)
         % Encapsulation. Internal use, there are no tests in the getters
@@ -274,12 +275,15 @@ classdef DataFrame
             s.rows = publicProps2struct(obj.rows_,Skip="value");
             s.rows.class = class(obj.rows_);
         end
+        function c = get.constructor(obj)
+            c = str2func(class(obj));
+        end
         
-        function row = getRows_(obj)
+        function row = getRowsObj(obj)
             % get the Index object underlying rows
             row = obj.rows_;
         end
-        function col = getColumns_(obj)
+        function col = getColumnsObj(obj)
             % get the Index object underlying columns
             col = obj.columns_;
         end
@@ -758,51 +762,39 @@ classdef DataFrame
             if nargout == 1, varargout{1} = p; end
         end
         
-        function s = split(obj,varargin)
-            % SPLIT split the frame into column-based groups to apply a function separately
-            % Use: .split(groups[,groupNames]).apply(@fun)
+        function s = split(obj,group,varargin)
+            % SPLIT split a Frame into groups to apply a function separately group by group
+            % Use: dfsplit = df.split(frames.Groups[,flags]).<apply,aggregate>(func[,args,flag])
             %
             % ----------------
             % Parameters:
-            %     * groups: (cell array,struct,frames.Group) 
-            %          Contain the list of elements in each group. Can be of different types:
-            %          - cell array: cell array of lists of elements in groups
-            %              In this case, groupNames is required.
-            %              e.g. groups={list1,list2}; groupNames=["name1","name2"]
-            %          - struct: structure whose fields are group names and values are
-            %              elements in each group. If groupNames is not specified, 
-            %              the split use all fields of the structure as groupNames.
-            %          - frames.Group: Group whose property names are group names and
-            %              property values are elements in each group. If groupNames
-            %              is not specified, the split use all properties of the 
-            %              Group as groupNames.
-            %          - frames.DataFrame: If groups change along the rows, one can
-            %              use a DataFrame that specifies to which group each element
-            %              belongs to. namesOfGroups is not used.
-            %     * groupNames: (string array) 
-            %          group names into which we want to split the Frame
+            %     * groups: frames.Groups
+            %          Object that contains keys and values describing
+            %          groups. Please refer to the documentation of
+            %          frames.Groups for more details.
+            %     * flags: 'allowOverlaps', 'isNonExhaustive'
+            %          Split throws an error if there are overlaps in the
+            %          group values, and if thery do not span the whole set
+            %          of the Index values. Allow these cases by respectively
+            %          added the flags 'allowOverlaps' and 'isNonExhaustive'
             %
-            % ----------------
-            % Examples (see also unitTests):
-            %   - simple split with cell
-            %       df=frames.DataFrame([1 2 3;2 5 3;5 0 1]', [6 2 1], [4 1 3]);
-            %       df.split({[4,3],1},["d","e"]).apply(@(x) x);
-            %   - apply function using group names
-            %       ceiler.d = {2.5,4.5};
-            %       ceiler.e = {2.6};
-            %       x2 = df.split({[4,3],1},["d","e"]).apply(@(x) x.clip(ceiler.(x.name){:}));
-            %   - split with structure
-            %       s.d = [4 3]; s.e = 1;
-            %       x3 = df.split(s).apply(@(x) x.clip(ceiler.(x.name){:}));
-            %   - split with a Group
-            %       g = frames.Groups([1 4 3],s);
-            %       x4 = df.split(g).apply(@(x) x.clip(ceiler.(x.name){:}));
-            %   - split with a group frame
-            %     g = frames.DataFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN]);
-            %     x5 = df.split(g).apply(@mean,2,'applyToFrame');
-            %     x6 = df.split(g).apply(@(x) x-mean(x,2),'applyToData');
+            % Methods:
+            %     * apply      
+            %           apply a function to each sub-Frame, and returns a single Frame. Maintains the structure of the original Frame.
+            %     * aggregate  
+            %           apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
+            %
+            % Method parameters:
+            %     * fun: function to apply, must be applicable to a matrix
+            %     * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
+            %           allows to use DataFrame methods, but may be slower than
+            %           applying a function directly to the data with 'applyToData'
+            %           e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
+            %    To use the group key for a frame, use x.description e.g.
+            %    to link a structure field to a specific group: .apply(@(x) x.*myStruct.(x.description),'applyToFrame')
+            % 
             % See also: frames.Groups, frames.internal.Split
-            s = frames.internal.Split(obj,varargin{:});
+            s = frames.internal.Split(obj,group,varargin{:});
         end
                 
         function obj = relChg(obj,varargin)
