@@ -237,9 +237,8 @@ df4 = frames.DataFrame(23*ones(2,3));
 
 dfs = {df2 df3, df1};
 
-df1.cattest(dfs, false)
-
-df1.cattest(dfs, true)
+df1.combine(dfs, false, false)
+df1.combine(dfs, false, true)
 
 
 

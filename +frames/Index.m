@@ -288,7 +288,7 @@ classdef Index
                % convert to index
                index2 = frames.Index().setvalue(index2, false); %skip value checks/ unique warning
            end
-           obj = obj.union_({index2});
+           obj = obj.union_({index2},"duplicate");
            obj.singleton_ = false;
        end
         
@@ -359,59 +359,103 @@ classdef Index
         end
 
         
-        function [obj_new, ind_cell] = union_(obj, others_cell, forceUnique, forceSort)
+        function [obj_new, ind_cell] = union_(obj, others_cell, method)
             % Internal union function to combine all supplied index objects
             %
-            % Methods:
-            %   - non-unique:
-            %         concatenate all values 
-            %   - unique output (in case of obj requireUnique set or forceUnique)
-            %         only unique values in output, last item used in case of double values
-            %
-            %
-            % The resulting index will be sorted if required (in case of obj requireUniqueSorted or forceSort).
+            % Concatenate all given values in index objects. Depending on obj settings
+            % (requireUnique, requireUniqueSorted) new index will be made unique
+            % and sorted.
             %
             % input:
-            %    others_cell:  cell array with (one or more) index objects to unite
-            %    forceUnique: logical, force unique even without requireUnique of obj set
-            %    forceSort:   logical, force sort even without requireUniqueSort of obj set
+            %    others_cell:  cell array with (one or more) index objects to combine
+            %    method:  string enum: 'unique', 'duplicate', 'unique_allow_duplicate'
             %
             % output:
-            %   obj_new: Index object with new united index
-            %   ind_cell: cell array with position index per supplied index object
-            %             (position index describes position of each original line in the newly created index)            
+            %   obj_new:  new Index object
+            %   ind_cell: cell array with position index per supplied index object,
+            %             including obj itself as first item.
+            %             Position index describes position of each original line in the newly created index            
             %
-            % default values            
-            if nargin<3, forceUnique=false; end
-            if nargin<4, forceSort=false; end                
-            makeUnique = forceUnique || obj.requireUnique;
-            makeSorted = forceSort || obj.requireUniqueSorted;
+            % default values       
+            if nargin<3, method="unique_allow_duplicate"; end           
+            if obj.requireUnique
+                method = "unique";
+            end                        
             % concat all inputs
             lengths = [obj.length() cellfun(@length, others_cell)];            
             obj_new = obj.vertcat_(others_cell{:});
-            % create index            
-            ind = (1:obj_new.length())';   
-            % adjust concatenated index if required
-            if makeUnique 
-                if makeSorted
-                   % create new index with only unique values (sorted)               
-                   [~, ia, ind] = unique(obj_new.value_uniqind, 'rows', 'sorted');                                      
-                else                                      
-                   % create new index with only unique values (do not change order)
-                   [~, ia, ind] = unique(obj_new.value_uniqind, 'rows', 'stable');                    
+            
+            % get unique index and row position index            
+            uniqind = obj_new.value_uniqind;
+            ind = (1:obj_new.length())';
+            
+            % handle duplicates
+            if method=="unique_allow_duplicate" 
+                if obj_new.isunique()
+                    % speedup by using unique method
+                    method="unique";
+                else
+                    label_dupl = labelDuplicatesInSections(uniqind, lengths);
+                     uniqind = [ uniqind label_dupl];
                 end
-                obj_new = obj_new.getSubIndex(ia);
+            end
+                                  
+            % modify concatenated index object if needed
+            switch method
+                case {"unique","unique_allow_duplicate" }
+                    % create new index with only unique values
+                    if obj.requireUniqueSorted                    
+                       [~, ia, ind] = unique(uniqind, 'rows', 'sorted');                                      
+                    else                                                         
+                       [~, ia, ind] = unique(uniqind, 'rows', 'stable');                    
+                    end
+                    obj_new = obj_new.getSubIndex(ia);
+   
+                   
                 
-            elseif makeSorted
-                  % get sorted Index object
-                  [~,sortind] =  sortrows(obj_new.value_uniqind);
-                  obj_new = obj_new.getSubIndex(sortind);
-                  % get 'reverse' sort index
-                  [~,ind] = sort(sortind);
-            end                         
-            % slice full index for each input            
-            ind_cell = mat2cell( ind, lengths, 1);        
-        end         
+                case "duplicate"
+                    if obj.isunique() && ~obj_new.isunique()
+                        warning('frames:Index:notUnique','Index value is not unique.')
+                    end                    
+            end
+            % slice full position index for each input
+            ind_cell = mat2cell( ind, lengths, 1);
+            
+            
+            function out = labelDuplicatesInSections(x, L)
+                % get label vector for duplicate values of x, per section defined by lengths in L                
+                startpos=[1 cumsum(L)+1];
+                out = zeros(size(x));
+                for i=1:length(L)
+                    p1 = startpos(i);
+                    p2 = startpos(i+1)-1;
+                    out(p1:p2) = labelDuplicates(x(p1:p2));
+                end                
+            end            
+            
+            function out = labelDuplicates(x)
+                % label duplicate values in array
+                [X, ind_sort] = sort(x);
+                C = countWithReset([1; diff(X)]);
+                [~, ind_revsort] = sort(ind_sort);
+                out = C(ind_revsort);
+            end
+            
+            function out = countWithReset(v)
+                % count consecutive zero elements, reset count at other values
+                count = 1;
+                out = zeros(size(v));
+                for i=1:length(v)
+                    if v(i)
+                        count = 1;
+                    else
+                        count = count + 1;
+                    end
+                    out(i) = count;
+                end
+            end
+        end
+        
         
     end
     
@@ -483,8 +527,8 @@ classdef Index
         
         function obj = recalc_unique_cache(obj)
             % recalculate unique cache based on stored value_
-            if obj.length()>0 && ~any(ismissing(obj.value_))
-                [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_, 'sorted');
+            if obj.length()>0 %&& ~any(ismissing(obj.value_))                
+                [obj.value_uniq_,~ ,obj.value_uniqind_] = nanunique(obj.value_, 'sorted');                
             else
                 obj.value_uniq_=[];
                 obj.value_uniqind_=[];
