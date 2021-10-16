@@ -1,10 +1,14 @@
 classdef Split
  % SPLIT split a Frame into groups to apply a function separately group by group
- % Use: dfsplit = df.split(groups[,flags]).<apply,aggregate>(func[,args,flag])
+ % Use: df.split(groups[,flags]).<apply,aggregate>(func[,args,flag])
+ %      Split(df,groups[,flags]).<apply,aggregate>(func[,args,flag])
+ %      Split(cellOfDFs,groups[,flags]).<apply,aggregate>(func[,args,flag])
  %
  % ----------------
  % Parameters:
- %     * df (Frame)
+ %     * df (Frame, cell of Frames)
+ %          A single DataFrame or a cell of DataFrames with equal
+ %          rows/columns, on which the function 'func' is applied.
  %     * groups (frames.Groups)
  %          Object that contains keys and values describing
  %          groups. Please refer to the documentation of
@@ -75,13 +79,14 @@ classdef Split
     methods
         function other = apply(obj,fun,varargin)
             % APPLY apply a function to each sub-Frame, and returns a single Frame. Maintains the structure of the original Frame.
-            %  * fun: function to apply, must be applicable to a matrix
+            %  * fun: function to apply. If Split is on a cell of N Frames,
+            %  then the function is of the form f({x1,..,xN},..) 
             %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
             %       allows to use DataFrame methods, but may be slower than
             %       applying a function directly to the data with 'applyToData'
             %  * flag 'applyByLine':
             %       allows to pass a function that will be applied line by
-            %       line instead that on a matrix
+            %       line instead that on a matrix (by default)
             % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,false,varargin{:});
             rows = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj(), true); 
@@ -91,10 +96,14 @@ classdef Split
         end
         function other = aggregate(obj,fun,varargin)
             % AGGREGATE apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
-            %  * fun: function to apply, must be applicable to a matrix
+            %  * fun: function to apply. If Split is on a cell of N Frames,
+            %  then the function is of the form f({x1,..,xN},..) 
             %  * flag enum('applyToFrame','applyToData'), 'applyToData' (default):
             %       allows to use DataFrame methods, but may be slower than
             %       applying a function directly to the data with 'applyToData'
+            %  * flag 'applyByLine':
+            %       allows to pass a function that will be applied line by
+            %       line instead that on a matrix (by default)
             % e.g. .aggregate(@(x) sum(x,2),'applyToData') vs .aggregate(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,true,varargin{:});
             if obj.groups.isColumnGroups

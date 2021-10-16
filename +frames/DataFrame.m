@@ -827,8 +827,8 @@ classdef DataFrame
             %           applying a function directly to the data with 'applyToData'
             %           e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             %     * flag 'applyByLine':
-            %          allows to pass a function that will be applied line by
-            %          line instead that on a matrix
+            %             allows to pass a function that will be applied line by
+            %       line instead that on a matrix (by default)
             %    To use the group key for a frame, use x.description e.g.
             %    to link a structure field to a specific group: .apply(@(x) x.*myStruct.(x.description),'applyToFrame')
             % 
