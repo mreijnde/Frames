@@ -544,36 +544,13 @@ classdef DataFrame
         end
                
         function other = horzcat(obj,varargin)
-            % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
-            % 
-            % calc concatenated dataframe
+            % horizontal concatenation (inner join) of frames: [df1,df2,df3,...]            
             other = obj.combine(varargin, "unique_keep_duplicates", "duplicate");
-            
-            %extra checks for backwards compatiblity (still needed?)
-            if length(other.rows)~=length(obj.rows)
-                % if rows are not equal, they have to be unique
-                testUniqueIndex(obj.rows_)
-                cellfun(@(x) testUniqueIndex(x.rows_), varargin);     
-            end
-                
         end
         
         function other = vertcat(obj,varargin)
-            % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
-            % 
-            % calc concatenated dataframe
-            other = obj.combine(varargin, "duplicate", "unique_keep_duplicates");            
-            % extra checks for backwards compatiblity (still needed?)
-            %
-            % check if no overlapping rows
-            inputRows = obj.height() + sum( cellfun(@height, varargin ));            
-            if other.height() ~= inputRows
-                error('frames:vertcat:rowsNotUnique', ... 
-                    'There must be no overlap in the rows of the Frames.')
-            end            
-            % check if rows are unique (why ??)
-            testUniqueIndex(obj.rows_)
-            cellfun(@(x) testUniqueIndex(x.rows_), varargin);                      
+            % vertical concatenation (outer join) of frames: [df1;df2;df3;...]                        
+            other = obj.combine(varargin, "duplicate", "unique_keep_duplicates");                               
         end
         
         
