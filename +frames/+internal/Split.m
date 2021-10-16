@@ -32,7 +32,7 @@ classdef Split
             % SPLIT Split(df,groups)
             if iscell(df)
                 assert(isa(df{1},'frames.DataFrame'),'df must be a cell of frames.DataFrame')
-                assert(isaligned(df{:},'dfs must be aligned'))
+                assert(isaligned(df{:}),'dfs must be aligned')
                 obj.dfIsCell = true;
             else
                 assert(isa(df,'frames.DataFrame'),'df must be a frames.DataFrame')
@@ -215,7 +215,7 @@ classdef Split
                             out(ii,colID) = res;
                         end
                     else
-                        [lenIdx,lenCol] = size(val);
+                        [lenIdx,lenCol] = obj.applyToPotentialCell(val,@size,true);
                         out(rowID,colID) = repmat(res,1+lenIdx-size(res,1),1+lenCol-size(res,2));
                     end
                 end
@@ -228,11 +228,11 @@ classdef Split
             elseif onlyFirst
                 [varargout{1:nargout}] = func(data{1});
             else
-                varargout = cell(1,numel(data));
+                out = cell(1,numel(data));
                 for ii = 1:numel(data)
-                    varargout{ii} = func(data{ii});
+                    out{ii} = func(data{ii});
                 end
-                %     varargout{1} = out;
+                varargout{1} = out;
             end
         end
 
