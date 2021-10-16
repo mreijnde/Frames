@@ -1,6 +1,6 @@
 classdef Split
  % SPLIT split a Frame into groups to apply a function separately group by group
- % Use: dfsplit = df.split(frames.Groups[,flags]).<apply,aggregate>(func[,args,flag])
+ % Use: dfsplit = df.split(groups[,flags]).<apply,aggregate>(func[,args,flag])
  %
  % ----------------
  % Parameters:
@@ -9,6 +9,11 @@ classdef Split
  %          Object that contains keys and values describing
  %          groups. Please refer to the documentation of
  %          frames.Groups for more details.
+ %     * flags: 'allowOverlaps', 'isNonExhaustive'
+ %          Split throws an error if there are overlaps in the
+ %          group values, and if thery do not span the whole set
+ %          of the Index values. Allow these cases by respectively
+ %          added the flags 'allowOverlaps' and 'isNonExhaustive'
  %
  % Methods:
  %     * apply      
@@ -29,7 +34,7 @@ classdef Split
     
     methods
         function obj = Split(df, groups, varargin)
-            % SPLIT Split(df,groups)
+            % SPLIT Split(df,groups[,flags])
             if iscell(df)
                 assert(isa(df{1},'frames.DataFrame'),'df must be a cell of frames.DataFrame')
                 assert(isaligned(df{:}),'dfs must be aligned')
@@ -47,7 +52,7 @@ classdef Split
                 isflag = find(strcmp(varargin,'isNonExhaustive'),1);
                 isNonExhaustive = ~isempty(isflag);
                 allElements = [groups.values{:}];
-                if ~allowOverlaps && ~frames.internal.isunique(allElements)
+                if ~allowOverlaps && ~isunique(allElements)
                     error('frames:SplitOverlap','There are overlaps in Split')
                 end
                 if groups.isColumnGroups 
@@ -249,6 +254,6 @@ end
 
 
 function data = local_getData(data)
-if frames.internal.isFrame(data), data = data.data; end
+if isFrame(data), data = data.data; end
 end
 

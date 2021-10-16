@@ -833,7 +833,7 @@ classdef DataFrame
             %    to link a structure field to a specific group: .apply(@(x) x.*myStruct.(x.description),'applyToFrame')
             % 
             % See also: frames.Groups, frames.internal.Split
-            s = frames.internal.Split(obj,group,varargin{:});
+            s = frames.Split(obj,group,varargin{:});
         end
                 
         function obj = relChg(obj,varargin)

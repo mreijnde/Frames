@@ -189,7 +189,7 @@ classdef     splitTest < matlab.unittest.TestCase
             tiebreaker = frames.TimeFrame([1 1 1 1 1 1 1 1 1 1;10 9 8 7 6 5 4 3 2 1]);
             groupsDF = frames.TimeFrame([1 1 1 1 2 2 1 1 2 1;2 1 1 1 1 2 1 1 1 2]);
             groups = frames.Groups(groupsDF);
-            sol = frames.internal.Split({df1,tiebreaker},groups).apply(@sorter,'applyByLine');
+            sol = frames.Split({df1,tiebreaker},groups).apply(@sorter,'applyByLine');
             expected = frames.TimeFrame([1 2 3 4 1 2 5 6 3 7;3 7 6 5 4 2 3 2 1 1]);
             t.verifyEqual(sol,expected)
             function out = sorter(data)
@@ -202,7 +202,7 @@ classdef     splitTest < matlab.unittest.TestCase
             tiebreaker = frames.TimeFrame([1 1 1 1 1 1 1 1 1 1;10 9 8 7 6 5 4 3 2 1]);
             groupsDF = frames.TimeFrame([1 1 1 1 2 2 1 1 2 1;2 1 1 1 1 2 1 1 1 2]);
             groups = frames.Groups(groupsDF);
-            sol = frames.internal.Split({df1,tiebreaker},groups).apply(@sorterDF,'applyByLine','applyToFrame');
+            sol = frames.Split({df1,tiebreaker},groups).apply(@sorterDF,'applyByLine','applyToFrame');
             expected = frames.TimeFrame([1 2 3 4 1 2 5 6 3 7;3 7 6 5 4 2 3 2 1 1]);
             t.verifyEqual(sol,expected)
             function out = sorterDF(data)
@@ -215,15 +215,15 @@ classdef     splitTest < matlab.unittest.TestCase
             df2 = frames.TimeFrame([10 20 30 40 50 60 70 80 90 100;10 9 8 7 6 5 4 3 2 1]);
             groupsDF = frames.TimeFrame([1 1 1 1 2 2 1 1 2 1;2 1 1 1 1 2 1 1 1 2]);
             groups = frames.Groups(groupsDF);
-            sol = frames.internal.Split({df1,df2},groups).aggregate(@summer,'applyByLine','applyToData');
+            sol = frames.Split({df1,df2},groups).aggregate(@summer,'applyByLine','applyToData');
             expected = frames.TimeFrame([35+350, 20+200; 3.8+39,1.7+16],[],[1 2]);
             t.verifyEqual(sol,expected)
             
-            sol = frames.internal.Split({df1,df2},groups).aggregate(@summer,'applyToData');
+            sol = frames.Split({df1,df2},groups).aggregate(@summer,'applyToData');
             expected = frames.TimeFrame([35+350, 20+200; 3.8+39,1.7+16],[],[1 2]);
             t.verifyEqual(sol,expected)
             
-            sol = frames.internal.Split({df1,df2},groups).apply(@summer);
+            sol = frames.Split({df1,df2},groups).apply(@summer);
             gdfd = [1 1 1 1 2 2 1 1 2 1;2 1 1 1 1 2 1 1 1 2];
             d = NaN(size(gdfd));
             d(1,gdfd(1,:)==1) = 35+350; d(1,gdfd(1,:)==2) = 20+200;
@@ -235,7 +235,7 @@ classdef     splitTest < matlab.unittest.TestCase
             df2 = frames.TimeFrame([10 20 30 40 50 60 70 80 90 100;10 9 8 7 6 5 4 3 2 1]);
             groupsDF = frames.TimeFrame([1 1 1 1 2 2 1 1 2 1]).asRowSeries();
             groups = frames.Groups(groupsDF);
-            sol = frames.internal.Split({df1,df2},groups).aggregate(@summer);
+            sol = frames.Split({df1,df2},groups).aggregate(@summer);
             expected = frames.TimeFrame([35+350, 20+200;42+3.5, 13+2],[],[1 2]);
             t.verifyEqual(sol,expected)
             function res = summer(data)
