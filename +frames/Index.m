@@ -395,47 +395,55 @@ classdef Index
             uniqind = obj_new.value_uniqind;
             ind = (1:obj_new.length())';
             
-            % handle duplicates
-            if method=="unique_keep_duplicates" 
-                if obj_new.isunique()
-                    % speedup by using unique method
-                    method="unique";
-                else
-                    label_dupl = labelDuplicatesInSections(uniqind, lengths);
-                     uniqind = [ uniqind label_dupl];
+            if method == "duplicate"
+                % keep concatenated values
+                if obj.isunique() && ~obj_new.isunique()
+                      warning('frames:Index:notUnique','Index value is not unique.')
                 end
-            end
-                                  
-            % modify concatenated index object if needed
-            switch method
-                case {"unique","unique_keep_duplicates" }
-                    % create new index with only unique values
-                    if obj.requireUniqueSorted                    
-                       [~, ia, ind] = unique(uniqind, 'rows', 'sorted');                                      
-                    else                                                         
-                       [~, ia, ind] = unique(uniqind, 'rows', 'stable');                    
-                    end
-                    obj_new = obj_new.getSubIndex(ia);
-   
-                   
                 
-                case "duplicate"
-                    if obj.isunique() && ~obj_new.isunique()
-                        warning('frames:Index:notUnique','Index value is not unique.')
-                    end                    
+            else                
+                % handle duplicates
+                unique_section = [obj.requireUnique cellfun(@(x) x.requireUnique, others_cell)];
+                label_dupl = labelDuplicatesInSections(uniqind, lengths, unique_section);
+                if method=="unique_keep_duplicates" 
+                    if ~obj_new.isunique()                   
+                       uniqind = [ uniqind label_dupl];
+                    end
+                else
+                    if max(label_dupl)>1
+                        warning('frames:union:mergedDuplicateValues', ...
+                            "Duplicate values within single input index have been merged, only last value is used."); 
+                    end
+                end
+
+                % create new index with only unique values
+                if obj.requireUniqueSorted                    
+                   [~, ia, ind] = unique(uniqind, 'rows', 'sorted');                                      
+                else                                                         
+                   [~, ia, ind] = unique(uniqind, 'rows', 'stable');                    
+                end
+                obj_new = obj_new.getSubIndex(ia);                
             end
+                           
             % slice full position index for each input
             ind_cell = mat2cell( ind, lengths, 1);
             
             
-            function out = labelDuplicatesInSections(x, L)
-                % get label vector for duplicate values of x, per section defined by lengths in L                
+            
+            
+            function out = labelDuplicatesInSections(x, L, unique_section)
+                % get label vector for duplicate values of x, per section defined by lengths in L
+                % (for speedup: do not calculate if section is known to be unique)
                 startpos=[1 cumsum(L)+1];
                 out = zeros(size(x));
                 for i=1:length(L)
                     p1 = startpos(i);
                     p2 = startpos(i+1)-1;
-                    out(p1:p2) = labelDuplicates(x(p1:p2));
+                    if unique_section(i)
+                        out(p1:p2) = 1;
+                    else
+                        out(p1:p2) = labelDuplicates(x(p1:p2));
+                    end
                 end                
             end            
             
