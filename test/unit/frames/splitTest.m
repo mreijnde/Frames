@@ -1,10 +1,5 @@
-classdef     splitTest < matlab.unittest.TestCase
-    
-    methods(TestMethodSetup)
-        function setupPath(t)
-            t.applyFixture(matlab.unittest.fixtures.PathFixture('../../../'))
-        end
-    end
+classdef splitTest < AbstractFramesTests
+
     methods(Test)
         
         function splitApplyTest(t)
