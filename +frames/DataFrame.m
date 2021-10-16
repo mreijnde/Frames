@@ -547,7 +547,7 @@ classdef DataFrame
             % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
             % 
             % calc concatenated dataframe
-            other = obj.combine(varargin, "unique_allow_duplicate", "duplicate");
+            other = obj.combine(varargin, "unique_keep_duplicates", "duplicate");
             
             %extra checks for backwards compatiblity (still needed?)
             if length(other.rows)~=length(obj.rows)
@@ -562,7 +562,7 @@ classdef DataFrame
             % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
             % 
             % calc concatenated dataframe
-            other = obj.combine(varargin, "duplicate", "unique_allow_duplicate");            
+            other = obj.combine(varargin, "duplicate", "unique_keep_duplicates");            
             % extra checks for backwards compatiblity (still needed?)
             %
             % check if no overlapping rows

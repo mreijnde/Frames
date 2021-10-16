@@ -357,40 +357,46 @@ classdef Index
             [~, sortindex] = unique(obj.value_uniqind, ordering, 'rows');
             obj = obj.getSubIndex(sortindex);            
         end
-
         
-        function [obj_new, ind_cell] = union_(obj, others_cell, method)
-            % Internal union function to combine all supplied index objects
+        
+        function [obj_new, ind_cell] = union_(obj, others_cell, method_NonUniqueIndex)
+            % Internal union function to create combined index of obj and all supplied index objects            
             %
             % Concatenate all given values in index objects. Depending on obj settings
             % (requireUnique, requireUniqueSorted) new index will be made unique
             % and sorted.
             %
             % input:
-            %    others_cell:  cell array with (one or more) index objects to combine
-            %    method:  string enum: 'unique', 'duplicate', 'unique_allow_duplicate'
-            %
+            %    others_cell:            cell array with (one or more) index objects to combine
+            %    method_NonUniqueIndex:  string enum: 'duplicate', 'unique', 'unique_keep_duplicates'
+            %                            describes the alignment method used for NonUnique Index objects 
+            %                                        
             % output:
             %   obj_new:  new Index object
             %   ind_cell: cell array with position index per supplied index object,
             %             including obj itself as first item.
-            %             Position index describes position of each original line in the newly created index            
+            %             Position index describes the position for each original line in the newly created index            
             %
-            % default values       
-            if nargin<3, method="unique_allow_duplicate"; end           
+            % get align method to use
             if obj.requireUnique
                 method = "unique";
+            else
+               if nargin<3
+                   method = "unique_keep_duplicates"; 
+               else
+                   method=method_NonUniqueIndex;
+               end
             end                        
             % concat all inputs
             lengths = [obj.length() cellfun(@length, others_cell)];            
-            obj_new = obj.vertcat_(others_cell{:});
+            obj_new = obj.vertcat_(others_cell{:}); % no error checking on unique yet
             
             % get unique index and row position index            
             uniqind = obj_new.value_uniqind;
             ind = (1:obj_new.length())';
             
             % handle duplicates
-            if method=="unique_allow_duplicate" 
+            if method=="unique_keep_duplicates" 
                 if obj_new.isunique()
                     % speedup by using unique method
                     method="unique";
@@ -402,7 +408,7 @@ classdef Index
                                   
             % modify concatenated index object if needed
             switch method
-                case {"unique","unique_allow_duplicate" }
+                case {"unique","unique_keep_duplicates" }
                     % create new index with only unique values
                     if obj.requireUniqueSorted                    
                        [~, ia, ind] = unique(uniqind, 'rows', 'sorted');                                      
