@@ -238,10 +238,20 @@ classdef     splitTest < matlab.unittest.TestCase
             sol = frames.Split({df1,df2},groups).aggregate(@summer);
             expected = frames.TimeFrame([35+350, 20+200;42+3.5, 13+2],[],[1 2]);
             t.verifyEqual(sol,expected)
-            function res = summer(data)
+            function res = summer(data,dim)
+                if nargin < 2, dim = 2; end
                 res = 0;
-                for ii = 1:numel(data), res = res + sum(data{ii},2); end
+                for ii = 1:numel(data), res = res + sum(data{ii},dim); end
             end
+            
+            df1 = frames.TimeFrame([1 2 3 4 5 6 7 8 9 10;0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1]');
+            df2 = frames.TimeFrame([10 20 30 40 50 60 70 80 90 100;10 9 8 7 6 5 4 3 2 1]');
+            groupsDF = frames.TimeFrame([1 1 1 1 2 2 1 1 2 1]').asColSeries();
+            groups = frames.Groups(groupsDF,'rowGroups');
+            sol = frames.Split({df1,df2},groups).aggregate(@(x) summer(x,1));
+            expected = frames.DataFrame([35+350, 20+200;42+3.5, 13+2]',[1 2]);
+            t.verifyEqual(sol,expected)
+
         end
     end
 end
