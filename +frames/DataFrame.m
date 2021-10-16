@@ -509,11 +509,11 @@ classdef DataFrame
             if nargin<3, methodRows="unique"; end
             if nargin<4, methodCols="unique"; end
             % get index objects            
-            rows = cellfun(@(x) {x.rows_}, dfs);
-            cols = cellfun(@(x) {x.columns_}, dfs);            
+            rowsobj = cellfun(@(x) {x.rows_}, dfs);
+            colsobj = cellfun(@(x) {x.columns_}, dfs);            
             % get new index objects and position index          
-            [rowsnew, rowsnew_ind] = obj.rows_.union_(rows, methodRows);
-            [colsnew, colsnew_ind] = obj.columns_.union_(cols, methodCols);            
+            [rowsnew, rowsnew_ind] = obj.rows_.union_(rowsobj, methodRows);
+            [colsnew, colsnew_ind] = obj.columns_.union_(colsobj, methodCols);            
             % get empty dataframe (with same settings)
             dfnew = obj;
             dfnew.rows_ = rowsnew;
@@ -529,8 +529,6 @@ classdef DataFrame
                 % get position indices                
                 rowind = rowsnew_ind{i};
                 colind = colsnew_ind{i};
-                % assign values
-                dfnew.data_(rowind,colind) = dfs{i}.data_;
                 % checks
                 assert(isa(dfs{i}.data_,type),'frames:concat:differentDatatype', ...
                      'frames do not have the same data type')
@@ -539,7 +537,9 @@ classdef DataFrame
                       "Overlapping values (with same row and column index) between different dataframes detected. " + ...
                       "Value of last dataframe will be used.");                   
                 end
-                elements_assigned(rowind,colind)= true;     
+                elements_assigned(rowind,colind)= true;
+                % assign values
+                dfnew.data_(rowind,colind) = dfs{i}.data_;
             end            
         end
                
