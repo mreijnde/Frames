@@ -142,14 +142,31 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             e = frames.DataFrame([],[],frames.Index([])).setRowsName("");
                         
             % VERTCAT
-            % vertcat does not accept duplicate rows
-            t.verifyError(@()[du;uu],'frames:requireUniqueIndex')
-            t.verifyError(@()[su;du],'frames:vertcat:rowsNotUnique') % changed  error
-            warning('off','frames:concat:overlap')
-            t.verifyError(@()[su;su],'frames:vertcat:rowsNotUnique')
-            warning('on','frames:concat:overlap')
-            t.verifyError(@()[uu;ud],'frames:vertcat:rowsNotUnique')
+            warning('off','frames:Index:notUnique')
+            t.verifyEqual([du;uu],frames.DataFrame([du.data;uu.data],...
+                frames.Index([1 1 3 6 5 4],Unique=false),du.getColumnsObj())) % original error 'frames:requireUniqueIndex'
+            warning('on','frames:Index:notUnique')
             
+            warning_id = 'frames:union:mergedDuplicateValues';
+            t.verifyWarning(@() [su;du] , warning_id );
+            warning('off',warning_id)
+            t.verifyEqual([su;du],frames.DataFrame([du.data(2:3,:); su.data],...
+                frames.Index([1 3 10 20 30],UniqueSorted=true),du.getColumnsObj())) % original error 'frames:vertcat:rowsNotUnique'
+            warning('on',warning_id)
+            
+            warning_id = 'frames:concat:overlap';
+            t.verifyWarning(@() [su;su] , warning_id );
+            warning('off',warning_id)
+            t.verifyEqual([su;su], su) % original error 'frames:vertcat:rowsNotUnique'
+            warning('on',warning_id)
+            
+            warning_id = 'frames:union:mergedDuplicateValues';
+            t.verifyWarning(@() [uu;ud] , warning_id );
+            warning('off',warning_id)
+            t.verifyEqual([uu;ud],frames.DataFrame([uu.data ud.data(:,2:3)],...
+                uu.getRowsObj(), frames.Index([6 5 4 1 3],Unique=true))) % original error 'frames:vertcat:rowsNotUnique'
+            warning('on',warning_id)
+                        
             % can concatenate duplicates if same columns
             t.verifyEqual([ud;sd],frames.DataFrame([ud.data;sd.data],...
                 frames.Index([6 5 4 10 20 30],Unique=true),ud.getColumnsObj()))
@@ -181,9 +198,21 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             
             
             %HORZCAT
-            % horzcat does not accept duplicate rows unless it is the same
-            t.verifyError(@()[du,us],'frames:requireUniqueIndex')
-            t.verifyError(@()[uu,ds],'frames:requireUniqueIndex') %updated error
+            warning('off','frames:Index:notUnique')
+            data_ok = nan(5,6); data_ok(1:3,1:3) = uu.data; data_ok(4:5,4:6) = ds.data(2:3,:);
+            df_ok = frames.DataFrame(data_ok, frames.Index([6 5 4 1 3],Unique=true), ...
+                                              frames.Index([unique;sorted],Unique=true));            
+            warning('on','frames:Index:notUnique')
+            warning_id = 'frames:union:mergedDuplicateValues';
+            t.verifyWarning(@() [uu,ds], warning_id );
+            warning('off',warning_id)
+            t.verifyEqual([uu,ds], df_ok ) % error originall 'frames:requireUniqueIndex'
+            warning('on',warning_id)
+            
+            
+            
+            
+            % horzcat does not accept duplicate rows unless it is the same            
             t.verifyEqual([du,ds],frames.DataFrame([du.data,ds.data],duplicate,[unique;sorted]))
             warning('off','frames:Index:notUnique')
             t.verifyEqual([dd,du],frames.DataFrame([dd.data,du.data],duplicate,[duplicate;unique]))
@@ -744,9 +773,12 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             b = frames.TimeFrame(2,[2 4],1);
             c = frames.TimeFrame(3,3,2);
             t.verifyEqual([a;c;b],frames.TimeFrame([1 2 NaN 2; NaN NaN 3 NaN]',[1 2 3 4],[1 2]))
-            warning('off','frames:concat:overlap')
-            t.verifyError(@() [a;a], 'frames:vertcat:rowsNotUnique')
-            warning('on','frames:concat:overlap')
+            
+            warning_id = 'frames:concat:overlap';
+            t.verifyWarning(@() [a;a] , warning_id );
+            warning('off',warning_id)
+            t.verifyEqual([a;a], a) % original error 'frames:vertcat:rowsNotUnique'
+            warning('on',warning_id)                    
             
             a = frames.DataFrame(1,1,1);
             b = frames.DataFrame(2,[2 4],1);
