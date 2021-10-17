@@ -1,5 +1,4 @@
-classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
-        groupTest < matlab.unittest.TestCase
+classdef groupTest < AbstractFramesTests
     
     methods(Test)
         function columnGroupTest(t)

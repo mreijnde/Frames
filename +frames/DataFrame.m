@@ -756,9 +756,9 @@ classdef DataFrame
             %          frames.Groups for more details.
             %     * flags: 'allowOverlaps', 'isNonExhaustive'
             %          Split throws an error if there are overlaps in the
-            %          group values, and if thery do not span the whole set
+            %          group values, and if they do not span the whole set
             %          of the Index values. Allow these cases by respectively
-            %          added the flags 'allowOverlaps' and 'isNonExhaustive'
+            %          adding the flags 'allowOverlaps' and 'isNonExhaustive'
             %
             % Methods:
             %     * apply      
@@ -772,11 +772,14 @@ classdef DataFrame
             %           allows to use DataFrame methods, but may be slower than
             %           applying a function directly to the data with 'applyToData'
             %           e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
+            %     * flag 'applyByLine':
+            %             allows to pass a function that will be applied line by
+            %       line instead of on a matrix (by default)
             %    To use the group key for a frame, use x.description e.g.
             %    to link a structure field to a specific group: .apply(@(x) x.*myStruct.(x.description),'applyToFrame')
             % 
             % See also: frames.Groups, frames.internal.Split
-            s = frames.internal.Split(obj,group,varargin{:});
+            s = frames.Split(obj,group,varargin{:});
         end
                 
         function obj = relChg(obj,varargin)
@@ -850,6 +853,35 @@ classdef DataFrame
                 bool = all(iseq(:));
             catch
                 bool = false;
+            end
+        end
+        
+        function bool = isaligned(obj,varargin)
+            % ISALIGNED(df1,df2,...[,flags]) returns true if all Frames are aligned. 
+            % Add the flag 'rows' or 'columns' to check alignment in only one direction. 
+            isflag = find(strcmp(varargin,'rows'),1);
+            checkRows = ~isempty(isflag);
+            varargin(isflag) = [];
+            isflag = find(strcmp(varargin,'columns'),1);
+            checkCols = ~isempty(isflag);
+            varargin(isflag) = [];
+            if ~any([checkCols,checkRows])
+                checkCols = true; checkRows = true;
+            end
+            bool = true;
+            if checkRows
+                row = obj.rows;
+                for v = varargin
+                    bool = isequaln(row,v{1}.rows);
+                    if ~bool; return; end
+                end
+            end
+            if checkCols
+                col = obj.columns;
+                for v = varargin
+                    bool = isequaln(col,v{1}.columns);
+                    if ~bool; return; end
+                end
             end
         end
         
