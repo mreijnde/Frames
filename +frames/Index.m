@@ -25,9 +25,6 @@ classdef Index
 %
 % See also: TIMEINDEX
     
-    %properties
-    %    name = "" % {mustBeTextScalar} = ""  % (textScalar) name of the Index
-    %end
     properties(Dependent)
         value                % Tx1 array
         singleton            % (logical, default false) set it to true if the Index represents a series, cf DataFrame.series
@@ -43,7 +40,7 @@ classdef Index
         value_               % stores values   
     end
     properties(Hidden,Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex})  
-        name_                % store name
+        name_                % store name of the index
         singleton_
         requireUnique_
         requireUniqueSorted_
@@ -271,17 +268,7 @@ classdef Index
                 pos = findPositionIn(obj.value_,target);
             end
         end
-        
-%         function obj = union(obj,index2)
-%             % unify two indices
-%             index1 = obj.value_;
-%             index2 = obj.getValue_from(index2);
-%             assert(isequal(class(index1),class(index2)), ...
-%                 sprintf( 'indexes are of different types: [%s] [%s]',class(index1),class(index2)));
-%             obj.value_ = obj.unionData(index1,index2);
-%             obj.singleton_ = false;
-%         end
-%         
+             
        function obj = union(obj,index2)
            % unify two indices
            if ~isIndex(index2)
@@ -294,9 +281,9 @@ classdef Index
         
        
         function obj = vertcat_(obj,varargin)
-            % internal function for concatenation (no checks)
+            % internal function for concatenation of multiple indices (no checks)
             others = [varargin{:}];
-            val = [obj.value_;  vertcat(others.value_) ];
+            val = vertcat(obj.value_, others.value_);
             obj.singleton_ = false;
             obj.value_ = val;
         end       
@@ -541,7 +528,7 @@ classdef Index
         
         function obj = recalc_unique_cache(obj)
             % recalculate unique cache based on stored value_
-            if obj.length()>0 %&& ~any(ismissing(obj.value_))                
+            if obj.length()>0             
                 [obj.value_uniq_,~ ,obj.value_uniqind_] = nanunique(obj.value_, 'sorted');                
             else
                 obj.value_uniq_=[];
@@ -622,23 +609,7 @@ classdef Index
                        "Selector is not logical");                    
                                      
         end    
-                
-%         function u = unionData(obj,v1,v2)
-%             if obj.requireUnique_
-%                 if obj.requireUniqueSorted_
-%                     u = union(v1,v2,'sorted');  % sorts by default
-%                 else
-%                     u = union(v1,v2,'stable');
-%                 end
-%                 if isrow(u), u=u'; end
-%             else
-%                 u = [v1; v2];
-%                 if ~isunique(v2) || any(ismember(v2,v1))
-%                     warning('frames:Index:notUnique','Index value is not unique.')
-%                 end
-%             end
-%         end
-        
+                        
         function value = getValue(obj)
             value = obj.value_;
         end
