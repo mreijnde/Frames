@@ -810,9 +810,9 @@ classdef DataFrame
             %          frames.Groups for more details.
             %     * flags: 'allowOverlaps', 'isNonExhaustive'
             %          Split throws an error if there are overlaps in the
-            %          group values, and if thery do not span the whole set
+            %          group values, and if they do not span the whole set
             %          of the Index values. Allow these cases by respectively
-            %          added the flags 'allowOverlaps' and 'isNonExhaustive'
+            %          adding the flags 'allowOverlaps' and 'isNonExhaustive'
             %
             % Methods:
             %     * apply      
