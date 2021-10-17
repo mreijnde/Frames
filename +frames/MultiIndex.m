@@ -20,14 +20,19 @@ classdef MultiIndex < frames.Index
             %
             arguments
                 value = double.empty(0,1)
-                nameValue.Name = ""
+                nameValue.Name string = ""
                 nameValue.Unique (1,1) = false
                 nameValue.UniqueSorted (1,1) = false
                 nameValue.Singleton (1,1) = false
             end
+            % empty MultiIndex object with specified settings
             obj = obj@frames.Index(Unique=nameValue.Unique, UniqueSorted=nameValue.UniqueSorted, ...
                                    Singleton=nameValue.Singleton);
-            obj = obj.setIndex(value, nameValue.Name);
+            if nameValue.Name==""
+                obj = obj.setIndex(value);
+            else
+                obj = obj.setIndex(value, nameValue.Name);
+            end
         end
         
         
@@ -304,18 +309,24 @@ classdef MultiIndex < frames.Index
         
         function obj = setIndex(obj, value, name)            
             % assign index and dimension names
-            %
-            if isIndex(value)
-                % accept (linear) Index object as single index
-                name = value.name; %override name
-                value = {value.value_};                
+            %            
+            % accept (linear) Index object as single index
+            if isIndex(value)            
+                value = {value};
             end
-            obj.value = value;
+            % default parameters
+            if nargin<3 || isempty(name), name=strings(length(value),1); end
+            % assign values (+ convert to linear indices if needed)
+            obj.value = value;            
+            % assign names                                                
             assert(isstring(name) && length(name)==obj.Ndim, "Name should be string array with Ndim values.");
-            % assign name strings to Index objects
-            for i=1:obj.Ndim
+            for i=1:obj.Ndim                                    
                 if name(i)~=""
+                    % assign supplied name
                     obj.value_(i).name = name(i);
+                elseif ~isIndex(value{i})
+                    % assign default naming
+                    obj.value_(i).name = "dim" + i;                
                 end
             end
             obj.nameChecker();
@@ -437,6 +448,7 @@ classdef MultiIndex < frames.Index
                 val = value{i};
                 if numel(val)==1 && isIndex(val)
                     % linear index should not be unique
+                    val.requireUniqueSorted=false;
                     val.requireUnique=false;
                     indices(i) = val;
                 else
@@ -510,19 +522,27 @@ classdef MultiIndex < frames.Index
         end
         
         function valueChecker(obj,fromSubsAsgnIdx,b)
-            % validate current multiindex values
+            % validate current multiIndex values
             %            
-            if obj.requireUnique_
-                % check if rows are unique
-                Nindex = obj.length();
-                rows_uniqind = unique(obj.value_uniqind,'rows','stable');
-                if size(rows_uniqind,1)~= Nindex
+            % check if rows are unique
+            Nindex = obj.length();
+            rows_uniqind = unique(obj.value_uniqind,'rows','stable');
+            if size(rows_uniqind,1)~= Nindex
+                if obj.requireUnique_
                     rows_not_unique = setdiff(1:Nindex, rows_uniqind);
-                    error("Combination of dimension values should be unique. " + ...
+                    error('frames:MultiIndex:requireUniqueFail', ...
+                        "Combination of dimension values should be unique. " + ...
                         "The following multi-index rows are not unique: " + ...
                         num2str(rows_not_unique));
+                else
+                    warning('frames:MultiIndex:notUnique', ...
+                        'MultiIndex row values are not unique.')
                 end
             end
+            % check sorted            
+            assert(~obj.requireUniqueSorted || issorted(obj.value_uniqind, 'rows'), ...
+                'frames:MultiIndex:requireSortedFail',  ...
+                'Index value is required to be sorted and unique.')            
         end
         
         
@@ -609,35 +629,10 @@ classdef MultiIndex < frames.Index
             % find position of the Index into the target
             if nargin < 3, userCall = true; end
             [~, pos]= getMatchingRows(target, obj, obj.name);
-            % todo: handle requireUnique/requireUniqueSorted (?)
         end
         
-
-        
-%         function obj = union(obj,index2)
-%             % unify two indices           
-%             obj.singleton_ = false;            
-%             if obj.requireUnique_
-%                 if obj.requireUniqueSorted_
-%                     obj.requireUniqueSorted = false;
-%                     obj = unique([obj; index2], 'sorted');                   
-%                     obj.requireUniqueSorted = true;
-%                 else
-%                     obj.requireUnique = false;
-%                     obj = unique([obj; index2], 'stable');
-%                     obj.requireUnique = true;
-%                 end                
-%             else
-%                 obj = [v1; v2];
-%                 %if ~isunique(v2) || any(ismember(v2,v1))
-%                 %    warning('frames:Index:notUnique','Index value is not unique.')
-%                 %end
-%             end
-%             
-%             
-%         end
-        
         function bool = isunique(obj)
+            % check if index rows are unique
             if obj.requireUnique_
                 bool = true;
             else 
@@ -647,6 +642,7 @@ classdef MultiIndex < frames.Index
             end                
         end
         function bool = issorted(obj)
+            % check if index rows are sorted
             if obj.requireUniqueSorted_
                 bool = true;
             else
