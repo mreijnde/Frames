@@ -1,5 +1,14 @@
 function [C,ia,ic]= nanunique(x, varargin)
 % modified unique function that threats NaN values not as distinct values.
+%
+% handle single value (or missing value)
+if length(x)==1
+    C = x;
+    ia = 1;
+    ic = 1;
+    return;
+end
+
 replace_nan = false;
 % replace NaN values with magic number if required
 if isnumeric(x)
