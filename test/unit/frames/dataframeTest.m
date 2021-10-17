@@ -1,5 +1,4 @@
-classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
-        dataframeTest < matlab.unittest.TestCase
+classdef dataframeTest < AbstractFramesTests
     
     properties
         dfNoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', [6 2 1], [4 1 3]);
@@ -971,6 +970,19 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyEqual(df.std().data,std(df.data,'omitnan'))
             t.verifyEqual(df.std(2).data,std(df.data,[],2,'omitnan'))
             t.verifyEqual(df.std(2,1).data,std(df.data,1,2,'omitnan'))
+        end
+        
+        function isalignedTest(t)
+            df = frames.DataFrame([1 2;10 0]);
+            t.verifyTrue(df.isaligned(df,df,df))
+            df2 = frames.DataFrame([1 2;10 0],[2 3]);
+            t.verifyFalse(df.isaligned(df2))
+            t.verifyTrue(df.isaligned(df2,'columns'))
+            t.verifyFalse(df.isaligned(df2,'rows'))
+            df3 = frames.DataFrame([1 2;10 0],[2 3],[1,2]);
+            t.verifyFalse(df2.isaligned(df3))
+            t.verifyFalse(df2.isaligned(df3,'columns'))
+            t.verifyTrue(df2.isaligned(df3,'rows'))
         end
         
         function equalsTest(t)
