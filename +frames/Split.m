@@ -86,7 +86,7 @@ classdef Split
             %       applying a function directly to the data with 'applyToData'
             %  * flag 'applyByLine':
             %       allows to pass a function that will be applied line by
-            %       line instead that on a matrix (by default)
+            %       line instead of on a matrix (by default)
             % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,false,varargin{:});
             rows = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj(), true); 
