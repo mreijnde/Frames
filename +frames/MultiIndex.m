@@ -313,11 +313,20 @@ classdef MultiIndex < frames.Index
             % assign index and dimension names
             %            
             % default parameters
-            if nargin<3, name=[]; end
-            % accept (linear) Index object as single index
-            if isIndex(value)            
-                value = {value};
-            end            
+            if nargin<3, name=[]; end        
+            if iscell(value) && all(cellfun(@iscell, value))
+                % interpret every nested cell as a row of MultiIndex, convert to index objects
+                Ndims = length(value{1});
+                assert( all(cellfun(@length, value)==Ndims), ...
+                    'frames:MultiIndex:setIndex:requireSameNrDimsNestedCell', ...
+                    "Nested cell array interpreted as rows of MultiIndex. Each nested cell should " + ...
+                    "have the same number of elements.");
+                value_new = cell(Ndims,1);
+                for i=1:Ndims
+                    value_new{i} = frames.Index(cellfun(@(x) x{i}, value));
+                end
+                value = value_new;                                
+            end
             % assign values (+ convert to linear indices if needed + default names)
             obj.value = value;            
             % assign supplied names                                                

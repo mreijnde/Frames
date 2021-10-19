@@ -11,10 +11,19 @@ classdef multiIndexTest < AbstractFramesTests
             function badsorted(), frames.MultiIndex({[1,1],["b","a"],[3,4]},UniqueSorted=true); end
             
             t.verifyError(@duplicateError,'frames:MultiIndex:requireUniqueFail')
-            function duplicateError(), frames.MultiIndex({[1,1],["a","a"]},Unique=true); end
+            function duplicateError(), frames.MultiIndex({[1,1],["a","a"]},Unique=true); end                        
             
+            % specify dimension arrays
             t.verifyEqual( frames.MultiIndex({[1,1],["a","b"]}), ...
                            frames.MultiIndex({frames.Index([1,1]),frames.Index(["a","b"])},name=["dim1","dim2"])); 
+            
+            % specify multi index rows
+            t.verifyEqual( frames.MultiIndex({{1,"a"},{1,"b"}}), ...
+                           frames.MultiIndex({frames.Index([1,1]),frames.Index(["a","b"])},name=["dim1","dim2"])); 
+                                   
+            % specify single dimension array
+            t.verifyEqual( frames.MultiIndex([1,2,3,4,5],name="test"), ...
+                           frames.MultiIndex(frames.Index(1:5),name="test") );             
                        
             timeindex = frames.TimeIndex(["24*06*2021","25*06*2021"],Format="dd*MM*yyyy");            
             t.verifyEqual(frames.MultiIndex(timeindex), frames.MultiIndex({timeindex}) ) %single index can be without {}
