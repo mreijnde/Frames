@@ -203,7 +203,7 @@ df = df.setRowsType('unique');
 % row: 2 dim, cols: 2 dim
 df = dfmm1+dfmm2;
 df = df.setRowsType('unique');
-%[df{1:3} ; df{8:9}] % <== does not work yet
+[df{1:3} ; df{8:9}] 
 
 
 %% Union index
@@ -230,16 +230,16 @@ df = df.setRowsType('unique');
 % [mi_sort, ind_sort] = mi1.union_( {mi2,mi3}, false, true);
 
 %% Concatination test
-df1 = frames.DataFrame(3*ones(3));
-df2 = frames.DataFrame(5*ones(5));
-df3 = frames.DataFrame(2*ones(2));
-df4 = frames.DataFrame(23*ones(2,3));
-
-dfs = {df2 df3, df1};
-
-df1.combine(dfs, false, false)
-df1.combine(dfs, false, true)
-
+% df1 = frames.DataFrame(3*ones(3));
+% df2 = frames.DataFrame(5*ones(5));
+% df3 = frames.DataFrame(2*ones(2));
+% df4 = frames.DataFrame(23*ones(2,3));
+% 
+% dfs = {df2 df3, df1};
+% 
+% df1.combine(dfs, false, false)
+% df1.combine(dfs, false, true)
+% 
 
 
 
