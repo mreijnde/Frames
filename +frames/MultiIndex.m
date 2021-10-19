@@ -502,9 +502,18 @@ classdef MultiIndex < frames.Index
                
         
         function out = getvalue_uniqind(obj)
-            % get index positions to unique values of every dimension
-            if obj.Ndim>0
-                out = [obj.value_.value_uniqind];
+            % get uniqind vector based on all dimensions
+            if obj.Ndim==1
+                % single linear index
+                out = obj.value_.value_uniqind;
+            elseif obj.Ndim>1                
+                % multiple linear indices
+                uniqind = [obj.value_.value_uniqind];                   % all uniqind as columns
+                Ndim_uniq = cellfun(@length, [obj.value_.value_uniq]);  % number of unique values per dimension
+                % multiplication factor per dim (to create new unique index)
+                DimMultiplicationFactor = cumprod( [Ndim_uniq(2:end) 1], 'reverse');                
+                % matrix multiplication to calc combined uniqind vector
+                out = (uniqind-1) * DimMultiplicationFactor' + 1;                
             else
                 out = [];
             end
