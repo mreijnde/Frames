@@ -54,7 +54,7 @@ classdef groupTest < AbstractFramesTests
             
             frame2 = frames.DataFrame([4 5 5 5], 2);
             g11 = frames.Groups({frame,frame2});
-            t.verifyEqual(g11.keys,[1 2 3])
+            t.verifyEqual(g11.keys,["grp1 4" "grp2 5" "new 5"])
             expVals = { sparse(logical([0 0 0 0;1 0 0 0])), sparse(logical([0 0 0 0;0 0 1 0])), sparse(logical([0 0 0 0;0 1 0 1])) };
             t.verifyEqual(g11.values,expVals)
             
@@ -98,7 +98,7 @@ classdef groupTest < AbstractFramesTests
             
             frame2 = frames.DataFrame([4 5 5 5], 2);
             g11 = frames.Groups({frame,frame2},'rowGroups');
-            t.verifyEqual(g11.keys,[1 2 3])
+            t.verifyEqual(g11.keys,["grp1 4" "grp2 5" "new 5"])
             expVals = { sparse(logical([0 0 0 0;1 0 0 0])), sparse(logical([0 0 0 0;0 0 1 0])), sparse(logical([0 0 0 0;0 1 0 1])) };
             t.verifyEqual(g11.values,expVals)
             

@@ -162,7 +162,19 @@ for ii = 1:nargin, varargin{ii}.data = string(varargin{ii}.data); end
 [dfs{1:nargin}] = frames.align(varargin{:});
 dfsdata = cell(1,nargin);
 for ii = 1:nargin, dfsdata{ii} = dfs{ii}.data(:); end
-gps = findgroups(dfsdata{:});
+gpsNumber = findgroups(dfsdata{:});
+gps = repmat(string(missing),size(gpsNumber));
+nbGrps = max(gpsNumber);
+if ~ismissing(nbGrps)
+    for ii = 1:nbGrps
+        xx = find(gpsNumber==ii);
+        gpName = "";
+        for jj = 1:numel(dfsdata)
+            gpName = gpName + " " + dfsdata{jj}(xx(1));
+        end
+        gps(xx) = extractAfter(gpName,1);
+    end
+end
 gps = reshape(gps,size(dfs{1}));
 gps = dfs{1}.constructor(gps,dfs{1}.getRowsObj(),dfs{1}.getColumnsObj());
 end
