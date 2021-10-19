@@ -38,7 +38,7 @@ classdef multiIndexTest < AbstractFramesTests
         
          function indexGetterTest(t)
              multiindex = frames.MultiIndex({[1,2],frames.Index([5,6],name="test"),["aa","bb"]});
-             t.verifyEqual(multiindex.value,{1,5,"aa";2,6,"bb"})
+             t.verifyEqual(multiindex.value,{{1,5,"aa"};{2,6,"bb"}})
              t.verifyEqual(multiindex.name,["dim1","test","dim3"])
              
              multiindex = frames.MultiIndex({[1,2],frames.Index([5,6],name="test"),["aa","bb"]},name=["","B","C"]);

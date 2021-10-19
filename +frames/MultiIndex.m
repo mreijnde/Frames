@@ -166,9 +166,10 @@ classdef MultiIndex < frames.Index
             dimInd1 = obj1.getDimInd(dims);
             dimInd2 = obj2.getDimInd(dims);
             % get all unique row of given dim combination
-            value1 = obj1.value(:,dimInd1);
-            value2 = obj2.value(:,dimInd2);
-            %valueAll = obj1.concatRowValues(value1, value2);
+            value1 = obj1.getvalue_cell('rowcol');
+            value1 = value1(:,dimInd1);
+            value2 = obj2.getvalue_cell('rowcol');
+            value2 = value2(:,dimInd2);
             valueAll = [value1; value2];
             % get unique row ind for total
             [rows_uniqval, rows_ind, val_uniq, val_ind] = uniqueCellRows(valueAll);
@@ -299,7 +300,7 @@ classdef MultiIndex < frames.Index
         
         function val = getValueForTable(obj)
             % convert value to strings to use with a table
-            val = string(obj.value);
+            val = string(obj.getvalue_cell('rowcol'));
             if ~iscolumn(val)
                val = join(val," ");
             end
@@ -500,8 +501,9 @@ classdef MultiIndex < frames.Index
         
         function v = getValue(obj)
             % output MultiIndex values
-            v = obj.getvalue_cell("rowcol"); %as cell(Nindex,Ndim)
+            %v = obj.getvalue_cell("rowcol"); %as cell(Nindex,Ndim)
             %v = obj.getvalue_cell("col");   % as cell(Ndim) with cell an array
+            v = obj.getvalue_cell("row");   % as nested cell(Nindex) cell(Ndim)
         end
         
         function out = getvalue_uniq(obj)
