@@ -249,8 +249,6 @@ classdef Index
             selector = obj.getSelector(selector, varargin{:});   
             if iscolon(selector)                
                 mask = true(obj.length(),1);
-            elseif islogical(selector)                
-                mask = selector;
             else
                 mask = false(obj.length(),1);
                 mask(selector) = true;
