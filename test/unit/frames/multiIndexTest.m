@@ -27,23 +27,37 @@ classdef multiIndexTest < AbstractFramesTests
             warning('on','frames:Index:notUnique');
         end
         
-%         function indexGetterTest(t)
-%             timeindex = frames.TimeIndex("24*06*2021",Format="dd*MM*yyyy");
-%             t.verifyEqual(timeindex.value,datetime("24*06*2021",Format="dd*MM*yyyy"))
-%         end
-%         
-%         function positionOfTest(t)
-%             warning('off','frames:Index:notUnique')
-%             index = frames.Index([30 10 20 30]);
-%             uniqueindex = frames.Index([30 10 20],Unique=true);
-%             
-%             t.verifyEqual(index.positionOf([30,20]),[1 4 3]')
-%             t.verifyEqual(uniqueindex.positionOf([20,30]),[3 1]')
-%             warning('off','frames:Index:notUnique')
-%             
-%             a = frames.TimeIndex(seconds(1):seconds(2):minutes(1));
-%             t.verifyEqual(a.positionOf(seconds([3 5])),[2 3]')
-%         end
+         function indexGetterTest(t)
+             multiindex = frames.MultiIndex({[1,2],frames.Index([5,6],name="test"),["aa","bb"]});
+             t.verifyEqual(multiindex.value,{1,5,"aa";2,6,"bb"})
+             t.verifyEqual(multiindex.name,["dim1","test","dim3"])
+             
+             multiindex = frames.MultiIndex({[1,2],frames.Index([5,6],name="test"),["aa","bb"]},name=["","B","C"]);
+             t.verifyEqual(multiindex.name,["dim1","B","C"])
+         end
+        
+        function positionOfTest(t)
+            warning('off','frames:Index:notUnique')
+            warning('off','frames:MultiIndex:notUnique')
+            index = frames.MultiIndex({[30 10 20 30 30],[1 2 1 2 1]});
+            warning('on','frames:MultiIndex:notUnique')
+            t.verifyEqual(index.positionOf({[30,20],1}),[1 3 5]')
+            t.verifyEqual(index.positionOf({[30,20],[false true true true false]}),[3 4]')
+            t.verifyEqual(index.positionOf({[30,20],[false true true]}),3)
+            t.verifyEqual(index.positionOf({20,1}),3)
+            t.verifyEqual(index.positionOf({[20,30],':'}),[1 3 4 5]')
+            t.verifyEqual(index.positionOf({{10,2},{30,2}}),[2 4]') %multiple selector sets
+             
+            uniqueindex = frames.MultiIndex({[30 10 20],[1 2 1]},Unique=true);
+            t.verifyEqual(uniqueindex.positionOf({[20,30],[1 1]}),[1 3]')
+            t.verifyError(@nocellselector,'frames:MultiIndex:getSelector:cellselectorrequired');
+            function nocellselector(), uniqueindex.positionOf([20,30]); end
+            
+            t.verifyError(@notallnestedcellselector,'frames:MultiIndex:getSelector:notallnestedcells');
+            function notallnestedcellselector(), uniqueindex.positionOf({{10,2},[30,20]}); end        
+            
+            warning('off','frames:Index:notUnique')                        
+        end
 %         
 %         function positionInTest(t)
 %             warning('off','frames:Index:notUnique')
