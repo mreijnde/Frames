@@ -15,9 +15,9 @@ classdef Split
  %          frames.Groups for more details.
  %     * flags: 'allowOverlaps', 'isNonExhaustive'
  %          Split throws an error if there are overlaps in the
- %          group values, and if thery do not span the whole set
+ %          group values, and if they do not span the whole set
  %          of the Index values. Allow these cases by respectively
- %          added the flags 'allowOverlaps' and 'isNonExhaustive'
+ %          adding the flags 'allowOverlaps' and 'isNonExhaustive'
  %
  % Methods:
  %     * apply      
@@ -86,7 +86,7 @@ classdef Split
             %       applying a function directly to the data with 'applyToData'
             %  * flag 'applyByLine':
             %       allows to pass a function that will be applied line by
-            %       line instead that on a matrix (by default)
+            %       line instead of on a matrix (by default)
             % e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             out = obj.computeFunction(fun,false,varargin{:});
             rows = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj(), true); 
@@ -138,12 +138,12 @@ classdef Split
             varargin(isflag) = [];
             
             dfdata = obj.applyToPotentialCell(obj.df, @(x) x.data, false); 
-            dfdata1 = obj.applyToPotentialCell(dfdata, @(x) x, true); 
+            sz = obj.applyToPotentialCell(dfdata, @(x) size(x), true); 
             if applyByLine
                 if obj.groups.isColumnGroups
-                    indexLoop = 1:size(dfdata1,1);
+                    indexLoop = 1:sz(1);
                 else
-                    indexLoop = 1:size(dfdata1,2);
+                    indexLoop = 1:sz(2);
                 end
             elseif obj.groups.constantGroups
                 indexLoop = ':';
@@ -213,12 +213,12 @@ classdef Split
                         dataType = str2func(class(res));
                         if reduceDim
                             if obj.groups.isColumnGroups
-                                out = repmat(dataType(missing),size(dfdata1,1),length(obj.groups.keys));
+                                out = repmat(dataType(missing),sz(1),length(obj.groups.keys));
                             else
-                                out = repmat(dataType(missing),length(obj.groups.keys),size(dfdata1,2));
+                                out = repmat(dataType(missing),length(obj.groups.keys),sz(2));
                             end
                         else
-                            out = repmat(dataType(missing),size(dfdata1));
+                            out = repmat(dataType(missing),sz);
                         end
                         firstIteration = false;
                     end
@@ -242,11 +242,7 @@ classdef Split
             elseif onlyFirst
                 [varargout{1:nargout}] = func(data{1});
             else
-                out = cell(1,numel(data));
-                for ii = 1:numel(data)
-                    out{ii} = func(data{ii});
-                end
-                varargout{1} = out;
+                varargout{1} = cellfun(func,data,UniformOutput=false);
             end
         end
 

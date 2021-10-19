@@ -810,9 +810,9 @@ classdef DataFrame
             %          frames.Groups for more details.
             %     * flags: 'allowOverlaps', 'isNonExhaustive'
             %          Split throws an error if there are overlaps in the
-            %          group values, and if thery do not span the whole set
+            %          group values, and if they do not span the whole set
             %          of the Index values. Allow these cases by respectively
-            %          added the flags 'allowOverlaps' and 'isNonExhaustive'
+            %          adding the flags 'allowOverlaps' and 'isNonExhaustive'
             %
             % Methods:
             %     * apply      
@@ -828,7 +828,7 @@ classdef DataFrame
             %           e.g. .apply(@(x) sum(x,2),'applyToData') vs .apply(@(x) x.sum(2),'applyToFrame')
             %     * flag 'applyByLine':
             %             allows to pass a function that will be applied line by
-            %       line instead that on a matrix (by default)
+            %       line instead of on a matrix (by default)
             %    To use the group key for a frame, use x.description e.g.
             %    to link a structure field to a specific group: .apply(@(x) x.*myStruct.(x.description),'applyToFrame')
             % 
@@ -911,6 +911,8 @@ classdef DataFrame
         end
         
         function bool = isaligned(obj,varargin)
+            % ISALIGNED(df1,df2,...[,flags]) returns true if all Frames are aligned. 
+            % Add the flag 'rows' or 'columns' to check alignment in only one direction. 
             isflag = find(strcmp(varargin,'rows'),1);
             checkRows = ~isempty(isflag);
             varargin(isflag) = [];
