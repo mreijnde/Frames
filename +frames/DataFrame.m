@@ -1041,7 +1041,19 @@ classdef DataFrame
         function varargout = subsref(obj,s)
             if length(s)>1  % when there are several subsref
                 if strcmp(s(1).type,'.')
-                    [varargout{1:nargout}] = builtin('subsref',obj,s);
+                    % custom data access of index objects values
+                    if s(1).subs=="rows" && s(2).type=="()"
+                       % call subsref of rows index object to access value property
+                       s(1).subs = "value";
+                       [varargout{1:nargout}] = builtin('subsref',obj.rows_,s); 
+                    elseif s(1).subs=="columns" && s(2).type=="()"
+                       % call subsref of columns index object to access value property
+                       s(1).subs = "value";
+                       [varargout{1:nargout}] = builtin('subsref',obj.columns_,s);    
+                    else
+                        % 
+                       [varargout{1:nargout}] = builtin('subsref',obj,s);
+                    end
                 else  % to handle the () and {} cases (Matlab struggles otherwise).
                     other = subsref(obj,s(1));
                     [varargout{1:nargout}] = subsref(other,s(2:end));

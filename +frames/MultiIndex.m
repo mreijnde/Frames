@@ -608,6 +608,32 @@ classdef MultiIndex < frames.Index
                 obj = builtin('subsasgn',obj,s,b);
             end
         end
+        
+        
+        function varargout = subsref(obj,s)
+            % implementation of custom data access methods
+            if length(s)==2 && s(1).type=="." && s(1).subs=="value" && s(2).type=="()" && length(s(2).subs)==2
+                % access linear dimension value array by .value(ind, dimind)            
+                rowSelector = s(2).subs{1};
+                dimSelector = s(2).subs{2};
+                assert(length(dimSelector)==1,"only selection of single dimension allowed (or ':' for 2d cell array).");
+                if iscolon(dimSelector)
+                    % output 2d cell array
+                    out = obj.getvalue_cell("rowcol");
+                    varargout = {out(rowSelector,:)};
+                else
+                    % output single linear dimension
+                    if isstring(dimSelector)
+                        dimind = obj.getDimInd(dimSelector);
+                    else
+                        dimind = dimSelector;
+                    end
+                    varargout = {obj.value_(dimind).value(rowSelector)};                  
+                end
+            else
+                [varargout{1:nargout}] = builtin('subsref',obj,s);
+            end
+        end
     end
     
     
