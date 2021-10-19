@@ -641,7 +641,9 @@ classdef MultiIndex < frames.Index
         function pos = positionIn(obj,target,userCall)
             % find position of the Index into the target
             if nargin < 3, userCall = true; end
-            [~, pos]= getMatchingRows(target, obj, obj.name);
+            if ~isIndex(target), target=frames.MultiIndex(target, name=obj.name); end
+            [~, pos,~,common2]= getMatchingRows(target, obj, obj.name);
+            assert(all(common2), 'frames:assertFoundIn', "Not all obj values found in target.");
         end
         
     end
