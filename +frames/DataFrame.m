@@ -508,6 +508,11 @@ classdef DataFrame
             % default parameters
             if nargin<3, methodRows="unique"; end
             if nargin<4, methodCols="unique"; end
+            % skip, if nothing to do
+            if isempty(dfs)
+                dfnew = obj;
+                return
+            end
             % get index objects            
             rowsobj = cellfun(@(x) {x.rows_}, dfs);
             colsobj = cellfun(@(x) {x.columns_}, dfs);            
