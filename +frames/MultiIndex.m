@@ -535,7 +535,7 @@ classdef MultiIndex < frames.Index
             %            
             % check if rows are unique
             Nindex = obj.length();
-            rows_uniqind = unique(obj.value_uniqind,'rows','stable');
+            rows_uniqind = unique(obj.value_uniqind,'stable');
             if size(rows_uniqind,1)~= Nindex
                 if obj.requireUnique_
                     rows_not_unique = setdiff(1:Nindex, rows_uniqind);
@@ -549,7 +549,7 @@ classdef MultiIndex < frames.Index
                 end
             end
             % check sorted            
-            assert(~obj.requireUniqueSorted || issorted(obj.value_uniqind, 'rows'), ...
+            assert(~obj.requireUniqueSorted || issorted(obj.value_uniqind), ...
                 'frames:MultiIndex:requireSortedFail',  ...
                 'Index value is required to be sorted and unique.')            
         end
@@ -600,17 +600,7 @@ classdef MultiIndex < frames.Index
         function Ndim = get.Ndim(obj)
             % get number of dimensions
             Ndim = numel(obj.value_);
-        end
-        
-        function Nindex = length(obj)
-            % number of items in index
-            if isempty(obj.value_)
-                Nindex = 0;
-            else
-                Nindex = length(obj.value_(1));
-            end
-        end
-               
+        end                      
         
         function obj = vertcat_(obj,varargin)
             % concatenate multiple MultiIndex objects with same dimensions (limited checks)
@@ -639,26 +629,6 @@ classdef MultiIndex < frames.Index
             if nargin < 3, userCall = true; end
             [~, pos]= getMatchingRows(target, obj, obj.name);
         end
-        
-        function bool = isunique(obj)
-            % check if index rows are unique
-            if obj.requireUnique_
-                bool = true;
-            else 
-                % check if rows are unique                
-                rows_uniqind = unique(obj.value_uniqind,'rows');
-                bool = (size(rows_uniqind,1)== obj.length());  
-            end                
-        end
-        function bool = issorted(obj)
-            % check if index rows are sorted
-            if obj.requireUniqueSorted_
-                bool = true;
-            else
-                % check if rows are sorted
-                bool = issorted(obj.value_uniqind, 'rows');
-            end
-        end        
         
     end
     

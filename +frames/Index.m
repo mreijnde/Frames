@@ -173,7 +173,11 @@ classdef Index
         end
         
         function len = length(obj)
-            len = length(obj.value_);
+            if isempty(obj.value_)
+                len = 0;
+            else
+               len = length(obj.value_(:,1) );
+            end
         end
         
         function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall)
@@ -299,14 +303,14 @@ classdef Index
             if obj.requireUnique_
                 bool = true;
             else
-                bool = isunique(obj.value_);
+                bool = isunique(obj.value_uniqind);
             end
         end
         function bool = issorted(obj)
             if obj.requireUniqueSorted_
                 bool = true;
             else
-                bool = issorted(obj.value_);
+                bool = issorted(obj.value_uniqind);
             end
         end
         function bool = ismissing(obj)
@@ -341,7 +345,7 @@ classdef Index
             %   sortindex: position index of selected unique items
             %            
             if nargin<2; ordering='sorted'; end
-            [~, sortindex] = unique(obj.value_uniqind, ordering, 'rows');
+            [~, sortindex] = unique(obj.value_uniqind, ordering);
             obj = obj.getSubIndex(sortindex);            
         end
         
