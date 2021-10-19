@@ -310,24 +310,23 @@ classdef MultiIndex < frames.Index
         function obj = setIndex(obj, value, name)            
             % assign index and dimension names
             %            
+            % default parameters
+            if nargin<3, name=[]; end
             % accept (linear) Index object as single index
             if isIndex(value)            
                 value = {value};
-            end
-            % default parameters
-            if nargin<3 || isempty(name), name=strings(length(value),1); end
-            % assign values (+ convert to linear indices if needed)
+            end            
+            % assign values (+ convert to linear indices if needed + default names)
             obj.value = value;            
-            % assign names                                                
-            assert(isstring(name) && length(name)==obj.Ndim, "Name should be string array with Ndim values.");
-            for i=1:obj.Ndim                                    
-                if name(i)~=""
-                    % assign supplied name
-                    obj.value_(i).name = name(i);
-                elseif ~isIndex(value{i})
-                    % assign default naming
-                    obj.value_(i).name = "dim" + i;                
-                end
+            % assign supplied names                                                
+            if ~isempty(name)
+               assert(isstring(name) && length(name)==obj.Ndim, "Name should be string array with Ndim values.");
+               for i=1:obj.Ndim                                    
+                 if name(i)~=""
+                     % assign supplied name
+                     obj.value_(i).name = name(i);
+                 end
+               end
             end
             obj.nameChecker();
         end
@@ -439,7 +438,10 @@ classdef MultiIndex < frames.Index
                 % handle array of Index objects by first converting to cell array                
                 value = num2cell(value);
             end
-            assert( iscell(value), "Not a cell array.");
+            if ~iscell(value) && isvector(value)
+                % embed single index in cell array
+                value = {value};
+            end
             assert( isvector(value), "error, should be 1d cell vector");
             % convert all (linear) indexes to Index objects
             Ndims = length(value);
@@ -455,12 +457,13 @@ classdef MultiIndex < frames.Index
                     % convert to linear index
                     indices(i) = frames.Index(val, Unique=false);
                 end
-                % get default names (TODO: think better about behavior)
+                % get default names
                 if indices(i).name==""
                     if numel(obj.value_) >= i && obj.value_(i).name~=""
                         % use name of existing dimension
                         indices(i).name = obj.value_(i).name;
                     else
+                        % use default name
                         indices(i).name = "dim"+i;
                     end
                 end
