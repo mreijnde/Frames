@@ -580,33 +580,73 @@ classdef MultiIndex < frames.Index
     
     methods(Hidden)
         function obj = subsasgn(obj,s,b)
-            if length(s) == 2 && (strcmp([s.type],'.()') || strcmp([s.type],'.{}'))  && strcmp(s(1).subs,'value')
-                idxNew = s(2).subs{1};
-                assert(length(s(2).subs)==1 || iscolon(s(2).subs{2}), ...
-                       "Dimension sub-selection not supported for value assignment operation");                
+            if s(1).type=="." && s(1).subs=="value"
+                assert(length(s)<=2, "Nested subsasgn of MultiIndex value property not supported.");
+                % get selector index
+                if length(s)==1
+                    rowIdx = ':';
+                    dimIdx = ':';
+                elseif s(2).type=="()"
+                    rowIdx = s(2).subs{1};
+                    if length(s(2).subs)>1                    
+                        dimIdx = s(2).subs{2};
+                        if isstring(dimIdx) && ~iscolon(dimIdx)
+                           dimIdx = obj.getDimInd(dimIdx);                         
+                        end
+                        assert(iscolon(dimIdx) || length(dimIdx)==1, "Only selection of single dimension allowed");
+                    else
+                        dimIdx = ':';
+                    end
+                else
+                    error("unsupported selector type");
+                end
+
                 if isequal(b,[])
-                    % remove selected item(s) from every dimension index                    
+                    % remove full rows from index
+                    assert((ischar(dimIdx) || isstring(dimIdx)) && dimIdx==":", ...
+                        "All dimensions should be selected to delete a multiIndex value.");
+                    % loop over dimensions and remove selected items
                     for i=1:obj.Ndim
-                       obj.value_(i).value_(idxNew) = [];
+                        obj.value_(i).value_(rowIdx) = [];
                     end
                     if obj.singleton_
                         assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
-                            'The value of a singleton Index must be missing.')
+                             'The value of a singleton Index must be missing.')
                     end
                 else
-                    % update value(s) in underlying dimensions indices
+                    %update value(s) in underlying dimensions indices
                     b_ = obj.getValue_from(b);
                     if isrow(b), b_=b_'; end
-                    if ~iscell(b_),  b_ = num2cell(b_); end                    
-                    assert(size(b_,2)==obj.Ndim, ...
-                         "Number of columns in new value (b) not equal to number of dimensions.");
-                    for i=1:size(b_,2)
-                       obj.value_(i).value_(idxNew) = [b_{:,i}]; 
-                    end                    
+                    if obj.Ndim==1 && isrow(b_), b_=b_'; end
+                    if iscolon(dimIdx)
+                        % assign full rows               
+                        if isvector(b_) && all(iscell(b_)) && all(cellfun(@iscell,b_))
+                           % convert nested cell to cell(Nrows, Ndim)
+                           b_ = reshape([b{:}], [length(b{1}), length(b)])';
+                        end
+                        %if ~iscell(b_),  b_ = num2cell(b_); end                        
+                        assert(size(b_,2)==obj.Ndim, ...
+                             "Number of columns in new value (b) not equal to number of dimensions.");
+                        for i=1:size(b_,2)
+                           %obj.value_(i).value_(rowIdx) = [b_{:,i}];
+                           if iscell(b_)
+                               val = [b_{:,i}];
+                           else
+                               val = b_(:,i);
+                           end
+                           obj.value_(i).value_(rowIdx) = val;                            
+                           %obj.value_(i) = builtin('subsasgn',obj.value_(i),s(1),[b_{:,i}]);
+                        end                    
+                    else
+                        % assign single dimension
+                        if iscell(b_), b_=cell2mat(b_); end
+                        obj.value_(dimIdx).value_(rowIdx) = b_;                        
+                    end
                 end
+                obj.setvalue(obj.value_); % check if properties are respected   
             else
                 obj = builtin('subsasgn',obj,s,b);
-            end
+            end            
         end
         
         
@@ -616,7 +656,7 @@ classdef MultiIndex < frames.Index
                 % access linear dimension value array by .value(ind, dimind)            
                 rowSelector = s(2).subs{1};
                 dimSelector = s(2).subs{2};
-                assert(length(dimSelector)==1,"only selection of single dimension allowed (or ':' for 2d cell array).");
+                assert(length(dimSelector)==1,"Only selection of single dimension allowed (or ':' for 2d cell array).");
                 if iscolon(dimSelector)
                     % output 2d cell array
                     out = obj.getvalue_cell("rowcol");

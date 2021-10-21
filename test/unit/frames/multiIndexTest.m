@@ -37,8 +37,12 @@ classdef multiIndexTest < AbstractFramesTests
         end
         
          function indexGetterTest(t)
-             multiindex = frames.MultiIndex({[1,2],frames.Index([5,6],name="test"),["aa","bb"]});
-             t.verifyEqual(multiindex.value,{{1,5,"aa"};{2,6,"bb"}})
+             multiindex = frames.MultiIndex({[1,2,3],frames.Index([5,6,7],name="test"),["aa","bb","cc"]});
+             t.verifyEqual(multiindex.value,{{1,5,"aa"};{2,6,"bb"};{3,7,"cc"}})
+             t.verifyEqual(multiindex.value(:,:),{1,5,"aa";2,6,"bb";3,7,"cc"})
+             t.verifyEqual(multiindex.value(:,2),[5,6,7]')
+             t.verifyEqual(multiindex.value(2:3,"test"),[6,7]')
+             t.verifyEqual(multiindex.value([true false true],"test"),[5,7]')
              t.verifyEqual(multiindex.name,["dim1","test","dim3"])
              
              multiindex = frames.MultiIndex({[1,2],frames.Index([5,6],name="test"),["aa","bb"]},name=["","B","C"]);
@@ -109,47 +113,82 @@ classdef multiIndexTest < AbstractFramesTests
 %             t.verifyEqual(durationindex.union(minutes([2 2 30])).getValue_(),minutes([2 10 20 30]'))
 %         end
         
-%         function assignmentTest(t)
-%             index = frames.Index([30 10 20]);
-%             uniqueindex = frames.Index([30 10 20],Unique=true);
-%             sortedindex = frames.Index([10 20 30],UniqueSorted=true);
-%             timeindex = frames.TimeIndex([10 20 30]);
-%             durationindex = frames.TimeIndex(minutes([10 20 30]));
-%             
-%             t.verifyWarning(@renderDupl,'frames:Index:subsagnNotUnique')
-%             function renderDupl, index.value(end+1:end+2) = [11 20]; end
-%             t.verifyEqual(index.value, [30 10 20 11 20]')
-%             
-%             t.verifyError(@notUnique,'frames:Index:requireUniqueFail')
-%             function notUnique, uniqueindex.value(1) = 10; end
-%             uniqueindex.value(1:2) = [10 11]';
-%             t.verifyEqual(uniqueindex.value, [10 11 20]')
-%             uniqueindex.value(end+1) = 33;
-%             t.verifyEqual(uniqueindex.value, [10 11 20 33]')
-%             t.verifyError(@notUnique2,'frames:Index:requireUniqueFail')
-%             function notUnique2, uniqueindex.value(1) = 33; end
-%             
-%             t.verifyError(@notSorted,'frames:Index:requireSortedFail')
-%             function notSorted, sortedindex.value(2) = 100; end
-%             sortedindex.value(end:end+1) = [40 50];
-%             t.verifyEqual(sortedindex.value, [10 20 40 50]')
-%             sortedindex.value([1 3]) = [1 22];
-%             t.verifyEqual(sortedindex.value, [1 20 22 50]')
-%             t.verifyError(@notSorted2,'frames:Index:requireUniqueFail')
-%             function notSorted2, sortedindex.value(1) = 50; end
-%             t.verifyError(@notSorted3,'frames:Index:requireSortedFail')
-%             function notSorted3, sortedindex.value(1) = 33; end
-%             
+        function assignmentTest(t)
+            % 1D examples
+            index = frames.MultiIndex([30 10 20]);
+            uniqueindex = frames.MultiIndex([30 10 20],Unique=true);
+            sortedindex = frames.MultiIndex([10 20 30],UniqueSorted=true);
+       
+            t.verifyWarning(@renderDupl,'frames:MultiIndex:notUnique')
+            function renderDupl, index.value(end+1:end+2) = [11 20]; end
+            t.verifyEqual(index.value,    {{30} {10} {20} {11} {20}}')
+            t.verifyEqual(index.value(:), {{30} {10} {20} {11} {20}}')
+            t.verifyEqual(index.value(:), {{30} {10} {20} {11} {20}}')
+            
+            t.verifyError(@notUnique,'frames:MultiIndex:requireUniqueFail')
+            function notUnique, uniqueindex.value(1) = 10; end
+            uniqueindex.value(1:2) = [10 11]';
+            t.verifyEqual(uniqueindex.value(:,1), [10 11 20]')
+            uniqueindex.value(end+1) = 33;
+            t.verifyEqual(uniqueindex.value(:,1), [10 11 20 33]')
+            t.verifyError(@notUnique2,'frames:MultiIndex:requireUniqueFail')
+            function notUnique2, uniqueindex.value(1) = 33; end
+            
+            t.verifyError(@notSorted,'frames:MultiIndex:requireSortedFail')
+            function notSorted, sortedindex.value(2) = 100; end
+            sortedindex.value(end:end+1) = [40 50];
+            t.verifyEqual(sortedindex.value(:,1), [10 20 40 50]')
+            sortedindex.value([1 3]) = [1 22];
+            t.verifyEqual(sortedindex.value(:,1), [1 20 22 50]')
+            t.verifyError(@notSorted2,'frames:MultiIndex:requireUniqueFail')
+            function notSorted2, sortedindex.value(1) = 50; end
+            t.verifyError(@notSorted3,'frames:MultiIndex:requireSortedFail')
+            function notSorted3, sortedindex.value(1) = 33; end
+            
+            % 2D examples
+            index = frames.MultiIndex({1:3,["a","b","c"],[10 11 12]});                                    
+            % assign single row
+            value_expected = {{1,"a",10}; {22,"B",99}; {3,"c",12}};
+            index_mod=index; index_mod.value(2) = {22,"B",99};
+            t.verifyEqual(index_mod.value, value_expected)
+            index_mod=index; index_mod.value(2,:) = {22,"B",99};
+            t.verifyEqual(index_mod.value, value_expected)            
+            index_mod=index; index_mod.value(2) = {{22,"B",99}};
+            t.verifyEqual(index_mod.value, value_expected)
+            index_mod=index; index_mod.value(2) = [22,"B",99]; % array also works due to auto string/double conversions
+            t.verifyEqual(index_mod.value, value_expected)            
+            
+            % assign multiple rows
+            value_expected = {{1,"a",10}; {22,"B",99}; {33,"C",88}};
+            index_mod=index; index_mod.value([2,3]) = {{22,"B",99},{33,"C",88}};
+            t.verifyEqual(index_mod.value, value_expected )
+            index_mod=index; index_mod.value([2,3]) = {22,"B",99 ; 33,"C",88};
+            t.verifyEqual(index_mod.value, value_expected)
+            
+            % assign single dimension
+            value_expected = {{1,"a",111}; {2,"b",222}; {3,"c",333}};
+            index_mod=index; index_mod.value(:,3) = [111 222 333];
+            t.verifyEqual(index_mod.value, value_expected )
+            index_mod=index; index_mod.value(:,3) = [111 222 333]';
+            t.verifyEqual(index_mod.value, value_expected )
+            index_mod=index; index_mod.value(:,3) = {111 222 333};
+            t.verifyEqual(index_mod.value, value_expected )
+            index_mod=index; index_mod.value(:,3) = {111 222 333}';            
+            t.verifyEqual(index_mod.value, value_expected )
+            index_mod=index; index_mod.value(:,3) = {[111 222 333]};
+            t.verifyEqual(index_mod.value, value_expected )
+            index_mod=index; index_mod.value(:,"dim3") = [111 222 333];
+            t.verifyEqual(index_mod.value, value_expected )
+            
+%             % not yet working icw timeindex
+%             timeindex = frames.MultiIndex(frames.TimeIndex([10 20 30]) );             
 %             timeindex.value([2 3]) = ["16-Aug-2021" "17-Aug-2021"];
 %             timeindex2 = timeindex;
 %             timeindex2.value(end) = 738385;
 %             t.verifyEqual(timeindex.value, timeindex2.value)
 %             
 %             t.verifyError(@tiNotSorted,'frames:Index:requireSortedFail')
-%             function tiNotSorted, timeindex.value([3 2]) = ["16-Aug-2021" "17-Aug-2021"]; end
-%             
-%             t.verifyError(@tidNotSorted,'frames:Index:requireSortedFail')
-%             function tidNotSorted, durationindex.value([3 2]) = hours([2 3]); end
-%         end
+%             function tiNotSorted, timeindex.value([3 2]) = ["16-Aug-2021" "17-Aug-2021"]; end                        
+        end
     end
 end
