@@ -48,7 +48,7 @@ classdef MultiIndex < frames.Index
             if nargin<3; dimindex=1:obj.Ndim; end            
             for i=1:length(dimindex)
                 idim = dimindex(i);
-                obj.value_(idim) = obj.value_(idim).getSubIndex(selector);
+                obj.value_{idim} = obj.value_{idim}.getSubIndex(selector);
             end
             % remove dims (if required)
             if length(dimindex)<obj.Ndim
@@ -133,7 +133,7 @@ classdef MultiIndex < frames.Index
                         "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
                         length(selectorset), iset, obj.Ndim);
                     for j = 1:length(selectorset)
-                        masklayer = obj.value_(j).getSelectorMask(selectorset{j},positionIndex, allowedSeries, userCall);
+                        masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, userCall);
                         maskset = maskset & masklayer;
                     end
                     % combine masks of different masksets
@@ -271,7 +271,7 @@ classdef MultiIndex < frames.Index
                 objnew2 = obj2.getSubIndex(ind2_new);
                 for i=1:NextraDims2
                     dimind = dim_unique_ind2(i);
-                    objnew = objnew.addDimension( objnew2.value_(dimind) );
+                    objnew = objnew.addDimension( objnew2.value_{dimind} );
                 end   
             end
             
@@ -293,7 +293,8 @@ classdef MultiIndex < frames.Index
             % display MultiIndex values and properties
             dispnames = obj.name;
             dispnames(dispnames=="")="<missing>";
-            disptable = table( obj.value_.value, 'VariableNames', cellstr(dispnames));
+            val = cellfun(@(x) x.value, obj.value_,'UniformOutput',false);
+            disptable = table( val{:}, 'VariableNames', cellstr(dispnames));            
             disp(disptable);
             details(obj);
         end
@@ -336,7 +337,7 @@ classdef MultiIndex < frames.Index
                for i=1:obj.Ndim                                    
                  if name(i)~=""
                      % assign supplied name
-                     obj.value_(i).name = name(i);
+                     obj.value_{i}.name = name(i);
                  end
                end
             end
@@ -364,7 +365,7 @@ classdef MultiIndex < frames.Index
                 newIndexObj = frames.Index(values, Name=name);                
             end
             % append to multiindex
-            obj.value = [obj.value_ newIndexObj];
+            obj.value = [obj.value_ {newIndexObj}];
         end
         
         
@@ -401,14 +402,14 @@ classdef MultiIndex < frames.Index
             switch type
                 case "col"
                     % columns/dimensions in single cell
-                    out = {obj.value_.value};
+                    out = cellfun(@(x) x.value, obj.value_, 'UniformOutput', false);
                 case "row"
                     % cell array with every row a nested cell with row values
                     out = cell(length(obj),1);
                     for j=1:length(obj)
                         row = cell(1,obj.Ndim);
                         for i=1:obj.Ndim
-                            row{i} = obj.value_(i).value(j);
+                            row{i} = obj.value_{i}.value_(j);
                         end
                         out{j} = row;
                     end
@@ -416,14 +417,21 @@ classdef MultiIndex < frames.Index
                     % every value in separate cell
                     out  = cell(obj.length() ,obj.Ndim);
                     for i=1:obj.Ndim
-                        dimvalues = arrayfun(@(x) {x}, obj.value_(i).value);
-                        out(:,i) = dimvalues;
+                        out(:,i) = arrayfun(@(x) {x}, obj.value_{i}.value);
                     end
                 otherwise
                     error("unsupported type '%s'.", type);
             end
         end                
-                
+      
+     function len = length(obj)
+       if isempty(obj.value_)
+          len = 0;
+       else
+          len = obj.value_{1}.length();
+       end
+    end   
+        
         
     end
     methods(Access=protected)
@@ -443,7 +451,7 @@ classdef MultiIndex < frames.Index
             if nargin<3, userCall=true; end
             if isempty(value)
                 % in case no value, just add empty Index object
-                obj.value_=frames.Index();
+                obj.value_ = {frames.Index()};
                 return;
             end
             if all( arrayfun(@(x) isa(x,'frames.Index'), value))
@@ -457,26 +465,26 @@ classdef MultiIndex < frames.Index
             assert( isvector(value), "error, should be 1d cell vector");
             % convert all (linear) indexes to Index objects
             Ndims = length(value);
-            indices = frames.Index();
+            indices = cell(1,Ndims);
             for i = 1:Ndims
                 val = value{i};
                 if numel(val)==1 && isIndex(val)
                     % linear index should not be unique
                     val.requireUniqueSorted=false;
                     val.requireUnique=false;
-                    indices(i) = val;
+                    indices{i} = val;
                 else
                     % convert to linear index
-                    indices(i) = frames.Index(val, Unique=false);
+                    indices{i} = frames.Index(val, Unique=false);
                 end
                 % get default names
-                if indices(i).name==""
-                    if numel(obj.value_) >= i && obj.value_(i).name~=""
+                if indices{i}.name==""
+                    if numel(obj.value_) >= i && obj.value_{i}.name~=""
                         % use name of existing dimension
-                        indices(i).name = obj.value_(i).name;
+                        indices{i}.name = obj.value_{i}.name;
                     else
                         % use default name
-                        indices(i).name = "dim"+i;
+                        indices{i}.name = "dim"+i;
                     end
                 end
             end
@@ -493,7 +501,7 @@ classdef MultiIndex < frames.Index
         function out = getname(obj)
             % get array of names for every dimension (from Index objects)
             if obj.Ndim > 0
-                out = [obj.value_.name];
+                out = cellfun(@(x) x.name, obj.value_);
             else
                 out="";
             end
@@ -509,7 +517,7 @@ classdef MultiIndex < frames.Index
         function out = getvalue_uniq(obj)
             % get unique values of every dimension (from Index Objects)
             if obj.Ndim>0
-                out = [obj.value_.value_uniq];
+                out = cellfun(@(x) x.value_uniq, obj.value_);
             else
                 out = {};
             end
@@ -521,11 +529,11 @@ classdef MultiIndex < frames.Index
             % get uniqind vector based on all dimensions
             if obj.Ndim==1
                 % single linear index
-                out = obj.value_.value_uniqind;
+                out = obj.value_{1}.value_uniqind;
             elseif obj.Ndim>1                
                 % multiple linear indices
-                uniqind = [obj.value_.value_uniqind];                   % all uniqind as columns
-                Ndim_uniq = cellfun(@length, [obj.value_.value_uniq]);  % number of unique values per dimension
+                uniqind = cell2mat(cellfun(@(x) x.value_uniqind, obj.value_,'UniformOutput',false));  % all uniqind as columns                                                
+                Ndim_uniq = cellfun(@(x) length(x.value_uniq{1}), obj.value_);  % number of unique values per dimension
                 % multiplication factor per dim (to create new unique index)
                 DimMultiplicationFactor = cumprod( [Ndim_uniq(2:end) 1], 'reverse');                
                 % matrix multiplication to calc combined uniqind vector
@@ -574,7 +582,11 @@ classdef MultiIndex < frames.Index
         function valueOut = getValue_andCheck(obj,value,userCall)
             % TODO
             valueOut = value;
-        end                
+        end
+        
+        function out = getMissingData_(~),  out = {missingData('frames.Index')};  end
+        function out = getDefaultValue_(~),  out = {defaultValue('frames.Index')};  end 
+
         
     end
     
@@ -586,7 +598,7 @@ classdef MultiIndex < frames.Index
                 if length(s)==1
                     rowIdx = ':';
                     dimIdx = ':';
-                elseif s(2).type=="()"
+                elseif s(2).type=="()" || s(2).type=="{}"
                     rowIdx = s(2).subs{1};
                     if length(s(2).subs)>1                    
                         dimIdx = s(2).subs{2};
@@ -607,7 +619,7 @@ classdef MultiIndex < frames.Index
                         "All dimensions should be selected to delete a multiIndex value.");
                     % loop over dimensions and remove selected items
                     for i=1:obj.Ndim
-                        obj.value_(i).value_(rowIdx) = [];
+                        obj.value_{i}.value_(rowIdx) = [];
                     end
                     if obj.singleton_
                         assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
@@ -623,24 +635,23 @@ classdef MultiIndex < frames.Index
                         if isvector(b_) && all(iscell(b_)) && all(cellfun(@iscell,b_))
                            % convert nested cell to cell(Nrows, Ndim)
                            b_ = reshape([b{:}], [length(b{1}), length(b)])';
-                        end
-                        %if ~iscell(b_),  b_ = num2cell(b_); end                        
+                        end                                              
                         assert(size(b_,2)==obj.Ndim, ...
                              "Number of columns in new value (b) not equal to number of dimensions.");
-                        for i=1:size(b_,2)
-                           %obj.value_(i).value_(rowIdx) = [b_{:,i}];
+                        for i=1:size(b_,2)                           
                            if iscell(b_)
                                val = [b_{:,i}];
                            else
                                val = b_(:,i);
-                           end
-                           obj.value_(i).value_(rowIdx) = val;                            
-                           %obj.value_(i) = builtin('subsasgn',obj.value_(i),s(1),[b_{:,i}]);
+                           end                           
+                           % call index object subsasgn method to handle custom data formats (eg timeIndex formats)
+                           s(2).type = "()"; % index object may not support {}
+                           obj.value_{i} = builtin('subsasgn',obj.value_{i},s,val); 
                         end                    
                     else
                         % assign single dimension
                         if iscell(b_), b_=cell2mat(b_); end
-                        obj.value_(dimIdx).value_(rowIdx) = b_;                        
+                        obj.value_{dimIdx}.value_(rowIdx) = b_;                        
                     end
                 end
                 obj.setvalue(obj.value_); % check if properties are respected   
@@ -652,7 +663,8 @@ classdef MultiIndex < frames.Index
         
         function varargout = subsref(obj,s)
             % implementation of custom data access methods
-            if length(s)==2 && s(1).type=="." && s(1).subs=="value" && s(2).type=="()" && length(s(2).subs)==2
+            if length(s)==2 && s(1).type=="." && s(1).subs=="value" && ...
+                    ismember(s(2).type,["()","{}"]) && length(s(2).subs)==2
                 % access linear dimension value array by .value(ind, dimind)            
                 rowSelector = s(2).subs{1};
                 dimSelector = s(2).subs{2};
@@ -668,7 +680,7 @@ classdef MultiIndex < frames.Index
                     else
                         dimind = dimSelector;
                     end
-                    varargout = {obj.value_(dimind).value(rowSelector)};                  
+                    varargout = {obj.value_{dimind}.value(rowSelector)};                  
                 end
             else
                 [varargout{1:nargout}] = builtin('subsref',obj,s);
@@ -693,11 +705,11 @@ classdef MultiIndex < frames.Index
                 assert(isa(item,'frames.MultiIndex'), "error, can only concatenate MultiIndex objects");
                 assert(all(obj.name==item.name), "error, dimensions not equal");
                 for j=1:obj.Ndim
-                    newvalue(j) = newvalue(j).vertcat_(item.value_(j));
+                    newvalue{j} = newvalue{j}.vertcat_(item.value_{j});
                 end
             end
             % assign to MultiIndex
-            obj = obj.setvalue(num2cell(newvalue), false); %skip value checks / unique warning            
+            obj = obj.setvalue(newvalue, false); %skip value checks / unique warning            
         end
         
         function obj = vertcat(obj,varargin)
@@ -714,8 +726,10 @@ classdef MultiIndex < frames.Index
             assert(all(common2), 'frames:assertFoundIn', "Not all obj values found in target.");
         end
         
-    end
+  
     
+
+        
     
-    
+      end
 end

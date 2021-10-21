@@ -38,14 +38,14 @@ df10 = df( mask.data)
 
 
 mask_error = mask;
-mask_error.rows_.value_(2).value(3) = 22;
+mask_error.rows_.value_{2}.value(3) = 22;
 try 
 df( mask_error )
 catch
     disp("OK, mask_error catched");
 end
 
-% assign
+%% assign
 dfA = df;
 dfA({ {1,3,"b"}, {2,5,"b"}, {2,6,"a"} },"col2") = 55
 dfA([true false true false], "col1") = [77 88]
@@ -173,7 +173,7 @@ df( {':',11} , {':',"b"})
 mind = df.columns_;
 mind.value(2,:) = {55, "xx"}
 mind.value(3:4,:) = {66, "yy"; 77 "zz"}
-mind.value{1,:} = [11, "aa"]
+mind.value{1,:} = {11, "aa"}
 
 %% Check isunique and issorted()
 df = dfmm1+dfmm2;;

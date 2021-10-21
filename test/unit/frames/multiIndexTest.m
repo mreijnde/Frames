@@ -31,8 +31,9 @@ classdef multiIndexTest < AbstractFramesTests
             mi = frames.MultiIndex({[2,3],timeindex,["a","b"]});            
             t.verifyEqual(mi.name,["dim1","Time","dim3"])
             t.verifyEqual(mi.getValue_(), ...
-                         [frames.Index([2,3],name="dim1"), timeindex, frames.Index(["a","b"],name="dim3") ])            
-           
+                         {frames.Index([2,3],name="dim1"), ...
+                         frames.TimeIndex(["24*06*2021","25*06*2021"],Format="dd*MM*yyyy", Unique=false), ...                         
+                         frames.Index(["a","b"],name="dim3") } )           
             warning('on','frames:Index:notUnique');
         end
         
@@ -125,6 +126,8 @@ classdef multiIndexTest < AbstractFramesTests
             t.verifyEqual(index.value(:), {{30} {10} {20} {11} {20}}')
             t.verifyEqual(index.value(:), {{30} {10} {20} {11} {20}}')
             
+            warning('off','frames:Index:subsagnNotUnique');
+            
             t.verifyError(@notUnique,'frames:MultiIndex:requireUniqueFail')
             function notUnique, uniqueindex.value(1) = 10; end
             uniqueindex.value(1:2) = [10 11]';
@@ -145,6 +148,8 @@ classdef multiIndexTest < AbstractFramesTests
             t.verifyError(@notSorted3,'frames:MultiIndex:requireSortedFail')
             function notSorted3, sortedindex.value(1) = 33; end
             
+            warning('on','frames:Index:subsagnNotUnique');
+            
             % 2D examples
             index = frames.MultiIndex({1:3,["a","b","c"],[10 11 12]});                                    
             % assign single row
@@ -154,9 +159,7 @@ classdef multiIndexTest < AbstractFramesTests
             index_mod=index; index_mod.value(2,:) = {22,"B",99};
             t.verifyEqual(index_mod.value, value_expected)            
             index_mod=index; index_mod.value(2) = {{22,"B",99}};
-            t.verifyEqual(index_mod.value, value_expected)
-            index_mod=index; index_mod.value(2) = [22,"B",99]; % array also works due to auto string/double conversions
-            t.verifyEqual(index_mod.value, value_expected)            
+            t.verifyEqual(index_mod.value, value_expected)       
             
             % assign multiple rows
             value_expected = {{1,"a",10}; {22,"B",99}; {33,"C",88}};
@@ -180,15 +183,14 @@ classdef multiIndexTest < AbstractFramesTests
             index_mod=index; index_mod.value(:,"dim3") = [111 222 333];
             t.verifyEqual(index_mod.value, value_expected )
             
-%             % not yet working icw timeindex
-%             timeindex = frames.MultiIndex(frames.TimeIndex([10 20 30]) );             
-%             timeindex.value([2 3]) = ["16-Aug-2021" "17-Aug-2021"];
-%             timeindex2 = timeindex;
-%             timeindex2.value(end) = 738385;
-%             t.verifyEqual(timeindex.value, timeindex2.value)
-%             
-%             t.verifyError(@tiNotSorted,'frames:Index:requireSortedFail')
-%             function tiNotSorted, timeindex.value([3 2]) = ["16-Aug-2021" "17-Aug-2021"]; end                        
+            % 1d timeindex
+            timeindex = frames.MultiIndex(frames.TimeIndex([10 20 30]) ,uniqueSorted=true );             
+            timeindex.value([2 3]) = ["16-Aug-2021" "17-Aug-2021"];
+            timeindex2 = timeindex;
+            timeindex2.value(end) = 738385;
+            t.verifyEqual(timeindex.value, timeindex2.value)           
+            t.verifyError(@tiNotSorted,'frames:MultiIndex:requireSortedFail')
+            function tiNotSorted, timeindex.value([3 2]) = ["16-Aug-2021" "17-Aug-2021"]; end                        
         end
     end
 end

@@ -119,12 +119,14 @@ classdef Index
             if tf
                 assert(obj.length()==1,'frames:Index:setSingleton',...
                     'Index must contain 1 element to be a singleton')
-                obj.value_ = missingData(class(obj.value_));
+                obj.value_ = obj.getMissingData_();
             elseif ~tf && obj.singleton_
-                obj.value_ = defaultValue(class(obj.value_));
+                obj.value_ = obj.getDefaultValue_();
             end
             obj.singleton_ = tf;
-        end
+        end        
+        
+        
         
         function obj = set.requireUnique(obj,tf)
             arguments
@@ -176,7 +178,7 @@ classdef Index
             if isempty(obj.value_)
                 len = 0;
             else
-               len = length(obj.value_(:,1) );
+               len = length(obj.value_);
             end
         end
         
@@ -629,6 +631,11 @@ classdef Index
             valueOut = obj.getValue_from(value);
             if userCall, obj.valueChecker(valueOut); end
         end
+        
+        function out = getMissingData_(obj),  out = missingData( class(obj.value_));  end
+        function out = getDefaultValue_(obj),  out = defaultValue( class(obj.value_));  end 
+        
+        
     end  
 end
 
