@@ -279,7 +279,11 @@ classdef Index
                % convert to index
                index2 = frames.Index().setvalue(index2, false); %skip value checks/ unique warning
            end
-           obj = obj.union_({index2},"duplicate");
+           method = "duplicate";
+           if obj.requireUnique, 
+               method = "unique";
+           end
+           obj = obj.union_({index2}, method);
            obj.singleton_ = false;
        end
         
@@ -350,18 +354,26 @@ classdef Index
         end
         
         
-        function [obj_new, ind_cell] = union_(obj, others_cell, method_NonUniqueIndex)
+        function [obj_new, ind_cell] = union_(obj, others_cell, method)
             % Internal union function to create combined index of obj and all supplied index objects            
             %
-            % Concatenate all given values in index objects. Depending on obj settings
-            % (requireUnique, requireUniqueSorted) new index will be made unique
-            % and sorted.
+            % The output index will keep the requireUnique and requireUniqueSorted settings from obj object. 
+            % Different alignment methods can be chosen.
             %
             % input:
-            %    others_cell:            cell array with (one or more) index objects to combine
-            %    method_NonUniqueIndex:  string enum: 'duplicate', 'unique', 'unique_keep_duplicates'
-            %                            describes the alignment method used for NonUnique Index objects 
+            %   others_cell:  cell array with (one or more) index objects to combine
+            %   method:       string enum with the alignment method to use:            
+            %     - 'unique':                only keep unique values in combined index.
+            %                                (only option that is allowed in case of requireUnique)
+            %
+            %     - 'unique_keep_duplicates: only keep unique values in combined index, but if already indices have
+            %                                duplicate values, keep them in. If multiple indices have the
+            %                                same duplicate values, align them in the same order as they occur in the
+            %                                index.            
+            %
+            %     - 'duplicate':             append all values of indices together, even if that creates new duplicates.                                
             %                                        
+            %
             % output:
             %   obj_new:  new Index object
             %   ind_cell: cell array with position index per supplied index object,
@@ -377,22 +389,22 @@ classdef Index
                     ind_cell = repmat({1},length(singletons),1);
                     return
                 else
-                    error('frames:union:noMixingSingletonAndNonSingleton', ...
+                    error('frames:Index:union:noMixingSingletonAndNonSingleton', ...
                         "Not all indices are singleton, not allowed to mix singleton and non-singleton.");
                 end
             end            
             
             % get align method to use
-            if obj.requireUnique
-                method = "unique";
-            else
-               if nargin<3
+            if nargin<3
+                if obj.requireUnique
+                   method = "unique";
+                else
                    method = "unique_keep_duplicates"; 
-               else
-                   method=method_NonUniqueIndex;
-               end
-            end           
-            
+                end
+            end
+            assert(~obj.requireUnique || method=="unique", 'frames:Index:union:requireUniqueMethod', ...
+                "Only method 'unique' allowed in union for index with requireUnique.");            
+               
             % concat all inputs
             lengths = [obj.length() cellfun(@length, others_cell)];            
             obj_new = obj.vertcat_(others_cell{:}); % no error checking on unique yet

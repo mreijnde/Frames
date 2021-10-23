@@ -505,12 +505,24 @@ classdef DataFrame
         function dfnew = combine(obj, df, options)
             % function to concatenate one or multiple dataframes
             %
-            % It will keep the requireUnique and requireUniqueSorted settings as defined for the indices in obj. 
-            % If this is set for a given index, it will always makes that combined index also unique, and if
-            % needed perform a sort.
+            % The requireUnique and requireUniqueSorted settings of obj will be used in the new combined dataframe.
+            % The method to combine the row and column indices can be specified with 'methodRows' and 'methodCols'.
+            % 
+            % methodRows and methodCols options are:
+            %  - 'unique':                 only keep unique values in combined index.
+            %                              (only option that is allowed for indexes that requireUnique)
             %
-            % For non-unique indices, the given method is used.
+            %  - 'unique_keep_duplicates:  only keep unique values in combined index, but if already indices have
+            %                              duplicate values, keep them in. If multiple dataframes indices have the
+            %                              same duplicate values, align them in the same order as they occur in the index.            
             %
+            %  - 'duplicate':              append all values of indices together, even if that creates new duplicates.                        
+            %
+            % If multiple dataframes in the conctenation define the same value in the combined dataframe, the 'order'
+            % option specifies which data to keep:
+            %    - "keepLast":  last occurance is used
+            %    - "keepFirst": first occurance is used
+            %            
             % usage: 
             %   df.combine( df1,df2,df3, methodRows="unique", methodCols="unique", order="keepLast")
             %        
@@ -535,6 +547,13 @@ classdef DataFrame
                 dfnew = obj;
                 return
             end
+            % check methods
+            assert(~obj.rows_.requireUnique || options.methodRows=="unique", ...
+                'frames:DataFrame:combine:invalidRowsMethod', ...
+                "Invalid methodRows option. Row index has requireUnique enabled, only 'unique' allowed.");
+            assert(~obj.columns_.requireUnique || options.methodCols=="unique", ...
+                'frames:DataFrame:combine:invalidColsMethod', ...
+                "Invalid methodCols option. Column index has requireUnique enabled, only 'unique' allowed.");                
             % get index objects            
             rowsobj = cellfun(@(x) {x.rows_}, df);
             colsobj = cellfun(@(x) {x.columns_}, df);            
@@ -577,13 +596,21 @@ classdef DataFrame
         end
                
         function other = horzcat(obj,varargin)
-            % horizontal concatenation (inner join) of frames: [df1,df2,df3,...]            
-            other = obj.combine(varargin{:}, methodRows="unique_keep_duplicates", methodCols="duplicate");
+            % horizontal concatenation (inner join) of frames: [df1,df2,df3,...]
+            methodRows="unique_keep_duplicates";
+            methodCols="duplicate";
+            if obj.rows_.requireUnique, methodRows="unique"; end        
+            if obj.columns_.requireUnique, methodCols="unique"; end
+            other = obj.combine(varargin{:}, methodRows=methodRows, methodCols=methodCols, order="keepLast");
         end
         
         function other = vertcat(obj,varargin)
-            % vertical concatenation (outer join) of frames: [df1;df2;df3;...]                        
-            other = obj.combine(varargin{:}, methodRows="duplicate", methodCols="unique_keep_duplicates");                               
+            % vertical concatenation (outer join) of frames: [df1;df2;df3;...]                                    
+            methodRows="duplicate";
+            methodCols="unique_keep_duplicates";            
+            if obj.rows_.requireUnique, methodRows="unique"; end        
+            if obj.columns_.requireUnique, methodCols="unique"; end            
+            other = obj.combine(varargin{:}, methodRows=methodRows, methodCols=methodCols, order="keepLast");
         end
         
         
