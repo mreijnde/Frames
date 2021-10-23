@@ -502,23 +502,45 @@ classdef DataFrame
         
         
         
-        function dfnew = combine(obj, dfs, methodRows, methodCols)
-            % concatenate dataframe
-            % 
-            % default parameters
-            if nargin<3, methodRows="unique"; end
-            if nargin<4, methodCols="unique"; end
-            % skip, if nothing to do
-            if isempty(dfs)
+        function dfnew = combine(obj, df, options)
+            % function to concatenate one or multiple dataframes
+            %
+            % It will keep the requireUnique and requireUniqueSorted settings as defined for the indices in obj. 
+            % If this is set for a given index, it will always makes that combined index also unique, and if
+            % needed perform a sort.
+            %
+            % For non-unique indices, the given method is used.
+            %
+            % usage: 
+            %   df.combine( df1,df2,df3, methodRows="unique", methodCols="unique", order="keepLast")
+            %        
+            % output:
+            %    concatenated dataframe
+            %
+            arguments
+                obj
+            end
+            arguments (Repeating)
+                df {mustBeA(df, 'frames.DataFrame')}
+            end
+            arguments
+                options.methodRows {mustBeMember(options.methodRows, ...
+                                   ["duplicate","unique","unique_keep_duplicates"])} = "unique"
+                options.methodCols {mustBeMember(options.methodCols, ...
+                                   ["duplicate","unique","unique_keep_duplicates"])} = "unique"
+                options.order      {mustBeMember(options.order, ["keepFirst","keepLast"])} = "keepLast"           
+            end
+            % skip, if nothing to do            
+            if isempty(df)
                 dfnew = obj;
                 return
             end
             % get index objects            
-            rowsobj = cellfun(@(x) {x.rows_}, dfs);
-            colsobj = cellfun(@(x) {x.columns_}, dfs);            
-            % get new index objects and position index          
-            [rowsnew, rowsnew_ind] = obj.rows_.union_(rowsobj, methodRows);
-            [colsnew, colsnew_ind] = obj.columns_.union_(colsobj, methodCols);            
+            rowsobj = cellfun(@(x) {x.rows_}, df);
+            colsobj = cellfun(@(x) {x.columns_}, df);            
+            % get new combined index objects and position index          
+            [rowsnew, rowsnew_ind] = obj.rows_.union_(rowsobj, options.methodRows);
+            [colsnew, colsnew_ind] = obj.columns_.union_(colsobj, options.methodCols);            
             % get empty dataframe (with same settings)
             dfnew = obj;
             dfnew.rows_ = rowsnew;
@@ -527,35 +549,41 @@ classdef DataFrame
             dfnew = resetUserProperties(dfnew);
             type = class(dfnew.data_);
             % add object itself to the list
-            dfs = [{obj} dfs];            
-            % assign data from each dataframe
-            elements_assigned = false(size(dfnew));
-            for i=1:length(dfs)
+            df = [{obj} df];            
+            % define order
+            dforder = 1:length(df);
+            if options.order == "keepFirst"
+                dforder = flip(dforder);
+            end
+            % assign data from each dataframe in the list
+            elements_assigned = false(size(dfnew));            
+            for i=dforder
                 % get position indices                
                 rowind = rowsnew_ind{i};
                 colind = colsnew_ind{i};
                 % checks
-                assert(isa(dfs{i}.data_,type),'frames:concat:differentDatatype', ...
+                assert(isa(df{i}.data_,type),'frames:concat:differentDatatype', ...
                      'frames do not have the same data type')
                 if any(elements_assigned(rowind,colind),'all')
+                    if options.order=="keepFirst", ordername="first"; else, ordername="last"; end 
                     warning('frames:concat:overlap', ...
                       "Overlapping values (with same row and column index) between different dataframes detected. " + ...
-                      "Value of last dataframe will be used.");                   
+                      "Value of " + ordername + " dataframe will be used.");                   
                 end
                 elements_assigned(rowind,colind)= true;
                 % assign values
-                dfnew.data_(rowind,colind) = dfs{i}.data_;
+                dfnew.data_(rowind,colind) = df{i}.data_;
             end            
         end
                
         function other = horzcat(obj,varargin)
             % horizontal concatenation (inner join) of frames: [df1,df2,df3,...]            
-            other = obj.combine(varargin, "unique_keep_duplicates", "duplicate");
+            other = obj.combine(varargin{:}, methodRows="unique_keep_duplicates", methodCols="duplicate");
         end
         
         function other = vertcat(obj,varargin)
             % vertical concatenation (outer join) of frames: [df1;df2;df3;...]                        
-            other = obj.combine(varargin, "duplicate", "unique_keep_duplicates");                               
+            other = obj.combine(varargin{:}, methodRows="duplicate", methodCols="unique_keep_duplicates");                               
         end
         
         
