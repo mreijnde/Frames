@@ -175,11 +175,7 @@ classdef Index
         end
         
         function len = length(obj)
-            if isempty(obj.value_)
-                len = 0;
-            else
-               len = length(obj.value_);
-            end
+            len = size(obj.value_,1);
         end
         
         function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall)
