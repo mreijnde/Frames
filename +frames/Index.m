@@ -368,6 +368,20 @@ classdef Index
             %             including obj itself as first item.
             %             Position index describes the position for each original line in the newly created index            
             %
+            
+            % handle singletons indices
+            singletons = cellfun(@(x) x.singleton, [{obj}, others_cell]);
+            if any(singletons)
+                if all(singletons)
+                    obj_new = obj;
+                    ind_cell = repmat({1},length(singletons),1);
+                    return
+                else
+                    error('frames:union:noMixingSingletonAndNonSingleton', ...
+                        "Not all indices are singleton, not allowed to mix singleton and non-singleton.");
+                end
+            end            
+            
             % get align method to use
             if obj.requireUnique
                 method = "unique";
@@ -377,7 +391,8 @@ classdef Index
                else
                    method=method_NonUniqueIndex;
                end
-            end                        
+            end           
+            
             % concat all inputs
             lengths = [obj.length() cellfun(@length, others_cell)];            
             obj_new = obj.vertcat_(others_cell{:}); % no error checking on unique yet
@@ -418,8 +433,6 @@ classdef Index
                            
             % slice full position index for each input
             ind_cell = mat2cell( ind, lengths, 1);
-            
-            
             
             
             function out = labelDuplicatesInSections(x, L, unique_section)
@@ -531,12 +544,15 @@ classdef Index
         end
         
         function obj = recalc_unique_cache(obj)
-            % recalculate unique cache based on stored value_
-            if obj.length()>0             
-                [obj.value_uniq_,~ ,obj.value_uniqind_] = nanunique(obj.value_, 'sorted');                
-            else
+            % recalculate unique cache based on stored value_           
+            if obj.singleton
+                obj.value_uniq_=missing;
+                obj.value_uniqind_=1;                
+            elseif obj.length()==0
                 obj.value_uniq_=[];
                 obj.value_uniqind_=[];
+            else
+                [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_, 'sorted');                
             end
         end                        
         
