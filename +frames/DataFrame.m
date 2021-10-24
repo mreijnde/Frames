@@ -129,6 +129,16 @@ classdef DataFrame
                 NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
             end
+            % convert index to MultiIndex in case of nested cell array: {{dim1 arr, dim2 arr, dimN arr}}
+            if iscell(rows) && ~isempty(rows) && iscell(rows{1})
+                assert(length(rows)==1, "Invalid nested cell format rows, required: {{dim1 array, dim2 array}}");
+                rows = frames.MultiIndex(rows{1});
+            end
+            if iscell(columns) && ~isempty(columns) && iscell(columns{1})
+                assert(length(columns)==1, "Invalid nested cell format columns, required: {{dim1 array, dim2 array}}");
+                columns = frames.MultiIndex(columns{1});
+            end
+            % handle column and row series
             if NameValueArgs.RowSeries
                 if isa(rows,'frames.Index')
                     assert(rows.singleton_,'frames:constructor:rowsSingletonFail', ...
