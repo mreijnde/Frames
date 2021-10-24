@@ -104,7 +104,8 @@ classdef Index
             obj = obj.recalc_unique_cache();
         end        
         function obj = set.name(obj,value)
-            obj.name_ = value;
+            % seperate method to overcome matlab's limitation on overloading setters/getters
+            obj = obj.setname(value);            
         end
         
         function out = get.name(obj)
@@ -538,7 +539,13 @@ classdef Index
         end        
         
         function out = getname(obj)
+            % get index name
             out = obj.name_;
+        end
+        
+        function obj = setname(obj, value)
+            % set index name
+            obj.name_ = value;
         end
 
         function out = getvalue_uniq(obj)

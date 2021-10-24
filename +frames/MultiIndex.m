@@ -507,6 +507,17 @@ classdef MultiIndex < frames.Index
             end
         end
         
+        function obj = setname(obj, value)
+            % set names of every dimension             
+            if obj.Ndim > 0
+                assert(length(value)==obj.Ndim, "number of names should be equal to number of dimensions");
+                for i=1:obj.Ndim
+                    obj.value_{i}.name = value(i);
+                end
+            end
+        end
+        
+        
         function v = getValue(obj)
             % output MultiIndex values
             %v = obj.getvalue_cell("rowcol"); %as cell(Nindex,Ndim)
