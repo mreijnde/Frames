@@ -1172,19 +1172,21 @@ classdef DataFrame
                     elseif ismember(field, ["row","col"])
                         % assign to row/col series
                         selector = s(2).subs{1};
-                        if strcmp(field, "row")
-                            if ~ismember(selector,obj.rows)
+                        if strcmp(field, "row")                            
+                            if ~obj.rows_.ismember(selector)
                                 obj = obj.extendRows(selector);
                             end
                             assert(length(obj.rows_.positionOf(selector))==1, ...
-                                'frames:subsasgn:rowMultiple','assigning with row expected to change a unique row');
-                            obj = obj.modify(b,selector,':',false);
+                                'frames:subsasgn:rowMultiple', ...
+                                'assignment with .row requires to change only a single unique row.');
+                            obj = obj.modify(b,selector,':',false);                            
                         else
-                            if ~ismember(selector,obj.columns)
+                            if ~obj.columns_.ismember(selector)
                                 obj = obj.extendColumns(selector);
                             end
                             assert(length(obj.columns_.positionOf(selector))==1, ...
-                                'frames:subsasgn:colMultiple','assigning with col expected to change a unique column');
+                                'frames:subsasgn:colMultiple', ...
+                                'assignment with .col requires to change only a single unique column.');
                             obj = obj.modify(b,':',selector,false);
                         end
                         
