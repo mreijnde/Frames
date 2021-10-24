@@ -105,24 +105,8 @@ classdef MultiIndex < frames.Index
                 selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             else
-                %  value selector (with 'selector set(s)')
-                if ~iscell(selector)                    
-                    % single value selector (allowed in case of single dimension, like in Index)
-                    assert(obj.Ndim<=1, ...
-                        'frames:MultiIndex:getSelector:cellselectorrequired', ...
-                        "Cell selector required in case of value-indexing in MultiIndex with more than 1 dimension.");
-                    selector = {{selector}}; 
-                end                
-                isnestedcell = cellfun(@iscell, selector);
-                if ~any(isnestedcell)
-                    % add celllayer (simplifies processing)
-                    selector = {selector};
-                elseif ~all(isnestedcell)
-                    error('frames:MultiIndex:getSelector:notallnestedcells', ...
-                        "Some cells in selector contain a nested cell array and other's do not. " + ...
-                        "This is not allowed. Nested cell arrays are interpreted as separate 'selector sets'. " + ...
-                        "If used, all cells must contain nested cell arrays.");
-                end
+                % value selector (with 'selector set(s)')
+                selector = obj.convertCellSelector(selector); % make sure it is nesdted cell with selector sets                             
                 % calculate logical mask as selector
                 mask = false(obj.length(),1);
                 for iset = 1:length(selector)                    
@@ -599,6 +583,28 @@ classdef MultiIndex < frames.Index
         function out = getDefaultValue_(~),  out = {defaultValue('frames.Index')};  end 
 
         
+        function selector = convertCellSelector(obj, selector)
+            % convert selector to nested cell array with 'selector sets' and perform checks
+            if ~iscell(selector)                    
+                    % single value selector (allowed in case of single dimension, like in Index)
+                    assert(obj.Ndim<=1, ...
+                        'frames:MultiIndex:getSelector:cellselectorrequired', ...
+                        "Cell selector required in case of value-indexing in MultiIndex with more than 1 dimension.");
+                    selector = {{selector}}; 
+            end            
+            isnestedcell = cellfun(@iscell, selector);
+            if ~any(isnestedcell)
+                % add celllayer (simplifies processing to make all the same)
+                selector = {selector};
+            elseif ~all(isnestedcell)
+                error('frames:MultiIndex:getSelector:notallnestedcells', ...
+                    "Some cells in selector contain a nested cell array and other's do not. " + ...
+                    "This is not allowed. Nested cell arrays are interpreted as separate 'selector sets'. " + ...
+                    "If used, all cells must contain nested cell arrays.");
+            end           
+        end
+        
+        
     end
     
     methods(Hidden)
@@ -737,7 +743,16 @@ classdef MultiIndex < frames.Index
             assert(all(common2), 'frames:assertFoundIn', "Not all obj values found in target.");
         end
         
-  
+       function out = ismember(obj, value)
+            % check if value(s) is/are present in index
+            value = obj.convertCellSelector(value);
+            N = length(value);
+            out = false(N,1);
+            r = obj.value;            
+            for i=1:N
+                out(i) = any(cellfun(@(x) isequal(x,value{i}), r));
+            end              
+        end
     
 
         

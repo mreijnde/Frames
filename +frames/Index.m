@@ -298,6 +298,12 @@ classdef Index
             obj = obj.vertcat_(varargin{:});
             obj.setvalue(obj.value_); % check if properties are respected            
         end
+        
+        function out = ismember(obj, value)
+            % check if value is present in index
+            out = ismember(obj.value_, value);            
+        end
+        
        
         
         function bool = isunique(obj)
