@@ -13,11 +13,11 @@ classdef Split
  %          Object that contains keys and values describing
  %          groups. Please refer to the documentation of
  %          frames.Groups for more details.
- %     * flags: 'allowOverlaps', 'isNonExhaustive'
+ %     * flags: 'allowOverlaps', 'allowNonExhaustive'
  %          Split throws an error if there are overlaps in the
  %          group values, and if they do not span the whole set
  %          of the Index values. Allow these cases by respectively
- %          adding the flags 'allowOverlaps' and 'isNonExhaustive'
+ %          adding the flags 'allowOverlaps' and 'allowNonExhaustive'
  %
  % Methods:
  %     * apply      
@@ -40,7 +40,7 @@ classdef Split
         function obj = Split(df, groups, varargin)
             % SPLIT Split(df,groups[,flags])
             if iscell(df)
-                assert(isa(df{1},'frames.DataFrame'),'df must be a cell of frames.DataFrame')
+                assert(all(isFrame(df{:})),'df must be a cell of frames.DataFrame')
                 assert(isaligned(df{:}),'dfs must be aligned')
                 obj.dfIsCell = true;
             else
@@ -51,10 +51,8 @@ classdef Split
             obj.groups = groups;
             
             if groups.constantGroups
-                isflag = find(strcmp(varargin,'allowOverlaps'),1);
-                allowOverlaps = ~isempty(isflag);
-                isflag = find(strcmp(varargin,'isNonExhaustive'),1);
-                isNonExhaustive = ~isempty(isflag);
+                allowOverlaps = parseFlag('allowOverlaps',varargin);
+                allowNonExhaustive = parseFlag('allowNonExhaustive',varargin);
                 allElements = [groups.values{:}];
                 if ~allowOverlaps && ~isunique(allElements)
                     error('frames:SplitOverlap','There are overlaps in Split')
@@ -64,7 +62,7 @@ classdef Split
                 else
                     toSplit = obj.applyToPotentialCell(df, @(x) x.rows, true); 
                 end
-                if ~isNonExhaustive && any(~ismember(toSplit,allElements))
+                if ~allowNonExhaustive && any(~ismember(toSplit,allElements))
                     error('frames:SplitNonexhaustive','Split is not exhaustive')
                 end
             else
@@ -117,14 +115,10 @@ classdef Split
         end
     end
     methods(Access=protected)
-        function out = computeFunction(obj,fun,reduceDim,varargin)
-            
-            isflag = find(strcmp(varargin,'applyToFrame'),1);
-            applyToFrameFlag = ~isempty(isflag);
-            varargin(isflag) = [];
-            isflag = find(strcmp(varargin,'applyToData'),1);
-            applyToDataFlag = ~isempty(isflag);
-            varargin(isflag) = [];
+        function out = computeFunction(obj,fun,reduceDim,varargin)           
+            [applyToFrameFlag,varargin] = parseFlag('applyToFrame',varargin);
+            [applyToDataFlag,varargin] = parseFlag('applyToData',varargin);
+
             condFlags = [applyToFrameFlag,applyToDataFlag];
             if all(condFlags)
                 error('frames:splitapply:flag','Choose one flag only.')
@@ -133,9 +127,7 @@ classdef Split
             else
                 applyToFrame = false;
             end
-            isflag = find(strcmp(varargin,'applyByLine'),1);
-            applyByLine = ~isempty(isflag);
-            varargin(isflag) = [];
+            [applyByLine,varargin] = parseFlag('applyByLine',varargin);
             
             dfdata = obj.applyToPotentialCell(obj.df, @(x) x.data, false); 
             sz = obj.applyToPotentialCell(dfdata, @(x) size(x), true); 
@@ -156,7 +148,13 @@ classdef Split
             firstIteration = true;
             for ii = 1:length(obj.groups.values)
                 gVal = obj.groups.values{ii};
-                if ~applyByLine && ~obj.groups.constantGroups
+                if obj.groups.constantGroups
+                    if obj.groups.isColumnGroups
+                        colID = obj.applyToPotentialCell(obj.df, @(x) x.getColumnsObj().positionOf(gVal), true); 
+                    else
+                        rowID = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj().positionOf(gVal), true); 
+                    end
+                elseif ~applyByLine
                     gVal = full(gVal);  % for performance reasons, better to work with non sparse matrices
                     if obj.groups.isColumnGroups
                         [uniqueGroups,sameVals,indexLoop] = local_idxSameData(gVal);
@@ -174,10 +172,8 @@ classdef Split
                     if obj.groups.constantGroups
                         if obj.groups.isColumnGroups
                             rowID = idx;
-                            colID = obj.applyToPotentialCell(obj.df, @(x) x.getColumnsObj().positionOf(gVal), true); 
                         else
                             colID = idx;
-                            rowID = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj().positionOf(gVal), true); 
                         end
                     else
                         if applyByLine

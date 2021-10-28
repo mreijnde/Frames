@@ -155,7 +155,7 @@ classdef splitTest < AbstractFramesTests
                 'frames:SplitOverlap')
 
             t.verifyEqual(df.split(frames.Groups({[1 2 3 5], [4 5]}),'allowOverlaps').aggregate(@sum,2).data,[11,9])
-            t.verifyEqual(df.split(frames.Groups({[1 2 3 5]}),'isNonExhaustive').aggregate(@sum,2).data,11)
+            t.verifyEqual(df.split(frames.Groups({[1 2 3 5]}),'allowNonExhaustive').aggregate(@sum,2).data,11)
         end
         
         function byLine(t)
@@ -247,6 +247,42 @@ classdef splitTest < AbstractFramesTests
             expected = frames.DataFrame([35+350, 20+200;42+3.5, 13+2]',[1 2]);
             t.verifyEqual(sol,expected)
 
+        end
+        
+        function paramsComb(t)
+            data = frames.DataFrame([1 2 3 4;5 6 7 8]');
+            data2 = data .* 10;
+            groupDF = frames.DataFrame([2 1 1 2;1 1 2 2]');
+            groupSeries = groupDF.col(data.columns(1));
+            groupMod = frames.Groups(groupDF,'rowGroups');
+            groupCst = frames.Groups(groupSeries,'rowGroups');
+            
+            % cst group / on matrix / single
+            a = frames.Split(data,groupCst).apply(@sum);
+            % cst group / on matrix / cell
+            b = frames.Split({data,data2},groupCst).apply(@(x) x{1} + x{2});
+            % cst group / by line / single
+            c = frames.Split(data,groupCst).apply(@sum,'applyByLine');
+            % cst group /  by line / cell
+            d = frames.Split({data,data2},groupCst).apply(@(x) x{1} + x{2},'applyByLine');
+            % mod group / on matrix / single
+            e = frames.Split(data,groupMod).apply(@sum);
+            % mod group / on matrix / cell
+            f = frames.Split({data,data2},groupMod).apply(@(x) x{1} + x{2});
+            % mod group / by line / single
+            g = frames.Split(data,groupMod).apply(@sum,'applyByLine');
+            % mod group /  by line / cell
+            h = frames.Split({data,data2},groupMod).apply(@(x) x{1} + x{2},'applyByLine');
+            
+            t.verifyEqual(a,c)
+            t.verifyEqual(b,d)
+            t.verifyEqual(e,g)
+            t.verifyEqual(f,h)
+            t.verifyEqual(b,h)
+            
+            t.verifyEqual(a.data,[5 5 5 5;13 13 13 13]')
+            t.verifyEqual(b.data,[11 22 33 44;55 66 77 88]')
+            t.verifyEqual(e.data,[5 5 5 5;11 11 15 15]')
         end
     end
 end
