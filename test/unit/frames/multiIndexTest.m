@@ -22,7 +22,7 @@ classdef multiIndexTest < AbstractFramesTests
                            frames.MultiIndex({frames.Index([1,1]),frames.Index(["a","b"])},name=["dim1","dim2"])); 
                                    
             % specify single dimension array
-            t.verifyEqual( frames.MultiIndex([1,2,3,4,5],name="test"), ...
+            t.verifyEqual( frames.MultiIndex([1;2;3;4;5],name="test"), ...
                            frames.MultiIndex(frames.Index(1:5),name="test") );             
                        
             timeindex = frames.TimeIndex(["24*06*2021","25*06*2021"],Format="dd*MM*yyyy");            
@@ -116,9 +116,9 @@ classdef multiIndexTest < AbstractFramesTests
         
         function assignmentTest(t)
             % 1D examples
-            index = frames.MultiIndex([30 10 20]);
-            uniqueindex = frames.MultiIndex([30 10 20],Unique=true);
-            sortedindex = frames.MultiIndex([10 20 30],UniqueSorted=true);
+            index = frames.MultiIndex([30;10;20]);
+            uniqueindex = frames.MultiIndex([30;10;20],Unique=true);
+            sortedindex = frames.MultiIndex([10;20;30],UniqueSorted=true);
        
             t.verifyWarning(@renderDupl,'frames:MultiIndex:notUnique')
             function renderDupl, index.value(end+1:end+2) = [11 20]; end
