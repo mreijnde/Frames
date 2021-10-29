@@ -57,13 +57,16 @@ classdef Split
                 if ~allowOverlaps && ~isunique(allElements)
                     error('frames:SplitOverlap','There are overlaps in Split')
                 end
-                if groups.isColumnGroups 
-                    toSplit = obj.applyToPotentialCell(df, @(x) x.columns, true); 
-                else
-                    toSplit = obj.applyToPotentialCell(df, @(x) x.rows, true); 
-                end
-                if ~allowNonExhaustive && any(~ismember(toSplit,allElements))
-                    error('frames:SplitNonexhaustive','Split is not exhaustive')
+                if ~allowNonExhaustive 
+                    if groups.isColumnGroups 
+                        toSplit = obj.applyToPotentialCell(df, @(x) x.columns, true); 
+                    else
+                        toSplit = obj.applyToPotentialCell(df, @(x) x.rows, true); 
+                    end
+                    allElements = [allElements,groups.groupless];
+                    if any(~ismember(toSplit,allElements))
+                        error('frames:SplitNonexhaustive','Split is not exhaustive')
+                    end
                 end
             else
                 rows = obj.applyToPotentialCell(df, @(x) x.getRowsObj(), true); 

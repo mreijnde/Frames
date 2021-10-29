@@ -284,6 +284,17 @@ classdef splitTest < AbstractFramesTests
             t.verifyEqual(b.data,[11 22 33 44;55 66 77 88]')
             t.verifyEqual(e.data,[5 5 5 5;11 11 15 15]')
         end
+        
+        function missingGroup(t)
+            gdf = frames.DataFrame([2 1 1 NaN 2]);
+            gs = gdf.asRowSeries();
+            gdf = frames.Groups(gdf);
+            gs = frames.Groups(gs);
+            data = frames.DataFrame([1 2 3 4 5]);
+            expected = frames.DataFrame([6 5 5 NaN 6]);
+            t.verifyEqual(data.split(gdf).apply(@(x) sum(x,2)),expected)
+            t.verifyEqual(data.split(gs).apply(@(x) sum(x,2)),expected)
+        end
     end
 end
 
