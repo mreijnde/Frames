@@ -1767,8 +1767,9 @@ end
 
 %--------------------------------------------------------------------------
 function other = operator(fun,handler,df1,df2)
-% HACK for MultiIndex (if any index is a MultiIndex, use new alignment code)
-if isFrame(df1) && isFrame(df2) && any(isMultiIndex(df1.rows_,df2.rows_,df1.columns_,df2.columns_) )
+% redirect elementWiseOperations for DataFrame with a MultiIndex to new code including alignment & auto expansion
+if ~isequal(handler,@matrixOpHandler) && ...
+    isFrame(df1) && isFrame(df2) && any(isMultiIndex(df1.rows_,df2.rows_,df1.columns_,df2.columns_) )
     other = performElementWiseOperation_MultiIndex(df1, df2, fun, "full", true);
     return
 end
