@@ -64,7 +64,7 @@ classdef Groups
                 obj.constantGroups = false;
                 obj = obj.setFrameSplit(groups);
             else
-                obj = obj.groupToKeyVal(groups,obj.isColumnGroups);
+                obj = obj.groupToKeyVal(groups);
             end
             
         end
@@ -107,14 +107,14 @@ classdef Groups
             allElements = unique([obj.values{:}], 'stable');
         end
         
-        function obj = groupToKeyVal(obj,g,isColumnGroups)
+        function obj = groupToKeyVal(obj,g)
             if isFrame(g)
                 data = g.data(:)';
                 missingData = ismissing(data);
-                if isColumnGroups, obj.groupless = g.columns(missingData); else, obj.groupless = g.rows(missingData)'; end
+                if obj.isColumnGroups, obj.groupless = g.columns(missingData); else, obj.groupless = g.rows(missingData)'; end
                 [obj.keys,~,ikeys] = unique(data(~missingData),'stable');
                 obj.values = cell(1,length(obj.keys));
-                if isColumnGroups, vals = g.columns; else, vals = g.rows'; end
+                if obj.isColumnGroups, vals = g.columns; else, vals = g.rows'; end
                 vals = vals(~missingData);
                 for ii = 1:length(obj.keys)
                     obj.values{ii} = vals(ikeys==ii);
