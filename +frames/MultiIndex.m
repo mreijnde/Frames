@@ -299,19 +299,42 @@ classdef MultiIndex < frames.Index
             % assign index and dimension names
             %            
             % default parameters
-            if nargin<3, name=[]; end        
-            if iscell(value) && all(cellfun(@iscell, value))
-                % interpret every nested cell as a row of MultiIndex, convert to index objects
-                Ndims = length(value{1});
-                assert( all(cellfun(@length, value)==Ndims), ...
-                    'frames:MultiIndex:setIndex:requireSameNrDimsNestedCell', ...
-                    "Nested cell array interpreted as rows of MultiIndex. Each nested cell should " + ...
-                    "have the same number of elements.");
-                value_new = cell(Ndims,1);
-                for i=1:Ndims
-                    value_new{i} = frames.Index(cellfun(@(x) x{i}, value));
-                end
-                value = value_new;                                
+            if nargin<3, name=[]; end
+            
+            if iscell(value) 
+                
+                if ~isvector(value)
+                    % 2d cell array (Nrows,Ndim) ==> convert to 1d cell array (Ndim) with Index Objects
+                    Ndims = size(value,2);                    
+                    value_new = cell(Ndims,1);
+                    for i=1:Ndims
+                        value_array = [value{:,i}];
+                        value_new(i) = {frames.Index(value_array)};
+                    end
+                    value = value_new;
+                    
+                elseif all(cellfun(@iscell, value))
+                    % handle nested cells: {cell_array_row_values1, ..., cell_array_row_valuesM}
+                    % interpret every nested cell as a row of MultiIndex, convert to 1d cell array with index objects
+                    Ndims = length(value{1});
+                    assert( all(cellfun(@length, value)==Ndims), ...
+                        'frames:MultiIndex:setIndex:requireSameNrDimsNestedCell', ...
+                        "Nested cell array interpreted as rows of MultiIndex. Each nested cell should " + ...
+                        "have the same number of elements.");
+                    value_new = cell(Ndims,1);
+                    for i=1:Ndims                        
+                        if ~ischar(value{1}{i})
+                            % concatenate values from cell array to array
+                            values_dim = cellfun(@(x) x{i}, value);
+                        else
+                            % exception for char, concatenated array should be cell array
+                            values_dim = cellfun(@(x) x{i}, value, 'UniformOutput', false);
+                        end
+                        value_new{i} = frames.Index(values_dim);                        
+                    end
+                    value = value_new;
+                end                
+                
             end
             % assign values (+ convert to linear indices if needed + default names)
             obj.value = value;            
@@ -427,8 +450,9 @@ classdef MultiIndex < frames.Index
             %    - cells array(1:Ndim) with each cell the linear index data
             %        - frames.Index object or
             %        - array of input types supported by frames.Index            
-            
+            %
             %    - array(1:Ndim) with frames.index objects 
+            %    - array(1:Nrows,1:Ndim) with index values (numerical, strings, ...)
             %
             % each dimension should have the same number of elements, and combination of values has to be unique
             %
@@ -440,11 +464,13 @@ classdef MultiIndex < frames.Index
             end
             if all( arrayfun(@(x) isa(x,'frames.Index'), value))
                 % handle array of Index objects by first converting to cell array                
-                value = num2cell(value);
+                value = num2cell(value);            
             end
-            if ~iscell(value) && isvector(value)
-                % embed single index in cell array
-                value = {value};
+            if ~iscell(value)                 
+               % interpret value array as (Nrows, Ndim) 
+               Ndim = size(value,2);
+               Nrows = size(value,1);
+               value = mat2cell(value, Nrows , ones(1, Ndim));                                   
             end
             assert( isvector(value), "error, should be 1d cell vector");
             % convert all (linear) indexes to Index objects
