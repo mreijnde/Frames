@@ -129,16 +129,14 @@ classdef DataFrame
                 NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
             end
-            % if row/columns are cell array (exception pure char cell arrays) convert to MultiIndex
-            % (for now use an extra layer of nested cell layer to keep compatible with Index options)
-            if ~isempty(rows) && iscell(rows) && ~ischar(rows{1})
-                assert(length(rows)==1, "Require extra cell layer around MultiIndex constructor input for compatibility");
-                rows = frames.MultiIndex(rows{1});
+            % if row/columns are specific MultiIndex input, create MultiIndex objects
+            % (all cell arrays (except char cell array), 2d arrays, and arrays of multiple Index objects)            
+            if checkMultiIndexinput(rows)                
+                rows = frames.MultiIndex(rows);
             end
-            if ~isempty(columns) && iscell(columns) && ~ischar(columns{1})
-                assert(length(columns)==1, "Require extra cell layer around MultiIndex constructor input for compatibility");
-                columns = frames.MultiIndex(columns{1});
-            end
+            if checkMultiIndexinput(columns)                
+                columns = frames.MultiIndex(columns);
+            end            
                                       
             % handle column and row series
             if NameValueArgs.RowSeries
@@ -192,6 +190,23 @@ classdef DataFrame
             obj.rows = rows;
             obj.columns = columns;
             obj.name_ = NameValueArgs.Name;
+            
+            
+            function bool = checkMultiIndexinput(value)
+                % check if input is specific for MultiIndex
+                % (all cell arrays (except char cell array), 2d arrays, and arrays of multiple Index objects)                  
+                if ~isempty(value) && ...
+                   ( ...     
+                       (iscell(value) && ~ischar(value{1})) || ...  % cell array (except char cell array)
+                       ~isvector(value) ||  ...                     % 2d array
+                       (~isscalar(value) && isIndex(value(1)) ) ... % 1d array with more than 1 Index object
+                   )
+                   bool = true; 
+                else
+                   bool = false;
+                end
+            end
+            
         end
         
         %------------------------------------------------------------------
