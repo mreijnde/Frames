@@ -133,10 +133,12 @@ function value = getValue_from_local(value,format)
 switch class(value)
     case 'datetime'
         value = datenum(value);
-    case {'string','cell'}
+    case 'string'
         value = datenum(datetime(value,Format=format));
     case {'double','duration','logical'}
         return
+    case 'cell'
+        error('TimeIndex:cellnotsupported',"Convert the cell to a 'datetime', 'string', 'double', or 'duration'.")
     otherwise
         error('type of time index not recognized')
 end
