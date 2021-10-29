@@ -1156,8 +1156,8 @@ classdef DataFrame
                             "assignment of %s not allowed to be empty", field);                        
                         if length(s)==1
                             obj.(field) = b;
-                        else
-                            obj.(field+"_").value(s(2).subs{1}) = b;
+                        else                            
+                            obj.(field+"_").value(s(2).subs{:}) = b;
                         end
                         
                     elseif isprop(obj,field)
