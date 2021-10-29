@@ -41,9 +41,6 @@ classdef Groups
         values = {}
         isColumnGroups = true
         constantGroups = true
-        frame
-    end
-    properties(Access=?frames.Split)
         groupless  % values not attached to any key
     end
     
