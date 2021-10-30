@@ -105,7 +105,11 @@ classdef DataFrame
         index
         constructor
     end
+    properties (Constant)      
+      settingsDefault = frames.DataFrameSettingsDefault;      
+    end
     properties
+        settings frames.DataFrameSettings = frames.DataFrameSettings;
         description = ""  % text description of the object
     end
     properties(Hidden, Access=protected)
@@ -129,6 +133,9 @@ classdef DataFrame
                 NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
             end
+            % get DataFrameSettings
+            obj.settings = frames.DataFrameSettings(obj.settingsDefault);
+            
             % if row/columns are specific MultiIndex input, create MultiIndex objects
             % (all cell arrays (except char cell array), 2d arrays, and arrays of multiple Index objects)            
             if checkMultiIndexinput(rows)                
@@ -189,7 +196,7 @@ classdef DataFrame
             obj.data_ = data;
             obj.rows = rows;
             obj.columns = columns;
-            obj.name_ = NameValueArgs.Name;
+            obj.name_ = NameValueArgs.Name;                       
             
             
             function bool = checkMultiIndexinput(value)
