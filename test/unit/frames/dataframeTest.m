@@ -321,6 +321,27 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyError(@occursTwice,'frames:subsasgn:colMultiple')
             function occursTwice, df.col("a") = 3; end
             warning('on','frames:Index:notUnique')
+            
+            % TimeFrame
+            tf = frames.TimeFrame(1,["01.11.2021","02.11.2021","03.11.2021"]);
+            tf1 = tf; tf2 = tf;
+            tf1(["01.11.2021","02.11.2021"]) = 2;
+            tf2(timerange(-inf,"02.11.2021",'closed')) = 2;
+            t.verifyEqual(tf1,tf2)
+            t.verifyEqual(tf1.data,[2 2 1]')
+            
+            tf = frames.TimeFrame(1,frames.TimeIndex(["01#11#2021","02#11#2021","03#11#2021"],Format='dd#MM#yyyy'));
+            tf1 = tf; tf2 = tf; tf3 = tf;
+            tf1(["01.11.2021","03.11.2021"]) = 2;
+            tf2(["01#11#2021","03#11#2021"]) = 2;
+            tf3(datetime(["01.11.2021","03.11.2021"])) = 2;
+            t.verifyEqual(tf1,tf2)
+            t.verifyEqual(tf1,tf3)
+            t.verifyEqual(tf1.data,[2 1 2]')
+            
+            tf1("01#11#2021:02#11#2021") = 3;
+            t.verifyEqual(tf1.data,[3 3 2]')
+
         end
         
         function subsasgnWithDFTest(t)
