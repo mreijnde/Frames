@@ -138,7 +138,7 @@ switch class(value)
     case {'double','duration','logical'}
         return
     case 'cell'
-        error('TimeIndex:cellnotsupported',"Convert the cell to a 'datetime', 'string', 'double', 'duration', or 'logical'.")
+        error('TimeIndex:cellnotsupported',"Convert the cell to a 'datetime', 'string', 'double', or 'duration'.")
     otherwise
         error('type of time index not recognized')
 end
