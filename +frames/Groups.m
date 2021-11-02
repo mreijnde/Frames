@@ -41,6 +41,7 @@ classdef Groups
         values = {}
         isColumnGroups = true
         constantGroups = true
+        frame % structure to store index and columns in case a frame is used as a grouper
         groupless  % values not attached to any key
     end
     
