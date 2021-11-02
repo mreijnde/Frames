@@ -55,7 +55,7 @@ classdef Groups
                     obj.isColumnGroups = false;
                 end
             end
-            if iscell(groups) && isFrame(groups{1})
+            if iscell(groups) && all(isFrame(groups{:}))
                 groups = local_findgroups(groups{:});
             end
             if isFrame(groups) && ~groups.rowseries && ~groups.colseries
@@ -160,23 +160,18 @@ end
 
 
 function gps = local_findgroups(varargin)
-for ii = 1:nargin, varargin{ii}.data = string(varargin{ii}.data); end
-[dfs{1:nargin}] = frames.align(varargin{:});
+assert(isaligned(varargin{:}),'Groups:notAligned','Grouping Frames must be aligned');
 dfsdata = cell(1,nargin);
-for ii = 1:nargin, dfsdata{ii} = dfs{ii}.data(:); end
-gpsNumber = findgroups(dfsdata{:});
+for ii = 1:nargin, dfsdata{ii} = string(varargin{ii}.data(:)); end
+[gpsNumber, groupNames{1:nargin}] = findgroups(dfsdata{:});
 gps = repmat(string(missing),size(gpsNumber));
 nbGrps = max(gpsNumber);
 if ~ismissing(nbGrps)
+    groupNames = join([groupNames{:}]);
     for ii = 1:nbGrps
-        xx = find(gpsNumber==ii);
-        gpName = "";
-        for jj = 1:numel(dfsdata)
-            gpName = gpName + " " + dfsdata{jj}(xx(1));
-        end
-        gps(xx) = extractAfter(gpName,1);
+        gps(gpsNumber==ii) = groupNames(ii);
     end
 end
-gps = reshape(gps,size(dfs{1}));
-gps = dfs{1}.constructor(gps,dfs{1}.getRowsObj(),dfs{1}.getColumnsObj());
+gps = reshape(gps,size(varargin{1}.data));
+gps = varargin{1}.constructor(gps,varargin{1}.getRowsObj(),varargin{1}.getColumnsObj());
 end
