@@ -913,12 +913,8 @@ classdef DataFrame
         function bool = isaligned(obj,varargin)
             % ISALIGNED(df1,df2,...[,flags]) returns true if all Frames are aligned. 
             % Add the flag 'rows' or 'columns' to check alignment in only one direction. 
-            isflag = find(strcmp(varargin,'rows'),1);
-            checkRows = ~isempty(isflag);
-            varargin(isflag) = [];
-            isflag = find(strcmp(varargin,'columns'),1);
-            checkCols = ~isempty(isflag);
-            varargin(isflag) = [];
+            [checkRows,varargin] = parseFlag('rows',varargin);
+            [checkCols,varargin] = parseFlag('columns',varargin);
             if ~any([checkCols,checkRows])
                 checkCols = true; checkRows = true;
             end
