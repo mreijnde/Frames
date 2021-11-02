@@ -71,8 +71,8 @@ classdef Split
             else
                 rows = obj.applyToPotentialCell(df, @(x) x.getRowsObj(), true); 
                 cols = obj.applyToPotentialCell(df, @(x) x.getColumnsObj(), true); 
-                assert(isequaln(groups.frame.rows,rows),'groups must be aligned with the DataFrame')
-                assert(isequaln(groups.frame.columns,cols),'groups must be aligned with the DataFrame')
+                assert(isequaln(groups.frame.rows,rows),'Groups:rowsMisaligned','group rows must be aligned with the Frame')
+                assert(isequaln(groups.frame.columns,cols),'Groups:columnsMisaligned','groupc olumns must be aligned with the Frame')
             end
         end
     end

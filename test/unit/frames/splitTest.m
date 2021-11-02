@@ -295,6 +295,22 @@ classdef splitTest < AbstractFramesTests
             t.verifyEqual(data.split(gdf).apply(@(x) sum(x,2)),expected)
             t.verifyEqual(data.split(gs).apply(@(x) sum(x,2)),expected)
         end
+        
+        function misalignedGroups(t)
+            data = frames.DataFrame(1,[1 2],[1 2]);
+            gTT = data; gTF = data; gFT = data;
+            gTF.columns = [1 3]; gFT.rows = [1 3]; 
+            gFF = gTF; gFF.rows = [1 3];
+            gTT = frames.Groups(gTT);
+            gTF = frames.Groups(gTF,'rowGroups');
+            gFT = frames.Groups(gFT,'rowGroups');
+            gFF = frames.Groups(gFF);
+            t.verifyWarningFree(@() frames.Split(data,gTT))
+            t.verifyError(@() frames.Split(data,gFT),'Groups:rowsMisaligned')
+            t.verifyError(@() frames.Split(data,gTF),'Groups:columnsMisaligned')
+            t.verifyError(@() frames.Split(data,gFF),'Groups:rowsMisaligned')
+            
+        end
     end
 end
 
