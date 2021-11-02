@@ -1,5 +1,4 @@
-classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
-        tableFunctionalitiesTest < matlab.unittest.TestCase
+classdef tableFunctionalitiesTest < AbstractFramesTests
     %Examples from Matlab public documentation
     methods(Test)
         function joinTest(t)

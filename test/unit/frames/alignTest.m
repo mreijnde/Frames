@@ -1,9 +1,4 @@
-classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
-        alignTest < matlab.unittest.TestCase
-    
-    properties
-
-    end
+classdef alignTest < AbstractFramesTests
     
     methods(Test)
         function basicTest(t)

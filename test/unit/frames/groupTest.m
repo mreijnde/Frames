@@ -1,5 +1,4 @@
-classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
-        groupTest < matlab.unittest.TestCase
+classdef groupTest < AbstractFramesTests
     
     methods(Test)
         function columnGroupTest(t)
@@ -53,13 +52,13 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyEqual(g10.values,expVals([2 1]))
             t.verifyEqual(g10.frame.rows, frame.getRowsObj())
             
-            frame2 = frames.DataFrame([4 5 5 5], 2);
-            g11 = frames.Groups({frame,frame2});
-            t.verifyEqual(g11.keys,[1 2 3])
+            frame2 = frames.DataFrame(string([4 5 5 5]), 2);
+            [f1,f2] = frames.align(frame,frame2);
+            g11 = frames.Groups({f1,f2});
+            t.verifyEqual(g11.keys,["grp1 4" "grp2 5" "new 5"])
             expVals = { sparse(logical([0 0 0 0;1 0 0 0])), sparse(logical([0 0 0 0;0 0 1 0])), sparse(logical([0 0 0 0;0 1 0 1])) };
             t.verifyEqual(g11.values,expVals)
             
-
         end
         
         function rowGroupTest(t)
@@ -97,12 +96,19 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyEqual(g10.values,expVals([2 1]))
             t.verifyEqual(g10.frame.rows, frame.getRowsObj())
             
-            frame2 = frames.DataFrame([4 5 5 5], 2);
-            g11 = frames.Groups({frame,frame2},'rowGroups');
-            t.verifyEqual(g11.keys,[1 2 3])
+            frame2 = frames.DataFrame(string([4 5 5 5]), 2);
+            [f1,f2] = frames.align(frame,frame2);
+            g11 = frames.Groups({f1,f2},'rowGroups');
+            t.verifyEqual(g11.keys,["grp1 4" "grp2 5" "new 5"])
             expVals = { sparse(logical([0 0 0 0;1 0 0 0])), sparse(logical([0 0 0 0;0 0 1 0])), sparse(logical([0 0 0 0;0 1 0 1])) };
             t.verifyEqual(g11.values,expVals)
             
+            frame3 = frames.DataFrame(["How" "do" "you" "do"],2);
+            [f1,f2,f3] = frames.align(frame,frame2,frame3);
+            g11 = frames.Groups({f1,f2,f3},'rowGroups');
+            t.verifyEqual(g11.keys,["grp1 4 How" "grp2 5 you" "new 5 do"])
+            expVals = { sparse(logical([0 0 0 0;1 0 0 0])), sparse(logical([0 0 0 0;0 0 1 0])), sparse(logical([0 0 0 0;0 1 0 1])) };
+            t.verifyEqual(g11.values,expVals)
 
         end
         

@@ -1,5 +1,4 @@
-classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
-        dataframeTest < matlab.unittest.TestCase
+classdef dataframeTest < AbstractFramesTests
     
     properties
         dfNoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', [6 2 1], [4 1 3]);
@@ -322,6 +321,27 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyError(@occursTwice,'frames:subsasgn:colMultiple')
             function occursTwice, df.col("a") = 3; end
             warning('on','frames:Index:notUnique')
+            
+            % TimeFrame
+            tf = frames.TimeFrame(1,["01.11.2021","02.11.2021","03.11.2021"]);
+            tf1 = tf; tf2 = tf;
+            tf1(["01.11.2021","02.11.2021"]) = 2;
+            tf2(timerange(-inf,"02.11.2021",'closed')) = 2;
+            t.verifyEqual(tf1,tf2)
+            t.verifyEqual(tf1.data,[2 2 1]')
+            
+            tf = frames.TimeFrame(1,frames.TimeIndex(["01#11#2021","02#11#2021","03#11#2021"],Format='dd#MM#yyyy'));
+            tf1 = tf; tf2 = tf; tf3 = tf;
+            tf1(["01.11.2021","03.11.2021"]) = 2;
+            tf2(["01#11#2021","03#11#2021"]) = 2;
+            tf3(datetime(["01.11.2021","03.11.2021"])) = 2;
+            t.verifyEqual(tf1,tf2)
+            t.verifyEqual(tf1,tf3)
+            t.verifyEqual(tf1.data,[2 1 2]')
+            
+            tf1("01#11#2021:02#11#2021") = 3;
+            t.verifyEqual(tf1.data,[3 3 2]')
+
         end
         
         function subsasgnWithDFTest(t)
@@ -426,6 +446,16 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             tfexp = frames.TimeFrame((12:2:15)',50002:2:50005,"Var2");
             t.verifyEqual(tf.iloc([false true false true], [false true]),tfexp)
             t.verifyEqual(tf([false true false true], [false true]),tfexp)
+            
+            tf = frames.TimeFrame(1,frames.TimeIndex(["01#11#2021","02#11#2021","03#11#2021"],Format='dd#MM#yyyy'));
+            t.verifyEqual(tf(["01#11#2021","03#11#2021"]),tf{[1 3]})
+            t.verifyEqual(tf(datetime(["01.11.2021","03.11.2021"])),tf{[1 3]})
+
+            t.verifyEqual(tf({-inf,"02.11.2021"}),tf{1:2})
+            t.verifyEqual(tf({"01.11.2021",datetime("02.11.2021")}),tf{1:2})
+            t.verifyEqual(tf({'01.11.2021','02.11.2021'}),tf{1:2})
+            t.verifyError(@() tf({'01.11.2021','02.11.2021','03.11.2021'}),'TimeIndex:cellstrnotsupported')
+            t.verifyError(@() tf({datetime("01.11.2021")}),'TimeIndex:cellstrnotsupported')
             
             % test empty selection
             df = frames.DataFrame([1 2;3 4],[1,2],["a","b"]);
@@ -825,8 +855,9 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyEqual(g1,frames.TimeFrame([1.5 1.5 3;4.5 4.5 6;5 5 5;7 8 NaN]))
             t.verifyEqual(g1,g2)
             t.verifyEqual(g1,g3)
-%             f1 = tf.split(groups).apply(@mean,1);
-%             t.verifyEqual(f1,frames.TimeFrame([2.5 3.5 4.5;2.5 3.5 4.5;4 5 6;7 8 NaN]))
+            groupsRow = frames.Groups(frames.TimeFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN]),'rowGroups');
+            f1 = tf.split(groupsRow).apply(@mean,1);
+            t.verifyEqual(f1,frames.TimeFrame([4 4 4 4;3.5 3.5 6.5 6.5;4.5 4.5 6 NaN]'))
             
             % with flags
             nObs = 2;
@@ -973,6 +1004,19 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyEqual(df.std(2,1).data,std(df.data,1,2,'omitnan'))
         end
         
+        function isalignedTest(t)
+            df = frames.DataFrame([1 2;10 0]);
+            t.verifyTrue(df.isaligned(df,df,df))
+            df2 = frames.DataFrame([1 2;10 0],[2 3]);
+            t.verifyFalse(df.isaligned(df2))
+            t.verifyTrue(df.isaligned(df2,'columns'))
+            t.verifyFalse(df.isaligned(df2,'rows'))
+            df3 = frames.DataFrame([1 2;10 0],[2 3],[1,2]);
+            t.verifyFalse(df2.isaligned(df3))
+            t.verifyFalse(df2.isaligned(df3,'columns'))
+            t.verifyTrue(df2.isaligned(df3,'rows'))
+        end
+        
         function equalsTest(t)
             df=frames.DataFrame([1 2;3 4]);
             df2=frames.DataFrame([1 2;3 4])+0.5;
@@ -1024,10 +1068,19 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             t.verifyEqual(selSpecific,expectedSpecific)
             
             % not possible to turn it into a timerange (use [] to get specific observations)
-            t.verifyError(@() tf({"11-Jun-2021","12-Jun-2021","14-Jun-2021"}),'MATLAB:datetime:InvalidData') %#ok<CLARRSTR>
+            t.verifyError(@() tf({"11-Jun-2021","12-Jun-2021","14-Jun-2021"}),'TimeIndex:cellstrnotsupported') %#ok<CLARRSTR>
+            t.verifyError(@() frames.TimeFrame(1,{'11-Jun-2021','12-Jun-2021'}),'TimeIndex:cellstrnotsupported')
             
             t.verifyEqual(tf(withtol(datetime("18-Jun-2021"),days(1))), ...
                 tf("17-Jun-2021:19-Jun-2021"))
+            
+            % verify that ':' works as expected
+            t.verifyEqual(tf(:),tf{:})
+            t.verifyEqual(tf(:),tf)
+            
+            durtf = frames.TimeFrame(1,seconds(1:3));
+            t.verifyEqual(durtf(:),durtf{':'})
+            t.verifyEqual(durtf(':'),durtf)
             
         end
         

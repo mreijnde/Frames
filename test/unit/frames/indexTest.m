@@ -1,5 +1,4 @@
-classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../')} ) ...
-        indexTest < matlab.unittest.TestCase
+classdef indexTest < AbstractFramesTests
     
     methods(Test)
         function constructorTest(t)
@@ -130,6 +129,17 @@ classdef (SharedTestFixtures = {matlab.unittest.fixtures.PathFixture('../../../'
             
             t.verifyError(@tidNotSorted,'frames:Index:requireSortedFail')
             function tidNotSorted, durationindex.value([3 2]) = hours([2 3]); end
+        end
+        
+        function cellForTimeForbidden(t)
+            t.verifyError(@() frames.TimeIndex({'02.11.2021'}),'TimeIndex:cellstrnotsupported')
+            t.verifyError(@() frames.TimeFrame(1,{"02.11.2021"}),'TimeIndex:cellstrnotsupported') %#ok<STRSCALR>
+            tf = frames.TimeFrame(1);
+            t.verifyError(@() asgnCell,'TimeIndex:cellstrnotsupported')
+            function asgnCell, tf.rows = {'02.11.2021'}; end
+            df = frames.DataFrame(1);
+            t.verifyWarningFree(@() asgnCellDF)
+            function asgnCellDF, df.rows = {'02.11.2021'}; end
         end
     end
 end
