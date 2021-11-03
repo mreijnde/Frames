@@ -186,7 +186,7 @@ classdef MultiIndex < frames.Index
             if nargin<4, allowDimExpansion=true; end
             
             % shortcut alignment code in case of equal Indices (for performance)
-            if isequal(obj1.value,obj2.value)
+            if isequal(obj1.value,obj2.value) || (obj1.singleton && obj2.singleton)
                 objnew = obj1;
                 ind1_new = 1:length(obj1);
                 ind2_new = ind1_new;
