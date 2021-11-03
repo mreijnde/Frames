@@ -1460,8 +1460,15 @@ classdef DataFrame
                 colind_masked = ':';
             end                        
             % get reordered data and store in dataframe
-            dat = nan(length(df.rows), length(df.columns));                                               
-            dat(rowmask,colmask) = obj.data( rowind_masked, colind_masked);
+            datsize = [length(rowindex) length(colindex)];
+            if isnumeric(obj.data_)
+                dat = nan(datsize);
+            elseif isstring(obj.data_)
+                dat = strings(datsize);
+            elseif iscell(obj.data_)
+                dat = cell(datsize);
+            end
+            dat(rowmask,colmask) = obj.data_( rowind_masked, colind_masked);
             df.data_ = dat;
         end
                 
