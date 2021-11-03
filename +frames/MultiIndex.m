@@ -249,7 +249,7 @@ classdef MultiIndex < frames.Index
                mask_rows_from_obj2 = isnan(ind1_new);
                objnew1 = obj1.getSubIndex(ind1_new(~mask_rows_from_obj2), dim_common_ind1);
                objnew2 = obj2.getSubIndex(ind2_new(mask_rows_from_obj2), dim_common_ind2);
-               objnew = [objnew1; objnew2];
+               objnew = vertcat_(objnew1, objnew2);
             end
                                     
             % add new dimensions
@@ -259,6 +259,15 @@ classdef MultiIndex < frames.Index
                     dimind = dim_unique_ind2(i);
                     objnew = objnew.addDimension( objnew2.value_{dimind} );
                 end   
+            end
+            
+            % sort if required
+            if obj1.requireUniqueSorted
+                % sort output index
+                [objnew, sortindex] = objnew.sort();
+                % update position indices accordingly
+                ind1_new = ind1_new(sortindex);
+                ind2_new = ind2_new(sortindex);                
             end
             
             
