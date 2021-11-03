@@ -129,8 +129,7 @@ classdef MultiIndex < frames.Index
         
         
         
-        function [rows_ind1, rows_ind2, common_mask1, common_mask2, rows_uniqval, ...
-                val_uniq, val_ind1, val_ind2]= getMatchingRows(obj1, obj2, dims)
+        function [rows_ind1, rows_ind2, common_mask1, common_mask2, Nunique] = getMatchingRows(obj1, obj2, dims)
             % function finds indices of matching rows between two MultiIndex 
             % for given common dimensions.
             % 
@@ -141,11 +140,8 @@ classdef MultiIndex < frames.Index
             % output:
             %   rows_indX:    array with unique indices per row matching MultiIndex object X
             %   common_maskX: logical array indicating row is common between both MultiIndex objects
-            %   rows_uniqval: cell(Nunique, Ndim_common) values of unique rows
-            %
-            %   val_uniq: cell with uniqe values per dimension
-            %   val_indX: array(Nrows, Ndim_common) indices to val_uniq           
-            %            
+            %   Nunique:      number of unique rows (of combined indices)
+            %                       
             % get dim index of specified (common) dimension
             dimInd1 = obj1.getDimInd(dims);
             dimInd2 = obj2.getDimInd(dims);
@@ -156,13 +152,12 @@ classdef MultiIndex < frames.Index
             value2 = value2(:,dimInd2);
             valueAll = [value1; value2];
             % get unique row ind for total
-            [rows_uniqval, rows_ind, val_uniq, val_ind] = uniqueCellRows(valueAll);
+            [rows_uniqval, rows_ind] = uniqueCellRows(valueAll);
+            Nunique = size(rows_uniqval,1);
             % separate in both indexes
             N1 = length(obj1);
             rows_ind1 = rows_ind(1:N1);
             rows_ind2 = rows_ind(N1+1:end);
-            val_ind1 = val_ind(1:N1,:);
-            val_ind2 = val_ind(N1+1:end,:);
             % create common masks
             common_ind = intersect(rows_ind1, rows_ind2);
             common_mask1 = ismember(rows_ind1, common_ind);
@@ -205,8 +200,7 @@ classdef MultiIndex < frames.Index
                           "Dimension expansion disabled, while obj2 has new dimension(s)");
                         
             % get matching rows of both MultiIndex objects
-            [id1_raw, id2_raw, mask1, mask2, rows_uniqval]  = obj1.getMatchingRows(obj2, dim_common);            
-            Nunique = size(rows_uniqval,1);
+            [id1_raw, id2_raw, mask1, mask2, Nunique]  = obj1.getMatchingRows(obj2, dim_common);                        
              
             % define row ids in new index based on chosen alignment method
             switch alignMethod
