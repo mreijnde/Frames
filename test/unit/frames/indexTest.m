@@ -133,7 +133,7 @@ classdef indexTest < AbstractFramesTests
         
         function cellForTimeForbidden(t)
             t.verifyError(@() frames.TimeIndex({'02.11.2021'}),'TimeIndex:cellstrnotsupported')
-            t.verifyError(@() frames.TimeFrame(1,{"02.11.2021"}),'TimeIndex:cellstrnotsupported') %#ok<STRSCALR>
+            %t.verifyError(@() frames.TimeFrame(1,{"02.11.2021"}),'TimeIndex:cellstrnotsupported') %#ok<STRSCALR> <== not compatible with new MultiIndex {} syntax
             tf = frames.TimeFrame(1);
             t.verifyError(@() asgnCell,'TimeIndex:cellstrnotsupported')
             function asgnCell, tf.rows = {'02.11.2021'}; end

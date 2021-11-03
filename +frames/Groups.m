@@ -110,6 +110,7 @@ classdef Groups
                 data = g.data(:)';
                 missingData = ismissing(data);
                 if obj.isColumnGroups, obj.groupless = g.columns(missingData); else, obj.groupless = g.rows(missingData)'; end
+                if numel(obj.groupless)==0, obj.groupless= []; end % fix for empty string array not size [0,0]
                 [obj.keys,~,ikeys] = unique(data(~missingData),'stable');
                 obj.values = cell(1,length(obj.keys));
                 if obj.isColumnGroups, vals = g.columns; else, vals = g.rows'; end
