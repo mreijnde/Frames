@@ -23,7 +23,7 @@ classdef seriesTest < AbstractFramesTests
         function operationTest(t)
             plusV = t.df + t.colseries;
             t.verifyEqual(plusV.data,[2 3;6 7])
-            t.verifyError(@() t.df+t.noSeries,'frames:elementWiseHandler:differentColumns')
+            t.verifyError(@() t.df+t.noSeries,'frames:Index:alignIndex:unequalIndex')
             plusH = t.df + t.rowseries;
             t.verifyEqual(plusH.data,[2 4;4 6])
             plusU = t.df + t.useries;
@@ -66,7 +66,7 @@ classdef seriesTest < AbstractFramesTests
         
         function testOperation(t)
             t.verifyEqual(t.df-t.df.iloc(1).asRowSeries(),frames.DataFrame([0 0;2 2]))
-            t.verifyError(@() t.df-t.df.iloc(1),'frames:elementWiseHandler:differentRows')
+            t.verifyError(@() t.df-t.df.iloc(1),'frames:Index:alignIndex:unequalIndex')
         end
     end
 end
