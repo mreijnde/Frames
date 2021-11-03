@@ -858,11 +858,11 @@ classdef DataFrame
             %          Object that contains keys and values describing
             %          groups. Please refer to the documentation of
             %          frames.Groups for more details.
-            %     * flags: 'allowOverlaps', 'isNonExhaustive'
+            %     * flags: 'allowOverlaps', 'allowNonExhaustive'
             %          Split throws an error if there are overlaps in the
             %          group values, and if they do not span the whole set
             %          of the Index values. Allow these cases by respectively
-            %          adding the flags 'allowOverlaps' and 'isNonExhaustive'
+            %          adding the flags 'allowOverlaps' and 'allowNonExhaustive'
             %
             % Methods:
             %     * apply      
@@ -963,12 +963,8 @@ classdef DataFrame
         function bool = isaligned(obj,varargin)
             % ISALIGNED(df1,df2,...[,flags]) returns true if all Frames are aligned. 
             % Add the flag 'rows' or 'columns' to check alignment in only one direction. 
-            isflag = find(strcmp(varargin,'rows'),1);
-            checkRows = ~isempty(isflag);
-            varargin(isflag) = [];
-            isflag = find(strcmp(varargin,'columns'),1);
-            checkCols = ~isempty(isflag);
-            varargin(isflag) = [];
+            [checkRows,varargin] = parseFlag('rows',varargin);
+            [checkCols,varargin] = parseFlag('columns',varargin);
             if ~any([checkCols,checkRows])
                 checkCols = true; checkRows = true;
             end

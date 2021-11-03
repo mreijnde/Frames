@@ -68,7 +68,7 @@ classdef TimeIndex < frames.Index
             % On can use a timerange to specify which values to select
             % .getSelector(timerange)
             % .getSelector("dateStart:dateEnd:dateFormat")
-            if isTextScalar(selector) && contains(selector,':')
+            if isTextScalar(selector) && ~iscolon(selector) && contains(selector,':')
                 selector = obj.getTimerange(selector);
             end
             if iscell(selector) && length(selector)==2
@@ -133,10 +133,12 @@ function value = getValue_from_local(value,format)
 switch class(value)
     case 'datetime'
         value = datenum(value);
-    case {'string','cell'}
+    case 'string'
         value = datenum(datetime(value,Format=format));
     case {'double','duration','logical'}
         return
+    case {'cell','char'}
+        error('TimeIndex:cellstrnotsupported',"Convert the value to a 'datetime', 'string', 'double', or 'duration'.")
     otherwise
         error('type of time index not recognized')
 end

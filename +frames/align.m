@@ -1,5 +1,6 @@
 function varargout = align(dfs)
 %ALIGN align frames to each others and ouputs each of them aligned
+% ToDo align columns flag, revisit this with tools from Merijn
 arguments(Repeating)
     dfs frames.DataFrame
 end
