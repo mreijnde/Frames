@@ -1042,10 +1042,10 @@ classdef DataFrame
         % MAX maximum through the desired dimension, returns a series
         function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@min,varargin{:}); end
         % MIN minimum through the desired dimension, returns a series
-        function other = maxOf(df1,df2), other=operator(@max,@elementWiseHandler,df1,df2); end
+        function other = maxOf(df1,df2), other=operatorElementWise(@max,df1,df2); end
         % maximum of the elements of the two input arguments
         % maxOf(df1,df2), where df2 can be a frame or a matrix
-        function other = minOf(df1,df2), other=operator(@min,@elementWiseHandler,df1,df2); end
+        function other = minOf(df1,df2), other=operatorElementWise(@min,df1,df2); end
         % minimum of the elements of the two input arguments
         % minOf(df1,df2), where df2 can be a frame or a matrix
         
@@ -1471,10 +1471,13 @@ classdef DataFrame
             if nargin<3, alignMethod="keep"; end
             if nargin<4, allowDimExpansion=true; end
             if nargin<5, dofillmissing=true; end
-            % convert indices of 1st dataframe to multi index
-            %assert( isMultiIndex(df1.rows_), "Index is no multiIndex");            
-            if ~isMultiIndex(df1.rows_), df1.rows_ = frames.MultiIndex(df1.rows_); end
-            if ~isMultiIndex(df1.columns_), df1.columns_ = frames.MultiIndex(df1.columns_); end
+            % convert indices of 1st dataframe to multi index if required
+            if ~isMultiIndex(df1.rows_) && isMultiIndex(df2.rows_)
+                df1.rows_ = frames.MultiIndex(df1.rows_);
+            end
+            if ~isMultiIndex(df1.columns_) && isMultiIndex(df2.columns_)
+                df1.columns_ = frames.MultiIndex(df1.columns_);
+            end            
             % get aligned indices
             [mrow, rowind1, rowind2] = df1.rows_.alignIndex(df2.rows_, alignMethod, allowDimExpansion);
             [mcol, colind1, colind2] = df1.columns_.alignIndex(df2.columns_, alignMethod, allowDimExpansion);
@@ -1484,22 +1487,12 @@ classdef DataFrame
             dfnew2 = df2.reorder(mrow, rowind2, mcol, colind2);            
             if dofillmissing
                 % fill missing rows by values of other dataframe                
-                dfnew1.data_(isnan(rowind1),isnan(colind1)) = dfnew2.data_(isnan(rowind1),isnan(colind1));
-                dfnew2.data_(isnan(rowind2),isnan(colind2)) = dfnew1.data_(isnan(rowind2),isnan(colind2));                
+                dfnew1.data_(isnan(rowind1),~isnan(colind1)) = dfnew2.data_(isnan(rowind1),~isnan(colind1));
+                dfnew2.data_(isnan(rowind2),~isnan(colind2)) = dfnew1.data_(isnan(rowind2),~isnan(colind2));                
             end
         end
-        
-        function df = performElementWiseOperation_MultiIndex(obj,df2, func, alignMethod, allowDimExpansion)
-            % internal function to perform element wise operations between MultiIndex DataFrames
-            %            
-            if nargin<4, alignMethod="keep"; end
-            if nargin<5, allowDimExpansion=true; end
-            % get aligned dataframes
-            [df1_aligned, df2_aligned, rowmask, colmask] = getAlignedDFs(obj, df2, alignMethod, allowDimExpansion);
-            % apply element wise function (to aligned subset of data)
-            df = df1_aligned;
-            df.data_(rowmask,colmask) = func( df1_aligned.data_(rowmask,colmask), df2_aligned.data_(rowmask,colmask));
-        end
+                
+       
         
     end
  
@@ -1593,47 +1586,47 @@ classdef DataFrame
         function e = end(obj,q,~), e = builtin('end',obj.data_,q,2); end
         
         function other = plus(df1,df2)
-            other = operator(@plus,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@plus,df1,df2);
         end
         function other = mtimes(df1,df2)
-            other = operator(@mtimes,@matrixOpHandler,df1,df2);
+            other = operatorMatrix(@mtimes,df1,df2);
         end
         function other = times(df1,df2)
-            other = operator(@times,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@times,df1,df2);
         end
         function other = minus(df1,df2)
-            other = operator(@minus,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@minus,df1,df2);
         end
         function other = mrdivide(df1,df2)
-            other = operator(@mrdivide,@matrixOpHandler,df1,df2);
+            other = operatorMatrix(@mrdivide,df1,df2);
         end
         function other = rdivide(df1,df2)
-            other = operator(@rdivide,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@rdivide,df1,df2);
         end
         function other = mldivide(df1,df2)
-            other = operator(@mldivide,@matrixOpHandler,df1,df2);
+            other = operatorMatrix(@mldivide,df1,df2);
         end
         function other = ldivide(df1,df2)
-            other = operator(@ldivide,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@ldivide,df1,df2);
         end
         function other = power(df1,df2)
-            other = operator(@power,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@power,df1,df2);
         end
         function other = mpower(df1,df2)
-            other = operator(@mpower,@matrixOpHandler,df1,df2);
+            other = operatorMatrix(@mpower,df1,df2);
         end
         
         function other = lt(df1,df2)
-            other = operator(@lt,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@lt,df1,df2);
         end
         function other = gt(df1,df2)
-            other = operator(@gt,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@gt,df1,df2);
         end
         function other = le(df1,df2)
-            other = operator(@le,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@le,df1,df2);
         end
         function other = ge(df1,df2)
-            other = operator(@ge,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@ge,df1,df2);
         end
         function bool = eq(df1,df2)
             if isFrame(df1) && istext(df1.data)
@@ -1641,7 +1634,7 @@ classdef DataFrame
             elseif istext(df1)
                 df1 = string(df1);
             end
-            bool = operator(@eq,@elementWiseHandler,df1,df2);
+            bool = operatorElementWise(@eq,df1,df2);
         end
         function bool = ne(df1,df2)
             if isFrame(df1) && istext(df1.data)
@@ -1649,13 +1642,13 @@ classdef DataFrame
             elseif istext(df1)
                 df1 = string(df1);
             end
-            bool = operator(@ne,@elementWiseHandler,df1,df2);
+            bool = operatorElementWise(@ne,df1,df2);
         end
         function other = and(df1,df2)
-            other=operator(@and,@elementWiseHandler,df1,df2);
+            other=operatorElementWise(@and,df1,df2);
         end
         function other = or(df1,df2)
-            other=operator(@or,@elementWiseHandler,df1,df2);
+            other=operatorElementWise(@or,df1,df2);
         end
         
         function other = ctranspose(obj)
@@ -1773,19 +1766,43 @@ end
 end
 
 %--------------------------------------------------------------------------
-function other = operator(fun,handler,df1,df2)
-% redirect elementWiseOperations for DataFrame with a MultiIndex to new code including alignment & auto expansion
-if ~isequal(handler,@matrixOpHandler) && ...
-    isFrame(df1) && isFrame(df2) && any(isMultiIndex(df1.rows_,df2.rows_,df1.columns_,df2.columns_) )
-    other = performElementWiseOperation_MultiIndex(df1, df2, fun, "full", true);
-    return
+
+function df = operatorMatrix(fun, df1, df2)
+   % internal function to perform matrix operations between on two DataFrames
+   [row_,col_,df] = matrixOpHandler(df1,df2);
+   [v1,v2] = getData_(df1,df2);
+   d = fun(v1,v2);
+   df.data_ = d; df.rows_ = row_; df.columns_ = col_;
+   df.description = "";
 end
-[row_,col_,other] = handler(df1,df2);
-[v1,v2] = getData_(df1,df2);
-d = fun(v1,v2);
-other.data_ = d; other.rows_ = row_; other.columns_ = col_;
-other.description = "";
+
+
+ function df = operatorElementWise(func, df1,df2, alignMethod, allowDimExpansion)
+    % internal function to perform element wise operations on two DataFrames               
+    if nargin<4, alignMethod="full"; end
+    if nargin<5, allowDimExpansion=true; end
+
+    if isFrame(df1)
+        if isFrame(df2)                    
+            % get aligned dataframes                    
+            [df1_aligned, df2_aligned, rowmask, colmask] = getAlignedDFs(df1, df2, alignMethod, allowDimExpansion);
+            % apply element wise function (to aligned subset of data)
+            df = df1_aligned;
+            df.data_(rowmask,colmask) = func( df1_aligned.data_(rowmask,colmask), df2_aligned.data_(rowmask,colmask));
+        else
+            % use obj dataframe and directly apply elementwise function
+            df = df1;
+            df.data_ = func( df1.data_, df2);
+        end
+    else
+        % use df2 dataframe and directly apply elementwise function
+        assert( isFrame(df2), "One of inputs has to be a DataFrame");                
+        df = df2;
+        df.data_ = func( df1, df2.data_);
+    end
+    df.description = "";
 end
+
 
 %--------------------------------------------------------------------------
 function testUniqueIndex(indexObj)
