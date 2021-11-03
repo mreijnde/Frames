@@ -1505,12 +1505,17 @@ classdef DataFrame
             if dofillmissing
                 % fill missing rows by values of other dataframe  
                 if any(isnan(rowind1))
-                   dfnew1.data_(isnan(rowind1),~isnan(colind1)) = dfnew2.data_(isnan(rowind1),~isnan(colind1));
+                   dfnew1.data_(isnan(rowind1),~isnan(colind2)) = dfnew2.data_(isnan(rowind1),~isnan(colind2));
                 end
                 if any(isnan(rowind2))
-                   dfnew2.data_(isnan(rowind2),~isnan(colind2)) = dfnew1.data_(isnan(rowind2),~isnan(colind2));                
+                   dfnew2.data_(isnan(rowind2),~isnan(colind1)) = dfnew1.data_(isnan(rowind2),~isnan(colind1));                
                 end
-                % <todo> fill missing columns
+                if any(isnan(colind1))                    
+                   dfnew1.data_(~isnan(rowind2),isnan(colind1)) = dfnew2.data_(~isnan(rowind2),isnan(colind1));
+                end
+                if any(isnan(colind2))
+                   dfnew2.data_(~isnan(rowind1),isnan(colind2)) = dfnew1.data_(~isnan(rowind1),isnan(colind2));                
+                end
             end
         end
                 
