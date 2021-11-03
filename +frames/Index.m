@@ -443,7 +443,7 @@ classdef Index
                 else                                                         
                    [~, ia, ind] = unique(uniqind, 'rows', 'stable');                    
                 end
-                obj_new = obj_new.getSubIndex(ia);                
+                obj_new = obj_new.getSubIndex(ia); 
             end
                            
             % slice full position index for each input
@@ -506,19 +506,32 @@ classdef Index
             if nargin<3, alignMethod="keep"; end            
                         
             % check and convert input
-            assert(isIndex(obj2), "obj2 is not a Index object.");                        
+            assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");                        
             
-            % shortcut alignment code in case of equal Indices (for performance)
-            if isequal(obj1.value,obj2.value) || (obj1.singleton && obj2.singleton)
+            % shortcut alignment code in case of equal Indices or singleton (for performance)
+            if isequal(obj1.value,obj2.value)
                 objnew = obj1;
                 ind1_new = 1:length(obj1);
                 ind2_new = ind1_new;
                 return
-            end            
+            elseif ~obj1.singleton && obj2.singleton
+                objnew = obj1;
+                ind1_new = 1:length(obj1);
+                ind2_new = ones(size(ind1_new));
+                return
+            elseif obj1.singleton && ~obj2.singleton
+                objnew = obj2;
+                ind2_new = 1:length(obj2);
+                ind1_new = ones(size(ind2_new));
+                return    
+            end     
+            
+            
             
             % get matching rows of both Index objects
             [objnew, ind_cell] = obj1.union_({obj2});
             [id1_raw, id2_raw] = ind_cell{:};
+            
             % create common masks
             mask1 = ismember(id1_raw, id2_raw);
             mask2 = ismember(id2_raw, id1_raw);    
@@ -529,12 +542,12 @@ classdef Index
                     id = id1_raw(mask1);              
                 case "keep"
                     id = id1_raw;                                                            
-                case "full"                                         
-                    id = 1:length(objnew);                                      
                 case "strict"
-                    assert( all(mask1) & all(mask2), ...
-                        "Unequal values in common dimension not allowed in strict align method");
-                    id = id1_raw;
+                    assert( all(mask1) & all(mask2), 'frames:Index:alignIndex:unequalIndex', ...
+                        "Unequal values in dimension not allowed in strict align method");
+                    id = id1_raw;                    
+                case "full"                                         
+                    id = 1:length(objnew);                                                      
                 otherwise 
                     error("unsupported alignMethod '%s'",alignMethod);
             end
@@ -550,70 +563,8 @@ classdef Index
              
             ind2_new = nan(length(id),1);
             [~,pos2_obj, pos2_id] = intersect(id2_raw, id);
-            ind2_new(pos2_id) = pos2_obj;            
-             
-             
-%             % create new index
-%             if ~any(isnan(ind1_new))
-%                 % only a combination of rows in ob1
-%                 objnew = obj1.getSubIndex(ind1_new);
-%             else              
-%                % create new value vector
-%                value_new = repmat( obj1.value_(1), length(id), 1); % create new value vector of same type as original               
-%                value_mask1 = ~isnan(ind1_new);
-%                value_new(value_mask1) = obj1.value_(ind1_new(value_mask1));
-%                value_mask2 = ~isnan(ind2_new);
-%                value_new(value_mask2) = obj2.value_(ind2_new(value_mask2));
-%                % create new index object
-%                objnew = obj1;
-%                objnew.value_ = value_new;
-%             end
-%             
-%             % sort if required
-%             if obj1.requireUniqueSorted
-%                 % sort output index
-%                 [objnew, sortindex] = objnew.sort();
-%                 % update position indices accordingly
-%                 ind1_new = ind1_new(sortindex);
-%                 ind2_new = ind2_new(sortindex);                
-%             end
-                                    
+            ind2_new(pos2_id) = pos2_obj;                                                                         
         end
-        
-        
-        
-%        function [rows_ind1, rows_ind2, common_mask1, common_mask2, Nunique] = getMatchingRows(obj1, obj2, order)
-%             % function finds indices of matching rows between two Index objects            
-%             % 
-%             % input:
-%             %   obj1,obj2: Index
-%             %   order:     string enum ('stable' or 'sorted') , defines indices numbering            
-%             %                'sorted': indices numbered based on value from low to high
-%             %                'stable': indices numbering start in same order as they occur in obj1
-%             %
-%             % output:
-%             %   rows_indX:    array with unique indices per row matching Index object X
-%             %   common_maskX: logical array indicating row is common between both Index objects
-%             %   Nunique:      number of unique values (of combined two indices)
-%             %                       
-%             if nargin<3, order="stable"; end
-%             % check dimension name
-%             assert(obj1.name==obj2.name, "Names of both Index objects do not equal");           
-%             % combine all values  
-%             valueAll = [obj1.value; obj2.value];
-%             % get unique row ind for total
-%             [rows_uniqval, ~, rows_ind] = unique(valueAll, order);
-%             Nunique = size(rows_uniqval,1);
-%             % separate in both indexes
-%             N1 = length(obj1);
-%             rows_ind1 = rows_ind(1:N1);
-%             rows_ind2 = rows_ind(N1+1:end);
-%             % create common masks
-%             common_ind = intersect(rows_ind1, rows_ind2);
-%             common_mask1 = ismember(rows_ind1, common_ind);
-%             common_mask2 = ismember(rows_ind2, common_ind);            
-%         end
-        
         
     end
     
