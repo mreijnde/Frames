@@ -1791,16 +1791,25 @@ end
 
  function df = operatorElementWise(func, df1,df2, alignMethod, allowDimExpansion)
     % internal function to perform element wise operations on two DataFrames               
-    if nargin<4, alignMethod="full"; end
+    if nargin<4, alignMethod="strict"; end
     if nargin<5, allowDimExpansion=true; end
 
     if isFrame(df1)
         if isFrame(df2)                    
-            % get aligned dataframes                    
+            % get aligned dataframes
             [df1_aligned, df2_aligned, rowmask, colmask] = getAlignedDFs(df1, df2, alignMethod, allowDimExpansion);
             % apply element wise function (to aligned subset of data)
             df = df1_aligned;
-            df.data_(rowmask,colmask) = func( df1_aligned.data_(rowmask,colmask), df2_aligned.data_(rowmask,colmask));
+            if all(rowmask) && all(colmask)
+                % assign all data
+                df.data_ = func( df1_aligned.data_, df2_aligned.data_);
+            else
+                % assign sub-selection of data
+                data_new = func( df1_aligned.data_(rowmask,colmask), df2_aligned.data_(rowmask,colmask));                
+                assert( isa(data_new, class(df.data_)), 'frames:DataFrame:operatorElementWise:unequalTypes', ...
+                    "operator output is different type than stored in dataframe. Not allowed to asignment to sub-selection");
+                df.data_(rowmask,colmask) = data_new;
+            end
         else
             % use obj dataframe and directly apply elementwise function
             df = df1;
