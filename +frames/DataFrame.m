@@ -345,6 +345,16 @@ classdef DataFrame
             obj.name_ = "";
             obj.description = "";
         end
+                
+        function obj = alignMethod(obj, alignMethod)
+            % change alignMethod setting
+            obj.settings.alignMethod=alignMethod;
+        end
+        function obj = autoAlign(obj)
+            % change alignMethod setting to 'full'
+            obj.settings.alignMethod="full";
+        end
+        
         
         function t = head(obj, varargin); t = head(obj.t,varargin{:}); end
         % returns the first rows of the table
@@ -1475,7 +1485,7 @@ classdef DataFrame
         function [dfnew1,dfnew2, rowmask, colmask] = getAlignedDFs(df1,df2, alignMethod, allowDimExpansion, dofillmissing)
             % internal function to get aligned DF for element wise operation
             %
-            if nargin<3, alignMethod="keep"; end
+            if nargin<3, alignMethod="strict"; end
             if nargin<4, allowDimExpansion=true; end
             if nargin<5, dofillmissing=true; end
             % convert indices of 1st dataframe to multi index if required
@@ -1559,6 +1569,12 @@ classdef DataFrame
             df.rows_.requireUniqueSorted = nameValue.UniqueSorted;
             df.rows_.requireUnique = nameValue.Unique;
             df.rows_.name = string(t.Properties.DimensionNames{1});
+        end
+        
+        function setDefaultSetting(name, value)
+            % change a default (persistent) class settings
+            df = frames.DataFrame();
+            df.settingsDefault.(name) = value;
         end
     end
     
@@ -1791,12 +1807,11 @@ end
 
  function df = operatorElementWise(func, df1,df2, alignMethod, allowDimExpansion)
     % internal function to perform element wise operations on two DataFrames               
-    if nargin<4, alignMethod="strict"; end
-    if nargin<5, allowDimExpansion=true; end
-
     if isFrame(df1)
         if isFrame(df2)                    
             % get aligned dataframes
+            if nargin<4, alignMethod=df1.settings.alignMethod; end
+            if nargin<5, allowDimExpansion=df1.settings.allowDimExpansion; end
             [df1_aligned, df2_aligned, rowmask, colmask] = getAlignedDFs(df1, df2, alignMethod, allowDimExpansion);
             % apply element wise function (to aligned subset of data)
             df = df1_aligned;

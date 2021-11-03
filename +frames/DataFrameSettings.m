@@ -1,9 +1,8 @@
 classdef (HandleCompatible) DataFrameSettings
     % class defines the DataFrame settings that specifies it behavior
     properties
-        option1 logical = true
-        option2 logical = true
-        option3 (1,1) string {mustBeMember(option3,["High","Medium","Low"])} = "Low"
+        allowDimExpansion logical = true
+        alignMethod (1,1) string {mustBeMember(alignMethod,["strict", "subset", "keep","full"])} = "strict"
     end
     
     methods
