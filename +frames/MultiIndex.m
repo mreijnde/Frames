@@ -185,6 +185,14 @@ classdef MultiIndex < frames.Index
             if nargin<3, alignMethod="keep"; end
             if nargin<4, allowDimExpansion=true; end
             
+            % shortcut alignment code in case of equal Indices (for performance)
+            if isequal(obj1.value,obj2.value)
+                objnew = obj1;
+                ind1_new = 1:length(obj1);
+                ind2_new = ind1_new;
+                return
+            end            
+            
             % check and convert input
             assert(isIndex(obj2), "obj2 is not a Index object.");                        
             if ~isMultiIndex(obj2)
