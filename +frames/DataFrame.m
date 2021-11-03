@@ -1493,9 +1493,14 @@ classdef DataFrame
             dfnew1 = df1.reorder(mrow, rowind1, mcol, colind1);
             dfnew2 = df2.reorder(mrow, rowind2, mcol, colind2);            
             if dofillmissing
-                % fill missing rows by values of other dataframe                
-                dfnew1.data_(isnan(rowind1),~isnan(colind1)) = dfnew2.data_(isnan(rowind1),~isnan(colind1));
-                dfnew2.data_(isnan(rowind2),~isnan(colind2)) = dfnew1.data_(isnan(rowind2),~isnan(colind2));                
+                % fill missing rows by values of other dataframe  
+                if any(isnan(rowind1))
+                   dfnew1.data_(isnan(rowind1),~isnan(colind1)) = dfnew2.data_(isnan(rowind1),~isnan(colind1));
+                end
+                if any(isnan(rowind2))
+                   dfnew2.data_(isnan(rowind2),~isnan(colind2)) = dfnew1.data_(isnan(rowind2),~isnan(colind2));                
+                end
+                % <todo> fill missing columns
             end
         end
                 
