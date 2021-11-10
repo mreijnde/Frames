@@ -1267,7 +1267,70 @@ classdef DataFrame
             % write the frame into a file
             writetable(obj.t,filePath, ...
                 'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
-        end                      
+        end   
+        
+        function [dat, dimnames, dimvalues] = dataND(obj)
+            % function to convert dataframe data to matlab NDarray
+            % based on the (Multi)Index dimensions, with the unique (linear-)Index values on the axes.
+            %                   
+            % Remark:
+            %  - No duplicate index values are allowed in case of more than 1 dimension.
+            %  - Missing values will be set to NaN. 
+            %
+            % output:
+            %   dat:       NDarray with dimensions as in dataframe
+            %   dimnames:  string array with names of dimensions
+            %   dimvalues: cell array with per dimension the unique values allong the axes
+            %
+            assert(obj.rows_.Ndim==1 || obj.rows_.isunique(), ...
+                'frames:DataFrame:dataND:rowsIndexNotUnique', ...      
+                "Rows index not unique. Non-unique index only allowed in case of only single dimension.");
+            assert(obj.columns_.Ndim==1 || obj.columns_.isunique(), ...
+                'frames:DataFrame:dataND:columnsIndexNotUnique', ...      
+                "Columns index not unique. Non-unique index only allowed in case of only single dimension.");                        
+            % create empty data vector of full length            
+            Ldim_rows = [];
+            Ldim_cols = [];
+            if ~obj.rows_.singleton
+               Ldim_rows = cellfun( @(x) length(x), obj.rows_.value_uniq);               
+            end
+            if ~obj.columns_.singleton
+               Ldim_cols = cellfun( @(x) length(x), obj.columns_.value_uniq);                           
+            end
+            Nelem = prod(Ldim_rows)*prod(Ldim_cols);
+            dat = nan(Nelem,1);            
+            % get row-major position index (of both row and column index combined)
+            posind_rows = obj.rows_.value_uniqind ;
+            posind_cols = (obj.columns_.value_uniqind-1) * prod(Ldim_rows);
+            posind = posind_rows + posind_cols'; % use implicit expansion
+            % assign values
+            dat(posind) = obj.data_;
+            % reshape to ND array
+            Ndims_rows = length(Ldim_rows);
+            Ndims_cols = length(Ldim_cols);            
+            Ndims = Ndims_rows + Ndims_cols;
+            if Ndims>1
+               % to ND array with row-major ordering within an index
+               dat = reshape(dat, [flip(Ldim_rows) flip(Ldim_cols)]);
+               % convert to full column-major ordering (as used by matlab)
+               % by flipping dimension order within a single index                
+               dat = permute(dat, [flip(1:Ndims_rows) flip(1:Ndims_cols)+Ndims_rows ]); 
+            end
+            % get dimension meta data
+            dimnames = [];            
+            dimvalues = [];
+            if ~obj.rows_.singleton
+                dimnames = [dimnames obj.rows_.name];
+                dimvalues = [dimvalues obj.rows_.value_uniq];                
+            end
+            if ~obj.columns_.singleton
+                dimnames = [dimnames obj.columns_.name];
+                dimvalues = [dimvalues obj.columns_.value_uniq];
+            end            
+        end
+        
+        
+        
     end
     
     methods(Hidden)  % Hidden and not protected, so that other classes in the package can use these methods, without the need to explicitly give them access. Not to be used outside.
