@@ -756,7 +756,7 @@ classdef DataFrame
         end
         function [obj,sortedID] = sortRows(obj)
             % sort frame from the rows
-            [obj.rows_.value_,sortedID] = sort(obj.rows_.value_);
+            [obj.rows_, sortedID] = obj.rows_.sort();            
             obj.data_ = obj.data_(sortedID,:);
         end
         
