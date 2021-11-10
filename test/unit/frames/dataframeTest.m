@@ -146,26 +146,15 @@ classdef dataframeTest < AbstractFramesTests
                 frames.Index([1 1 3 6 5 4],Unique=false),du.getColumnsObj())) % original error 'frames:requireUniqueIndex'
             warning('on','frames:Index:notUnique')
             
-            warning_id = 'frames:union:mergedDuplicateValues';
-            t.verifyWarning(@() [su;du] , warning_id );
-            warning('off',warning_id)
-            t.verifyEqual([su;du],frames.DataFrame([du.data(2:3,:); su.data],...
-                frames.Index([1 3 10 20 30],UniqueSorted=true),du.getColumnsObj())) % original error 'frames:vertcat:rowsNotUnique'
-            warning('on',warning_id)
+            t.verifyError(@() [su;du],'frames:DataFrame:combine:notAllRowsUnique') % original error 'frames:vertcat:rowsNotUnique'
+            t.verifyError(@() [uu;ud],'frames:DataFrame:combine:notAllColumnsUnique') % original error 'frames:vertcat:rowsNotUnique'
             
             warning_id = 'frames:concat:overlap';
             t.verifyWarning(@() [su;su] , warning_id );
             warning('off',warning_id)
             t.verifyEqual([su;su], su) % original error 'frames:vertcat:rowsNotUnique'
             warning('on',warning_id)
-            
-            warning_id = 'frames:union:mergedDuplicateValues';
-            t.verifyWarning(@() [uu;ud] , warning_id );
-            warning('off',warning_id)
-            t.verifyEqual([uu;ud],frames.DataFrame([uu.data ud.data(:,2:3)],...
-                uu.getRowsObj(), frames.Index([6 5 4 1 3],Unique=true))) % original error 'frames:vertcat:rowsNotUnique'
-            warning('on',warning_id)
-                        
+                                              
             % can concatenate duplicates if same columns
             t.verifyEqual([ud;sd],frames.DataFrame([ud.data;sd.data],...
                 frames.Index([6 5 4 10 20 30],Unique=true),ud.getColumnsObj()))
@@ -201,12 +190,8 @@ classdef dataframeTest < AbstractFramesTests
             data_ok = nan(5,6); data_ok(1:3,1:3) = uu.data; data_ok(4:5,4:6) = ds.data(2:3,:);
             df_ok = frames.DataFrame(data_ok, frames.Index([6 5 4 1 3],Unique=true), ...
                                               frames.Index([unique;sorted],Unique=true));            
-            warning('on','frames:Index:notUnique')
-            warning_id = 'frames:union:mergedDuplicateValues';
-            t.verifyWarning(@() [uu,ds], warning_id );
-            warning('off',warning_id)
-            t.verifyEqual([uu,ds], df_ok ) % error originall 'frames:requireUniqueIndex'
-            warning('on',warning_id)
+            warning('on','frames:Index:notUnique')            
+            t.verifyError(@() [uu,ds], 'frames:DataFrame:combine:notAllRowsUnique') % error originall 'frames:requireUniqueIndex'            
             
             
             
