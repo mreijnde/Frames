@@ -643,6 +643,12 @@ classdef Index
                 N = length(selector);
             end                
         end
+
+
+        function out = getvalue_uniqind(obj, ~)
+            % get index positions to unique values (using cache for speedup)            
+            out = obj.value_uniqind_;
+        end        
         
     end
     

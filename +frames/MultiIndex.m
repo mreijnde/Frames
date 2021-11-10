@@ -527,26 +527,6 @@ classdef MultiIndex < frames.Index
             end
         end
         
-               
-        
-        function out = getvalue_uniqind(obj)
-            % get uniqind vector based on all dimensions
-            if obj.Ndim==1
-                % single linear index
-                out = obj.value_{1}.value_uniqind;
-            elseif obj.Ndim>1                
-                % multiple linear indices
-                uniqind = cell2mat(cellfun(@(x) x.value_uniqind, obj.value_,'UniformOutput',false));  % all uniqind as columns                                                
-                Ndim_uniq = cellfun(@(x) length(x.value_uniq{1}), obj.value_);  % number of unique values per dimension
-                % multiplication factor per dim (to create new unique index)
-                DimMultiplicationFactor = cumprod( [Ndim_uniq(2:end) 1], 'reverse');                
-                % matrix multiplication to calc combined uniqind vector
-                out = (uniqind-1) * DimMultiplicationFactor' + 1;                
-            else
-                out = [];
-            end
-        end
-        
         function obj = recalc_unique_cache(obj)
             % recalculate unique cache
             % <do nothing at MultiIndex>
@@ -712,6 +692,38 @@ classdef MultiIndex < frames.Index
                 [varargout{1:nargout}] = builtin('subsref',obj,s);
             end
         end
+        
+        
+      function out = getvalue_uniqind(obj, orderColumnMajor)
+            % get uniqind vector based on all dimensions
+            % 
+            % input:
+            %    column_major_ordering: logical 
+            %             true:  column-major (default)
+            %             false: row-major             
+            if nargin<2, orderColumnMajor=true; end                   
+            if obj.Ndim==1
+                % single linear index
+                out = obj.value_{1}.value_uniqind;
+            elseif obj.Ndim>1                
+                % multiple linear indices
+                uniqind = cell2mat(cellfun(@(x) x.value_uniqind, obj.value_,'UniformOutput',false));  % all uniqind as columns                                                
+                Ndim_uniq = cellfun(@(x) length(x.value_uniq{1}), obj.value_);  % number of unique values per dimension
+                % get multiplication factor per dim
+                if orderColumnMajor
+                    % column-major ordered index
+                    DimMultiplicationFactor = cumprod( [Ndim_uniq(2:end) 1], 'reverse');                                  
+                else
+                    % row-major ordered index
+                    DimMultiplicationFactor = cumprod( [1 Ndim_uniq(1:end-1)] );                               
+                end
+                    % matrix multiplication to calc combined uniqind vector
+                    out = (uniqind-1) * DimMultiplicationFactor' + 1;
+            else
+                out = [];
+            end
+        end                
+        
     end
     
     
