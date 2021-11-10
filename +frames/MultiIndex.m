@@ -289,8 +289,10 @@ classdef MultiIndex < frames.Index
             dispnames = obj.name;
             dispnames(dispnames=="")="<missing>";
             val = cellfun(@(x) x.value, obj.value_,'UniformOutput',false);
-            disptable = table( val{:}, 'VariableNames', cellstr(dispnames));            
-            disp(disptable);
+            if ~isempty(val)
+               disptable = table( val{:}, 'VariableNames', cellstr(dispnames));            
+               disp(disptable);
+            end
             details(obj);
         end
         
