@@ -126,53 +126,17 @@ classdef MultiIndex < frames.Index
                 selector = mask;
             end
         end
+                        
+      
         
-        
-        
-        function [rows_ind1, rows_ind2, common_mask1, common_mask2, Nunique] = getMatchingRows(obj1, obj2, dims)
-            % function finds indices of matching rows between two MultiIndex 
-            % for given common dimensions.
-            % 
-            % input:
-            %   obj1,obj2: MultiIndex
-            %   dims: string array with common dimension names
-            %
-            % output:
-            %   rows_indX:    array with unique indices per row matching MultiIndex object X
-            %   common_maskX: logical array indicating row is common between both MultiIndex objects
-            %   Nunique:      number of unique rows (of combined indices)
-            %                       
-            % get dim index of specified (common) dimension
-            dimInd1 = obj1.getDimInd(dims);
-            dimInd2 = obj2.getDimInd(dims);
-            % get all unique row of given dim combination
-            value1 = obj1.getvalue_cell('rowcol');
-            value1 = value1(:,dimInd1);
-            value2 = obj2.getvalue_cell('rowcol');
-            value2 = value2(:,dimInd2);
-            valueAll = [value1; value2];
-            % get unique row ind for total
-            [rows_uniqval, rows_ind] = uniqueCellRows(valueAll);
-            Nunique = size(rows_uniqval,1);
-            % separate in both indexes
-            N1 = length(obj1);
-            rows_ind1 = rows_ind(1:N1);
-            rows_ind2 = rows_ind(N1+1:end);
-            % create common masks
-            common_ind = intersect(rows_ind1, rows_ind2);
-            common_mask1 = ismember(rows_ind1, common_ind);
-            common_mask2 = ismember(rows_ind2, common_ind);
-        end
-        
-        
-        function [objnew, ind1_new , ind2_new] = alignIndex(obj1, obj2, alignMethod, allowDimExpansion)
+        function [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = alignIndex(obj1, obj2, method, allowDimExpansion)
             % function to create new aligned MultiIndex based on common dimensions 
             % of both MultiIndex objects and implicit expansion of missing dimensions
             %
             % input:
             %    - obj1,obj2: MultiIndex objects to be aligned
             %
-            %    - alignMethod: (string enum) align method for common dimension(s)
+            %    - method: (string enum) select method for common dimension(s)
             %           "strict": both need to have same values (else error thrown)
             %           "subset": remove rows that are not common in both
             %           "keep":   keep rows as in obj1  (default)            
@@ -180,23 +144,22 @@ classdef MultiIndex < frames.Index
             %
             %   - allowDimExpansion (bool) allow expansion to add new dimensions to obj1
             %
+            % output:
+            %   - objnew:     Index object with new aligned index (1:N)
+            %   - ind1_new:   position index (1:N) with reference to original item of obj1 (NaN for values of obj2)
+            %   - ind2_new:   position index (1:N) with reference to original item of obj2 (NaN for values of obj1)
+            %  
             
             % default parameters
-            if nargin<3, alignMethod="keep"; end
-            if nargin<4, allowDimExpansion=true; end
+            if nargin<3, method="keep"; end
+            if nargin<5, allowDimExpansion=true; end
             
-            % shortcut alignment code in case of equal Indices (for performance)
-            if isequal(obj1.value,obj2.value) || (obj1.singleton && obj2.singleton)
-                objnew = obj1;
-                ind1_new = 1:length(obj1);
-                ind2_new = ind1_new;
-                return
-            end            
-            
-            % check and convert input
-            assert(isIndex(obj2), "obj2 is not a Index object.");                        
-            if ~isMultiIndex(obj2)
-                % convert from linear Index to MultiIndex
+            % shortcut alignment code in case of equal Indices or singleton (for performance)            
+            [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_handle_simple_(obj1, obj2);                        
+            if ~isempty(objnew), return; end
+                       
+            % convert Index to MultiIndex if required
+            if ~isMultiIndex(obj2)                
                 obj2 = frames.MultiIndex(obj2);
             end
             
@@ -205,63 +168,28 @@ classdef MultiIndex < frames.Index
             NextraDims2 = length(dim_unique_ind2);
             NextraDims1 = length(dim_unique_ind1);
             assert(allowDimExpansion | NextraDims2==0, ...
-                          "Dimension expansion disabled, while obj2 has new dimension(s)");
-                        
-            % get matching rows of both MultiIndex objects
-            [id1_raw, id2_raw, mask1, mask2, Nunique]  = obj1.getMatchingRows(obj2, dim_common);                        
-             
-            % define row ids in new index based on chosen alignment method
-            switch alignMethod
-                case "subset"
-                    id = id1_raw(mask1);                    
-                case "keep"
-                    id = id1_raw;                    
-                case "full"                                         
-                    id = [id1_raw; setdiff(id2_raw, id1_raw)];
-                case "strict"
-                    assert( all(mask1) & all(mask2), ...
-                        "Unequal values in common dimension not allowed in strict align method");
-                    id = id1_raw;
-                otherwise 
-                    error("unsupported alignMethod '%s'",alignMethod);
-            end     
-           
-            % get row numbers of aligned index for obj1
-            id_freq2 = histc(id2_raw, 1:Nunique); %#ok<HISTC>   
-            replicate_count = max(id_freq2(id),1); % replicate rows in obj1 with freq obj2, keep minimal 1 copy            
-            ind1_new = repelem(1:length(id), replicate_count )'; 
-            ind1_new(ind1_new>length(id1_raw))=NaN; 
-                                                        
-            % get row numbers of aligned index for obj2            
-            ind2_cell = getPosIndicesForEachValue(id2_raw, Nunique);
-            ind2_cell_aligned = ind2_cell(id);
-            ind2_new = vertcat(ind2_cell_aligned{:});
-                                                  
-            % create new expanded MultiIndex (with dimensions as in obj1)                        
-            assert( (NextraDims1==0 || ~any(isnan(ind1_new)) ) && ...
-                    (NextraDims2==0 || ~any(isnan(ind2_new)) ), ...
-                    "Cannot expand dimensions in case rows exist in output index that are not common in both objects.");                    
-            if ~any(isnan(ind1_new))
-                % only a combination of rows in ob1
-                objnew = obj1.getSubIndex(ind1_new);
-            else
-               % combination of both MultiIndex
-               mask_rows_from_obj2 = isnan(ind1_new);
-               objnew1 = obj1.getSubIndex(ind1_new(~mask_rows_from_obj2), dim_common_ind1);
-               objnew2 = obj2.getSubIndex(ind2_new(mask_rows_from_obj2), dim_common_ind2);
-               objnew = vertcat_(objnew1, objnew2);
-            end
-                                    
-            % add new dimensions
-            if NextraDims2>0
-                objnew2 = obj2.getSubIndex(ind2_new);
-                for i=1:NextraDims2
-                    dimind = dim_unique_ind2(i);
-                    objnew = objnew.addDimension( objnew2.value_{dimind} );
-                end   
-            end
+                          "Dimension expansion disabled, while obj2 has new dimension(s)");                        
             
-            % sort if required
+            %<todo: some check that expansion and duplicates in index are not compatible (?) >
+            
+            if ~isempty(dim_common)
+                 % run alignIndex from Index on common dimensions             
+                 obj1_common = obj1.getSubIndex(':', dim_common_ind1);
+                 obj2_common = obj2.getSubIndex(':', dim_common_ind2);
+                 [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = ...
+                     alignIndex_(obj1_common, obj2_common, method, "unique");                            
+            else
+                % all items same id in case of no common dimensions
+                id1_raw = ones( length(obj1),1);
+                id2_raw = ones( length(obj2),1);                
+            end
+                                         
+            % expand index if required
+            if NextraDims1>0 || NextraDims2>0
+                [objnew, ind1_new , ind2_new] = expandIndexWithDim(obj1, obj2, id1_raw, id2_raw);
+            end                 
+            
+             % sort if required
             if obj1.requireUniqueSorted
                 % sort output index
                 [objnew, sortindex] = objnew.sort();
@@ -271,18 +199,60 @@ classdef MultiIndex < frames.Index
             end
             
             
-            function ind_cell = getPosIndicesForEachValue(x, N)
-                % get cell array(N) with cell(i) the position indices of vector x with value i
-                % (values of vector x has to be in range 1 to N)
-                [~,ix] = sort(x);
-                c = histc(x, 1:N); %#ok<HISTC>
-                ind_cell = mat2cell(ix(:),c,1);
-                ind_cell( cellfun(@isempty, ind_cell) ) = {NaN}; % convert missing values to NaN
-            end
+            
+            
+           function [objnew, ind1_new, ind2_new] = expandIndexWithDim(obj1, obj2, id1, id2)
+                % internal sub function expand and merge extra dimension in Index  
+                Nunique =  max([id1; id2]);  
+                % get row numbers of aligned index for obj1
+                id2_freq = histc(id2, 1:Nunique); %#ok<HISTC>   
+                replicate_count = max(id2_freq(id1),1); % replicate rows in obj1 with freq obj2, keep minimal 1 copy            
+                ind1_new = repelem(1:length(id1), replicate_count )'; 
+                ind1_new(ind1_new>length(id1))=NaN; 
+
+                % get row numbers of aligned index for obj2            
+                ind2_cell = getPosIndicesForEachValue(id2, Nunique);
+                ind2_cell_aligned = ind2_cell(id1);
+                ind2_new = vertcat(ind2_cell_aligned{:});
+
+                                                  
+                % create new expanded MultiIndex (with dimensions as in obj1)                        
+                assert( (NextraDims1==0 || ~any(isnan(ind1_new)) ) && ...
+                        (NextraDims2==0 || ~any(isnan(ind2_new)) ), ...
+                        "Cannot expand dimensions in case rows exist in output index that are not common in both objects.");                    
+                if ~any(isnan(ind1_new))
+                    % only a combination of rows in ob1
+                    objnew = obj1.getSubIndex(ind1_new);
+                else
+                   % combination of both MultiIndex
+                   mask_rows_from_obj2 = isnan(ind1_new);
+                   objnew1 = obj1.getSubIndex(ind1_new(~mask_rows_from_obj2), dim_common_ind1);
+                   objnew2 = obj2.getSubIndex(ind2_new(mask_rows_from_obj2), dim_common_ind2);
+                   objnew = vertcat_(objnew1, objnew2);
+                end
+
+                % add new dimensions
+                if NextraDims2>0
+                    objnew2 = obj2.getSubIndex(ind2_new);
+                    for i=1:NextraDims2
+                        dimind = dim_unique_ind2(i);
+                        objnew = objnew.addDimension( objnew2.value_{dimind} );
+                    end   
+                end           
+                
+                function ind_cell = getPosIndicesForEachValue(x, N)
+                    % get cell array(N) with cell(i) the position indices of vector x with value i
+                    % (values of vector x has to be in range 1 to N)
+                    [~,ix] = sort(x);
+                    c = histc(x, 1:N); %#ok<HISTC>
+                    ind_cell = mat2cell(ix(:),c,1);
+                    ind_cell( cellfun(@isempty, ind_cell) ) = {NaN}; % convert missing values to NaN
+                end
+            
+           end        
+            
         end
-        
-        
-        
+                      
         
         function disp(obj)
             % display MultiIndex values and properties
