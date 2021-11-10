@@ -1269,9 +1269,10 @@ classdef DataFrame
                 'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
         end   
         
+        
         function [dat, dimnames, dimvalues] = dataND(obj)
             % function to convert dataframe data to matlab NDarray
-            % based on the (Multi)Index dimensions, with the unique (linear-)Index values on the axes.
+            % based on the (Multi)Index dimensions
             %                   
             % Remark:
             %  - No duplicate index values are allowed in case of more than 1 dimension.
@@ -1288,33 +1289,22 @@ classdef DataFrame
             assert(obj.columns_.Ndim==1 || obj.columns_.isunique(), ...
                 'frames:DataFrame:dataND:columnsIndexNotUnique', ...      
                 "Columns index not unique. Non-unique index only allowed in case of only single dimension.");                        
-            % create empty data vector of full length            
-            Ldim_rows = [];
-            Ldim_cols = [];
-            if ~obj.rows_.singleton
-               Ldim_rows = cellfun( @(x) length(x), obj.rows_.value_uniq);               
-            end
-            if ~obj.columns_.singleton
-               Ldim_cols = cellfun( @(x) length(x), obj.columns_.value_uniq);                           
-            end
+            % get dim length and position into NDarray for both dataframe indices
+            [Ldim_rows, posind_rows] = getNDposind(obj.rows_);
+            [Ldim_cols, posind_cols] = getNDposind(obj.columns_);
+            % create empty data vector of full length
             Nelem = prod(Ldim_rows)*prod(Ldim_cols);
-            dat = nan(Nelem,1);            
-            % get row-major position index (of both row and column index combined)
-            posind_rows = obj.rows_.value_uniqind ;
-            posind_cols = (obj.columns_.value_uniqind-1) * prod(Ldim_rows);
-            posind = posind_rows + posind_cols'; % use implicit expansion
-            % assign values
+            dat = repmat( missingData(class(obj.data_)),Nelem,1);  % generic in type: nan(Nelem,1)
+            % get row-major position index (of both row and column index combined)                                                
+            posind = posind_rows + (posind_cols'-1) * prod(Ldim_rows); % use implicit expansion
+            % assign values to 'NDarray  vector'
             dat(posind) = obj.data_;
-            % reshape to ND array
+            % reshape vector to ND array
             Ndims_rows = length(Ldim_rows);
             Ndims_cols = length(Ldim_cols);            
             Ndims = Ndims_rows + Ndims_cols;
-            if Ndims>1
-               % to ND array with row-major ordering within an index
-               dat = reshape(dat, [flip(Ldim_rows) flip(Ldim_cols)]);
-               % convert to full column-major ordering (as used by matlab)
-               % by flipping dimension order within a single index                
-               dat = permute(dat, [flip(1:Ndims_rows) flip(1:Ndims_cols)+Ndims_rows ]); 
+            if Ndims>1                
+               dat = reshape(dat, [Ldim_rows, Ldim_cols]);
             end
             % get dimension meta data
             dimnames = [];            
@@ -1327,6 +1317,20 @@ classdef DataFrame
                 dimnames = [dimnames obj.columns_.name];
                 dimvalues = [dimvalues obj.columns_.value_uniq];
             end            
+            
+            function [Ldim, posind] = getNDposind(index)
+                % helper function to get length of each dimension and position index into NDarray
+                if index.singleton
+                   Ldim = [];
+                   posind = 1;
+                elseif index.Ndim > 1
+                   Ldim = cellfun( @(x) length(x), index.value_uniq);               
+                   posind = index.getvalue_uniqind(false); % false=row-major ordering
+                else
+                   Ldim = length(index);
+                   posind = (1:Ldim)';
+                end
+            end
         end
         
         
