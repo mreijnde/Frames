@@ -31,6 +31,7 @@ classdef Index
         requireUnique        % (logical, default false) whether the Index requires unique elements
         requireUniqueSorted  % (logical, default false) whether the Index requires unique and sorted elements  
         name                 % (string array) names of index dimensions  
+        Ndim                 % number of dimensions (1)
     end
     properties(Dependent, Hidden)
         value_uniq           % (cell array) stores unique values per dimension    
@@ -112,6 +113,11 @@ classdef Index
             % seperate method to overcome matlab's limitation on overloading setters/getters
             out = obj.getname();
         end
+        
+        function Ndim = get.Ndim(obj)
+            % seperate method to overcome matlab's limitation on overloading setters/getters
+            Ndim = get_Ndim(obj);
+        end 
         
         function obj = set.singleton(obj,tf)
             arguments
@@ -670,11 +676,11 @@ classdef Index
             % get unique values (using cache for speedup)                        
             out = {obj.value_uniq_};
         end
-        
-        function out = getvalue_uniqind(obj)
-            % get index positions to unique values (using cache for speedup)            
-            out = obj.value_uniqind_;
-        end
+
+        function Ndim = get_Ndim(obj)
+            % get number of dimensions
+            Ndim = 1;
+        end 
         
         function obj = recalc_unique_cache(obj)
             % recalculate unique cache based on stored value_           

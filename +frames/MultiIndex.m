@@ -2,12 +2,7 @@ classdef MultiIndex < frames.Index
     % MULTIINDEX: class to create multi dimensional index
     %
     % work-in-progress
-    %
-    properties(Dependent)
-        Ndim
-    end
-    
-    
+    %      
     methods
         function obj = MultiIndex(value, nameValue)
             % constructor for MultiIndex
@@ -518,6 +513,11 @@ classdef MultiIndex < frames.Index
             v = obj.getvalue_cell("row");   % as nested cell(Nindex) cell(Ndim)
         end
         
+        function Ndim = get_Ndim(obj)
+            % get number of dimensions
+            Ndim = numel(obj.value_);
+        end 
+        
         function out = getvalue_uniq(obj)
             % get unique values of every dimension (from Index Objects)
             if obj.Ndim>0
@@ -716,11 +716,7 @@ classdef MultiIndex < frames.Index
     
     
     
-    methods
-        function Ndim = get.Ndim(obj)
-            % get number of dimensions
-            Ndim = numel(obj.value_);
-        end                      
+    methods                   
         
         function obj = vertcat_(obj,varargin)
             % concatenate multiple MultiIndex objects with same dimensions (limited checks)
