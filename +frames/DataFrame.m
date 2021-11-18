@@ -338,7 +338,7 @@ classdef DataFrame
         end
         function obj = setRows(obj,colName)
             % set the rows value from the value of a column
-            obj.rows = obj.data(:,ismember(obj.columns,colName));
+            obj.rows = obj.data(:,obj.columns_.positionOf(colName));
             obj = obj.dropColumns(colName);
         end
         function obj = resetUserProperties(obj)
@@ -427,7 +427,10 @@ classdef DataFrame
         
         function other = extendRows(obj,rows)
             % extend the rows with the new values
-            valuesToAdd = rows(~ismember(rows,obj.rows));
+            if iscell(rows) && ~iscell(rows{1}) %handle multiIndex syntax
+                rows = {rows};
+            end
+            valuesToAdd = rows(~obj.rows_.ismember(rows));            
             newRows = obj.rows_.union(valuesToAdd);
             newData = obj.defaultData(length(newRows),length(obj.columns_));
             
@@ -450,7 +453,10 @@ classdef DataFrame
         end
         function other = extendColumns(obj,columns)
             % extend the columns with the new values
-            valuesToAdd = columns(~ismember(columns,obj.columns));
+            if iscell(columns) && ~iscell(columns{1}) %handle multiIndex syntax
+                columns = {columns};
+            end
+            valuesToAdd = columns(~obj.columns_.ismember(columns));
             newColumns = obj.columns_.union(valuesToAdd);
             newData = obj.defaultData(length(obj.rows_),length(newColumns));
             
@@ -1376,7 +1382,7 @@ classdef DataFrame
             d = repmat(missingData(type),lengthRows,lengthColumns);
         end
         function rowsValidation(obj,value)
-            assert(length(value) == size(obj.data,1), 'frames:rowsValidation:wrongSize', ...
+            assert(iscell(value) || length(value) == size(obj.data,1), 'frames:rowsValidation:wrongSize', ...
                 'rows does not have the same size as data')
         end
         function columnsValidation(obj,value)
