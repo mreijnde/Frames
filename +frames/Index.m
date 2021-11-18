@@ -280,7 +280,7 @@ classdef Index
            % unify two indices
            if ~isIndex(index2)
                % convert to index               
-               index2 = frames.Index().setvalue(index2, false); %skip value checks/ unique warning                          
+               index2 = obj.setvalue(index2, false); %skip value checks/ unique warning                          
            end           
            if obj.requireUnique
                method = "unique";
@@ -308,7 +308,7 @@ classdef Index
         
         function out = ismember(obj, value)
             % check if value is present in index
-            out = ismember(obj.value_, value);            
+            out = ismember(value, obj.value_);
         end
         
        
