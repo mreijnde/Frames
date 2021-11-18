@@ -710,18 +710,23 @@ classdef Index
                     'The value of a singleton Index must be missing.')
                 return
             end
-            mustBeFullVector(value)
-            
+            if nargin >= 4
+                assert( ~any(ismissing(value)) || isa(b, class(value)), ...
+                    'frames:Index:valueChecker:differentType', ...
+                    "value type ("+class(b)+") is different than type of existing values (" + ...
+                    class(value)+ ") and cannot automaticaly be converted.");
+            end                        
             if obj.requireUnique_
                 if ~isunique(value) && ~islogical(value)
                     error('frames:Index:requireUniqueFail', ...
                         'Index value is required to be unique.')
                 end
             else
-                if nargin >= 3
+                if nargin >= 4                    
                     valTmp = value;
                     valTmp(fromSubsAsgnIdx) = [];  % this is slow
-                    if ~isunique(b) || any(ismember(b,valTmp))
+                    b_ = value(fromSubsAsgnIdx); % to handle type conversion
+                    if ~isunique(b_) || any(ismember(b_,valTmp))
                         warning('frames:Index:subsagnNotUnique', ...
                             'The assigned values make the Index not unique.')
                     end
@@ -736,6 +741,7 @@ classdef Index
                 error('frames:Index:requireSortedFail', ...
                     'Index value is required to be sorted and unique.')
             end
+            mustBeFullVector(value)
         end
         
         function positionIndexChecker(obj, selector)    
