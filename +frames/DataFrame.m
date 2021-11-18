@@ -1006,16 +1006,81 @@ classdef DataFrame
         end
         
         % these function overloads are to make chaining possible
-        % e.g. df.abs().sqrt()
-        function obj = abs(obj), obj.data_ = abs(obj.data_); end
+        % e.g. df.abs().sqrt()   [or without chaining, e.g. sqrt(abs(df)) ]
+        
+        % exponents and logarithms
         function obj = exp(obj), obj.data_ = exp(obj.data_); end
+        function obj = expm1(obj), obj.data_ = expm1(obj.data_); end       
         function obj = log(obj), obj.data_ = log(obj.data_); end
+        function obj = log10(obj), obj.data_ = log10(obj.data_); end
+        function obj = log1p(obj), obj.data_ = log1p(obj.data_); end
+        function obj = log2(obj), obj.data_ = log2(obj.data_); end
+        function obj = nextpow2(obj), obj.data_ = nextpow2(obj.data_); end
+        function obj = pow2(obj), obj.data_ = pow2(obj.data_); end
+        function obj = reallog(obj), obj.data_ = reallog(obj.data_); end
+        function obj = realsqrt(obj), obj.data_ = realsqrt(obj.data_); end
+        function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
+        
+        % trigonometric functions
+        function obj = sin(obj), obj.data_ = sin(obj.data_); end
+        function obj = sind(obj), obj.data_ = sind(obj.data_); end
+        function obj = sinpi(obj), obj.data_ = sinpi(obj.data_); end
+        function obj = asin(obj), obj.data_ = asin(obj.data_); end
+        function obj = asind(obj), obj.data_ = asind(obj.data_); end
+        function obj = sinh(obj), obj.data_ = sinh(obj.data_); end
+        function obj = asinh(obj), obj.data_ = asinh(obj.data_); end
+        
+        function obj = cos(obj), obj.data_ = cos(obj.data_); end
+        function obj = cosd(obj), obj.data_ = cosd(obj.data_); end
+        function obj = cospi(obj), obj.data_ = cospi(obj.data_); end
+        function obj = acos(obj), obj.data_ = acos(obj.data_); end
+        function obj = acosd(obj), obj.data_ = acosd(obj.data_); end
+        function obj = cosh(obj), obj.data_ = cosh(obj.data_); end
+        function obj = acosh(obj), obj.data_ = acosh(obj.data_); end
+        
+        function obj = tan(obj), obj.data_ = tan(obj.data_); end
+        function obj = tand(obj), obj.data_ = tand(obj.data_); end
+        function obj = atan(obj), obj.data_ = atan(obj.data_); end
+        function obj = atand(obj), obj.data_ = atand(obj.data_); end        
         function obj = tanh(obj), obj.data_ = tanh(obj.data_); end
+        function obj = atanh(obj), obj.data_ = atanh(obj.data_); end
+        
+        function obj = csc(obj), obj.data_ = csc(obj.data_); end
+        function obj = cscd(obj), obj.data_ = cscd(obj.data_); end
+        function obj = acsc(obj), obj.data_ = acsc(obj.data_); end
+        function obj = acscd(obj), obj.data_ = acscd(obj.data_); end        
+        function obj = csch(obj), obj.data_ = csch(obj.data_); end
+        function obj = acsch(obj), obj.data_ = acsch(obj.data_); end
+                 
+        % complex number functions
+        function obj = abs(obj), obj.data_ = abs(obj.data_); end
+        function obj = angle(obj), obj.data_ = angle(obj.data_); end
+        function obj = conj(obj), obj.data_ = conj(obj.data_); end
+        function obj = imag(obj), obj.data_ = imag(obj.data_); end        
+        function obj = real(obj), obj.data_ = real(obj.data_); end
+        function obj = sign(obj), obj.data_ = sign(obj.data_); end
+        function obj = unwrap(obj), obj.data_ = unwrap(obj.data_); end
+        
+        % error functions
+        function obj = erf(obj), obj.data_ = erf(obj.data_); end
+        function obj = erfc(obj), obj.data_ = erfc(obj.data_); end
+        function obj = erfcinv(obj), obj.data_ = erfcinv(obj.data_); end
+        function obj = erfcx(obj), obj.data_ = erfcx(obj.data_); end
+        function obj = erfinv(obj), obj.data_ = erfinv(obj.data_); end
+        
+        % test functions
+        function obj = isinf(obj), obj.data_ = isinf(obj.data_); end
+        function obj = isfinite(obj), obj.data_ = isfinite(obj.data_); end
+        function obj = isnan(obj), obj.data_ = isnan(obj.data_); end
+        function obj = ismissing(obj,varargin), obj.data_ = ismissing(obj.data_,varargin{:}); end
+        
+        % rounding
         function obj = floor(obj), obj.data_ = floor(obj.data_); end
         function obj = ceil(obj), obj.data_ = ceil(obj.data_); end
-        function obj = sign(obj), obj.data_ = sign(obj.data_); end
-        function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
-        function obj = ismissing(obj,varargin), obj.data_ = ismissing(obj.data_,varargin{:}); end
+        function obj = fix(obj), obj.data_ = fix(obj.data_); end
+        function obj = round(obj), obj.data_ = round(obj.data_); end
+        
+        % other functions        
         function obj = oneify(obj)
         % replace non missing values by a default value (1 for double, "" for strings)
             switch class(obj.data_)
