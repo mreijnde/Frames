@@ -1293,10 +1293,11 @@ classdef DataFrame
             [Ldim_rows, posind_rows] = getNDposind(obj.rows_);
             [Ldim_cols, posind_cols] = getNDposind(obj.columns_);
             % create empty data vector of full length
-            Nelem = prod(Ldim_rows)*prod(Ldim_cols);
-            dat = repmat( missingData(class(obj.data_)),Nelem,1);  % generic in type: nan(Nelem,1)
+            Nelem_rows = prod(Ldim_rows);            
+            Nelem_cols = prod(Ldim_cols);
+            dat = obj.defaultData(Nelem_rows*Nelem_cols,1);
             % get row-major position index (of both row and column index combined)                                                
-            posind = posind_rows + (posind_cols'-1) * prod(Ldim_rows); % use implicit expansion
+            posind = posind_rows + (posind_cols'-1) * Nelem_rows; % use implicit expansion
             % assign values to 'NDarray  vector'
             dat(posind) = obj.data_;
             % reshape vector to ND array
