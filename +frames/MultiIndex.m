@@ -668,8 +668,7 @@ classdef MultiIndex < frames.Index
                                val = b_(:,i);
                            end                           
                            % call index object subsasgn method to handle custom data formats (eg timeIndex formats)
-                           s(2).type = "()"; % index object may not support {}
-                           obj.value_{i} = builtin('subsasgn',obj.value_{i},s,val); 
+                           obj.value_{i}.value(rowIdx) = val; 
                         end                    
                     else
                         % assign single dimension
