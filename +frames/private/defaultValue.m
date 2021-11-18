@@ -7,6 +7,8 @@ switch type
         v = "Var" + (1:len);
     case 'cell'
         v = cellstr("Var" + (1:len));
+    case 'frames.Index'
+        v = frames.Index("Var");
     otherwise
         error('default data type not implemented')
 end
