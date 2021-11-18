@@ -1436,11 +1436,6 @@ classdef DataFrame
             row = obj.rows_.getValueForTable();
             col = obj.columns_.getValueForTable();
             tb = array2table(obj.data,RowNames=row,VariableNames=col);
-            % note: dimension names are not displayed by table
-            if ~isempty(obj.rows_.name) && obj.rows_.name(1)~=""
-                namestr = join(obj.rows_.name, " "); %handle string array as name property
-                tb.Properties.DimensionNames{1} = char(namestr);
-            end
         end
         function d = defaultData(obj,lengthRows,lengthColumns,type)
             if nargin<4; type = class(obj.data); end
