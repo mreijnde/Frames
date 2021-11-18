@@ -336,11 +336,34 @@ classdef DataFrame
         function obj = setColumnsName(obj,name)
             obj.columns_.name = name;
         end
-        function obj = setRows(obj,colName)
+        
+        function obj = setRows(obj,colName, options)
             % set the rows value from the value of a column
-            obj.rows = obj.data(:,obj.columns_.positionOf(colName));
-            obj = obj.dropColumns(colName);
+            % (multiple columns allowed in case of row MultiIndex)
+            %            
+            arguments
+                obj
+                colName
+                options.keep = false; % keep columns
+            end            
+            colselect = obj.columns_.positionOf(colName);
+            if ~isMultiIndex(obj.rows_)
+               % Index                
+               assert(length(colselect)==1, 'frames.DataFrame.setRows.MultiIndexRequired', ...
+                     "Multiple columns selected, but row is not of type MultiIndex");          
+               obj.rows = obj.data(:,colselect);  
+            else
+               % MultiIndex (number of dimension can change & update dim names from col names)
+               colnames = obj.columns_.getValueForTable();
+               colnames = string(colnames(colselect));
+               obj.rows_ = obj.rows_.setIndex(obj.data(:,colselect), colnames(:));
+            end
+            if ~options.keep
+                % remove selected columns
+               obj = obj.dropColumns(colName);
+            end
         end
+        
         function obj = resetUserProperties(obj)
             obj.name_ = "";
             obj.description = "";
