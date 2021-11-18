@@ -278,7 +278,10 @@ classdef Index
              
        function obj = union(obj,index2)
            % unify two indices
-           if ~isIndex(index2)
+           if isempty(index2)
+               % nothing to do
+               return
+           elseif ~isIndex(index2)
                % convert to index               
                index2 = obj.setvalue(index2, false); %skip value checks/ unique warning                          
            end           
