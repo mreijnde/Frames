@@ -163,11 +163,11 @@ function gps = local_findgroups(varargin)
 assert(isaligned(varargin{:}),'Groups:notAligned','Grouping Frames must be aligned');
 dfsdata = cell(1,nargin);
 for ii = 1:nargin, dfsdata{ii} = string(varargin{ii}.data(:)); end
-[gpsNumber, groupNames{1:nargin}] = findgroups(dfsdata{:},2);
+[gpsNumber, groupNames{1:nargin}] = findgroups(dfsdata{:});
 gps = repmat(string(missing),size(gpsNumber));
 nbGrps = max(gpsNumber);
 if ~ismissing(nbGrps)
-    groupNames = join([groupNames{:}]);
+    groupNames = join([groupNames{:}],2);
     for ii = 1:nbGrps
         gps(gpsNumber==ii) = groupNames(ii);
     end
