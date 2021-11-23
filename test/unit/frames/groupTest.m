@@ -43,6 +43,8 @@ classdef groupTest < AbstractFramesTests
             
             frame = frames.DataFrame(["grp2" "grp1" missing "grp2";"grp1" "new" "grp2" "new"]);
             g9 = frames.Groups(frame);
+            g9x = frames.Groups({frame});
+            t.verifyEqual(g9,g9x)
             g10 = g9.select(["grp2" "grp1"]);
             expVals = { sparse(logical([0 1 0 0;1 0 0 0])), sparse(logical([1 0 0 1;0 0 1 0])), sparse(logical([0 0 0 0;0 1 0 1])) };
             t.verifyEqual(g9.keys,["grp1" "grp2" "new"])
