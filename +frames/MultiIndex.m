@@ -115,7 +115,7 @@ classdef MultiIndex < frames.Index
                         "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
                         length(selectorset), iset, obj.Ndim);
                     for j = 1:length(selectorset)
-                        masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, userCall, allowMissing);
+                        masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, false, allowMissing);
                         maskset = maskset & masklayer;
                     end
                     if ~any(maskset)
