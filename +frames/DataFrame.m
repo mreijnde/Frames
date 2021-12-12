@@ -1192,6 +1192,36 @@ classdef DataFrame
             s(isn) = NaN;
             obj.data_ = s;
         end
+               
+        
+        function obj = groupUnique(obj, indexType, func, apply2single)
+            % combine duplicate index values by aggregation function
+            %  input: 
+            %    indexType:     enum to select index: "rows", "columns" or "both"
+            %    func:          function handler (default @mean)
+            %    apply2single:  logical apply function to groups with only single value (default false)
+            %
+            if nargin<3, func=@mean; end
+            if nargin<4, apply2single=false; end
+            assert( ismember(indexType,["rows","columns","both"]), ...
+                "Invalid indexType parameter. Allowed 'rows','columns' or 'both'.");
+            
+            if indexType=="rows" || indexType=="both"
+                groupid = obj.rows_.value_uniqind;
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, apply2single);
+                indexnew = obj.rows_.getSubIndex(groupInd);
+                obj.data_ = datnew;
+                obj.rows_ = indexnew;
+            end
+            
+            if indexType=="columns" || indexType=="both"
+                groupid = obj.columns_.value_uniqind;
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_', groupid, func, apply2single);
+                indexnew = obj.columns_.getSubIndex(groupInd);
+                obj.data_ = datnew';
+                obj.columns_ = indexnew;            
+            end
+        end
         
         function obj = rolling(obj,window)
             % provide rolling window calculations
