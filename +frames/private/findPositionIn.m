@@ -1,4 +1,5 @@
-function idx = findPositionIn(a,b)
+function idx = findPositionIn(a,b, allowMissing)
+    if nargin<3, allowMissing=false; end
     if iscolumn(b)
         b = b';
     end
@@ -11,7 +12,9 @@ function idx = findPositionIn(a,b)
         b = string(b);
     end
     
-    assertFoundIn(a,b);
+    if ~allowMissing
+       assertFoundIn(a,b);
+    end
     idx = arrayfun(@(x) find(b==x),a,'UniformOutput',false);
     idx = [idx{:}];
     

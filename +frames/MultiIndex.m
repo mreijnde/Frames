@@ -115,11 +115,16 @@ classdef MultiIndex < frames.Index
                         "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
                         length(selectorset), iset, obj.Ndim);
                     for j = 1:length(selectorset)
-                        masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, userCall);
+                        masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, userCall, allowMissing);
                         maskset = maskset & masklayer;
                     end
-                    assert(allowMissing || any(maskset), 'frames:MultiIndex:emptySelectorSet', ...
-                        "No matches found for selector set %i.", iset);
+                    if ~any(maskset)
+                        if allowMissing 
+                            warning('frames:MultiIndex:emptySelectorSet',"No matches found for selector set %i.", iset);
+                        else
+                            error( 'frames:MultiIndex:emptySelectorSet', "No matches found for selector set %i.", iset);
+                        end
+                    end
                     % combine masks of different masksets
                     mask = mask | maskset;
                 end

@@ -185,7 +185,7 @@ classdef Index
             len = size(obj.value_,1);
         end
         
-        function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall)
+        function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
             % get valid matlab indexer for array operations based on supplied selector
             % supports:
             %    - colon
@@ -198,13 +198,15 @@ classdef Index
             %                                   accept only these logical dataframe series
             %    - positionIndex  (logical):    selector is position index instead of value index
             %    - userCall       (logical):    perform full validation of selector
+            %    - allowMissing   (logical):    allow selectors with no matches (default error)
             %
             % output:
             %    validated array indexer (colon, logical array or position index array)
             %
             if nargin<5, userCall = true; end
             if nargin<4, allowedSeries = 'all'; end
-            if nargin<3, positionIndex = false; end  
+            if nargin<3, positionIndex = false; end
+            if nargin<6, allowMissing=false; end            
                         
             if iscolon(selector)
                 % do nothing
@@ -223,10 +225,13 @@ classdef Index
                 %  value selectors
                 selector = obj.getValue_andCheck(selector,userCall);
                 if obj.requireUnique_
-                    assertFoundIn(selector,obj.value_)
+                    if ~allowMissing
+                        assertFoundIn(selector,obj.value_)
+                    end
                     [~,~,selector] = intersect(selector,obj.value_,'stable');
                 else
-                    selector = findPositionIn(selector,obj.value_);
+                    %[~,~,selector] = intersect(selector,obj.value_,'stable');
+                    selector = findPositionIn(selector,obj.value_, allowMissing);
                 end
             end
         end        
