@@ -594,14 +594,20 @@ classdef MultiIndex < frames.Index
         function out = getDefaultValue_(~),  out = {defaultValue('frames.Index')};  end 
 
         
-        function selector = convertCellSelector(obj, selector)
+        function selector = convertCellSelector(obj, selector, singleItemPerSet)
             % convert selector to nested cell array with 'selector sets' and perform checks
+            if nargin<3, singleItemPerSet=false; end
             if ~iscell(selector)                    
                     % single value selector (allowed in case of single dimension, like in Index)
                     assert(obj.Ndim<=1, ...
                         'frames:MultiIndex:getSelector:cellselectorrequired', ...
                         "Cell selector required in case of value-indexing in MultiIndex with more than 1 dimension.");
-                    selector = {{selector}}; 
+                    if ~singleItemPerSet
+                       selector = {{selector}}; 
+                    else
+                       %selector = {mat2cell(selector(:)', 1, ones(1,length(selector)))}; 
+                       selector = num2cell(num2cell(selector(:)')); 
+                    end
             end            
             isnestedcell = cellfun(@iscell, selector);
             if ~any(isnestedcell)
@@ -783,7 +789,7 @@ classdef MultiIndex < frames.Index
         
        function out = ismember(obj, value)
             % check if value(s) is/are present in index
-            value = obj.convertCellSelector(value);
+            value = obj.convertCellSelector(value, true);
             N = length(value);
             out = false(N,1);
             r = obj.value;            
