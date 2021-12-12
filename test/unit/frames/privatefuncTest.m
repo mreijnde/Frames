@@ -5,7 +5,8 @@
 classdef  privatefuncTest < AbstractFramesTests        
     
     methods(Test)
-        function groupsummaryMatrixFastTest(t)                        
+        function groupsummaryMatrixFastTest(t)
+            % generate test data
             dat     = gallery('integerdata', 1000 ,[100,10],0);
             groupid = gallery('integerdata', 40   ,[100,1],0)+5;            
             groupid_string = string(groupid);            
@@ -35,6 +36,13 @@ classdef  privatefuncTest < AbstractFramesTests
             t.verifyEqual(BG,BG0);
             t.verifyEqual(BC,BC0);
             warning('on', 'groupsummaryMatrixFast:vectorizeColsNotSupported');
+            
+            % check apply2single setting
+            B0    = groupsummaryMatrixFast(dat,groupid, @mean, true);
+            B1    = groupsummaryMatrixFast(dat,groupid, @mean, false);
+            t.verifyEqual(B0,B1);
+            B = groupsummaryMatrixFast([11 22 33 44]',[1 2 1 3], @length, false);
+            t.verifyEqual(B, [2,22,44]');            
         end
         
       
