@@ -39,16 +39,17 @@ classdef MultiIndex < frames.Index
             %    - dimindex: position index of dimensions select (default: all dimensions)
             %
             % output:
-            %    - MultiIndex object with subselection            
-            if nargin<3; dimindex=1:obj.Ndim; end            
-            for i=1:length(dimindex)
-                idim = dimindex(i);
-                obj.value_{idim} = obj.value_{idim}.getSubIndex(selector);
+            %    - MultiIndex object with subselection                        
+            if nargin<3; dimindex=':'; end
+            % select dimensions            
+            if ~iscolon(dimindex)
+                obj.value_ = obj.value_(dimindex);
             end
-            % remove dims (if required)
-            if length(dimindex)<obj.Ndim
-                removedims=setdiff(1:obj.Ndim, dimindex);
-                obj.value_(removedims) = [];
+            % select rows
+            if ~iscolon(selector)
+                for i=1:obj.Ndim
+                  obj.value_{i} = obj.value_{i}.getSubIndex(selector);
+                end
             end
         end
         
