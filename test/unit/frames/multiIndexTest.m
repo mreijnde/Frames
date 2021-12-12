@@ -109,24 +109,27 @@ classdef multiIndexTest < AbstractFramesTests
             warning('on','frames:MultiIndex:notUnique')              
         end
 %         
-%         function unionTest(t)
-%             index = frames.Index([30 10 20]);
-%             uniqueindex = frames.Index([30 10 20],Unique=true);
-%             sortedindex = frames.Index([10 20 30],UniqueSorted=true);
-%             timeindex = frames.TimeIndex([10 20 30]);
-%             
-%             t.verifyWarning(@duplicate,'frames:Index:notUnique')
-%             function duplicate(), index.union([2 2 30]); end
-%             warning('off','frames:Index:notUnique')
-%             t.verifyEqual(index.union([2 2 30]).value,[30 10 20 2 2 30]')
-%             warning('on','frames:Index:notUnique')
-%             t.verifyEqual(uniqueindex.union([2 2 30]).value,[30 10 20 2]')
-%             t.verifyEqual(sortedindex.union([2 2 30]).value,[2 10 20 30]')
-%             t.verifyEqual(timeindex.union([2 2 30]).getValue_(),[2 10 20 30]')
-%   
-%             durationindex = frames.TimeIndex(minutes([10 20 30]));
-%             t.verifyEqual(durationindex.union(minutes([2 2 30])).getValue_(),minutes([2 10 20 30]'))
-%         end
+        function unionTest(t)
+            % 1D examples
+            index = frames.MultiIndex([30 10 20]');
+            uniqueindex = frames.MultiIndex([30 10 20]',Unique=true);
+            sortedindex = frames.MultiIndex([10 20 30]',UniqueSorted=true);
+            timeindex = frames.MultiIndex(frames.TimeIndex([10 20 30]),UniqueSorted=true);
+            
+            t.verifyWarning(@duplicate,'frames:Index:notUnique')
+            function duplicate(), index.union([2 2 30]'); end
+            warning('off','frames:Index:notUnique')
+            t.verifyEqual(index.union([2 2 30]').value, {{30} {10} {20} {2} {2} {30}}')
+            t.verifyEqual(uniqueindex.union([2 2 30]').value,{{30} {10} {20} {2}}')
+           
+            t.verifyEqual(sortedindex.union([2 2 30]').value,{{2} {10} {20} {30}}')
+            t.verifyEqual(timeindex.union([2 2 30]').getValue(),{{2} {10} {20} {30}}')
+  
+           durationindex = frames.MultiIndex(frames.TimeIndex(minutes([10 20 30])),UniqueSorted=true);           
+           t.verifyEqual(durationindex.union(minutes([2 2 30]')).getValue(), ...
+               { {minutes(2)} {minutes(10)} {minutes(20)} {minutes(30)}}');
+           warning('on','frames:Index:notUnique')
+        end
         
         function assignmentTest(t)
             % 1D examples
