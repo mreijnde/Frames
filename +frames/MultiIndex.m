@@ -780,63 +780,28 @@ classdef MultiIndex < frames.Index
         end
         
         
-         % TODO: REMOVE AGAIN IF positionIn() is updated
-         function [rows_ind1, rows_ind2, common_mask1, common_mask2, Nunique] = getMatchingRows(obj1, obj2, dims)
-            % function finds indices of matching rows between two MultiIndex 
-            % for given common dimensions.
-            % 
-            % input:
-            %   obj1,obj2: MultiIndex
-            %   dims: string array with common dimension names
-            %
-            % output:
-            %   rows_indX:    array with unique indices per row matching MultiIndex object X
-            %   common_maskX: logical array indicating row is common between both MultiIndex objects
-            %   Nunique:      number of unique rows (of combined indices)
-            %                       
-            % get dim index of specified (common) dimension
-            dimInd1 = obj1.getDimInd(dims);
-            dimInd2 = obj2.getDimInd(dims);
-            % get all unique row of given dim combination
-            value1 = obj1.getvalue_cell('rowcol');
-            value1 = value1(:,dimInd1);
-            value2 = obj2.getvalue_cell('rowcol');
-            value2 = value2(:,dimInd2);
-            valueAll = [value1; value2];
-            % get unique row ind for total
-            [rows_uniqval, rows_ind] = uniqueCellRows(valueAll);
-            Nunique = size(rows_uniqval,1);
-            % separate in both indexes
-            N1 = length(obj1);
-            rows_ind1 = rows_ind(1:N1);
-            rows_ind2 = rows_ind(N1+1:end);
-            % create common masks
-            common_ind = intersect(rows_ind1, rows_ind2);
-            common_mask1 = ismember(rows_ind1, common_ind);
-            common_mask2 = ismember(rows_ind2, common_ind);
-        end
-        
         function pos = positionIn(obj,target,userCall)
             % find position of the Index into the target
             if nargin < 3, userCall = true; end
             if ~isIndex(target)
-                %target=frames.MultiIndex(target, name=obj.name);
                 target=frames.MultiIndex(target);
                 assert(target.Ndim==obj.Ndim, 'frames:MultiIndex:positionIn:unequalDim', ...
                      "Unequal dimensions obj (%i) and target (%i).", obj.Ndim, target.Ndim);
                 target.name = obj.name;
             end
-            %TODO with union???
-            [~, pos,~,common2]= getMatchingRows(target, obj, obj.name);
-            %pos =  obj.positionOf(target);
+            % get position indices
+            [~,posall] = target.union_({obj},'unique');
+            pos = posall{2};
+            % check if no new values created in union function            
+            assert(all(pos<=length(target)), 'frames:MultiIndex:positionIn:NotWhole', ...
+                 "Not all obj values found in target.");
+            
             if obj.requireUniqueSorted_
                 % convert to logical output array (for compatiblility with Index)                
                 mask = false(target.length(),1);
                 mask(pos) = true;
                 pos = mask;                 
-            end
-            assert(all(common2), 'frames:MultiIndex:positionIn:NotWhole', "Not all obj values found in target.");
-            
+            end            
         end
         
        function out = ismember(obj, value)
