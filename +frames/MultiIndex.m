@@ -130,6 +130,9 @@ classdef MultiIndex < frames.Index
                 end
                 selector = mask;
             end
+            if ~any(selector)
+                warning('frames:MultiIndex:emptySelection',"No matches found, empty selection");
+            end
         end
                         
       
