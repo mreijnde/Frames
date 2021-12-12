@@ -53,7 +53,7 @@ classdef MultiIndex < frames.Index
         end
         
         
-        function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall)
+        function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
             % get valid matlab indexer for array operations based on supplied selector
             %
             % selector definition:
@@ -78,13 +78,15 @@ classdef MultiIndex < frames.Index
             %                                   accept only these logical dataframe series
             %    - positionIndex  (logical):    selector is position index instead of value index
             %    - userCall       (logical):    perform full validation of selector
+            %    - allowMissing   (logical):    allow selectors with no matches (default allow)
             %
             % output:
             %    validated array indexer (colon, logical array or position index array)
             %
-            if nargin<5, userCall = false; end
-            if nargin<4, allowedSeries = 'all'; end
             if nargin<3, positionIndex = false; end
+            if nargin<4, allowedSeries = 'all'; end            
+            if nargin<5, userCall = false; end
+            if nargin<6, allowMissing=true; end
             
             if iscolon(selector)
                 % colon selector
@@ -92,7 +94,8 @@ classdef MultiIndex < frames.Index
                 
             elseif positionIndex
                 % position index selector (so no selector per dimension allowed)
-                assert(~iscell(selector),"No cell selector allowed in combination with position indexing.");                
+                assert(~iscell(selector), 'frames:MultiIndex:noCellAllowedPositionIndex', ...
+                   "No cell selector allowed in combination with position indexing.");                
                 selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             elseif islogical(selector) || isFrame(selector)
@@ -108,13 +111,15 @@ classdef MultiIndex < frames.Index
                     % get mask of maskset by looping over supplied dimensions
                     maskset = true(obj.length(),1);                    
                     selectorset = selector{iset};
-                    assert(length(selectorset)<=obj.Ndim, ...
+                    assert(length(selectorset)<=obj.Ndim, 'frames:MultiIndex:tooManyDim', ...
                         "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
                         length(selectorset), iset, obj.Ndim);
                     for j = 1:length(selectorset)
                         masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, userCall);
                         maskset = maskset & masklayer;
                     end
+                    assert(allowMissing || any(maskset), 'frames:MultiIndex:emptySelectorSet', ...
+                        "No matches found for selector set %i.", iset);
                     % combine masks of different masksets
                     mask = mask | maskset;
                 end
