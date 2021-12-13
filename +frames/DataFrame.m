@@ -1117,39 +1117,19 @@ classdef DataFrame
             obj.data_(~ismissing(obj.data_)) = v;
         end
         
-        function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
+        function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,1,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
-        function other = mean(obj,varargin), other=obj.matrix2series(@mean,true,varargin{:}); end
+        function other = mean(obj,varargin), other=obj.matrix2series(@mean,true,1,varargin{:}); end
         % MEAN mean through the desired dimension, returns a series
-        function other = median(obj,varargin), other=obj.matrix2series(@median,true,varargin{:}); end
+        function other = median(obj,varargin), other=obj.matrix2series(@median,true,1,varargin{:}); end
         % MEDIAN median through the desired dimension, returns a series
-        function other = std(obj,varargin)
-            % STD standard deviation through the desired dimension, returns a series
-            % The remaining optional arguments of std come after the dimension
-        if length(varargin) >= 2
-            varargin([1,2]) = varargin([2,1]);
-        elseif length(varargin) == 1
-            varargin = {[],varargin{1}};
-        else
-            varargin = {[],1};
-        end
-            other=obj.matrix2series(@std,true,varargin{:});
-        end
-        function other = var(obj,varargin)
-            % VAR variance through the desired dimension, returns a series
-            % The remaining optional arguments of std come after the dimension
-            if length(varargin) >= 2
-                varargin([1,2]) = varargin([2,1]);
-            elseif length(varargin) == 1
-                varargin = {[],varargin{1}};
-            else
-                varargin = {[],1};
-            end
-            other=obj.matrix2series(@var,true,[],varargin{:});
-        end
-        function other = any(obj,varargin), other=obj.matrix2series(@any,false,varargin{:}); end
+        function other = std(obj,varargin), other=obj.matrix2series(@std,true,2,varargin{:}); end
+        % STD standard deviation through the desired dimension, returns a series
+        function other = var(obj,varargin), other=obj.matrix2series(@var,true,2,varargin{:}); end
+        % VAR variance through the desired dimension, returns a series
+        function other = any(obj,varargin), other=obj.matrix2series(@any,false,1,varargin{:}); end
         % ANY 'any' function through the desired dimension, returns a series
-        function other = all(obj,varargin), other=obj.matrix2series(@all,false,varargin{:}); end
+        function other = all(obj,varargin), other=obj.matrix2series(@all,false,1,varargin{:}); end
         % ALL 'all' function through the desired dimension, returns a series
         
         function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@max,varargin{:}); end
@@ -1197,13 +1177,18 @@ classdef DataFrame
         function obj = groupUnique(obj, indexType, func, apply2single, funcParams)
             % combine duplicate index values by aggregation function
             %  input: 
-            %    indexType:     enum to select index: "rows", "columns" or "both"
+            %    indexType:     select index: "rows",1,  "columns", 2, or "both",3
             %    func:          function handler (default @mean)
             %    apply2single:  logical apply function to groups with only single value (default false)
             %
             if nargin<3, func=@mean; end
             if nargin<4, apply2single=false; end
-            if nargin<5, funcParams=[]; end            
+            if nargin<5, funcParams=[]; end  
+            
+            if isequal(indexType,1), indexType="rows"; end
+            if isequal(indexType,2), indexType="columns"; end
+            if isequal(indexType,3), indexType="both"; end
+                        
             assert( ismember(indexType,["rows","columns","both"]), ...
                 "Invalid indexType parameter. Allowed 'rows','columns' or 'both'.");            
             % function handler including params
@@ -1465,7 +1450,7 @@ classdef DataFrame
             end
         end
         
-        
+      
         
     end
     
@@ -1573,20 +1558,97 @@ classdef DataFrame
                 error('Unsupported first selector type: need logical DataFrame or logical matrix');                             
             end
         end        
-                       
-        function series = matrix2series(obj,fun,canOmitNaNs,varargin)
-            if ~isempty(varargin)
-                dim = varargin{end};  % end because std takes dimension value as argument after the weighting scheme, cf doc std versus doc sum
-            else
+        
+        function series = matrix2series(obj, func, canOmitNaNs, funcDimPos, varargin)
+            % aggregate function wrapper
+            dimname = [];
+            if isempty(varargin), varargin = {1}; end % default dim is rows
+            p0 = varargin{1};
+            
+            % parse input
+            if isequal(p0,1) || isequal(p0,"rows")
                 dim = 1;
-            end
-            assert(ismember(dim,[1,2]),'dimension value must be in [1,2]')
-            if canOmitNaNs
-                res = fun(obj.data_,varargin{:},'omitnan');
-                res(all(isnan(obj.data_),dim)) = NaN;  % puts NaN instead of zero when all entries are NaNs
+            elseif isequal(p0,2) || isequal(p0,"columns")
+                dim = 2;                
+            elseif isequal(p0,"rowdim") || isequal(p0,"coldim")
+                if p0=="rowdim", dim=1; else, dim=2; end
+                assert(length(varargin)>=2, ...
+                    "missing dimension name. Usage is .%s(%s='dimname')", functions(func).function, p0);
+                dimname = varargin{2};
+                varargin(2) = [];
             else
-                res = fun(obj.data_,varargin{:});
+                if isstring(p0)
+                    % short for selecting rowdim
+                    dimname = p0;
+                    dim = 1;
+                else
+                    error("invalid dimension input. First parameter should be dimension, or rowindex dimension name");
+                end
             end
+            varargin(1) = [];
+            
+            % get function parameters (to force selected dimension) + NaNsettings
+            if funcDimPos==1
+                params = [dim varargin];
+            elseif funcDimPos==2
+                if ~isempty(varargin)
+                    params = { varargin{1} dim varargin{2:end} };
+                else
+                    params = { [] dim};
+                end
+            end
+            if canOmitNaNs
+                params{end+1} = 'omitnan';
+            end
+            
+            % call function to apply aggregation
+            if isempty(dimname)
+                series = obj.matrix2series_(dim, func, params);
+            else
+                series = obj.aggregateMultiIndexDim(dim, dimname, func, funcDimPos, params);
+            end            
+            
+        end
+        
+        
+        function obj = aggregateMultiIndexDim(obj, dim, dimname, func, funcDimPos, funcParams)
+            % aggregate data over given sub-dimension in case of MultiIndex, using function func
+            if nargin<6, funcParams=[]; end
+            assert(dim==1 || dim==2,'dimension value must be in [1,2]');
+            
+            % get index and dimension to keep
+            indexfields = ["rows_", "columns_"];
+            indexobj = obj.(indexfields(dim));
+            dimind = indexobj.getDimInd(dimname);
+            dimind_other = setxor( 1:indexobj.Ndim, dimind);
+            
+            if ~isempty(dimind_other)
+                % df with removed dimension
+                indexobj_raw = indexobj.getSubIndex(:,dimind_other);
+                obj.(indexfields(dim)) = indexobj_raw;
+                
+                % get aggregated df
+                if isempty(funcParams)
+                    obj = obj.groupUnique(dim, func_);
+                else
+                    funcParams{funcDimPos} = 1;  % force function to work on rows, required by groupsummaryMatrixFast()
+                    obj = obj.groupUnique(dim, @(x) func(x, funcParams{:}));
+                end
+            else
+                % fallback to standard functions, no sub-dimensions left
+                obj = obj.matrix2series_(dim, func, funcParams);
+            end
+        end
+        
+        
+        function series = matrix2series_(obj, dim, func, funcParams)
+            % function to handle aggregation of full index
+            assert(dim==1 || dim==2,'dimension value must be in [1,2]');
+            
+            % aggregate over selected dimension
+            res = func(obj.data_, funcParams{:});
+            
+            % prepare output
             if (dim==1 && obj.columns_.singleton_) || (dim==2 && obj.rows_.singleton_)
                 % returns a scalar if the operation is done on a series
                 series = res;
@@ -1594,13 +1656,14 @@ classdef DataFrame
                 series = obj.df2series(res,dim);
             end
         end
+                
         
         function obj = df2series(obj,data,dim)
             if dim == 1
                 if obj.colseries
                     obj = data;
                 else
-                    obj.data_ = data;                    
+                    obj.data_ = data;
                     obj.rows_ = obj.rows_.getSubIndex(1);
                     obj.rows_.singleton = true;
                 end
