@@ -1194,7 +1194,7 @@ classdef DataFrame
         end
                
         
-        function obj = groupUnique(obj, indexType, func, apply2single)
+        function obj = groupUnique(obj, indexType, func, apply2single, funcParams)
             % combine duplicate index values by aggregation function
             %  input: 
             %    indexType:     enum to select index: "rows", "columns" or "both"
@@ -1203,20 +1203,27 @@ classdef DataFrame
             %
             if nargin<3, func=@mean; end
             if nargin<4, apply2single=false; end
+            if nargin<5, funcParams=[]; end            
             assert( ismember(indexType,["rows","columns","both"]), ...
-                "Invalid indexType parameter. Allowed 'rows','columns' or 'both'.");
-            
+                "Invalid indexType parameter. Allowed 'rows','columns' or 'both'.");            
+            % function handler including params
+            if isempty(funcParams)
+               func_ = func;
+            else                
+               func_ = @(x) func(x, funcParams{:});
+            end            
+            % aggregate rows
             if indexType=="rows" || indexType=="both"
                 groupid = obj.rows_.value_uniqind;
-                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, apply2single);
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func_, apply2single);
                 indexnew = obj.rows_.getSubIndex(groupInd);
                 obj.data_ = datnew;
                 obj.rows_ = indexnew;
-            end
-            
+            end            
+            % aggregate columns
             if indexType=="columns" || indexType=="both"
                 groupid = obj.columns_.value_uniqind;
-                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_', groupid, func, apply2single);
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_', groupid, func_, apply2single);
                 indexnew = obj.columns_.getSubIndex(groupInd);
                 obj.data_ = datnew';
                 obj.columns_ = indexnew;            
