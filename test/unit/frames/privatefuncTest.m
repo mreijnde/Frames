@@ -35,7 +35,6 @@ classdef  privatefuncTest < AbstractFramesTests
             t.verifyEqual(B,B0);
             t.verifyEqual(BG,BG0);
             t.verifyEqual(BC,BC0);
-            warning('on', 'groupsummaryMatrixFast:vectorizeColsNotSupported');
             
             % check apply2single setting
             B0    = groupsummaryMatrixFast(dat,groupid, @mean, true);
@@ -43,6 +42,7 @@ classdef  privatefuncTest < AbstractFramesTests
             t.verifyEqual(B0,B1);
             B = groupsummaryMatrixFast([11 22 33 44]',[1 2 1 3], @length, false);
             t.verifyEqual(B, [2,22,44]');            
+            warning('on', 'groupsummaryMatrixFast:vectorizeColsNotSupported');
         end
         
       
