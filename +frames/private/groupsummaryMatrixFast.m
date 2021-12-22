@@ -1,24 +1,28 @@
-function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, apply2single, vectorizeCols)
+function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, dim, funcAggrDim, apply2single, vectorize)
 % aggregate data in rows of matrix A with function func grouped by groupid
 %
 %  - Similar to "groupsummary(A, groupid, func)" but significant faster (2-20 times) for larger datasets,
 %    (specifically with higher number of columns or unique groups).
 %  - Only supports groupid as vector, not matrix or cell array.
-%  - Additonal optional output/inputs
+%  - Additonal optional output/inputs to support aggregation of columns
 %
 % INPUT:
-%    A:            data matrix(Nrows,Ncols) with data to aggregate by rows
+%   A:             data matrix(Nrows,Ncols) with data to aggregate by rows
 %
-%    groupid:      vector with groupid for each row in A (numeric or string)
+%   groupid:       vector with groupid for each row in A (numeric or string)
 %
-%    func:         function handle to aggregate data (eg. @sum) 
-%                  remark: for performance, function should support vectorization for columns
-%                      a input (Nrows,Ncols) should give output array(1,Ncols)
-%                      If not, a slower non-vectorized method will be used as fallback.
+%   func:          function handle to aggregate data (eg. @sum) 
+%
+%   dim:           dimension to aggregate (1:rows default, 2=columns)
+%
+%   funcAggrDim:   dimension in which given function aggregates (1:rows default, 2=columns)
 %
 %   apply2single:  boolean to select if function is applied to groups with a single values (default true) 
 %
-%   vectorizeCols: boolean to select vectorized mode for columns (default: true)
+%   vectorizeCols: boolean to select vectorized mode for speedup (default: true)
+%                     for vectorization to work, function should only aggregate in dimension given by
+%                     func_aggr_dim, but not in the other dimension.               
+%                    (behavior will be checked, if funciton not compatible, it will be disabled)  
 %
 %
 % OUTPUT:
@@ -27,71 +31,115 @@ function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, apply2sin
 %    BC:    number of aggregated elements per groupid
 %    BGind: array(Ngroups) with positon index to first occurance of groupid
 %
-if nargin<4, apply2single = true; end
-if nargin<5, vectorizeCols = true; end
+if nargin<4, dim=1; end               % default aggregate rows of matrix A
+if nargin<5, funcAggrDim=1; end     % default func aggregate direction: rows
+if nargin<6, apply2single = true; end % default apply function to groups with single value
+if nargin<7, vectorize=true; end      % default use vectorization
 
-assert(isvector(groupid) && length(groupid)==size(A,1), 'groupsummaryMatrixFast:invalidInputSize', ...
-    "groupid is not a vector with same number of elements as rows in matrix A");
+% check input
+assert(dim==1 || dim==2, "invalid dim value (%i), should be 1 or 2", dim);
+assert(funcAggrDim==1 || funcAggrDim==2, "invalid func_aggregate_dim value (%i), should be 1 or 2", funcAggrDim);
+assert(isvector(groupid) && length(groupid)==size(A,dim), 'groupsummaryMatrixFast:invalidInputSize', ...
+        "groupid is not a vector with same number of elements as in aggregation dimension of matrix A.");
 
-% check function handle
-assert( length(func([1;2]))==1, 'groupsummaryMatrixFast:invalidFunction', ...
-      "Incompatible function, supplied function '%s' does not aggregate columns to single scalar value.", ...
-      functions(func).function); 
-if vectorizeCols
-    % check vectorized behavior of supplied function
-    if ~isequal( size(func([1,2;3,4])), [1 2])
-        vectorizeCols = false;
-        warning('groupsummaryMatrixFast:vectorizeColsNotSupported', ...
-                "Supplied function '%s' does not support column wise vectorization. Input array(Nrows,Ncols) " + ...
-                "should give output array(1,Ncols) with aggregated column values. Falling back to slower " + ...
-                "non-vectorized method.", functions(func).function);
+% check function handle aggregation behavior
+if funcAggrDim==1
+    assert( length(func([1;2]))==1, 'groupsummaryMatrixFast:invalidFunction', ...
+      "Incompatible function, supplied function '%s' does not aggregate over row dimension " + ...
+      "(convert column vector to scalar) which is required when func_aggregate_dim=1.", functions(func).function);     
+    if vectorize && ~isequal( size(func([1,2;3,4])), [1 2])
+        vectorize = false;
+        warning('groupsummaryMatrixFast:vectorizeNotSupported', ...
+            "Supplied function '%s' does not support column wise vectorization. \nInput array(Nrows,Ncols) " + ...
+            "should give aggregated output array(1,Ncols) when func_aggregate_dim is set to 1 (default) " + ...                
+            "==> Falling back to slower non-vectorized method.", functions(func).function);
     end
+elseif funcAggrDim==2
+    assert( length(func([1 2]))==1, 'groupsummaryMatrixFast:invalidFunction', ...
+      "Incompatible function, supplied function '%s' does not aggregate over column dimension " + ...
+      "(convert row vector to scalar) which is required when func_aggregate_dim=2", functions(func).function);      
+    if vectorize && ~isequal( size(func([1,2;3,4])), [2 1])
+        vectorize = false;
+        warning('groupsummaryMatrixFast:vectorizeNotSupported', ...
+            "Supplied function '%s' does not support row wise vectorization. \nInput array(Nrows,Ncols) " + ...
+            "should give aggregated output array(Nrows,1) when func_aggregate_dim is set to 2 " + ...                
+            "==> Falling back to slower non-vectorized method.", functions(func).function);
+    end        
+end
+
+% align function aggregation direction with required dim
+if dim==funcAggrDim
+    func_ = func;
+else
+    func_ = @(x) func(x')';
 end
 
 % get position indices for each group
-[ind_cell, groups, groupCount, groupInd] = getIndicesForEachGroup(groupid);
+[ind_cell, BG, BC, BGind] = getIndicesForEachGroup(groupid);
 
 % calc groups with more than 1 row
-mask_multi = groupCount>1;
+mask_multi = BC>1;
 
 % allocate output
-B_cell = cell(length(ind_cell),1);   
+if dim==1
+   B_cell = cell(length(ind_cell),1);   
+else
+   B_cell = cell(1,length(ind_cell));   
+end
 
-% extract original values for groups with only 1 row (if required)
+% extract original values for groups with only 1 single value (if option selected)
 if ~apply2single
-    % do no apply function to single values (keep orignal)
-    B_cell(~mask_multi) = cellfun(@(ind) A(ind,:), ... 
-                                  ind_cell(~mask_multi), 'UniformOutput', false);
+    if dim==1
+       B_cell(~mask_multi) = cellfun(@(ind) A(ind,:), ind_cell(~mask_multi), 'UniformOutput', false);
+    else
+       B_cell(~mask_multi) = cellfun(@(ind) A(:,ind), ind_cell(~mask_multi), 'UniformOutput', false);
+    end
 end
 
 % calc aggregated data
-if  vectorizeCols
-    % column vectorized method           
-    B_cell(mask_multi)  = cellfun(@(ind) func(A(ind,:)), ... 
-                                  ind_cell(mask_multi), 'UniformOutput', false);
-    
+if  vectorize
+    % vectorized calc method      
+    if dim==1                  
+        B_cell(mask_multi)  = cellfun(@(ind) func_(A(ind,:)), ind_cell(mask_multi), 'UniformOutput', false);
+    else        
+        B_cell(mask_multi)  = cellfun(@(ind) func_(A(:,ind)), ind_cell(mask_multi), 'UniformOutput', false);
+    end
+
     if apply2single
-        % for groups with only single row, apply function to each element separately (using arrayfun)
+        % for groups with only single value, apply function to each element separately (using arrayfun)
         % (a workaround as most standard functions like eg. sum(), will aggregate over 2nd dimension
         % if input is a rowvector)
-        B_cell(~mask_multi) = cellfun(@(ind) arrayfun(func, A(ind,:)')', ... 
-                                      ind_cell(~mask_multi), 'UniformOutput', false);   
+        if dim==1
+            B_cell(~mask_multi) = cellfun(@(ind) arrayfun(func_, A(ind,:)')', ... 
+                                          ind_cell(~mask_multi), 'UniformOutput', false);   
+        else
+            B_cell(~mask_multi) = cellfun(@(ind) arrayfun(func_, A(:,ind)')', ... 
+                                          ind_cell(~mask_multi), 'UniformOutput', false);   
+        end
     end
 else
-    % perform calculation on columns seperately (by storing separate columns in cell array by num2cell)
-    B_cell(mask_multi) = cellfun(@(ind) cellfun(func, num2cell(A(ind,:),1)), ...
-                                ind_cell(mask_multi), 'UniformOutput', false);
-    if apply2single
-        B_cell(~mask_multi) = cellfun(@(ind) cellfun(func, num2cell(A(ind,:),1)), ...
-                                ind_cell(~mask_multi), 'UniformOutput', false);
+    % calc individual per column/row (by nested cellfun and storing separate columns/rows in cell array by num2cell)
+    if dim==1
+        B_cell(mask_multi) = cellfun(@(ind) cellfun(func_, num2cell(A(ind,:),1)), ...
+                                    ind_cell(mask_multi), 'UniformOutput', false);        
+    else
+        B_cell(mask_multi) = cellfun(@(ind) cellfun(func_, num2cell(A(:,ind),2)), ...
+                                    ind_cell(mask_multi), 'UniformOutput', false);        
     end
+    if apply2single
+        if dim==1      
+            B_cell(~mask_multi) = cellfun(@(ind) cellfun(func_, num2cell(A(ind,:),1)), ...
+                                    ind_cell(~mask_multi), 'UniformOutput', false);
+        else    
+            B_cell(~mask_multi) = cellfun(@(ind) cellfun(func_, num2cell(A(:,ind),2)), ...
+                                    ind_cell(~mask_multi), 'UniformOutput', false);
+        end
+    end    
+    
 end
 
-% convert cell output to a single matrix and collect outputs
+% convert cell output to a single matrix
 B = cell2mat(B_cell);
-BG = groups;
-BC = groupCount;
-BGind = groupInd;
 end
 
 
