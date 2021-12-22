@@ -1117,24 +1117,24 @@ classdef DataFrame
             obj.data_(~ismissing(obj.data_)) = v;
         end
         
-        function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,1,varargin{:}); end
+        function other = sum(obj,varargin), other=obj.aggregateMatrix(@sum,true,1,false,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
-        function other = mean(obj,varargin), other=obj.matrix2series(@mean,true,1,varargin{:}); end
+        function other = mean(obj,varargin), other=obj.aggregateMatrix(@mean,true,1,false,varargin{:}); end
         % MEAN mean through the desired dimension, returns a series
-        function other = median(obj,varargin), other=obj.matrix2series(@median,true,1,varargin{:}); end
+        function other = median(obj,varargin), other=obj.aggregateMatrix(@median,false,1,false,varargin{:}); end
         % MEDIAN median through the desired dimension, returns a series
-        function other = std(obj,varargin), other=obj.matrix2series(@std,true,2,varargin{:}); end
+        function other = std(obj,varargin), other=obj.aggregateMatrix(@std,true,2,true,varargin{:}); end
         % STD standard deviation through the desired dimension, returns a series
-        function other = var(obj,varargin), other=obj.matrix2series(@var,true,2,varargin{:}); end
+        function other = var(obj,varargin), other=obj.aggregateMatrix(@var,true,2,true,varargin{:}); end
         % VAR variance through the desired dimension, returns a series
-        function other = any(obj,varargin), other=obj.matrix2series(@any,false,1,varargin{:}); end
+        function other = any(obj,varargin), other=obj.aggregateMatrix(@any,false,1,true,varargin{:}); end
         % ANY 'any' function through the desired dimension, returns a series
-        function other = all(obj,varargin), other=obj.matrix2series(@all,false,1,varargin{:}); end
+        function other = all(obj,varargin), other=obj.aggregateMatrix(@all,false,1,true,varargin{:}); end
         % ALL 'all' function through the desired dimension, returns a series
         
-        function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@max,varargin{:}); end
+        function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@max,varargin{:}); end %todo
         % MAX maximum through the desired dimension, returns a series
-        function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@min,varargin{:}); end
+        function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@min,varargin{:}); end %todo
         % MIN minimum through the desired dimension, returns a series
         function other = maxOf(df1,df2), other=operatorElementWise(@max,df1,df2); end
         % maximum of the elements of the two input arguments
@@ -1172,45 +1172,43 @@ classdef DataFrame
             s(isn) = NaN;
             obj.data_ = s;
         end
-               
-        
-        function obj = groupUnique(obj, indexType, func, apply2single, funcParams)
+                               
+        function obj = groupUnique(obj, indexType, func, funcAggrDim, apply2single)
             % combine duplicate index values by aggregation function
-            %  input: 
-            %    indexType:     select index: "rows",1,  "columns", 2, or "both",3
-            %    func:          function handler (default @mean)
-            %    apply2single:  logical apply function to groups with only single value (default false)
             %
-            if nargin<3, func=@mean; end
-            if nargin<4, apply2single=false; end
-            if nargin<5, funcParams=[]; end  
-            
-            if isequal(indexType,1), indexType="rows"; end
-            if isequal(indexType,2), indexType="columns"; end
-            if isequal(indexType,3), indexType="both"; end
-                        
-            assert( ismember(indexType,["rows","columns","both"]), ...
-                "Invalid indexType parameter. Allowed 'rows','columns' or 'both'.");            
-            % function handler including params
-            if isempty(funcParams)
-               func_ = func;
-            else                
-               func_ = @(x) func(x, funcParams{:});
-            end            
+            %  input: 
+            %    indexType:     select index: "rows", 1,  "columns", 2, "both", 3
+            %    func:          function handler (default @mean)
+            %    funcAggrDim:   aggregation dimensions of func: 1 (default, rows), 2 (columns)
+            %    apply2single:  logical, apply function to groups with only single value (default false)
+            %
+            %  output:
+            %     dataframe/series with duplicate index values aggregated
+            %
+            if nargin<3, func=@mean; end            
+            if nargin<4, funcAggrDim=1; end
+            if nargin<5, apply2single=false; end            
+            if isnumeric(indexType) && ismember(indexType,[1,2,3]), dim=indexType;
+            elseif indexType=="rows", dim=1;
+            elseif indexType=="columns", dim=2;
+            elseif indexType=="both", dim=3;
+            else
+                error("Invalid indexType parameter. Allowed 'rows', 1,'columns', 2, or 'both',3."); 
+            end                    
             % aggregate rows
-            if indexType=="rows" || indexType=="both"
+            if dim==1 || dim==3
                 groupid = obj.rows_.value_uniqind;
-                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func_, apply2single);
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, dim, funcAggrDim, apply2single);                
                 indexnew = obj.rows_.getSubIndex(groupInd);
                 obj.data_ = datnew;
                 obj.rows_ = indexnew;
             end            
             % aggregate columns
-            if indexType=="columns" || indexType=="both"
+            if dim==2 || dim==3
                 groupid = obj.columns_.value_uniqind;
-                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_', groupid, func_, apply2single);
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, dim, funcAggrDim, apply2single);                
                 indexnew = obj.columns_.getSubIndex(groupInd);
-                obj.data_ = datnew';
+                obj.data_ = datnew;
                 obj.columns_ = indexnew;            
             end
         end
@@ -1559,35 +1557,77 @@ classdef DataFrame
             end
         end        
         
-        function series = matrix2series(obj, func, canOmitNaNs, funcDimPos, varargin)
-            % aggregate function wrapper
+        function out = aggregateMatrix(obj, func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin)
+            % internal wrapper function to support aggregation by standard matlab function (eg. mean) 
+            % using multiple syntax options. 
+            % 
+            % call syntax (<>=optional): 
+            %    funcname( <dim>, <dimname>) or
+            %    funcname( dim, <dimname>, <numeric function argument> ) 
+            %
+            % syntax examples with std():
+            %    df.std():             aggregate rows
+            %    df.std(1):            aggregate rows
+            %    df.std("rows"):       aggregate rows
+            %    df.std(2):            aggregate columns
+            %    df.std("columns"):    aggregate columns
+            %    df.std("x"):          aggregate subdim "x" in rows (default)
+            %    df.std(1,"x"):        aggregate subdim "x" in rows
+            %    df.std("rows","x"):   aggregate subdim "x" in rows
+            %    df.std("rows","x",1): aggregate subdim "x" in rows with extra std() option 1
+            %    df.std(2,1):          aggregate columns with extra std() parameter 1
+            %
+            % input:
+            %   func:               function handle to aggregation function
+            %   addOmitNaNflag:     boolean to select addtion of 'omitnan' parameter to function
+            %   funcDimPos:         position of dimension parameter of function: 1 (eg mean) or 2 (eg std)
+            %   apply2singleValue:  boolean to select if function is applied to groups with a single values
+            %   varargin:           other additional function parameters (only non string paramters supported)
+            %
+            % output:
+            %    dataframe with aggregated data and reduced dimensions or
+            %    series/scalar (in case aggregation over full index) or            
+            %             
             dimname = [];
-            if isempty(varargin), varargin = {1}; end % default dim is rows
-            p0 = varargin{1};
+            if isempty(varargin), varargin = {1}; end % default dim is rows            
             
-            % parse input
-            if isequal(p0,1) || isequal(p0,"rows")
+            % parse 1st input argument (dim or row dimname)
+            p1 = varargin{1};
+            if isequal(p1,1) || isequal(p1,"rows")
                 dim = 1;
-            elseif isequal(p0,2) || isequal(p0,"columns")
-                dim = 2;                
-            elseif isequal(p0,"rowdim") || isequal(p0,"coldim")
-                if p0=="rowdim", dim=1; else, dim=2; end
-                assert(length(varargin)>=2, ...
-                    "missing dimension name. Usage is .%s(%s='dimname')", functions(func).function, p0);
-                dimname = varargin{2};
-                varargin(2) = [];
+            elseif isequal(p1,2) || isequal(p1,"columns")
+                dim = 2;
+            elseif isstring(p1) || ischar(p1)
+                % interpret it as specific row dimension name
+                dim = 1;
+                dimname = p1;                
             else
-                if isstring(p0)
-                    % short for selecting rowdim
-                    dimname = p0;
-                    dim = 1;
-                else
-                    error("invalid dimension input. First parameter should be dimension, or rowindex dimension name");
-                end
+                error('frames:aggregateMatrix:invalidsyntax', "invalid first argument '%s'.", p1);
             end
-            varargin(1) = [];
+            % parse 2nd input argument (dimname or extra function param)
+            if length(varargin)>=2
+                p2 = varargin{2};
+                if  istext(p2)
+                    % interpret it as row or column dimension name
+                    assert(isempty(dimname), 'frames:aggregateMatrix:invalidsyntax', ...
+                       "invalid 2nd parameter. First parameter ('%s') already defined row dimname, " + ... 
+                       "second string parameter ('%s') not allowed.",p1, p2);
+                    dimname = p2;                    
+                    varargin(2) = []; %remove item: only keep (optional) function parameters
+                end
+                if length(varargin)>=3
+                    assert( ~any(cellfun(@istext,varargin(3:end))), 'frames:aggregateMatrix:invalidsyntax', ...
+                       "error, no string parameters are allowed as function arguments (to avoid ambiguous syntax).");
+                end                
+            end
+            varargin(1) = []; %remove item: only keep (optional) function parameters
             
-            % get function parameters (to force selected dimension) + NaNsettings
+            % in case of colon operator, do not specify a dimname
+            if ~isempty(dimname) && iscolon(dimname)                
+                dimname = [];
+            end
+            
+            % get function params (to force selected dimension) + NaNsettings
             if funcDimPos==1
                 params = [dim varargin];
             elseif funcDimPos==2
@@ -1597,28 +1637,49 @@ classdef DataFrame
                     params = { [] dim};
                 end
             end
-            if canOmitNaNs
+            if addOmitNaNflag
                 params{end+1} = 'omitnan';
+            end
+            
+            % get function including params
+            if isempty(params)
+                func_ = func;
+            else
+                func_ = @(x) func(x, params{:});
             end
             
             % call function to apply aggregation
             if isempty(dimname)
-                series = obj.matrix2series_(dim, func, params);
+                out = obj.matrix2series_(dim, func_, dim);
             else
-                series = obj.aggregateMultiIndexDim(dim, dimname, func, funcDimPos, params);
+                out = obj.aggregateIndexDim_(dim, dimname, func_, dim, apply2singleValue);
             end            
             
         end
         
         
-        function obj = aggregateMultiIndexDim(obj, dim, dimname, func, funcDimPos, funcParams)
-            % aggregate data over given sub-dimension in case of MultiIndex, using function func
-            if nargin<6, funcParams=[]; end
+        function obj = aggregateIndexDim_(obj, dim, dimname, func, funcAggrDim, apply2singleValue)
+            % internal function to aggregate data over given sub-dimension (in case of MultiIndex)            
+            %
+            % input:
+            %    dim:          dimensions to aggregate: 1 (default, rows), 2 (columns)
+            %    dimname:      string (or string array) of sub-dimensions to aggregate
+            %    func:         function handle to aggregation function      
+            %    funcAggrDim:  dimension in which function func aggregates (1:rows default, 2=columns)
+            %    apply2single: boolean to select if function is applied to groups with a single values (default true)             
+            %
+            % output:
+            %    dataframe with reduced (MultiIndex) dimensions or
+            %    series (in case all index dimensions aggregated)
+            %                               
+            if nargin<5, funcAggrDim=1; end
+            if nargin<6, apply2singleValue=true; end
             assert(dim==1 || dim==2,'dimension value must be in [1,2]');
             
             % get index and dimension to keep
             indexfields = ["rows_", "columns_"];
             indexobj = obj.(indexfields(dim));
+            assert(isMultiIndex(indexobj), "Only MultiIndex supported, selected index is not a MultiIndex.");
             dimind = indexobj.getDimInd(dimname);
             dimind_other = setxor( 1:indexobj.Ndim, dimind);
             
@@ -1628,25 +1689,36 @@ classdef DataFrame
                 obj.(indexfields(dim)) = indexobj_raw;
                 
                 % get aggregated df
-                if isempty(funcParams)
-                    obj = obj.groupUnique(dim, func_);
-                else
-                    funcParams{funcDimPos} = 1;  % force function to work on rows, required by groupsummaryMatrixFast()
-                    obj = obj.groupUnique(dim, @(x) func(x, funcParams{:}));
-                end
+                obj = obj.groupUnique(dim, func, funcAggrDim, apply2singleValue);                
             else
-                % fallback to standard functions, no sub-dimensions left
-                obj = obj.matrix2series_(dim, func, funcParams);
+                % no sub-dimensions left, use function that aggregates full dimension
+                obj = obj.matrix2series_(dim, func, funcAggrDim);
             end
         end
         
         
-        function series = matrix2series_(obj, dim, func, funcParams)
-            % function to handle aggregation of full index
-            assert(dim==1 || dim==2,'dimension value must be in [1,2]');
+        function series = matrix2series_(obj, dim, func, funcAggrDim)
+            % internal function to handle aggregation over full index
+            % (convert dataframe to series, or series to scalar)
+            % 
+            % input:
+            %    dim:         dimensions to aggregate: 1 (default, rows), 2 (columns)
+            %    func:        function handle to aggregation function      
+            %    funcAggrDim: dimension in which function func aggregates (1:rows default, 2=columns)
+            %
+            % output:
+            %    series (in case of dataframe input) or
+            %    scalar (in case of series input)
+            %
+            if nargin<4, funcAggrDim=1; end
+            assert(dim==1 || dim==2,'dimension value must be in [1,2]');               
             
             % aggregate over selected dimension
-            res = func(obj.data_, funcParams{:});
+            if dim==funcAggrDim
+               res = func(obj.data_);
+            else
+               res = func(obj.data_')';
+            end
             
             % prepare output
             if (dim==1 && obj.columns_.singleton_) || (dim==2 && obj.rows_.singleton_)
