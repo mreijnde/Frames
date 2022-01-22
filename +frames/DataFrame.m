@@ -1703,7 +1703,7 @@ classdef DataFrame
             
             if ~isempty(dimind_other)
                 % df with removed dimension
-                indexobj_raw = indexobj.getSubIndex(:,dimind_other);
+                indexobj_raw = indexobj.getSubIndex_(:,dimind_other);
                 obj.(indexfields(dim)) = indexobj_raw;
                 
                 % get aggregated df

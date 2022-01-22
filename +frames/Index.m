@@ -192,7 +192,8 @@ classdef Index
             %    - allowMissing   (logical):    allow selectors with no matches (default error)
             %
             % output:
-            %    validated array indexer (colon, logical array or position index array)
+            %    - selector:     validated array indexer (colon, logical array or position index array)
+            %    - selectorInd:  (optional) array with for each item in selector corresponding selector entry id
             %
             if nargin<5, userCall = true; end
             if nargin<4, allowedSeries = 'all'; end
@@ -208,7 +209,7 @@ classdef Index
                     obj.logicalIndexChecker(selector, allowedSeries);
                 end
                 selector = obj.getValue_from(selector);                
-                selectorInd = 1:length(selector);
+                selectorInd = find(selector);
             elseif positionIndex
                 % position index selector
                 if userCall
@@ -231,7 +232,7 @@ classdef Index
                        [selector] = findPositionIn(selector,obj.value_, allowMissing);
                     end
                 end
-            end                                 
+            end
         end        
         
         function pos = positionOf(obj, selector, varargin)

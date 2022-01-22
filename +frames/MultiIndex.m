@@ -45,6 +45,18 @@ classdef MultiIndex < frames.Index
             % output:
             %    - MultiIndex object with subselection                        
             if nargin<3; dimindex=':'; end
+            % select
+            obj = obj.getSubIndex_(selector, dimindex);
+            % check if set values are allowed
+            obj.valueChecker();
+        end
+        
+        
+         function obj=getSubIndex_(obj,selector, dimindex)
+            % get Index object of sub selection based on (matlab) selector
+            %
+            % internal use: no validation checks, see details at getSubIndex()
+            %                         
             % select dimensions            
             if ~iscolon(dimindex)
                 obj.value_ = obj.value_(dimindex);
@@ -134,13 +146,20 @@ classdef MultiIndex < frames.Index
                     if ~asFilter
                         
                         if ~all(cellfun(@length, selectorset)==1)                            
-                            % pre-filter Multi-Index based on logical mask (for speedup)                                                                                                    
-                            objfilt = obj.getSubIndex(maskset);
-                            % get order of items based on selectorset
-                            posIndexFilt = getSelectorSetPosIndex_(objfilt, selectorset, positionIndex, allowedSeries);
-                            % convert positon to original (unfiltered) positions
-                            maskpos = find(maskset);
-                            posIndex = maskpos(posIndexFilt);
+%                              posIndex = getSelectorSetPosIndex_(obj, selectorset, positionIndex, allowedSeries);
+                             % pre-filter Multi-Index based on logical mask (for speedup)                                                                                                    
+                             objfilt = obj.getSubIndex(maskset);
+                             % replace logical selectors by ':' for subset
+                             selectorsetFilt = selectorset;
+                             selectorsetLogical = cellfun(@islogical, selectorset);
+                             if any(selectorsetLogical) 
+                                selectorsetFilt{selectorsetLogical}= ':';                             
+                             end
+                             % get order of items based on selectorset
+                             posIndexFilt = getSelectorSetPosIndex_(objfilt, selectorsetFilt, positionIndex, allowedSeries);
+                             % convert positon to original (unfiltered) positions
+                             maskpos = find(maskset);
+                             posIndex = maskpos(posIndexFilt);
                         else
                             % in case of only single indices, skip filtering
                             posIndex = find(maskset);
@@ -184,7 +203,7 @@ classdef MultiIndex < frames.Index
                 if sum(~iscolonDim)==1
                     % only a single non-colon dimension
                     dim = find(~iscolonDim);
-                    posIndex = obj.value_{dim}.getSelector(selectorset{dim},positionIndex, allowedSeries, false, false); 
+                    posIndex = obj.value_{dim}.getSelector(selectorset{dim},positionIndex, allowedSeries, false, true); 
                     return
                 end
                                 
@@ -196,7 +215,7 @@ classdef MultiIndex < frames.Index
                 for i=1:NselectorDim
                     if ~iscolonDim(i)
                         % get linear-index selector
-                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector(selectorset{i},positionIndex, allowedSeries, false, true);                         
+                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector(selectorset{i},positionIndex, allowedSeries, false, true);                        
                     else
                         % special case: handle colon
                         pos{i} = (1:Nindex)';
@@ -227,8 +246,7 @@ classdef MultiIndex < frames.Index
                 % get sorted row positions
                 [~, sortind] = sortrows(posIndexRaw);
                 outind_sorted = outind(sortind);
-                posIndex = p(outind_sorted);
-                
+                posIndex = p(outind_sorted);                
             end
             
             function ind_cell = getSelectorIndicesForEachValue(pos, indseq, N)
