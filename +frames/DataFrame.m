@@ -1153,11 +1153,10 @@ classdef DataFrame
         function other = any(obj,varargin), other=obj.aggregateMatrix(@any,false,1,true,varargin{:}); end
         % ANY 'any' function through the desired dimension, returns a series
         function other = all(obj,varargin), other=obj.aggregateMatrix(@all,false,1,true,varargin{:}); end
-        % ALL 'all' function through the desired dimension, returns a series
-        
-        function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@max,varargin{:}); end %todo
-        % MAX maximum through the desired dimension, returns a series
-        function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@min,varargin{:}); end %todo
+        % ALL 'all' function through the desired dimension, returns a series                      
+        function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.aggregateMatrixMaxMin(@max,true,2,true, varargin{:}); end
+        % MAX maximum through the desired dimension, returns a series        
+        function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.aggregateMatrixMaxMin(@min,true,2,true, varargin{:}); end        
         % MIN minimum through the desired dimension, returns a series
         function other = maxOf(df1,df2), other=operatorElementWise(@max,df1,df2); end
         % maximum of the elements of the two input arguments
@@ -1582,9 +1581,23 @@ classdef DataFrame
             else
                 error('Unsupported first selector type: need logical DataFrame or logical matrix');                             
             end
-        end        
+        end 
         
-        function out = aggregateMatrix(obj, func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin)
+        function [out, ind] = aggregateMatrixMaxMin(obj, func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin)
+            % internal wrapper function around aggregateMatrix() to support min() and max() index outputs            
+            if nargout==1
+                out = obj.aggregateMatrix(func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin{:});
+            elseif nargout==2
+               [out, dim, indpos] = obj.aggregateMatrix(func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin{:});            
+               if dim == 1
+                   ind = obj.rows(indpos);
+               else
+                   ind = obj.columns(indpos);
+               end
+            end                
+        end
+        
+        function varargout = aggregateMatrix(obj, func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin)
             % internal wrapper function to support aggregation by standard matlab function (eg. mean) 
             % using multiple syntax options. 
             % 
@@ -1612,8 +1625,13 @@ classdef DataFrame
             %   varargin:           other additional function parameters (only non string paramters supported)
             %
             % output:
-            %    dataframe with aggregated data and reduced dimensions or
-            %    series/scalar (in case aggregation over full index) or            
+            %    aggregated data:
+            %        dataframe with aggregated data and reduced dimensions or
+            %        series/scalar (in case aggregation over full index) or            
+            %    dim:  
+            %         int, dimension of aggregation (1=rows,2=cols)
+            %    varargout:
+            %         additional outputs from function  func() (eg. pos index in case of min() or max())
             %             
             dimname = [];
             if isempty(varargin), varargin = {1}; end % default dim is rows            
@@ -1676,12 +1694,18 @@ classdef DataFrame
             end
             
             % call function to apply aggregation
-            if isempty(dimname)
-                out = obj.matrix2series_(dim, func_, dim);
+            nargout_func = max(1,nargout-1); % number of functions output to collect
+            if isempty(dimname)                                
+                [out{1:nargout_func}] = obj.matrix2series_(dim, func_, dim);                    
             else
-                out = obj.aggregateIndexDim_(dim, dimname, func_, dim, apply2singleValue);
-            end            
+                out{1} = obj.aggregateIndexDim_(dim, dimname, func_, dim, apply2singleValue);
+                if nargout_func>1, out{2:nargout_func} = []; end % not yet supported, output empty (todo add support)
+            end
             
+            % collect variable outputs
+            varargout{1} = out{1};
+            if nargout>1, varargout{2} = dim; end
+            if nargout>2, varargout{3:3+nargout_func-2} = out{2:nargout_func}; end            
         end
         
         
@@ -1724,7 +1748,7 @@ classdef DataFrame
         end
         
         
-        function series = matrix2series_(obj, dim, func, funcAggrDim)
+        function varargout = matrix2series_(obj, dim, func, funcAggrDim)
             % internal function to handle aggregation over full index
             % (convert dataframe to series, or series to scalar)
             % 
@@ -1742,17 +1766,17 @@ classdef DataFrame
             
             % aggregate over selected dimension
             if dim==funcAggrDim
-               res = func(obj.data_);
+               [varargout{1:nargout}] = func(obj.data_);
             else
-               res = func(obj.data_')';
+               [varargout{1:nargout}] = func(obj.data_')';
             end
             
             % prepare output
             if (dim==1 && obj.columns_.singleton_) || (dim==2 && obj.rows_.singleton_)
                 % returns a scalar if the operation is done on a series
-                series = res;
+                %series = res;
             else
-                series = obj.df2series(res,dim);
+                varargout{1} = obj.df2series(varargout{1},dim);
             end
         end
                 
@@ -1773,19 +1797,6 @@ classdef DataFrame
                     obj.data_ = data;                    
                     obj.columns_ = obj.columns_.getSubIndex(1);
                     obj.columns_.singleton = true;
-                end
-            end
-        end
-        
-        function varargout = maxmin(obj,fun,dim)
-            if nargin < 3, dim = 1; end
-            [d, ii] = fun(obj.data_,[],dim);
-            varargout{1} = df2series(obj,d,dim);
-            if nargout == 2
-                if dim == 1
-                    varargout{2} = obj.rows(ii);
-                else
-                    varargout{2} = obj.columns(ii);
                 end
             end
         end
