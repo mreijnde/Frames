@@ -424,7 +424,7 @@ classdef MultiIndex < frames.Index
             if nargin<3, userCall=true; end
             if isempty(value)
                 % in case no value, just add empty Index object
-                obj.value_ = {frames.Index()};
+                obj.value_ = {frames.Index(value)};
                 return;
             end
             
