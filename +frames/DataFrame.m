@@ -1185,8 +1185,7 @@ classdef DataFrame
                     assert(isequal(size(obj),size(v)), ...
                         'frames:nansum:differentSize','Data must be of the same size.')
                     d{i} = v;
-                end
-                
+                end                
             end
             d = cat(3,obj.data,d{:});
             s = sum(d,3,'omitnan');
@@ -1195,7 +1194,7 @@ classdef DataFrame
             obj.data_ = s;
         end
                                
-        function obj = groupUnique(obj, indexType, func, funcAggrDim, apply2single)
+        function obj = groupUnique(obj, indexType, func, funcAggrDim, apply2single, convGroupInd) 
             % combine duplicate index values by aggregation function
             %
             %  input: 
@@ -1203,13 +1202,15 @@ classdef DataFrame
             %    func:          function handler (default @mean)
             %    funcAggrDim:   aggregation dimensions of func: 1 (default, rows), 2 (columns)
             %    apply2single:  logical, apply function to groups with only single value (default false)
+            %    convGroupInd:  convert output of func which is local group position index to absolute pos index
             %
             %  output:
             %     dataframe/series with duplicate index values aggregated
             %
             if nargin<3, func=@mean; end            
             if nargin<4, funcAggrDim=1; end
-            if nargin<5, apply2single=false; end            
+            if nargin<5, apply2single=false; end  
+            if nargin<6, convGroupInd=false; end
             if isnumeric(indexType) && ismember(indexType,[1,2,3]), dim=indexType;
             elseif indexType=="rows", dim=1;
             elseif indexType=="columns", dim=2;
@@ -1220,7 +1221,8 @@ classdef DataFrame
             % aggregate rows
             if dim==1 || dim==3
                 groupid = obj.rows_.value_uniqind;
-                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, dim, funcAggrDim, apply2single);                
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, dim, ...
+                                                                  funcAggrDim, apply2single, true, convGroupInd);                
                 indexnew = obj.rows_.getSubIndex(groupInd);
                 obj.data_ = datnew;
                 obj.rows_ = indexnew;
@@ -1228,7 +1230,8 @@ classdef DataFrame
             % aggregate columns
             if dim==2 || dim==3
                 groupid = obj.columns_.value_uniqind;
-                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, dim, funcAggrDim, apply2single);                
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, dim, ...
+                                                                  funcAggrDim, apply2single, true, convGroupInd);                
                 indexnew = obj.columns_.getSubIndex(groupInd);
                 obj.data_ = datnew;
                 obj.columns_ = indexnew;            
@@ -1585,15 +1588,22 @@ classdef DataFrame
         
         function [out, ind] = aggregateMatrixMaxMin(obj, func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin)
             % internal wrapper function around aggregateMatrix() to support min() and max() index outputs            
-            if nargout==1
+            if nargout <2
+                % only aggregated output, no position index
                 out = obj.aggregateMatrix(func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin{:});
-            elseif nargout==2
-               [out, dim, indpos] = obj.aggregateMatrix(func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin{:});            
-               if dim == 1
-                   ind = obj.rows(indpos);
-               else
-                   ind = obj.columns(indpos);
-               end
+            else
+                % both aggregated as position index output
+                [out, dim, indpos] = obj.aggregateMatrix(func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin{:});               
+                if dim == 1
+                    dimindex = obj.rows;
+                else
+                    dimindex = obj.columns;
+                end
+                if isFrame(indpos)
+                   ind = dimindex(indpos.data);
+                else
+                   ind = dimindex(indpos);
+                end                                        
             end                
         end
         
@@ -1698,18 +1708,17 @@ classdef DataFrame
             if isempty(dimname)                                
                 [out{1:nargout_func}] = obj.matrix2series_(dim, func_, dim);                    
             else
-                out{1} = obj.aggregateIndexDim_(dim, dimname, func_, dim, apply2singleValue);
-                if nargout_func>1, out{2:nargout_func} = []; end % not yet supported, output empty (todo add support)
+                [out{1:nargout_func}] = obj.aggregateIndexDim_(dim, dimname, func_, dim, apply2singleValue);
             end
             
             % collect variable outputs
             varargout{1} = out{1};
             if nargout>1, varargout{2} = dim; end
-            if nargout>2, varargout{3:3+nargout_func-2} = out{2:nargout_func}; end            
+            if nargout>2, varargout{3:3+nargout_func-2} = out{2:nargout_func}; end
         end
         
         
-        function obj = aggregateIndexDim_(obj, dim, dimname, func, funcAggrDim, apply2singleValue)
+        function varargout = aggregateIndexDim_(obj, dim, dimname, func, funcAggrDim, apply2singleValue)
             % internal function to aggregate data over given sub-dimension (in case of MultiIndex)            
             %
             % input:
@@ -1720,12 +1729,13 @@ classdef DataFrame
             %    apply2single: boolean to select if function is applied to groups with a single values (default true)             
             %
             % output:
-            %    dataframe with reduced (MultiIndex) dimensions or
-            %    series (in case all index dimensions aggregated)
+            %    - dataframe/series with aggregated data and reduced (MultiIndex) dimensions
+            %    - (optional) dataframe/series with index position from 2nd func output (eg func min() or max())
             %                               
             if nargin<5, funcAggrDim=1; end
             if nargin<6, apply2singleValue=true; end
             assert(dim==1 || dim==2,'dimension value must be in [1,2]');
+            assert(nargout<3, "only up to 2 function outputs supported.");
             
             % get index and dimension to keep
             indexfields = ["rows_", "columns_"];
@@ -1740,11 +1750,22 @@ classdef DataFrame
                 obj.(indexfields(dim)) = indexobj_raw;
                 
                 % get aggregated df
-                obj = obj.groupUnique(dim, func, funcAggrDim, apply2singleValue);                
+                varargout{1} = obj.groupUnique(dim, func, funcAggrDim, apply2singleValue);
+                % extra func outputs not supported by groupUnique(), workaround by running multiple times                
+                if nargout==2
+                    % 2nd output is assumed to be position index
+                    varargout{2} = obj.groupUnique(dim, @func_out2, funcAggrDim, apply2singleValue, true);                
+                end
+                
             else
                 % no sub-dimensions left, use function that aggregates full dimension
-                obj = obj.matrix2series_(dim, func, funcAggrDim);
+                [varargout{1:nargout}] = obj.matrix2series_(dim, func, funcAggrDim);
             end
+            
+            function out = func_out2(varargin)
+                % get 2nd output argument of function func
+                [~, out] = func(varargin{:});
+            end            
         end
         
         
