@@ -1,5 +1,5 @@
 function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, dim, funcAggrDim, apply2single, vectorize)
-% aggregate data in rows of matrix A with function func grouped by groupid
+% aggregate data in rows or columns of matrix A with function func grouped by groupid
 %
 %  - Similar to "groupsummary(A, groupid, func)" but significant faster (2-20 times) for larger datasets,
 %    (specifically with higher number of columns or unique groups).
