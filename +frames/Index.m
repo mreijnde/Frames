@@ -176,7 +176,7 @@ classdef Index
             len = size(obj.value_,1);
         end
         
-        function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
+        function [selector, selectorInd] = getSelector(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
             % get valid matlab indexer for array operations based on supplied selector
             % supports:
             %    - colon
@@ -198,20 +198,23 @@ classdef Index
             if nargin<4, allowedSeries = 'all'; end
             if nargin<3, positionIndex = false; end
             if nargin<6, allowMissing=false; end            
-                        
+            
             if iscolon(selector)
-                % do nothing
+                % do nothing, just output colon
+                selectorInd = 1;                                
             elseif islogical(selector) || isFrame(selector)
                 %  logical selectors
                 if userCall
                     obj.logicalIndexChecker(selector, allowedSeries);
                 end
-                selector = obj.getValue_from(selector);
+                selector = obj.getValue_from(selector);                
+                selectorInd = 1:length(selector);
             elseif positionIndex
                 % position index selector
                 if userCall
                     obj.positionIndexChecker(selector);
                 end
+                selectorInd = 1:length(selector);
             else
                 %  value selectors
                 selector = obj.getValue_andCheck(selector,userCall);
@@ -219,12 +222,16 @@ classdef Index
                     if ~allowMissing
                         assertFoundIn(selector,obj.value_)
                     end
-                    [~,~,selector] = intersect(selector,obj.value_,'stable');
+                    [~,selectorInd,selector] = intersect(selector,obj.value_,'stable');
                 else
-                    %[~,~,selector] = intersect(selector,obj.value_,'stable');
-                    selector = findPositionIn(selector,obj.value_, allowMissing);
+                    % for speedup, prevent unnecessary output
+                    if (nargout>1)
+                       [selector,selectorInd] = findPositionIn(selector,obj.value_, allowMissing);
+                    else
+                       [selector] = findPositionIn(selector,obj.value_, allowMissing);
+                    end
                 end
-            end
+            end                                 
         end        
         
         function pos = positionOf(obj, selector, varargin)
