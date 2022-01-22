@@ -197,118 +197,115 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
              
             warning('on','frames:MultiIndex:notUnique')
         end
-%         
-%         function subsasgnTest(t)
-%             df = frames.DataFrame([1 2 3 4 5 6; 2 5 NaN 1 3 2]');
-%             % test removal
-%             df{:,2} = [];
-%             df([1 3]) = [];
-%             df.iloc(4,:) = [];
-%             t.verifyEqual(df,frames.DataFrame([2 4 5]',[2 4 5]))
-%             % test loc iloc
-%             df.loc([2 5],:) = [22 55]';
-%             df.iloc(2,:) = 44;
-%             t.verifyEqual(df.data,[22 44 55]')
-%             df.iloc(2) = 43;
-%             t.verifyEqual(df.data,[22 43 55]')
-%             df.iloc(:,1) = 100;
-%             t.verifyEqual(df.data,[100 100 100]')
-%             % test (), {}
-%             df(2) = 20;
-%             t.verifyEqual(df.data,[20 100 100]')
-%             df{2:end,:} = 80;
-%             t.verifyEqual(df.data,[20 80 80]')
-%             df=frames.DataFrame([1 2 3; 2 5 NaN],[1 2], [11,22,33]);
-%             df(2,[22,33]) = 3.14;
-%             t.verifyEqual(df.data,[1 2 3; 2 3.14 3.14])
-%             df(true,22) = 2.72;
-%             t.verifyEqual(df.data,[1 2.72 3; 2 3.14 3.14])
-%             
-%             % end in selection
-%             df=frames.DataFrame([1 2;3 4;5 6]);
-%             t.verifyEqual(df{end-1:end},df{end-1:end,:})
-%             t.verifyEqual(df{end-1:end},frames.DataFrame([3 4;5 6],[2 3]))
-% 
-%             % empty all keeps the rows type
-%             tf=t.tfMissing1;
-%             tf{1:length(tf.rows),:} = [];
-%             t.verifyEqual(tf.rows,datetime.empty(0,1))
-%             
-%             % repeating columns
-%             warning('off','frames:Index:notUnique')
-%             df = frames.DataFrame([1 2 3; 2 5 NaN],[],["a","b","a"]);
-%             df(:,"a") = 100;
-%             expected = frames.DataFrame([100 2 100; 100 5 100],[],["a","b","a"]);
-%             t.verifyEqual(df,expected)
-%             warning('on','frames:Index:notUnique')
-%             
-%             % shuffled identifiers
-%             df = frames.DataFrame([1 2 3; 2 5 NaN],[1 2],[1 2 3]);
-%             df([2 1],[3 1 2]) = [1 2 3; 4 5 6];
-%             expected = frames.DataFrame([5 6 4; 2 3 1],[1 2],[1 2 3]);
-%             t.verifyEqual(df,expected)
-%             df{[2 1],[3 1 2]} = [10 20 30; 40 50 60];
-%             expected = frames.DataFrame([50 60 40; 20 30 10],[1 2],[1 2 3]);
-%             t.verifyEqual(df,expected)
-%             df = df.setRowsType('sorted');
-%             t.verifyError( @() f(df), 'frames:Index:requireSortedFail' )
-%             function f(x), x.loc([2 1], 2) = 20; end
-%             t.verifyError( @() fi(df), 'frames:Index:requireSortedFail' )
-%             function fi(x), x.loc{[2 1], 2} = 20; end
-%             
-%             % assign []
-%             df = frames.DataFrame([1 2 3; 2 5 NaN],[1 2],[1 2 3]);
-%             df1 = df; df2 = df;
-%             df1(1,:) = [];
-%             expected = frames.DataFrame([2 5 NaN],2,[1 2 3]);
-%             t.verifyEqual(df1,expected)
-%             df2{:,:} = [];
-%             expected = frames.DataFrame([],[],[1 2 3]);
-%             t.verifyEqual(df2,expected)
-%             
-%             % data is a DF
-%             df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1]);
-%             data = df{[1 3]}*2;
-%             df{[1 3],:} = data;
-%             t.verifyEqual(df,frames.DataFrame([2 4 6; 2 5 NaN; NaN 0 2]))
-%             df(2) = frames.DataFrame([3 4 5],NaN,RowSeries=true);
-%             t.verifyEqual(df,frames.DataFrame([2 4 6; 3 4 5; NaN 0 2]))
-%             t.verifyError(@isnotseries,'frames:elementWiseHandler:differentRows')
-%             function isnotseries, df(2) = frames.DataFrame([3 4 5]); end
-%             df(2) = frames.DataFrame([3 4 6]).data;
-%             t.verifyEqual(df,frames.DataFrame([2 4 6; 3 4 6; NaN 0 2]))
-%             
-%             % col row
-%             df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1]);
-%             df.col("Var1") = df.col("Var2") + df.col("Var3");
-%             t.verifyEqual(df,frames.DataFrame([5 2 3; NaN 5 NaN; 1 0 1]))
-%             df.row(2) = 4;
-%             t.verifyEqual(df,frames.DataFrame([5 2 3; 4 4 4; 1 0 1]))
-%             df.col("newCol") = df.col("Var2");
-%             t.verifyEqual(df,frames.DataFrame([5 2 3 2; 4 4 4 4; 1 0 1 0],[],["Var1","Var2","Var3","newCol"]))
-%             df.rows = [1 3 4];
-%             df = df.setRowsType('sorted');
-%             df.row(2) = df.row(1);
-%             t.verifyEqual(df,frames.DataFrame([5 2 3 2; 5 2 3 2; 4 4 4 4; 1 0 1 0],frames.Index(1:4,UniqueSorted=true,Name="Row"),["Var1","Var2","Var3","newCol"]))
-%             t.verifyError(@isnotseries2,'frames:elementWiseHandler:differentRows')
-%             function isnotseries2, df.row(1) = df(2); end
-%             
-%             t.verifyError(@cannotMultAsgn,'frames:subsasgn:rowMultiple')
-%             function cannotMultAsgn, df.row([1 2]) = 3; end
-%             
-%             warning('off','frames:Index:notUnique')
-%             df = frames.DataFrame([1 2 3; 2 5 NaN],[],["a","b","a"]);
-%             t.verifyError(@occursTwice,'frames:subsasgn:colMultiple')
-%             function occursTwice, df.col("a") = 3; end
-%             warning('on','frames:Index:notUnique')
-%             
-%             % TimeFrame
-%             tf = frames.TimeFrame(1,["01.11.2021","02.11.2021","03.11.2021"]);
-%             tf1 = tf; tf2 = tf;
-%             tf1(["01.11.2021","02.11.2021"]) = 2;
-%             tf2(timerange(-inf,"02.11.2021",'closed')) = 2;
-%             t.verifyEqual(tf1,tf2)
-%             t.verifyEqual(tf1.data,[2 2 1]')
+        
+        function subsasgnTest(t)
+            df = frames.DataFrame([1 2 3 4 5 6; 2 5 NaN 1 3 2]',{1:6});
+            % test removal
+            df{:,2} = [];
+            df([1 3]) = [];
+            df.iloc(4,:) = [];
+            t.verifyEqual(df,frames.DataFrame([2 4 5]',{[2 4 5]'}))
+            % test loc iloc
+            df.loc([2 5],:) = [22 55]';
+            df.iloc(2,:) = 44;
+            t.verifyEqual(df.data,[22 44 55]')
+            df.iloc(2) = 43;
+            t.verifyEqual(df.data,[22 43 55]')
+            df.iloc(:,1) = 100;
+            t.verifyEqual(df.data,[100 100 100]')
+            % test (), {}
+            df(2) = 20;
+            t.verifyEqual(df.data,[20 100 100]')
+            df{2:end,:} = 80;
+            t.verifyEqual(df.data,[20 80 80]')
+            df=frames.DataFrame([1 2 3; 2 5 NaN],{[1 2]}, {[11,22,33]});
+            df(2,[22,33]) = 3.14;
+            t.verifyEqual(df.data,[1 2 3; 2 3.14 3.14])
+            df(true,22) = 2.72;
+            t.verifyEqual(df.data,[1 2.72 3; 2 3.14 3.14])
+            
+            % end in selection
+            df=frames.DataFrame([1 2;3 4;5 6],{1:3});
+            t.verifyEqual(df{end-1:end},df{end-1:end,:})
+            t.verifyEqual(df{end-1:end},frames.DataFrame([3 4;5 6],{[2 3]'}))
+
+            % empty all keeps the rows type
+            tf=t.tfMissing1;
+            tf{1:length(tf.rows),:} = [];
+            t.verifyEqual(tf.rows,datetime.empty(0,1))
+            
+            % repeating columns
+            warning('off','frames:Index:notUnique')
+            warning('off','frames:MultiIndex:notUnique')
+            df = frames.DataFrame([1 2 3; 2 5 NaN],{[]},{["a","b","a"]});
+            df(:,"a") = 100;
+            expected = frames.DataFrame([100 2 100; 100 5 100],{[]},{["a","b","a"]});
+            t.verifyEqual(df,expected)
+            warning('on','frames:Index:notUnique')
+            warning('on','frames:MultiIndex:notUnique')
+            
+            % shuffled identifiers
+            df = frames.DataFrame([1 2 3; 2 5 NaN],{[1 2]'},{[1 2 3]'});
+            df([2 1],[3 1 2]) = [1 2 3; 4 5 6];
+            expected = frames.DataFrame([5 6 4; 2 3 1],{[1 2]'},{[1 2 3]'});
+            t.verifyEqual(df,expected)
+            df{[2 1],[3 1 2]} = [10 20 30; 40 50 60];
+            expected = frames.DataFrame([50 60 40; 20 30 10],{[1 2]'},{[1 2 3]'});
+            t.verifyEqual(df,expected)
+            df = df.setRowsType('sorted');
+            %t.verifyError( @() f(df), 'frames:Index:requireSortedFail' )   
+            %function f(x), x.loc([2 1], 2) = 20; end             % <== why should assign fail? end result is sorted
+            %t.verifyError( @() fi(df), 'frames:Index:requireSortedFail' )
+            %function fi(x), x.loc{[2 1], 2} = 20; end            % <== why should assign fail? end result is sorted
+            
+            % assign []
+            df = frames.DataFrame([1 2 3; 2 5 NaN],{[1 2]},{[1 2 3]});
+            df1 = df; df2 = df;
+            df1(1,:) = [];
+            expected = frames.DataFrame([2 5 NaN],{2},{[1 2 3]});
+            t.verifyEqual(df1,expected)
+            df2{:,:} = [];
+            expected = frames.DataFrame([],{[]},{[1 2 3]});
+            t.verifyEqual(df2,expected)
+            
+            % data is a DF
+            df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1],{1:3});
+            data = df{[1 3]}*2;
+            df{[1 3],:} = data;
+            t.verifyEqual(df,frames.DataFrame([2 4 6; 2 5 NaN; NaN 0 2],{1:3}))
+            df(2) = frames.DataFrame([3 4 5],NaN,RowSeries=true);
+            t.verifyEqual(df,frames.DataFrame([2 4 6; 3 4 5; NaN 0 2],{1:3}))
+            t.verifyError(@isnotseries,'frames:elementWiseHandler:differentRows')
+            function isnotseries, df(2) = frames.DataFrame([3 4 5]); end
+            df(2) = frames.DataFrame([3 4 6]).data;
+            t.verifyEqual(df,frames.DataFrame([2 4 6; 3 4 6; NaN 0 2],{1:3}))
+            
+            % col row
+            df = frames.DataFrame([1 2 3; 2 5 NaN; NaN 0 1],{1:3});
+            df.col("Var1") = df.col("Var2") + df.col("Var3");
+            t.verifyEqual(df,frames.DataFrame([5 2 3; NaN 5 NaN; 1 0 1],{1:3}))
+            df.row(2) = 4;
+            t.verifyEqual(df,frames.DataFrame([5 2 3; 4 4 4; 1 0 1],{1:3}))
+            df.col("newCol") = df.col("Var2");
+            t.verifyEqual(df,frames.DataFrame([5 2 3 2; 4 4 4 4; 1 0 1 0],{[]},["Var1","Var2","Var3","newCol"]))
+            df.rows = [1 3 4];
+            df = df.setRowsType('sorted');
+            df.row(2) = df.row(1);
+            t.verifyEqual(df,frames.DataFrame([5 2 3 2; 5 2 3 2; 4 4 4 4; 1 0 1 0],frames.MultiIndex({1:4},UniqueSorted=true,Name="dim1"),["Var1","Var2","Var3","newCol"]))
+            t.verifyError(@isnotseries2,'frames:elementWiseHandler:differentRows')
+            function isnotseries2, df.row(1) = df(2); end
+            
+            t.verifyError(@cannotMultAsgn,'frames:subsasgn:rowMultiple')
+            function cannotMultAsgn, df.row([1 2]) = 3; end
+            
+            warning('off','frames:Index:notUnique')
+            warning('off','frames:MultiIndex:notUnique')
+            df = frames.DataFrame([1 2 3; 2 5 NaN],{[]},{["a","b","a"]});
+            t.verifyError(@occursTwice,'frames:subsasgn:colMultiple')
+            function occursTwice, df.col("a") = 3; end
+            warning('on','frames:Index:notUnique')
+            warning('on','frames:MultiIndex:notUnique')
+            
 %             
 %             tf = frames.TimeFrame(1,frames.TimeIndex(["01#11#2021","02#11#2021","03#11#2021"],Format='dd#MM#yyyy'));
 %             tf1 = tf; tf2 = tf; tf3 = tf;
@@ -321,58 +318,60 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
 %             
 %             tf1("01#11#2021:02#11#2021") = 3;
 %             t.verifyEqual(tf1.data,[3 3 2]')
-% 
-%         end
-%         
-%         function subsasgnWithDFTest(t)
-%             df = frames.DataFrame([1 2;3 4],frames.Index([1 2]));
-%             dfbool = frames.DataFrame([false,true;true,false],[1 2]);
-%             seriesbool = frames.DataFrame([false,true]',[1 2]).asColSeries();
-%             series = frames.DataFrame([1 2]',[1 2],2).asColSeries(); %#ok<SETNU>
-%             vector = frames.DataFrame([false,true],[],df.columns).asRowSeries();
-%             dfother = frames.DataFrame([false,true;true,false],[2 3]);
-%             
-%             df{dfbool} = NaN;
-%             t.verifyEqual(df,frames.DataFrame([1 NaN;NaN 4],frames.Index([1 2])))
-%             df(dfbool) = 44;
-%             t.verifyEqual(df,frames.DataFrame([1 44;44 4],frames.Index([1 2])))
-%             df.iloc(dfbool) = 33;
-%             t.verifyEqual(df,frames.DataFrame([1 33;33 4],frames.Index([1 2])))
-%             
-%             df{seriesbool} = 9;
-%             t.verifyEqual(df,frames.DataFrame([1 33;9 9],frames.Index([1 2])))
-%             
-%             df.loc(seriesbool) = 8;
-%             t.verifyEqual(df,frames.DataFrame([1 33;8 8],frames.Index([1 2])))
-%             
-%             df(seriesbool,["Var1","Var2"]) = 10;
-%             t.verifyEqual(df,frames.DataFrame([1 33;10 10],frames.Index([1 2])))
-%             
-%             df{seriesbool,vector} = 11;
-%             t.verifyEqual(df,frames.DataFrame([1 33;10 11],frames.Index([1 2])))
-%             
-%             df{:,vector} = 12;
-%             t.verifyEqual(df,frames.DataFrame([1 12;10 12],frames.Index([1 2])))
-%             
-%             t.verifyError(@notSeries,'frames:elementWiseHandler:differentColumns')
-%             function notSeries, df.iloc(seriesbool.asColSeries(false)) = 0; end
-%             
-%             t.verifyError(@dfnotSeries,'frames:elementWiseHandler:differentColumns')
-%             function dfnotSeries, series{seriesbool.asColSeries(false)} = 0; end
-%             
-%             t.verifyError(@notAligned,'frames:elementWiseHandler:differentRows')
-%             function notAligned, df{dfother} = 0; end
-%             
-%             t.verifyError(@noTwoElements,'frames:subsasgn:OnlySingleIndexAllowed2DBool')
-%             function noTwoElements, df{dfbool,:} = 0; end
-%             
-%             t.verifyError(@noEmptyDataBool2D,'frames:modifyFromBool2D:mustBeNonempty')
-%             function noEmptyDataBool2D, df{dfbool} = []; end
-%             
-%             t.verifyError(@noFirstCol,'frames:logicalIndexChecker:onlyColSeries')
-%             function noFirstCol, df{vector} = 0; end
-%         end
-%         
+         end
+        
+        function subsasgnWithDFTest1D(t)
+            df = frames.DataFrame([1 2;3 4],frames.MultiIndex([1 2]'),{[]});
+            dfbool = frames.DataFrame([false,true;true,false],{[1 2]},{[]});
+            seriesbool = frames.DataFrame([false,true]',{[1 2]},{[]}).asColSeries();
+            series = frames.DataFrame([1 2]',{[1 2]},{2}).asColSeries(); %#ok<SETNU>
+            vector = frames.DataFrame([false,true],{[]},df.columns).asRowSeries();
+            dfother = frames.DataFrame([false,true;true,false],{[2 3]},{[]});
+            
+            df{dfbool} = NaN;
+            t.verifyEqual(df,frames.DataFrame([1 NaN;NaN 4],frames.MultiIndex([1 2]'),{[]}))
+            df(dfbool) = 44;
+            t.verifyEqual(df,frames.DataFrame([1 44;44 4],frames.MultiIndex([1 2]'),{[]}))
+            df.iloc(dfbool) = 33;
+            t.verifyEqual(df,frames.DataFrame([1 33;33 4],frames.MultiIndex([1 2]'),{[]}))
+            
+            df{seriesbool} = 9;
+            t.verifyEqual(df,frames.DataFrame([1 33;9 9],frames.MultiIndex([1 2]'),{[]}))
+            
+            df.loc(seriesbool) = 8;
+            t.verifyEqual(df,frames.DataFrame([1 33;8 8],frames.MultiIndex([1 2]'),{[]}))
+            
+            df(seriesbool,["Var1","Var2"]) = 10;
+            t.verifyEqual(df,frames.DataFrame([1 33;10 10],frames.MultiIndex([1 2]'),{[]}))
+            
+            df{seriesbool,vector} = 11;
+            t.verifyEqual(df,frames.DataFrame([1 33;10 11],frames.MultiIndex([1 2]'),{[]}))
+            
+            df{:,vector} = 12;
+            t.verifyEqual(df,frames.DataFrame([1 12;10 12],frames.MultiIndex([1 2]'),{[]}))
+            
+            t.verifyError(@notSeries,'frames:elementWiseHandler:differentColumns')
+            function notSeries, df.iloc(seriesbool.asColSeries(false)) = 0; end
+            
+            seriesboolInd = seriesbool.asColSeries(false);
+            t.verifyWarningFree(@dfnotSeries)   %default column name "Var" works (because of default names used in conversion, todo fix?)
+            seriesboolInd.columns = "test";
+            t.verifyError(@dfnotSeries,'frames:elementWiseHandler:differentColumns') % does not work with other name
+            function dfnotSeries, series{seriesboolInd} = 0; end
+            
+            t.verifyError(@notAligned,'frames:elementWiseHandler:differentRows')
+            function notAligned, df{dfother} = 0; end
+            
+            t.verifyError(@noTwoElements,'frames:subsasgn:OnlySingleIndexAllowed2DBool')
+            function noTwoElements, df{dfbool,:} = 0; end
+            
+            t.verifyError(@noEmptyDataBool2D,'frames:modifyFromBool2D:mustBeNonempty')
+            function noEmptyDataBool2D, df{dfbool} = []; end
+            
+            t.verifyError(@noFirstCol,'frames:logicalIndexChecker:onlyColSeries')
+            function noFirstCol, df{vector} = 0; end
+        end
+        
         function subsrefTest(t)            
             warning('off','frames:Index:notUnique')
             warning('off','frames:MultiIndex:notUnique')            
@@ -454,7 +453,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             warning('on','frames:MultiIndex:notUnique')
         end
         
-        function modifyIlocFailTest(t)            
+        function modifyIlocFailTest1D(t)            
             % 1D check
             df = frames.DataFrame([1 2;3 4],{});
             
@@ -475,7 +474,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
                         
         end
         
-        function equivalentSubsasgnBoolTest(t)
+        function equivalentSubsasgnBoolTest1D(t)
             df = frames.DataFrame([-1 3; -2 4],{});
             df2 = df;
             df{df<0} = NaN;
@@ -483,108 +482,116 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(df,df2)
             t.verifyEqual(df,frames.DataFrame([NaN 3;NaN 4],{}))
         end
-%         
-%         function oneifyTest(t)
-%             t.verifyEqual(frames.DataFrame([2 NaN]).oneify(),frames.DataFrame([1 NaN]))
-%             t.verifyEqual(frames.DataFrame(string([2 NaN])).oneify(),frames.DataFrame(["" string(missing)]))
-%         end
-%         
-%         function setRowsTest(t)
-%             df = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]');
-%             df = df.setRows("Var3");
-%             expected = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2]',[5 0 4 1 3 2]);
-%             t.verifyEqual(df,expected)
-%         end
-%         
-%         function rowsSetterTest(t)
-%             df = frames.DataFrame([1 2; 2 5]);
-%             df.rows = frames.Index([3 5],UniqueSorted=true);
-%             t.verifyEqual(df.rows,[3 5]')
-%             
-%             t.verifyError(@idxNotSorted,'frames:Index:requireSortedFail')
-%             function idxNotSorted(), df.rows=[6 3]; end
-%             
-%             t.verifyError(@wrongSize,'frames:rowsValidation:wrongSize')
-%             function wrongSize(), df.rows=3; end
-%             
-%             t.verifyError(@idxNotSorted2,'frames:Index:requireSortedFail')
-%             function idxNotSorted2(), df.rows(1)=33; end
-%             
-%             df.rows = [3 6];
-%             t.verifyEqual(df.rows,[3 6]')   
-%             
-%             df.rows = frames.Index([3 5]);
-%             t.verifyEqual(df.rows,[3 5]')   
-%             t.verifyFalse(df.identifierProperties.rows.requireUniqueSorted)   
-%             
-%             df.rows=frames.Index([6 3]);
-%             t.verifyFalse(df.identifierProperties.rows.requireUniqueSorted)  
-%             
-%             tf = frames.TimeFrame([1 2; 2 5]);
-%             t.verifyError(@notTi,'frames:TimeFrame:rowsObjNotTime')
-%             function notTi(), tf.rows=frames.Index([1 2]); end
-%         end
-%         
-%         function rowsAssignTest(t)
-%             dfs = frames.DataFrame(1,frames.Index([1 2 3 10 20],UniqueSorted=true));
-%             dfu = frames.DataFrame(1,frames.Index([1 2 3 10 20],Unique=true));
-%             warning('off','frames:Index:notUnique')
-%             dfd = frames.DataFrame(1,frames.Index([1 2 3 10 10],Unique=false));
-%             warning('on','frames:Index:notUnique')
-%             
-%             df1=dfs;
-%             df1.rows([3,1]) = [4,0];
-%             t.verifyEqual(df1.rows,[0 2 4 10 20]')
-%             t.verifyError(@notSorted,'frames:Index:requireSortedFail')
-%             function notSorted, df1.rows([1,3]) = [4,0]; end
-%             t.verifyError(@notSortedAll,'frames:Index:requireSortedFail')
-%             function notSortedAll, df1.rows = [1 2 3 20 10]; end
-%             t.verifyError(@notSortedAll2,'frames:Index:requireSortedFail')
-%             function notSortedAll2, df1.rows(1:end) = [1 2 3 20 10]; end
-%             
-%             df2=dfu;
-%             df2.rows([3,1]) = [0,4];
-%             t.verifyEqual(df2.rows,[4 2 0 10 20]')
-%             t.verifyError(@notUnique,'frames:Index:requireUniqueFail')
-%             function notUnique, df2.rows([3,1]) = [2,0]; end
-%             t.verifyError(@notUniqueAll,'frames:Index:requireUniqueFail')
-%             function notUniqueAll, df2.rows = [1 2 3 20 20]; end
-%             t.verifyError(@notUniqueAll2,'frames:Index:requireUniqueFail')
-%             function notUniqueAll2, df1.rows(1:end) = [1 2 3 20 20]; end
-%             
-%             df3=dfd;
-%             df3.rows([3,1]) = [0,4];
-%             t.verifyEqual(df3.rows,[4 2 0 10 10]')
-%             t.verifyWarning(@duplicate1,'frames:Index:subsagnNotUnique')
-%             function duplicate1, df3.rows([3,1]) = [2,0]; end
-%             t.verifyWarning(@duplicate2,'frames:Index:subsagnNotUnique')
-%             function duplicate2, df3.rows([3,1]) = [6,6]; end
-%             
-%             dfcs = frames.DataFrame(1,[],frames.Index([1 2 3 10 20],UniqueSorted=true));
-%             df4=dfcs;
-%             df4.columns([3,1]) = [4,0];
-%             t.verifyEqual(df4.columns,[0 2 4 10 20])
-%             t.verifyError(@notSortedCol,'frames:Index:requireSortedFail')
-%             function notSortedCol, df4.columns([1,3]) = [4,0]; end
-%             
-%             df = frames.DataFrame([1 2; 2 5]);
-%             t.verifyError(@missing1,'frames:validators:mustBeFullVector')
-%             function missing1(), df.rows(1:2)=[NaN 1]; end
-%             
-%             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
-%             function missing2(), df.rows=[NaN 1]'; end
-%             
-%             t.verifyError(@cannotBeEmpty,'frames:rowsValidation:mustBeNonempty')
-%             function cannotBeEmpty(), df.rows(2)=[]; end
-%             
-%             t.verifyError(@cannotBeEmpty2,'frames:rowsValidation:mustBeNonempty')
-%             function cannotBeEmpty2(), df.rows=[]; end
-%             
-%             t.verifyError(@notUnique1,'frames:Index:requireUniqueFail')
-%             function notUnique1(), df.rows=[6 6]; end
-%             
-%             t.verifyError(@notUnique2,'frames:Index:requireUniqueFail')
-%             function notUnique2(), df.rows(1)=2; end
+         
+        function oneifyTest1D(t)
+            t.verifyEqual(frames.DataFrame([2 NaN],{1:2}).oneify(),frames.DataFrame([1 NaN],{1:2}))
+            t.verifyEqual(frames.DataFrame(string([2 NaN]),{1:2}).oneify(),frames.DataFrame(["" string(missing)],{1:2}))
+        end
+        
+        function setRowsTest1D(t)
+            df = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2;5 0 4 1 3 2]',{1:6});
+            df = df.setRows("Var3");
+            expected = frames.DataFrame([1 2 3 3 2 1; 2 5 NaN 1 3 2]', frames.MultiIndex({[5 0 4 1 3 2]'},name="Var3",Unique=true));
+            t.verifyEqual(df,expected)
+        end
+        
+        function rowsSetterTest1D(t)
+            df = frames.DataFrame([1 2; 2 5],{1:2});
+            df.rows = frames.MultiIndex([3 5]',UniqueSorted=true);
+            t.verifyEqual(df.rows(:,1),[3 5]')
+            
+            t.verifyError(@idxNotSorted,'frames:MultiIndex:requireSortedFail')
+            function idxNotSorted(), df.rows(:,1)=[6 3]; end
+            
+            t.verifyError(@wrongSize,'frames:rowsValidation:wrongSize')
+            function wrongSize(), df.rows=3; end
+            
+            t.verifyError(@idxNotSorted2,'frames:MultiIndex:requireSortedFail')
+            function idxNotSorted2(), df.rows(1)=33; end
+            
+            df.rows = [3 6];
+            t.verifyEqual(df.rows(:,1),[3 6]')   
+            
+            df.rows = frames.MultiIndex([3 5]');
+            t.verifyEqual(df.rows(:,1),[3 5]')   
+            t.verifyFalse(df.identifierProperties.rows.requireUniqueSorted)   
+            
+            df.rows=frames.MultiIndex([6 3]');
+            t.verifyFalse(df.identifierProperties.rows.requireUniqueSorted)              
+        end
+        
+        function rowsAssignTest1D(t)
+            dfs = frames.DataFrame(1,frames.MultiIndex([1 2 3 10 20]',UniqueSorted=true));
+            dfu = frames.DataFrame(1,frames.MultiIndex([1 2 3 10 20]',Unique=true));
+            warning('off','frames:Index:notUnique')
+            warning('off','frames:MultiIndex:notUnique')
+            dfd = frames.DataFrame(1,frames.MultiIndex([1 2 3 10 10]',Unique=false));
+            warning('on','frames:Index:notUnique')
+            warning('on','frames:MultiIndex:notUnique')
+            
+            df1=dfs;
+            df1.rows([3,1]) = [4,0];
+            t.verifyEqual(df1.rows(:,1),[0 2 4 10 20]')
+            t.verifyError(@notSorted,'frames:MultiIndex:requireSortedFail')
+            function notSorted, df1.rows([1,3]) = [4,0]; end
+            t.verifyError(@notSortedAll,'frames:MultiIndex:requireSortedFail')
+            function notSortedAll, df1.rows = [1 2 3 20 10]; end
+            t.verifyError(@notSortedAll2,'frames:MultiIndex:requireSortedFail')
+            function notSortedAll2, df1.rows(1:end) = [1 2 3 20 10]; end
+            
+            df2=dfu;
+            df2.rows([3,1]) = [0,4];
+            t.verifyEqual(df2.rows(:,1),[4 2 0 10 20]')
+            
+            warning('off','frames:Index:subsagnNotUnique'); % todo: disable warning in case of subsequent error            
+            t.verifyError(@notUnique,'frames:MultiIndex:requireUniqueFail')
+            warning('off','frames:Index:notUnique')
+            function notUnique, df2.rows([3,1]) = [2,0]; end
+            t.verifyError(@notUniqueAll,'frames:MultiIndex:requireUniqueFail')
+            function notUniqueAll, df2.rows = [1 2 3 20 20]; end
+            t.verifyError(@notUniqueAll2,'frames:MultiIndex:requireUniqueFail')
+            warning('on','frames:Index:notUnique')
+            function notUniqueAll2, df1.rows(1:end) = [1 2 3 20 20]; end
+            warning('on','frames:Index:subsagnNotUnique');
+            
+            df3=dfd;
+            warning('off','frames:MultiIndex:notUnique')
+            df3.rows([3,1]) = [0,4];
+            warning('on','frames:MultiIndex:notUnique')
+            t.verifyEqual(df3.rows(:,1),[4 2 0 10 10]')
+            t.verifyWarning(@duplicate1,'frames:Index:subsagnNotUnique')
+            function duplicate1, df3.rows([3,1]) = [2,0]; end
+            t.verifyWarning(@duplicate2,'frames:Index:subsagnNotUnique')
+            function duplicate2, df3.rows([3,1]) = [6,6]; end
+            
+            dfcs = frames.DataFrame(1,[],frames.MultiIndex([1 2 3 10 20]',UniqueSorted=true));
+            df4=dfcs;
+            df4.columns([3,1]) = [4,0];
+            t.verifyEqual(df4.columns(:,1),[0 2 4 10 20]')
+            t.verifyError(@notSortedCol,'frames:MultiIndex:requireSortedFail')
+            function notSortedCol, df4.columns([1,3]) = [4,0]; end
+            
+            df = frames.DataFrame([1 2; 2 5],{[]});
+            t.verifyError(@missing1,'frames:validators:mustBeFullVector')
+            function missing1(), df.rows(1:2)=[NaN 1]; end
+            
+            t.verifyError(@missing2,'frames:validators:mustBeFullVector')
+            function missing2(), df.rows(:,1)=[NaN 1]'; end
+            
+            t.verifyError(@cannotBeEmpty,'frames:rowsValidation:mustBeNonempty')
+            function cannotBeEmpty(), df.rows(2)=[]; end
+            
+            t.verifyError(@cannotBeEmpty2,'frames:rowsValidation:mustBeNonempty')
+            function cannotBeEmpty2(), df.rows=[]; end
+            
+            warning('off','frames:Index:subsagnNotUnique')
+            t.verifyError(@notUnique1,'frames:MultiIndex:requireUniqueFail')
+            function notUnique1(), df.rows=[6 6]; end
+            
+            
+            t.verifyError(@notUnique2,'frames:MultiIndex:requireUniqueFail')
+            function notUnique2(), df.rows(1)=2; end
+            warning('on','frames:Index:subsagnNotUnique')
 %             
 %             tf = frames.TimeFrame([1 2; 2 5],[738315,738316]);
 %             tf.rows = [738315,738317];
@@ -595,113 +602,116 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
 %             t.verifyEqual(datenum(tf.rows),[738314,738317]') 
 %             t.verifyError(@tiNotSorted,'frames:Index:requireSortedFail')
 %             function tiNotSorted(), tf.rows(1)=738318; end
-%         end
+         end
 %         
-%         function columnsSetterTest(t)
-%             df = frames.DataFrame([1 2; 2 5]);
-%             
-%             t.verifyWarning(@colsNotUniqueWarning,'frames:Index:notUnique')
-%             function colsNotUniqueWarning(), df.columns=[6 6]; end
-%             
-%             df.columns = ["3" "5"];
-%             t.verifyEqual(df.columns,["3" "5"])
-%             
-%             df.columns = frames.Index([3 5],Unique=true);
-%             t.verifyEqual(df.columns,[3 5])
-%             
-%             t.verifyError(@colsNotUnique,'frames:Index:requireUniqueFail')
-%             function colsNotUnique(), df.columns=[6 6]; end
-%             
-%             t.verifyError(@colsNotUnique2,'frames:Index:requireUniqueFail')
-%             function colsNotUnique2(), df.columns(1)=5; end
-%             
-%             t.verifyError(@wrongSize,'frames:columnsValidation:wrongSize')
-%             function wrongSize(), df.columns=3; end
-%             
-%             t.verifyError(@missing1,'frames:validators:mustBeFullVector')
-%             function missing1(), df.columns(1:2)=[NaN 1]; end
-%             
-%             t.verifyError(@missing2,'frames:validators:mustBeFullVector')
-%             function missing2(), df.columns=[NaN 1]'; end
-%             
-%             t.verifyError(@cannotBeEmpty,'frames:rowsValidation:mustBeNonempty')
-%             function cannotBeEmpty(), df.columns(2)=[]; end
-%             
-%             df.columns = [3 6];
-%             t.verifyEqual(df.columns,[3 6]) 
-%         end
-%         
-%         function dataSetterTest(t)
-%             df = frames.DataFrame([1 2; 2 5]);
-%             t.verifyError(@wrongSize,'frames:dataValidation:wrongSize')
-%             function wrongSize(), df.data=3; end
-%             
-%             df.data = [1 2;3 4];
-%             t.verifyEqual(df.data,[1 2;3 4]) 
-%         end
-%         
-%         function extendRowsTest(t)
-%             df = frames.DataFrame([1 1;2 2],[1 2]);
-%             ext = df.extendRows([3 2 0]);
-%             t.verifyEqual(ext.data, [1 1;2 2;NaN NaN;NaN NaN]);
-%             t.verifyEqual(ext.rows, [1 2 3 0]');
-%             
-%             df = df.setRowsType('sorted');
-%             ext = df.extendRows([3 2 0]);
-%             t.verifyEqual(ext.data, [NaN NaN;1 1;2 2;NaN NaN]);
-%             t.verifyEqual(ext.rows, [0 1 2 3]');
-%             
-%             t.verifyEqual(df.extendRows([2 1 2]),df);
-%             
-%             warning('off','frames:Index:notUnique')
-%             dupli = frames.DataFrame([1 3 4 5]',frames.Index([1 3 4 5],Unique=false)).extendRows([1 2 4]);
-%             warning('on','frames:Index:notUnique')
-%             t.verifyEqual(dupli.data, [1 3 4 5 NaN]');
-%             t.verifyEqual(dupli.rows, [1 3 4 5 2]');
-%         end
-%         
-%         function dropRowsTest(t)
-%             df = frames.DataFrame([1 1;2 2;3 3;4 4],[1 2 3 4]);
-%             t.verifyEqual(df.dropRows([2 3]).data, [1 1;4 4]);
-%             t.verifyEqual(df.dropRows([false true true false]).data, [1 1;4 4]);            
-%         end
-%         
-%         function extendColumnsTest(t)
-%             df = frames.DataFrame([1 1;2 2]',[],[1 2]);
-%             t.verifyEqual(df.extendColumns([3 1]).data, [1 1;2 2;NaN NaN]');
-%             
-%             warning('off','frames:Index:notUnique')
-%             wDuplicates = frames.DataFrame([1 2 3 4 5 6],[],[1 3 1 4 5 4]).extendColumns([1 2 4 2]);
-%             t.verifyEqual(wDuplicates.data, [1 2 3 4 5 6 NaN NaN]);
-%             t.verifyEqual(wDuplicates.columns, [1 3 1 4 5 4 2 2]);
-%             warning('on','frames:Index:notUnique')
-%             sorted = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],UniqueSorted=true)).extendColumns([1 2 4]);
-%             t.verifyEqual(sorted.data, [1 NaN 3 4 5]);
-%             t.verifyEqual(sorted.columns, [1 2 3 4 5]);
-%             uniq = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],Unique=true)).extendColumns([1 2 4]);
-%             t.verifyEqual(uniq.data, [1 3 4 5 NaN]);
-%             t.verifyEqual(uniq.columns, [1 3 4 5 2]);
-%         end
-%         
-%         function dropColumnsTest(t)
-%             warning('off','frames:Index:notUnique')
-%             df = frames.DataFrame([1 1;2 2;3 3;4 4;5 5]',[],[1 2 4 2 5]);
-%             t.verifyEqual(df.dropColumns([2 5]).data, [1 1;3 3]');
-%             t.verifyEqual(df.dropColumns([false true false true true]).data, [1 1;3 3]');
-%             warning('on','frames:Index:notUnique')
-%         end
-%         
-%         function shiftTest(t)
-%             df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1]');
-%             t.verifyEqual(df.shift().data, [NaN 1 1 3; NaN NaN 1 NaN]');
-%             t.verifyEqual(df.shift(-2).data, [3 1 NaN NaN; NaN 1 NaN NaN]');
-%         end
-%         
-%         function replaceStartByTest(t)
-%             df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1;NaN 2 2 4]');
-%             t.verifyEqual(df.replaceStartBy(10).data, [10 10 3 1; 10 1 NaN 1;10 2 2 4]');
-%         end
-%         
+        function columnsSetterTest1D(t)
+            df = frames.DataFrame([1 2; 2 5],{[]},{[]});
+            
+            t.verifyWarning(@colsNotUniqueWarning,'frames:MultiIndex:notUnique')
+            function colsNotUniqueWarning(), df.columns=[6 6]; end
+            
+            df.columns = ["3" "5"];
+            t.verifyEqual(df.columns(:,1),["3" "5"]')
+            
+            df.columns = frames.MultiIndex([3 5]',Unique=true);
+            t.verifyEqual(df.columns(:,1),[3 5]')
+            
+            warning('off','frames:Index:subsagnNotUnique');
+            t.verifyError(@colsNotUnique,'frames:MultiIndex:requireUniqueFail')
+            function colsNotUnique(), df.columns=[6 6]; end            
+            
+            t.verifyError(@colsNotUnique2,'frames:MultiIndex:requireUniqueFail')
+            function colsNotUnique2(), df.columns(1)=5; end
+            warning('on','frames:Index:subsagnNotUnique');
+                        
+            t.verifyError(@wrongSize,'frames:columnsValidation:wrongSize')
+            function wrongSize(), df.columns=3; end
+            
+            t.verifyError(@missing1,'frames:validators:mustBeFullVector')
+            function missing1(), df.columns(1:2)=[NaN 1]; end
+            
+            t.verifyError(@missing2,'frames:validators:mustBeFullVector')
+            function missing2(), df.columns=[NaN 1]'; end
+            
+            t.verifyError(@cannotBeEmpty,'frames:rowsValidation:mustBeNonempty')
+            function cannotBeEmpty(), df.columns(2)=[]; end
+            
+            df.columns = [3 6];
+            t.verifyEqual(df.columns(:,1),[3 6]') 
+        end
+        
+        function dataSetterTest1D(t)
+            df = frames.DataFrame([1 2; 2 5],{[]},{[]});
+            t.verifyError(@wrongSize,'frames:dataValidation:wrongSize')
+            function wrongSize(), df.data=3; end
+            
+            df.data = [1 2;3 4];
+            t.verifyEqual(df.data,[1 2;3 4]) 
+        end
+        
+        function extendRowsTest(t)
+            df = frames.DataFrame([1 1;2 2],{[1 2]'});
+            ext = df.extendRows([3 2 0]');
+            t.verifyEqual(ext.data, [1 1;2 2;NaN NaN;NaN NaN]);
+            t.verifyEqual(ext.rows(:,1), [1 2 3 0]');
+            
+            df = df.setRowsType('sorted');
+            ext = df.extendRows([3 2 0]');
+            t.verifyEqual(ext.data, [NaN NaN;1 1;2 2;NaN NaN]);
+            t.verifyEqual(ext.rows(:,1), [0 1 2 3]');            
+            t.verifyEqual(df.extendRows([2 1 2]),df);
+            
+            warning('off','frames:Index:notUnique')
+            dupli = frames.DataFrame([1 3 4 5]',frames.MultiIndex([1 3 4 5]',Unique=false)).extendRows([1 2 4]');
+            warning('on','frames:Index:notUnique')
+            t.verifyEqual(dupli.data, [1 3 4 5 NaN]');
+            t.verifyEqual(dupli.rows(:,1), [1 3 4 5 2]');
+        end
+         
+        function dropRowsTest(t)
+            df = frames.DataFrame([1 1;2 2;3 3;4 4],{[1 2 3 4]});
+            t.verifyEqual(df.dropRows([2 3]).data, [1 1;4 4]);
+            t.verifyEqual(df.dropRows([false true true false]).data, [1 1;4 4]);            
+        end
+        
+        function extendColumnsTest1D(t)
+            df = frames.DataFrame([1 1;2 2]',[],[1 2]);
+            t.verifyEqual(df.extendColumns([3 1]).data, [1 1;2 2;NaN NaN]');
+            
+            warning('off','frames:Index:notUnique')
+            wDuplicates = frames.DataFrame([1 2 3 4 5 6],[],[1 3 1 4 5 4]).extendColumns([1 2 4 2]);
+            t.verifyEqual(wDuplicates.data, [1 2 3 4 5 6 NaN NaN]);
+            t.verifyEqual(wDuplicates.columns, [1 3 1 4 5 4 2 2]);
+            warning('on','frames:Index:notUnique')
+            sorted = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],UniqueSorted=true)).extendColumns([1 2 4]);
+            t.verifyEqual(sorted.data, [1 NaN 3 4 5]);
+            t.verifyEqual(sorted.columns, [1 2 3 4 5]);
+            uniq = frames.DataFrame([1 3 4 5],[],frames.Index([1 3 4 5],Unique=true)).extendColumns([1 2 4]);
+            t.verifyEqual(uniq.data, [1 3 4 5 NaN]);
+            t.verifyEqual(uniq.columns, [1 3 4 5 2]);
+        end
+        
+        function dropColumnsTest(t)
+            warning('off','frames:Index:notUnique')
+            warning('off','frames:MultiIndex:notUnique')
+            df = frames.DataFrame([1 1;2 2;3 3;4 4;5 5]',{[]},{[1 2 4 2 5]'});
+            t.verifyEqual(df.dropColumns([2 5]').data, [1 1;3 3]');
+            t.verifyEqual(df.dropColumns([false true false true true]).data, [1 1;3 3]');
+            warning('on','frames:Index:notUnique')
+            warning('on','frames:MultiIndex:notUnique')
+        end
+        
+        function shiftTest(t)
+            df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1]',{[]});
+            t.verifyEqual(df.shift().data, [NaN 1 1 3; NaN NaN 1 NaN]');
+            t.verifyEqual(df.shift(-2).data, [3 1 NaN NaN; NaN 1 NaN NaN]');
+        end
+        
+        function replaceStartByTest(t)
+            df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1;NaN 2 2 4]',{[]});
+            t.verifyEqual(df.replaceStartBy(10).data, [10 10 3 1; 10 1 NaN 1;10 2 2 4]');
+        end
+        
         function emptyStart(t)
             df = frames.DataFrame([1 2 3 4; NaN NaN NaN 1;NaN 2 3 4]',{[]});
             t.verifyEqual(df.emptyStart(2).data, [NaN NaN 3 4; NaN NaN NaN NaN;NaN NaN NaN 4]',{[]});
@@ -716,79 +726,80 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             df = frames.DataFrame([1 2 3 4; NaN 5 NaN 2;NaN NaN NaN NaN]',{[]});
             t.verifyEqual(df.cumprod().data, [1 2 6 24; NaN 5 NaN 10;NaN NaN NaN NaN]');
         end
-%         
-%         function horzcatTest(t)
-%             solUnsorted = [frames.DataFrame([4 2;1 1],[1 3], [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
-%             expectedUnsorted = frames.DataFrame([4 2 4 2;1 1 NaN NaN;NaN NaN NaN 1],[1 3 2],[23 3 4 2]);
-%             t.verifyEqual(solUnsorted,expectedUnsorted)
-%             solSorted = [frames.DataFrame([4 2;1 1],frames.Index([1 3],UniqueSorted=true), [23 3]),frames.DataFrame([4 2;NaN 1],[1 2], [4 2])];
-%             expectedSorted = frames.DataFrame([4 2 4 2;NaN NaN NaN 1;1 1 NaN NaN],frames.Index([1 2 3],UniqueSorted=true),[23 3 4 2]);
-%             t.verifyEqual(solSorted,expectedSorted)
-%             
-%             % repeating
-%             a = frames.DataFrame(1,1,"a");
-%             b = frames.DataFrame([11 11;22 22],[1 3],["b1","b2"]);
-%             warning('off','frames:Index:notUnique')
-%             expected = frames.DataFrame([1 11 11 1; NaN 22 22 NaN],[1 3],["a","b1","b2","a"]);
-%             t.verifyEqual([a b a],expected)
-%             
-%             % disallow concatenation between different classes like [1,'1']
-%             c = b;
-%             c.data = char(c.data);
-%             t.verifyError(@() [b c],'frames:concat:differentDatatype');
-%             warning('on','frames:Index:notUnique')
-%         end
-%         
-%         function vertcatTest(t)
-%             sol = [frames.DataFrame([4 2;1 1],frames.Index([1 2],UniqueSorted=true),[23 3]);frames.DataFrame([4 2;1 1],[3 4],[3 44])];
-%             expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.Index([1 2 3 4],UniqueSorted=true),[23 3 44]);
-%             t.verifyEqual(sol,expected)
-%             
+        
+        function horzcatTest(t)            
+            solUnsorted = [frames.DataFrame([4 2;1 1],{[1 3]'}, {[23 3]'}),frames.DataFrame([4 2;NaN 1],{[1 2]'}, {[4 2]'})];
+            expectedUnsorted = frames.DataFrame([4 2 4 2;1 1 NaN NaN;NaN NaN NaN 1],{[1 3 2]'},{[23 3 4 2]'});
+            t.verifyEqual(solUnsorted,expectedUnsorted)
+            solSorted = [frames.DataFrame([4 2;1 1],frames.MultiIndex([1 3]',UniqueSorted=true), {[23 3]}),frames.DataFrame([4 2;NaN 1],{[1 2]'}, {[4 2]'})];
+            expectedSorted = frames.DataFrame([4 2 4 2;NaN NaN NaN 1;1 1 NaN NaN],frames.MultiIndex([1 2 3]',UniqueSorted=true),{[23 3 4 2]});
+            t.verifyEqual(solSorted,expectedSorted)
+            
+            % repeating
+            a = frames.DataFrame(1,{1},{"a"});
+            b = frames.DataFrame([11 11;22 22],{[1 3]'},{["b1","b2"]'});
+            warning('off','frames:Index:notUnique')
+            warning('off','frames:MultiIndex:notUnique')
+            expected = frames.DataFrame([1 11 11 1; NaN 22 22 NaN],{[1 3]'},{["a","b1","b2","a"]'});
+            t.verifyEqual([a b a],expected)
+            
+            % disallow concatenation between different classes like [1,'1']
+            c = b;
+            c.data = char(c.data);
+            t.verifyError(@() [b c],'frames:concat:differentDatatype');
+            warning('on','frames:Index:notUnique')
+            warning('on','frames:MultiIndex:notUnique')
+        end
+        
+        function vertcatTest(t)
+            sol = [frames.DataFrame([4 2;1 1],frames.MultiIndex([1 2]',UniqueSorted=true),{[23 3]'});frames.DataFrame([4 2;1 1],{[3 4]'},{[3 44]'})];
+            expected = frames.DataFrame([4 2 NaN;1 1 NaN;NaN 4 2;NaN 1 1],frames.MultiIndex([1 2 3 4]',UniqueSorted=true),{[23 3 44]'});
+            t.verifyEqual(sol,expected)
+            
 %             % multiple concat with (un)sorted Frames
 %             a = frames.TimeFrame(1,1,1);
 %             b = frames.TimeFrame(2,[2 4],1);
 %             c = frames.TimeFrame(3,3,2);
 %             t.verifyEqual([a;c;b],frames.TimeFrame([1 2 NaN 2; NaN NaN 3 NaN]',[1 2 3 4],[1 2]))
-%             
+            
 %             warning_id = 'frames:concat:overlap';
 %             t.verifyWarning(@() [a;a] , warning_id );
 %             warning('off',warning_id)
 %             t.verifyEqual([a;a], a) % original error 'frames:vertcat:rowsNotUnique'
 %             warning('on',warning_id)                    
-%             
-%             a = frames.DataFrame(1,1,1);
-%             b = frames.DataFrame(2,[2 4],1);
-%             c = frames.DataFrame(3,3,2);
-%             t.verifyEqual([a;c;b],frames.DataFrame([1 NaN 2 2; NaN 3 NaN NaN]',[1 3 2 4],[1 2]))
-%         end
-%         
-%         function vertcatRowsPropsTest(t)
-%             df = frames.DataFrame([1 2;3 4],[1 2],frames.Index([1 3],UniqueSorted=true));
-%             df2 = frames.DataFrame([30,20],3,[3 2]);
-%             
-%             t.verifyEqual([df;df2],frames.DataFrame([1 NaN 2;3 NaN 4;NaN 20 30],[1 2 3],frames.Index([1 2 3],UniqueSorted=true)))
-%             
-%         end
-%         
-%         function resampleTest(t)
-%             sortedframe = frames.DataFrame([4 1 NaN 3; 2 NaN 4 NaN]',[1 4 10 20]).setRowsType("sorted");
-%             ffi = sortedframe.resample([2 5],FirstValueFilling='ffillFromInterval');
-%             t.verifyEqual(ffi, frames.DataFrame([4 1; 2 NaN]',[2 5]).setRowsType("sorted"));
-%             ffi1 = sortedframe.resample([3 11],FirstValueFilling={'ffillFromInterval',1});
-%             t.verifyEqual(ffi1, frames.DataFrame([NaN 1; NaN 4]',[3 11]).setRowsType("sorted"));
-%             ffla = sortedframe.resample([13 14 15],FirstValueFilling='ffillLastAvailable');
-%             t.verifyEqual(ffla, frames.DataFrame([1 NaN NaN;4 NaN NaN]',[13 14 15]).setRowsType("sorted"));
-%             noff = sortedframe.resample([13 14 15],FirstValueFilling='noFfill');
-%             t.verifyEqual(noff, frames.DataFrame([NaN NaN NaN;NaN NaN NaN]',[13 14 15]).setRowsType("sorted"));
-%             noff2 = sortedframe.resample([4 14 15],FirstValueFilling='noFfill');
-%             t.verifyEqual(noff2, frames.DataFrame([1 NaN NaN;NaN 4 NaN]',[4 14 15]).setRowsType("sorted"));
-%         end
-%         
-%         function sortByTest(t)
-%             sol = frames.DataFrame([1 2 3; 2 5 3]',[1 3 65],[4 3]).setRowsType("sorted").sortBy(3);
-%             t.verifyEqual(sol,frames.DataFrame([1 3 2;2 3 5]',[1 65 3],[4 3]))
-%         end
-%         
+            
+            a = frames.DataFrame(1,{1},{1});
+            b = frames.DataFrame(2,{[2 4]'},{1});
+            c = frames.DataFrame(3,{3},{2});
+            t.verifyEqual([a;c;b],frames.DataFrame([1 NaN 2 2; NaN 3 NaN NaN]',{[1 3 2 4]'},{[1 2]'}))
+        end
+        
+        function vertcatRowsPropsTest(t)
+            df = frames.DataFrame([1 2;3 4],{[1 2]},frames.MultiIndex([1 3]',UniqueSorted=true));
+            df2 = frames.DataFrame([30,20],{3},{[3 2]'});            
+            t.verifyEqual([df;df2],frames.DataFrame([1 NaN 2;3 NaN 4;NaN 20 30],{[1 2 3]'},frames.MultiIndex([1 2 3]',UniqueSorted=true)))
+            
+        end
+        
+        function resampleTest(t)
+            sortedframe = frames.DataFrame([4 1 NaN 3; 2 NaN 4 NaN]',{[1 4 10 20]'}).setRowsType("sorted");
+            ffi = sortedframe.resample([2 5],FirstValueFilling='ffillFromInterval');
+            t.verifyEqual(ffi, frames.DataFrame([4 1; 2 NaN]',{[2 5]'}).setRowsType("sorted"));
+            ffi1 = sortedframe.resample([3 11],FirstValueFilling={'ffillFromInterval',1});
+            t.verifyEqual(ffi1, frames.DataFrame([NaN 1; NaN 4]',{[3 11]'}).setRowsType("sorted"));
+            ffla = sortedframe.resample([13 14 15],FirstValueFilling='ffillLastAvailable');
+            t.verifyEqual(ffla, frames.DataFrame([1 NaN NaN;4 NaN NaN]',{[13 14 15]'}).setRowsType("sorted"));
+            noff = sortedframe.resample([13 14 15],FirstValueFilling='noFfill');
+            t.verifyEqual(noff, frames.DataFrame([NaN NaN NaN;NaN NaN NaN]',{[13 14 15]}).setRowsType("sorted"));
+            noff2 = sortedframe.resample([4 14 15],FirstValueFilling='noFfill');
+            t.verifyEqual(noff2, frames.DataFrame([1 NaN NaN;NaN 4 NaN]',{[4 14 15]'}).setRowsType("sorted"));
+        end
+        
+        function sortByTest(t)
+            sol = frames.DataFrame([1 2 3; 2 5 3]',{[1 3 65]'},{[4 3]'}).setRowsType("sorted").sortBy(3);
+            t.verifyEqual(sol,frames.DataFrame([1 3 2;2 3 5]',{[1 65 3]'},{[4 3]'}))
+        end
+        
         function sortRowsTest(t)
             sol = frames.DataFrame([1 2 3; 2 5 3]', frames.MultiIndex([2 6 1]',Unique=true,Name="dim1")).sortRows();
             t.verifyEqual(sol,frames.DataFrame([3 1 2;3 2 5]',{[1 2 6]}))
@@ -870,163 +881,164 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
 %             t.verifyEqual(s1,s3)
 %         end
 %         
-%         function firstRowsTest(t)
-%             df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1;NaN NaN 33 44 55 66]');
-%             t.verifyEqual(df.firstCommonRow(),4)
-%             t.verifyEqual(df.firstValidRow(),2)
-%             noCommon = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRow();
-%             t.verifyEqual(noCommon,string.empty(0,1));
-%         end
-%         
-%         function relChangeTest(t)
-%             dfp = frames.DataFrame([1 NaN 3; NaN 2 3;5 1 NaN]');
-%             exp = frames.DataFrame([NaN 1 3; NaN 2 3;5 1 NaN]');
-%             t.verifyEqual(dfp.relChg('log').compoundChange('log',[1 2 5]).data,exp.data,'AbsTol',t.tol)
-%             t.verifyEqual(dfp.relChg().compoundChange('simple',[1 2 5]).data,exp.data,'AbsTol',t.tol)
-%             df2 = frames.DataFrame([1 2]');
-%             t.verifyEqual(df2.relChg('log').data,[NaN log(2)]')
-%             t.verifyEqual(df2.relChg().data,[NaN 1]')
-%             
+        function firstRowsTest1D(t)
+            % WARNING: behavior changed wrt to Index()
+            df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1;NaN NaN 33 44 55 66]', {[]});
+            t.verifyEqual(df.firstCommonRow(),{{4}}); % outputs a cell array
+            t.verifyEqual(df.firstValidRow(),{{2}}) % outputs a cell array
+            noCommon = frames.DataFrame([4 NaN 6;NaN 55 NaN]',{string([1 2 3])'}).firstCommonRow();
+            t.verifyEqual(noCommon,cell(0,1)); % outputs empty cell array
+        end
+        
+        function relChangeTest(t)
+            dfp = frames.DataFrame([1 NaN 3; NaN 2 3;5 1 NaN]', {[]});
+            exp = frames.DataFrame([NaN 1 3; NaN 2 3;5 1 NaN]', {[]});
+            t.verifyEqual(dfp.relChg('log').compoundChange('log',[1 2 5]).data,exp.data,'AbsTol',t.tol)
+            t.verifyEqual(dfp.relChg().compoundChange('simple',[1 2 5]).data,exp.data,'AbsTol',t.tol)
+            df2 = frames.DataFrame([1 2]', {[]});
+            t.verifyEqual(df2.relChg('log').data,[NaN log(2)]')
+            t.verifyEqual(df2.relChg().data,[NaN 1]')
+            
 %             % test other arguments
 %             tf = frames.TimeFrame([1 1 NaN 2]');
 %             t.verifyEqual(tf.relChg(),frames.TimeFrame([NaN 0 NaN 1]'));
 %             t.verifyEqual(tf.relChg('simple',2),frames.TimeFrame([NaN NaN NaN 1]'));
 %             t.verifyEqual(tf.relChg('simple',2,false),frames.TimeFrame([NaN 1]',[2 4]));
-%         end
-%         
-%         function mathOperationsTest(t)
-%             mat1 = frames.DataFrame([1 2;3 4]);
-%             mat2 = frames.DataFrame([10 20;30 40],[],["a","b"]);
-%             vecV = frames.DataFrame([6 7]',ColSeries=true);
-%             vecV2 = frames.DataFrame([6 7]',ColSeries=true);
-%             vecH = frames.DataFrame([6 7]',ColSeries=true);
-%             tf = frames.TimeFrame([738331:738336;1:6]',738331:738336);
-%             
-%             tfOp = tf' * tf;
-%             t.verifyEqual(tfOp,frames.DataFrame(tf.data'*tf.data,tf.getColumnsObj(),tf.getColumnsObj()))
-%             mtimesM = mat1' * mat2;
-%             t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.getColumnsObj(),mat2.getColumnsObj()))
-%             mtimesV = mat1' * vecV2;
-%             t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.getColumnsObj(),vecV2.getColumnsObj(),ColSeries=true))
-%             times = mat1 .* vecV;
-%             t.verifyEqual(times,frames.DataFrame([6 12;21 28],mat1.rows,mat1.columns))
-%             plus1 = mat1 + vecH;
-%             t.verifyEqual(plus1,frames.DataFrame([7 8;10 11],mat1.rows,mat1.columns))
-%             plus2 = vecH + mat1;
-%             t.verifyEqual(plus2,frames.DataFrame([7 8;10 11],mat1.rows,mat1.columns))
-%             plusSeries = vecV2 + vecV;
-%             t.verifyEqual(plusSeries,frames.DataFrame([12;14],vecV2.rows,vecV2.columns,ColSeries=true))
-%             t.verifyError(@notAligned,'frames:matrixOpHandler:notAligned')
-%             function notAligned(), mat1*mat2; end %#ok<VUNUS>
-%             t.verifyError(@notSameColumns,'frames:Index:alignIndex:unequalIndex')
-%             function notSameColumns(), mat1-mat2; end %#ok<VUNUS>
-%             
-%             t.verifyError(@seriesError,'frames:Index:alignIndex:unequalIndex')
-%             function seriesError(), mat1.*mat1(1); end %#ok<VUNUS>
-%             loc = mat1 .* mat1(1).asRowSeries();
-%             t.verifyEqual(loc,frames.DataFrame([1 4;3 8],mat1.rows,mat1.columns))
-%             summing = mat1 .* mat1.sum();
-%             t.verifyEqual(summing,frames.DataFrame([4 12;12 24],mat1.rows,mat1.columns))
-%             iloc = -mat1 - mat1{:,1}.asColSeries();
-%             t.verifyEqual(iloc,frames.DataFrame([-2 -3;-6 -7],mat1.rows,mat1.columns))
-% 
-%             % with arrays
-%             df = frames.DataFrame([1 2;3 4],["a" "b"],["one" "two"]);
-%             two = frames.DataFrame(2,ColSeries=true,RowSeries=true);
-%             t.verifyEqual(df*2,frames.DataFrame(2*[1 2;3 4],["a" "b"],["one" "two"]))
-%             t.verifyEqual(2*df,df*2)
-%             t.verifyEqual(2*df,two.*df)
-%             t.verifyError(@() two*df,'frames:matrixOpHandler:notAligned')
-%             t.verifyEqual([1 2]*df,frames.DataFrame([7 10],1,df.columns))
-%             t.verifyEqual(df*[1;2],frames.DataFrame([5;11],df.rows))
-%             
-%             % element-wise with a 1x1
-%             oneone = frames.DataFrame(2);
-%             oneoneSeries = oneone.asRowSeries().asColSeries();
-%             matr = frames.DataFrame([1 2; 3 4],[],[2 3]);
-%             t.verifyEqual(oneoneSeries.*matr,matr.*oneoneSeries)
-%             t.verifyError(@cantMatOp,'frames:matrixOpHandler:notAligned')
-%             function cantMatOp(), oneoneSeries*matr; end %#ok<VUNUS>
-%             
-%             % col mtimes row
-%             res = frames.DataFrame([1 2 3]',2:4,"u")*frames.DataFrame([1 2 3],"u",["a" "b" "c"]);
-%             t.verifyEqual(res.rows,(2:4)')
-%             t.verifyEqual(res.columns,["a" "b" "c"])
-%             
-%             % logical operations
-%             df = frames.DataFrame([true,false;false,true]);
-%             t.verifyEqual(~df,frames.DataFrame([false,true;true,false]))
-%         end
-%         
-%         function mathOperationsMiscellaneousTest(t)
-%             df = t.dfMissing1;
-%             t.verifyEqual(df./df,df./df.data)
-%             div = 1./df;
-%             t.verifyEqual(div.data,1./df.data)
-%             t.verifyEqual(df/2,df./2)
-%             t.verifyEqual(df+1,1+df)
-%             t.verifyEqual(df-1,-(1-df))
-%             
-%             b = df{1,:}';
-%             expectedData = df.data * b.data;
-%             expected = frames.DataFrame(expectedData,df.rows,b.getColumnsObj());
-%             t.verifyEqual(df*b,expected)
-%         end
-%         
-%         function mat2seriesTest(t)
-%             df = frames.DataFrame([1:6;11:16;21:26]);
-%             df.data(8) = NaN;
-%             t.verifyEqual(df.mean(),df.mean(1))
-%             t.verifyEqual(df.mean().data,mean(df.data,'omitnan'))
-%             t.verifyEqual(df.mean(2).data,mean(df.data,2,'omitnan'))
-%             
-%             t.verifyEqual(df.std(),df.std(1))
-%             t.verifyEqual(df.std().data,std(df.data,'omitnan'))
-%             t.verifyEqual(df.std(2).data,std(df.data,[],2,'omitnan'))
-%             t.verifyEqual(df.std(2,1).data,std(df.data,1,2,'omitnan'))
-%         end
-%         
-%         function isalignedTest(t)
-%             df = frames.DataFrame([1 2;10 0]);
-%             t.verifyTrue(df.isaligned(df,df,df))
-%             df2 = frames.DataFrame([1 2;10 0],[2 3]);
-%             t.verifyFalse(df.isaligned(df2))
-%             t.verifyTrue(df.isaligned(df2,'columns'))
-%             t.verifyFalse(df.isaligned(df2,'rows'))
-%             df3 = frames.DataFrame([1 2;10 0],[2 3],[1,2]);
-%             t.verifyFalse(df2.isaligned(df3))
-%             t.verifyFalse(df2.isaligned(df3,'columns'))
-%             t.verifyTrue(df2.isaligned(df3,'rows'))
-%         end
-%         
-%         function equalsTest(t)
-%             df=frames.DataFrame([1 2;3 4]);
-%             df2=frames.DataFrame([1 2;3 4])+0.5;
-%             t.verifyTrue(df.equals(df2,1))
-%             t.verifyFalse(df.equals(df2))
-%         end
-%         
-%         function eqTest(t)
-%             df=frames.DataFrame([1 2;1 2]);
-%             df2=frames.DataFrame([1 2]);
-%             series=df2.asRowSeries();
-%             t.verifyEqual(df==series,frames.DataFrame([true true;true true]))
-%             t.verifyError(@()df==df2,'frames:Index:alignIndex:unequalIndex')
-%             
-%             df1 = frames.DataFrame([1 NaN]);
-%             t.verifyEqual(df1==df2,frames.DataFrame([true false]));
-%             t.verifyEqual(df1.data==df2,frames.DataFrame([true false]));
-%             dfs = frames.DataFrame({'cc' 'aa'});
-%             t.verifyEqual(dfs==dfs,frames.DataFrame([true true]));
-%             t.verifyEqual('cc'==dfs,frames.DataFrame([true false]));
-%         end
-%         
-%         function anyTest(t)
-%             df=frames.DataFrame([false true; false false]);
-%             t.verifyEqual(df.any(1),frames.DataFrame([false true],RowSeries=true));
-%             t.verifyEqual(df.any(1).any(2),true);
-%             t.verifyEqual(df.all(2),frames.DataFrame([false false]',ColSeries=true));
-%         end
+        end
+        
+        function mathOperationsTest(t)
+            mat1 = frames.DataFrame([1 2;3 4],{[]},{[]});
+            mat2 = frames.DataFrame([10 20;30 40],{[]},{["a","b"]});
+            vecV = frames.DataFrame([6 7]',{[]},{[]},ColSeries=true);
+            vecV2 = frames.DataFrame([6 7]',{[]},{[]},ColSeries=true);
+            vecH = frames.DataFrame([6 7]',{[]},{[]},ColSeries=true);
+            tf = frames.TimeFrame([738331:738336;1:6]',738331:738336); %not changed to MultiIndex
+            
+            tfOp = tf' * tf;
+            t.verifyEqual(tfOp,frames.DataFrame(tf.data'*tf.data,tf.getColumnsObj(),tf.getColumnsObj()))
+            mtimesM = mat1' * mat2;
+            t.verifyEqual(mtimesM,frames.DataFrame([100 140;140 200],mat1.getColumnsObj(),mat2.getColumnsObj()))
+            mtimesV = mat1' * vecV2;
+            t.verifyEqual(mtimesV,frames.DataFrame([27;40],mat1.getColumnsObj(),vecV2.getColumnsObj(),ColSeries=true))
+            times = mat1 .* vecV;
+            t.verifyEqual(times,frames.DataFrame([6 12;21 28],mat1.rows,mat1.columns))
+            plus1 = mat1 + vecH;
+            t.verifyEqual(plus1,frames.DataFrame([7 8;10 11],mat1.rows,mat1.columns))
+            plus2 = vecH + mat1;
+            t.verifyEqual(plus2,frames.DataFrame([7 8;10 11],mat1.rows,mat1.columns))
+            plusSeries = vecV2 + vecV;
+            t.verifyEqual(plusSeries,frames.DataFrame([12;14],vecV2.rows,vecV2.columns,ColSeries=true))
+            t.verifyError(@notAligned,'frames:matrixOpHandler:notAligned')
+            function notAligned(), mat1*mat2; end %#ok<VUNUS>
+            t.verifyError(@notSameColumns,'frames:Index:alignIndex:unequalIndex')
+            function notSameColumns(), mat1-mat2; end %#ok<VUNUS>
+            
+            t.verifyError(@seriesError,'frames:Index:alignIndex:unequalIndex')
+            function seriesError(), mat1.*mat1(1); end %#ok<VUNUS>
+            loc = mat1 .* mat1(1).asRowSeries();
+            t.verifyEqual(loc,frames.DataFrame([1 4;3 8],mat1.rows,mat1.columns))
+            summing = mat1 .* mat1.sum();
+            t.verifyEqual(summing,frames.DataFrame([4 12;12 24],mat1.rows,mat1.columns))
+            iloc = -mat1 - mat1{:,1}.asColSeries();
+            t.verifyEqual(iloc,frames.DataFrame([-2 -3;-6 -7],mat1.rows,mat1.columns))
+
+            % with arrays
+            df = frames.DataFrame([1 2;3 4],{["a" "b"]'},{["one" "two"]'});
+            two = frames.DataFrame(2,{[]},{[]},ColSeries=true,RowSeries=true);
+            t.verifyEqual(df*2,frames.DataFrame(2*[1 2;3 4],{["a" "b"]'},{["one" "two"]'}))
+            t.verifyEqual(2*df,df*2)
+            t.verifyEqual(2*df,two.*df)
+            t.verifyError(@() two*df,'frames:matrixOpHandler:notAligned')
+            t.verifyEqual([1 2]*df,frames.DataFrame([7 10],1,df.columns))
+            t.verifyEqual(df*[1;2],frames.DataFrame([5;11],df.rows))
+            
+            % element-wise with a 1x1
+            oneone = frames.DataFrame(2,{[]},{[]});
+            oneoneSeries = oneone.asRowSeries().asColSeries();
+            matr = frames.DataFrame([1 2; 3 4],{[]},{[2 3]'});
+            t.verifyEqual(oneoneSeries.*matr,matr.*oneoneSeries)
+            t.verifyError(@cantMatOp,'frames:matrixOpHandler:notAligned')
+            function cantMatOp(), oneoneSeries*matr; end %#ok<VUNUS>
+            
+            % col mtimes row
+            res = frames.DataFrame([1 2 3]',{(2:4)'},{"u"})*frames.DataFrame([1 2 3],{"u"},{["a" "b" "c"]'});
+            t.verifyEqual(res.rows(:,1),(2:4)')
+            t.verifyEqual(res.columns(:,1),["a" "b" "c"]')
+            
+            % logical operations
+            df = frames.DataFrame([true,false;false,true]);
+            t.verifyEqual(~df,frames.DataFrame([false,true;true,false]))
+        end
+        
+        function mathOperationsMiscellaneousTest1D(t)
+            df = t.dfMissing1;
+            t.verifyEqual(df./df,df./df.data)
+            div = 1./df;
+            t.verifyEqual(div.data,1./df.data)
+            t.verifyEqual(df/2,df./2)
+            t.verifyEqual(df+1,1+df)
+            t.verifyEqual(df-1,-(1-df))
+            
+            b = df{1,:}';
+            expectedData = df.data * b.data;
+            expected = frames.DataFrame(expectedData,df.rows,b.getColumnsObj());
+            t.verifyEqual(df*b,expected)
+        end
+        
+        function mat2seriesTest1D(t)
+            df = frames.DataFrame([1:6;11:16;21:26],{[]},{[]});
+            df.data(8) = NaN;
+            t.verifyEqual(df.mean(),df.mean(1))
+            t.verifyEqual(df.mean().data,mean(df.data,'omitnan'))
+            t.verifyEqual(df.mean(2).data,mean(df.data,2,'omitnan'))
+            
+            t.verifyEqual(df.std(),df.std(1))
+            t.verifyEqual(df.std().data,std(df.data,'omitnan'))
+            t.verifyEqual(df.std(2).data,std(df.data,[],2,'omitnan'))
+            t.verifyEqual(df.std(2,1).data,std(df.data,1,2,'omitnan'))
+        end
+        
+        function isalignedTest1D(t)
+            df = frames.DataFrame([1 2;10 0],{[]},{[]});
+            t.verifyTrue(df.isaligned(df,df,df))
+            df2 = frames.DataFrame([1 2;10 0],{[2 3]'},{[]});
+            t.verifyFalse(df.isaligned(df2))
+            t.verifyTrue(df.isaligned(df2,'columns'))
+            t.verifyFalse(df.isaligned(df2,'rows'))
+            df3 = frames.DataFrame([1 2;10 0],{[2 3]'},{[1,2]'});
+            t.verifyFalse(df2.isaligned(df3))
+            t.verifyFalse(df2.isaligned(df3,'columns'))
+            t.verifyTrue(df2.isaligned(df3,'rows'))
+        end
+        
+        function equalsTest1D(t)
+            df=frames.DataFrame([1 2;3 4],{[]});
+            df2=frames.DataFrame([1 2;3 4],{[]})+0.5;
+            t.verifyTrue(df.equals(df2,1))
+            t.verifyFalse(df.equals(df2))
+        end
+        
+        function eqTest1D(t)
+            df=frames.DataFrame([1 2;1 2],{[]},{[]});
+            df2=frames.DataFrame([1 2],{[]},{[]});
+            series=df2.asRowSeries();
+            t.verifyEqual(df==series,frames.DataFrame([true true;true true],{[]},{[]}))
+            t.verifyError(@()df==df2,'frames:Index:alignIndex:unequalIndex')
+            
+            df1 = frames.DataFrame([1 NaN],{[]},{[]});
+            t.verifyEqual(df1==df2,frames.DataFrame([true false],{[]},{[]}));
+            t.verifyEqual(df1.data==df2,frames.DataFrame([true false],{[]},{[]}));
+            dfs = frames.DataFrame({'cc' 'aa'},{[]},{[]});
+            t.verifyEqual(dfs==dfs,frames.DataFrame([true true],{[]},{[]}));
+            t.verifyEqual('cc'==dfs,frames.DataFrame([true false],{[]},{[]}));
+        end
+        
+        function anyTest1D(t)
+            df=frames.DataFrame([false true; false false],{[]},{[]});
+            t.verifyEqual(df.any(1),frames.DataFrame([false true],{[]},{[]},RowSeries=true));
+            t.verifyEqual(df.any(1).any(2),true);
+            t.verifyEqual(df.all(2),frames.DataFrame([false false]',{[]},{[]},ColSeries=true));
+        end
 %         
 %         function selectFromTimeRangeTest(t)
 %             tf = frames.TimeFrame(1,738318:738318+10); % 11 June 2021 to 21 June 2021
@@ -1121,41 +1133,40 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
 %             t.verifyEqual({frames.DataFrame([10;8]).asColSeries(),["Var2","Var1"]},{df2,idx2})
 %         end
 %         
-%         function nansumTest(t)
-%             df1 = frames.DataFrame([1 NaN;NaN 4]);
-%             df2 = frames.DataFrame([1 2;NaN 4]);
-%             df3 = frames.DataFrame([1 2;NaN 4],[2 3]);
-%             t.verifyEqual(df1.nansum(df1,df1),3.*df1)
-%             t.verifyEqual(df1.nansum(df2),frames.DataFrame([2 2;NaN 8]))
-%             t.verifyEqual(df1.nansum(df2.data),frames.DataFrame([2 2;NaN 8]))
-%             
-%             t.verifyError(@()df1.nansum(2),'frames:nansum:differentSize')
-%             t.verifyError(@()df1.nansum(df3),'frames:nansum:notAligned')
-%         end
-%         
+        function nansumTest(t)
+            df1 = frames.DataFrame([1 NaN;NaN 4],{[]},{[]});
+            df2 = frames.DataFrame([1 2;NaN 4],{[]},{[]});
+            df3 = frames.DataFrame([1 2;NaN 4],{[2 3]'},{[]});
+            t.verifyEqual(df1.nansum(df1,df1),3.*df1)
+            t.verifyEqual(df1.nansum(df2),frames.DataFrame([2 2;NaN 8],{[]},{[]}))
+            t.verifyEqual(df1.nansum(df2.data),frames.DataFrame([2 2;NaN 8],{[]},{[]}))
+            
+            t.verifyError(@()df1.nansum(2),'frames:nansum:differentSize')
+            t.verifyError(@()df1.nansum(df3),'frames:nansum:notAligned')
+        end
+        
         function covcorrTest(t)
             df = t.dfMissing1;
             cor = df.corr();
             cov = df.cov();
             t.verifyEqual(cor.rows,cov.columns')
         end
-%         
-%         function dropMissingTest(t)
-%             df = frames.DataFrame([NaN NaN; NaN 1],string([1 2]),{'a','b'});
-%             dany = df.dropMissing(How='any');
-%             t.verifyEqual(dany,frames.DataFrame(double.empty(0,2),string.empty(0,1),{'a','b'}));
-%             dall = df.dropMissing(How='all');
-%             t.verifyEqual(dall,frames.DataFrame([NaN 1],string(2),{'a','b'}));
-%             dall2 = df.dropMissing(How='all',Axis=2);
-%             t.verifyEqual(dall2,frames.DataFrame([NaN 1]',string([1 2]),{'b'}));
-%             dfstring = df;
-%             dfstring.data = string(df.data);
-%             dall2string = dfstring.dropMissing(How='all',Axis=2);
-%             t.verifyEqual(dall2string,frames.DataFrame(string([NaN 1]'),string([1 2]),{'b'}));
-%         end
-%         
-        function rollingEwmTest(t)
-            
+        
+        function dropMissingTest(t)
+            df = frames.DataFrame([NaN NaN; NaN 1],{string([1 2])},{{'a'},{'b'}}); % cell array of char not supported as direct input for a single dimension, need to split it up
+            dany = df.dropMissing(How='any');
+            t.verifyEqual(dany,frames.DataFrame(double.empty(0,2),{string.empty(0,1)},{{'a'},{'b'}}));
+            dall = df.dropMissing(How='all');
+            t.verifyEqual(dall,frames.DataFrame([NaN 1],{string(2)},{{'a'},{'b'}}));
+            dall2 = df.dropMissing(How='all',Axis=2);
+            t.verifyEqual(dall2,frames.DataFrame([NaN 1]',{string([1 2])},{{'b'}})); % nested cell to force interpretation as MultiIndex
+            dfstring = df;
+            dfstring.data = string(df.data);
+            dall2string = dfstring.dropMissing(How='all',Axis=2);
+            t.verifyEqual(dall2string,frames.DataFrame(string([NaN 1]'),{string([1 2])},{{'b'}}));
+        end
+        
+        function rollingEwmTest(t)            
             % 2D check
             df = frames.DataFrame([1 2 3 3 2 1;2 5 NaN 1 3 2;5 0 1 1 3 2]',{1:6,11:16});
             t.verifyEqual(df.rolling(4).sum().data,[NaN NaN 6 9 10 9;NaN NaN NaN 8 9 6;NaN NaN 6 7 5 7]');
@@ -1180,6 +1191,6 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(df.ewm(Alpha=0.3).var().data(1,:),[NaN NaN NaN])
             t.verifyEqual(df.ewm(Alpha=0.3).mean().data,df.ewm(Window=2/0.3-1).mean().data,AbsTol=t.tol)
         end
-%         
+         
      end
 end
