@@ -214,7 +214,12 @@ classdef DataFrame
             
             function bool = checkIsEmpty(value)
                 % check if input to create empty index
-                bool = isequal(value,[]) || (iscell(value) && isempty(value)) || isequal(value,{[]});
+                bool = isequal(value,[]) || ...
+                         (iscell(value) && ...
+                               (isempty(value) || ...
+                                iscell(value{1}) && ~isempty(value{1}) && ismissing(value{1}{1})) ...
+                               ) || ...                         
+                         isequal(value,{[]});
             end
             
         end
@@ -541,6 +546,9 @@ classdef DataFrame
             if ~obj.rows_.requireUniqueSorted
                 error('Only use resample with a sorted Index (set obj.setRowsType("sorted"))')
             end
+            assert(obj.rows_.Ndim==1,'frames.DataFrame:resample:multipleRowDimsNotSupported', ...
+                "Multiple row dimensions not supported");
+            if isrow(rows), rows=rows'; end %MultiIndex requires column vector
             FirstValueFilling = nameValue.FirstValueFilling;
             if ~iscell(FirstValueFilling)
                 FirstValueFilling = {FirstValueFilling};
@@ -955,7 +963,7 @@ classdef DataFrame
             % * overlapping : (logical), default true
             %       whether to return the frame with all the indices (true) or only the indices at n*lag (false)
             [obj.data_,row] = relativeChange(obj.data_,varargin{:});
-            obj.rows_.value_ = obj.rows_.value_(row);
+            obj.rows_= obj.rows_.getSubIndex(row);
         end
         function obj = compoundChange(obj,varargin)
             % compound relative changes
@@ -1281,8 +1289,9 @@ classdef DataFrame
                 if strcmp(s(1).type,'.')
                      field = string(s(1).subs);                                        
                      if ismember(field, ["rows","columns"])
-                        % allow custom data access of index values as implemented in Index class subsref
-                        [varargout{1:nargout}] = obj.(field+"_").value(s(2).subs{:});
+                        % allow custom data access of index values as implemented in Index class subsref                        
+                        s(1).subs = "value"; % field to access in Index object is called 'value'
+                        [varargout{1:nargout}] = subsref(obj.(field+"_"), s);                        
                      else                       
                         [varargout{1:nargout}] = builtin('subsref',obj,s);
                      end    
@@ -1548,9 +1557,9 @@ classdef DataFrame
                          % same class, while vector(:) returns []
                          row = true(length(obj.rows_),1);
                     end
-                    obj.rows_.value_(row) = [];
+                    obj.rows_.value(row) = [];
                 else
-                    obj.columns_.value_(col) = [];
+                    obj.columns_.value(col) = [];
                 end
             end
         end
@@ -2071,7 +2080,7 @@ classdef DataFrame
             row = defaultValue('double',len)';
         end
         function col = defaultColumns(len)
-            col = defaultValue('string',len);
+            col = defaultValue('string',len)';
         end
     end
 end

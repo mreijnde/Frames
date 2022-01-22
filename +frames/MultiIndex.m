@@ -731,7 +731,7 @@ classdef MultiIndex < frames.Index
             % check sorted            
             assert(~obj.requireUniqueSorted || issorted(obj.value_uniqind), ...
                 'frames:MultiIndex:requireSortedFail',  ...
-                'Index value is required to be sorted and unique.')            
+                'Index value is required to be sorted and unique.')
         end
         
         
@@ -834,10 +834,10 @@ classdef MultiIndex < frames.Index
                     else
                         % assign single dimension
                         if iscell(b_), b_=cell2mat(b_); end
-                        obj.value_{dimIdx}.value_(rowIdx) = b_;                        
+                        obj.value_{dimIdx}.value(rowIdx) = b_;                        
                     end
                 end
-                obj.setvalue(obj.value_); % check if properties are respected   
+                obj.valueChecker(obj.value_); % check if properties are respected                
             else
                 obj = builtin('subsasgn',obj,s,b);
             end            
