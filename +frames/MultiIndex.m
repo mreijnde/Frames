@@ -102,54 +102,146 @@ classdef MultiIndex < frames.Index
             elseif positionIndex
                 % position index selector (so no selector per dimension allowed)
                 assert(~iscell(selector), 'frames:MultiIndex:noCellAllowedPositionIndex', ...
-                   "No cell selector allowed in combination with position indexing.");                
+                    "No cell selector allowed in combination with position indexing.");
                 out = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             elseif islogical(selector) || isFrame(selector)
-                % value selector (with logicals)                
+                % value selector (with logicals)
                 out = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             else
                 % value selector (with 'selector set(s)')
-                selector = obj.convertCellSelector(selector); % make sure it is nesdted cell with selector sets                             
+                selector = obj.convertCellSelector(selector); % make sure it is nesdted cell with selector sets
                 % calculate logical mask as selector
-                if asFilter                   
-                   out = false(obj.length(),1);  % output is a logical array 
-                else                    
-                   out = [];                     % output is a position array 
-                end                
-                for iset = 1:length(selector)                    
+                if asFilter
+                    out = false(obj.length(),1);  % output is a logical array
+                else
+                    out = [];                     % output is a position array
+                end
+                for iset = 1:length(selector)
                     % get mask of maskset by looping over supplied dimensions
-                    maskset = true(obj.length(),1);                    
                     selectorset = selector{iset};
-                    assert(length(selectorset)<=obj.Ndim, 'frames:MultiIndex:tooManyDim', ...
-                        "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
-                        length(selectorset), iset, obj.Ndim);
-                    for j = 1:length(selectorset)
-                        masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, false, asFilter);
-                        maskset = maskset & masklayer;
-                    end
+                    
+                    maskset = getSelectorSetFilterMask_(obj, selectorset, iset, positionIndex, allowedSeries);
                     if ~any(maskset) && ~isempty(selectorset{1})
-                        if asFilter 
+                        if asFilter
                             warning('frames:MultiIndex:emptySelectorSet',"No matches found for selector set %i.", iset);
                         else
                             error( 'frames:MultiIndex:emptySelectorSet', "No matches found for selector set %i.", iset);
                         end
                     end
+                    
+                    if ~asFilter
+                        % pre-filter Multi-Index based on logical mask (for speedup)                                                
+                        maskpos = find(maskset);                       
+                        objfilt = obj.getSubIndex(maskset);                        
+                        % get order of items based on selectorset
+                        posIndexFilt = getSelectorSetPosIndex_(objfilt, selectorset, positionIndex, allowedSeries);
+                        % convert positon to original (unfiltered) positions
+                        posIndex = maskpos(posIndexFilt);
+                    end
+                                        
                     % combine masks of different masksets
                     if asFilter
-                       out = out | maskset; 
+                        out = out | maskset;
                     else
-                       out = [out ; find(maskset)]; %#ok<AGROW>
+                        out = [out ; posIndex]; %#ok<AGROW>
                     end
-                end                
+                end
             end
             if asFilter && ~any(out)
                 warning('frames:MultiIndex:emptySelection',"No matches found, empty selection");
             end
+            
+            
+            % sub-helper functions
+            
+            function [mask] = getSelectorSetFilterMask_(obj,selectorset, iset, positionIndex, allowedSeries)
+                % functions gets logical mask for given selectorset filter
+                mask = true(obj.length(),1);
+                assert(length(selectorset)<=obj.Ndim, 'frames:MultiIndex:tooManyDim', ...
+                    "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
+                    length(selectorset), iset, obj.Ndim);
+                for j = 1:length(selectorset)
+                    masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, false, true);
+                    mask = mask & masklayer;
+                end
+                
+            end
+            
+            function posIndex = getSelectorSetPosIndex_(obj,selectorset, positionIndex, allowedSeries)
+                Nindex = length(obj);
+                NselectorDim = length(selectorset);
+                
+                % get linear-index position selections for every dimension in selector
+                pos = cell(1, NselectorDim);
+                indseq = cell(1, NselectorDim);
+                %indmask = false(Nindex, NselectorDim);
+                for i=1:NselectorDim
+                    if ~iscolon(selectorset{i})
+                        % get linear-index selector
+                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector(selectorset{i},positionIndex, allowedSeries, false, true); 
+                        %indmask(pos{i}, i) = true;
+                    else
+                        % special case: handle colon
+                        pos{i} = (1:Nindex)';
+                        indseq{i} = ones(Nindex,1);
+                        %indmask(:, i) = true;
+                    end
+                end
+                
+%                 % get selection mask
+%                 mask = all(indmask,2);
+%                 % get positions in mask, and create reverse lookup table
+%                 maskpos = find(mask);                
+%                 maskpos_lookup = nan(1,length(mask));
+%                 maskpos_lookup(maskpos) = 1:length(maskpos);
+                 
+                
+                % dimensions to use
+                rootDim = 1;
+                loopDims = 2:NselectorDim; 
+                p = pos{rootDim};
+                
+                % align cell array with indexes with selector dim1
+                indseq_grouped_aligned = cell(1,NselectorDim );
+                indseq_grouped_aligned{1} = num2cell(indseq{rootDim });
+                for i=loopDims
+                    % get for each MultiIndex row the selector sequence number(s) of values responsible for selection
+                    indseq_grouped = getSelectorIndicesForEachValue(pos{i}, indseq{i}, Nindex);                               
+                    % align indices according the main reference dimension
+                    indseq_grouped_aligned{i} = indseq_grouped(p);
+                end
+                
+                % convert nested cell array to 2d cell (required for further manipulation)
+                ind_alignAll = horzcat(indseq_grouped_aligned{:});
+                
+                % expand rows with all combinations
+                [posIndexRaw,outind] = expandCombinationsCell(ind_alignAll);
+                
+                % get sorted row positions
+                [~, sortind] = sortrows(posIndexRaw);
+                outind_sorted = outind(sortind);
+                posIndex = p(outind_sorted);
+                
+            end
+            
+            function ind_cell = getSelectorIndicesForEachValue(pos, indseq, N)
+                % get cell array(N) with cell(i) the position indices of vector x with value i
+                % (values of vector x has to be in range 1 to N)
+                [~,ix] = sort(pos);
+                c = histc(pos, 1:N); %#ok<HISTC>
+                ind_cell = mat2cell(indseq(ix),c,1);
+            end
+            
+            
+            
         end
-                        
-      
+        
+        
+       
+        
+        
         
         function [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = alignIndex(obj1, obj2, method, allowDimExpansion)
             % function to create new aligned MultiIndex based on common dimensions 
