@@ -139,11 +139,23 @@ classdef DataFrame
             % if row/columns are specific MultiIndex input, create MultiIndex objects
             % (all cell arrays (except char cell array), 2d arrays, and arrays of multiple Index objects)            
             if checkMultiIndexinput(rows)
-                if isempty(rows) || isequal(rows,{[]}), rows={missingData('double')}; end
+                if isempty(rows) || isequal(rows,{[]})
+                    if NameValueArgs.RowSeries
+                       rows = {missingData('double')}; 
+                    else
+                       rows = {obj.defaultRows(size(data,1))}; 
+                    end
+                end
                 rows = frames.MultiIndex(rows, Singleton=NameValueArgs.RowSeries);
             end
             if checkMultiIndexinput(columns)
-                if isempty(columns) || isequal(columns,{[]}), columns={missingData('string')}; end
+                if isempty(columns) || isequal(columns,{[]})
+                    if NameValueArgs.ColSeries                        
+                        columns = {missingData('string')};
+                    else
+                        columns = {obj.defaultColumns(size(data,2))};
+                    end
+                end
                 columns = frames.MultiIndex(columns, Singleton=NameValueArgs.ColSeries);
             end            
                                       
