@@ -1,7 +1,6 @@
 classdef MultiIndex < frames.Index
     % MULTIINDEX: class to create multi dimensional index
     %
-    % work-in-progress
     %      
     methods
         function obj = MultiIndex(value, nameValue)
@@ -563,7 +562,8 @@ classdef MultiIndex < frames.Index
             end
             
             % handle: [frames.Index, frames.Index, ...]
-            if all( arrayfun(@(x) isa(x,'frames.Index'), value))
+            %if all( arrayfun(@(x) isa(x,'frames.Index'), value))
+            if isvector(value) && isIndex(value(1))
                 % handle array of Index objects by first converting to cell array
                 value = num2cell(value);
             end
