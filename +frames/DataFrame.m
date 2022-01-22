@@ -1194,7 +1194,7 @@ classdef DataFrame
             obj.data_ = s;
         end
                                
-        function obj = groupUnique(obj, indexType, func, funcAggrDim, apply2single, convGroupInd) 
+        function obj = groupDuplicate(obj, func, indexType, funcAggrDim, apply2single, convGroupInd) 
             % combine duplicate index values by aggregation function
             %
             %  input: 
@@ -1206,8 +1206,9 @@ classdef DataFrame
             %
             %  output:
             %     dataframe/series with duplicate index values aggregated
-            %
-            if nargin<3, func=@mean; end            
+            %            
+            if nargin<2, func=@mean; end            
+            if nargin<3, indexType="rows"; end
             if nargin<4, funcAggrDim=1; end
             if nargin<5, apply2single=false; end  
             if nargin<6, convGroupInd=false; end
@@ -1750,11 +1751,11 @@ classdef DataFrame
                 obj.(indexfields(dim)) = indexobj_raw;
                 
                 % get aggregated df
-                varargout{1} = obj.groupUnique(dim, func, funcAggrDim, apply2singleValue);
-                % extra func outputs not supported by groupUnique(), workaround by running multiple times                
+                varargout{1} = obj.groupDuplicate(func, dim, funcAggrDim, apply2singleValue);
+                % extra func outputs not supported by groupDuplicate(), workaround by running multiple times                
                 if nargout==2
                     % 2nd output is assumed to be position index
-                    varargout{2} = obj.groupUnique(dim, @func_out2, funcAggrDim, apply2singleValue, true);                
+                    varargout{2} = obj.groupDuplicate(@func_out2, dim, funcAggrDim, apply2singleValue, true);                
                 end
                 
             else
