@@ -28,6 +28,10 @@ classdef MultiIndex < frames.Index
             else
                 obj = obj.setIndex(value, nameValue.Name);
             end
+            % clear name if singleton
+            if nameValue.Singleton
+                obj.name = "";
+            end            
         end
         
         
@@ -100,7 +104,7 @@ classdef MultiIndex < frames.Index
                 selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             elseif islogical(selector) || isFrame(selector)
-                %  value selector (with logicals)                
+                % value selector (with logicals)                
                 selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             else
@@ -425,7 +429,13 @@ classdef MultiIndex < frames.Index
             if nargin<3, userCall=true; end
             if isempty(value)
                 % in case no value, just add empty Index object
-                obj.value_ = {frames.Index(value)};
+                nameold = obj.name;                
+                obj.value_ = {frames.Index(value)};                
+                if nameold~=""
+                    obj.value_{1}.name = nameold;
+                else
+                    obj.value_{1}.name = "dim1";
+                end
                 return;
             end
             

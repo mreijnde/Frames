@@ -152,7 +152,7 @@ classdef DataFrame
                 if ~useMultiIndexRows
                    rows = obj.getRowsObject(rows,Singleton=NameValueArgs.RowSeries);
                 else
-                   rows = frames.MultiIndex(rows,Singleton=NameValueArgs.RowSeries);
+                   rows = frames.MultiIndex(rows,Singleton=NameValueArgs.RowSeries,Unique=true);
                 end
             else
                 assert(~NameValueArgs.RowSeries || (rows.singleton_ && numel(rows)==1), ...
@@ -261,12 +261,16 @@ classdef DataFrame
         function obj = asColSeries(obj,bool)
             % sets .colseries to true if the Frame can be a column series
             if nargin<2, bool=true; end
-            obj.columns_.singleton = bool;
+            if obj.columns_.singleton ~= bool
+               obj.columns_.singleton = bool;
+            end
         end
         function obj = asRowSeries(obj,bool)
             % sets .rowseries to true if the Frame can be a row series
             if nargin<2, bool=true; end
-            obj.rows_.singleton = bool;
+            if obj.rows_.singleton ~= bool
+               obj.rows_.singleton = bool;
+            end
         end
         function obj = asFrame(obj)
             % sets .rowseries and .colseries to false
@@ -1382,6 +1386,8 @@ classdef DataFrame
                 
         function toFile(obj,filePath,varargin)
             % write the frame into a file
+            assert(~isMultiIndex(obj.rows_) && ~isMultiIndex(obj.columns_), ...
+                'frames:DataFrame:toFile:MultiIndexNotSupported', "DataFrame with MultiIndex (currently) not supported");               
             writetable(obj.t,filePath, ...
                 'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
         end   
