@@ -58,7 +58,7 @@ classdef MultiIndex < frames.Index
         end
         
         
-        function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
+        function out = getSelector(obj,selector, positionIndex, allowedSeries, userCall, asFilter)
             % get valid matlab indexer for array operations based on supplied selector
             %
             % selector definition:
@@ -83,7 +83,9 @@ classdef MultiIndex < frames.Index
             %                                   accept only these logical dataframe series
             %    - positionIndex  (logical):    selector is position index instead of value index
             %    - userCall       (logical):    perform full validation of selector
-            %    - allowMissing   (logical):    allow selectors with no matches (default allow)
+            %    - asFilter       (logical):    interpret selector as filter criteria of index
+            %                                   (keep original order independent of order in selector,
+            %                                    ignore duplicates and allow not matching selector sets)
             %
             % output:
             %    validated array indexer (colon, logical array or position index array)
@@ -91,27 +93,31 @@ classdef MultiIndex < frames.Index
             if nargin<3, positionIndex = false; end
             if nargin<4, allowedSeries = 'all'; end            
             if nargin<5, userCall = false; end
-            if nargin<6, allowMissing=true; end
+            if nargin<6, asFilter = false; end
             
             if iscolon(selector)
                 % colon selector
-                selector = ':'; % note: this also converts colon in cell to just a colon
+                out = ':'; % note: this also converts colon in cell to just a colon
                 
             elseif positionIndex
                 % position index selector (so no selector per dimension allowed)
                 assert(~iscell(selector), 'frames:MultiIndex:noCellAllowedPositionIndex', ...
                    "No cell selector allowed in combination with position indexing.");                
-                selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
+                out = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             elseif islogical(selector) || isFrame(selector)
                 % value selector (with logicals)                
-                selector = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
+                out = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
                 
             else
                 % value selector (with 'selector set(s)')
                 selector = obj.convertCellSelector(selector); % make sure it is nesdted cell with selector sets                             
                 % calculate logical mask as selector
-                mask = false(obj.length(),1);
+                if asFilter                   
+                   out = false(obj.length(),1);  % output is a logical array 
+                else                    
+                   out = [];                     % output is a position array 
+                end                
                 for iset = 1:length(selector)                    
                     % get mask of maskset by looping over supplied dimensions
                     maskset = true(obj.length(),1);                    
@@ -120,22 +126,25 @@ classdef MultiIndex < frames.Index
                         "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
                         length(selectorset), iset, obj.Ndim);
                     for j = 1:length(selectorset)
-                        masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, false, allowMissing);
+                        masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, false, asFilter);
                         maskset = maskset & masklayer;
                     end
-                    if ~any(maskset)
-                        if allowMissing 
+                    if ~any(maskset) && ~isempty(selectorset{1})
+                        if asFilter 
                             warning('frames:MultiIndex:emptySelectorSet',"No matches found for selector set %i.", iset);
                         else
                             error( 'frames:MultiIndex:emptySelectorSet', "No matches found for selector set %i.", iset);
                         end
                     end
                     % combine masks of different masksets
-                    mask = mask | maskset;
-                end
-                selector = mask;
+                    if asFilter
+                       out = out | maskset; 
+                    else
+                       out = [out ; find(maskset)]; %#ok<AGROW>
+                    end
+                end                
             end
-            if ~any(selector)
+            if asFilter && ~any(out)
                 warning('frames:MultiIndex:emptySelection',"No matches found, empty selection");
             end
         end
