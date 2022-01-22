@@ -125,6 +125,9 @@ classdef DataFrame
     methods
         function obj = DataFrame(data,rows,columns,NameValueArgs)
             %DATAFRAME frames.DataFrame([data,rows,columns,Name=name,RowSeries=logical,ColSeries=logical])
+            %
+            %remark: if row/columns are specific MultiIndex input, create MultiIndex objects
+            % 
             arguments
                 data (:,:) = []
                 rows = []
@@ -135,68 +138,47 @@ classdef DataFrame
             end
             % get DataFrameSettings
             obj.settings = frames.DataFrameSettings(obj.settingsDefault);
-            
-            % if row/columns are specific MultiIndex input, create MultiIndex objects
-            % (all cell arrays (except char cell array), 2d arrays, and arrays of multiple Index objects)            
-            if checkMultiIndexinput(rows)
-                if isempty(rows) || isequal(rows,{[]})
-                    if NameValueArgs.RowSeries
-                       rows = {missingData('double')}; 
-                    else
-                       rows = {obj.defaultRows(size(data,1))}; 
-                    end
+                                                          
+            % get row index 
+            useMultiIndexRows = checkMultiIndexinput(rows);
+            if checkIsEmpty(rows)                    
+                if NameValueArgs.RowSeries                
+                    rows = missingData('double');
+                else                
+                    rows = obj.defaultRows(size(data,1));                                
                 end
-                rows = frames.MultiIndex(rows, Singleton=NameValueArgs.RowSeries);
-            end
-            if checkMultiIndexinput(columns)
-                if isempty(columns) || isequal(columns,{[]})
-                    if NameValueArgs.ColSeries                        
-                        columns = {missingData('string')};
-                    else
-                        columns = {obj.defaultColumns(size(data,2))};
-                    end
-                end
-                columns = frames.MultiIndex(columns, Singleton=NameValueArgs.ColSeries);
             end            
-                                      
-            % handle column and row series
-            if NameValueArgs.RowSeries
-                if isa(rows,'frames.Index')
-                    assert(rows.singleton_,'frames:constructor:rowsSingletonFail', ...
-                        'RowSeries needs to have a singleton Index object in rows.')
+            if ~isIndex(rows) || (isIndex(rows) && numel(rows)>1)
+                if ~useMultiIndexRows
+                   rows = obj.getRowsObject(rows,Singleton=NameValueArgs.RowSeries);
                 else
-                    if isequal(rows,[])
-                        rows = missingData('double');
-                    end
-                    rows = obj.getRowsObject(rows,Singleton=true);
+                   rows = frames.MultiIndex(rows,Singleton=NameValueArgs.RowSeries);
                 end
             else
-                if ~isa(rows,'frames.Index')
-                    if isequal(rows,[])
-                        rows = obj.defaultRows(size(data,1));
-                    end
-                    rows = obj.getRowsObject(rows,Singleton=false);
-                end
-            end
-            if NameValueArgs.ColSeries
-                if isa(columns,'frames.Index')
-                    assert(columns.singleton_,'frames:constructor:columnsSingletonFail', ...
-                        'ColSeries needs to have a singleton Index object in columns.')
-                else
-                    if isequal(columns,[])
-                        columns = missingData('string');
-                    end
-                    columns = obj.getColumnsObject(columns,Singleton=true);
-                end
-            else
-                if ~isa(columns,'frames.Index')
-                    if isequal(columns,[])
-                        columns = obj.defaultColumns(size(data,2));
-                    end
-                    columns = obj.getColumnsObject(columns,Singleton=false);
-                end
+                assert(~NameValueArgs.RowSeries || (rows.singleton_ && numel(rows)==1), ...
+                   'frames:constructor:rowsSingletonFail', 'RowSeries needs to have a singleton Index object in rows.');
             end
             
+            % get column index
+            useMultiIndexColumns = checkMultiIndexinput(columns);
+            if checkIsEmpty(columns)
+                if NameValueArgs.ColSeries                                               
+                    columns = missingData('string');                 
+                else            
+                    columns = obj.defaultColumns(size(data,2));                                  
+                end
+            end
+            if ~isIndex(columns) || (isIndex(columns) && numel(columns)>1)               
+                if ~useMultiIndexColumns
+                   columns = obj.getColumnsObject(columns,Singleton=NameValueArgs.ColSeries);
+                else
+                   columns = frames.MultiIndex(columns,Singleton=NameValueArgs.ColSeries);
+                end
+            else
+                assert(~NameValueArgs.ColSeries || columns.singleton_,'frames:constructor:columnsSingletonFail', ...
+                    'ColumnSeries needs to have a singleton Index object in columns.')
+            end
+                       
             if isempty(data)
                 data = obj.defaultData(length(rows),length(columns),class(data));
             end
@@ -228,6 +210,11 @@ classdef DataFrame
                 else
                    bool = false; % 1d array or char cell array
                 end
+            end
+            
+            function bool = checkIsEmpty(value)
+                % check if input to create empty index
+                bool = isequal(value,[]) || (iscell(value) && isempty(value)) || isequal(value,{[]});
             end
             
         end
