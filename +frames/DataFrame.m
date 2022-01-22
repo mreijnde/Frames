@@ -409,6 +409,14 @@ classdef DataFrame
             if nargin<3, colName=':'; end
             obj = obj.loc_(rowName,colName,true,false);
         end
+        function obj = filt(obj,rowName,colName)
+            % selection based on names, interpret as filter criteria of original dataframe
+            % (keep original order independent of order in selector, ignore duplicates in selector and
+            %  allow not matching selectors)
+            if nargin<3, colName=':'; end
+            obj = obj.loc_(rowName,colName,true,false,true);
+        end
+        
         
         function obj = replace(obj,valToReplace,valNew)
             % REPLACE replace the a value in the data with another one
@@ -1463,11 +1471,12 @@ classdef DataFrame
     
     methods(Hidden)  % Hidden and not protected, so that other classes in the package can use these methods, without the need to explicitly give them access. Not to be used outside.
         
-         function obj = loc_(obj,rowSelector,colSelector,userCall,positionIndex)            
+         function obj = loc_(obj,rowSelector,colSelector,userCall,positionIndex,asFilter)            
             if nargin < 4, userCall=false; end
             if nargin < 5, positionIndex=false; end             
-            rowID = obj.rows_.getSelector(rowSelector, positionIndex, 'onlyColSeries', userCall);
-            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall);              
+            if nargin < 6, asFilter=false; end
+            rowID = obj.rows_.getSelector(rowSelector, positionIndex, 'onlyColSeries', userCall, asFilter);
+            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall, asFilter);              
             if ~iscolon(rowSelector)
                 obj.rows_ = obj.rows_.getSubIndex(rowID);
             end
