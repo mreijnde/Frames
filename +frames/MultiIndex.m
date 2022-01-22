@@ -170,34 +170,24 @@ classdef MultiIndex < frames.Index
             end
             
             function posIndex = getSelectorSetPosIndex_(obj,selectorset, positionIndex, allowedSeries)
+                % function gets position index for given selectorset (non-filtered), keep order and duplicates
+                % as specified in selector
                 Nindex = length(obj);
                 NselectorDim = length(selectorset);
                 
                 % get linear-index position selections for every dimension in selector
                 pos = cell(1, NselectorDim);
-                indseq = cell(1, NselectorDim);
-                %indmask = false(Nindex, NselectorDim);
+                indseq = cell(1, NselectorDim);                
                 for i=1:NselectorDim
                     if ~iscolon(selectorset{i})
                         % get linear-index selector
-                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector(selectorset{i},positionIndex, allowedSeries, false, true); 
-                        %indmask(pos{i}, i) = true;
+                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector(selectorset{i},positionIndex, allowedSeries, false, true);                         
                     else
                         % special case: handle colon
                         pos{i} = (1:Nindex)';
-                        indseq{i} = ones(Nindex,1);
-                        %indmask(:, i) = true;
+                        indseq{i} = ones(Nindex,1);                        
                     end
-                end
-                
-%                 % get selection mask
-%                 mask = all(indmask,2);
-%                 % get positions in mask, and create reverse lookup table
-%                 maskpos = find(mask);                
-%                 maskpos_lookup = nan(1,length(mask));
-%                 maskpos_lookup(maskpos) = 1:length(maskpos);
-                 
-                
+                end                               
                 % dimensions to use
                 rootDim = 1;
                 loopDims = 2:NselectorDim; 
