@@ -146,10 +146,9 @@ classdef MultiIndex < frames.Index
                     if ~asFilter
                         
                         if ~all(cellfun(@length, selectorset)==1)                            
-%                              posIndex = getSelectorSetPosIndex_(obj, selectorset, positionIndex, allowedSeries);
                              % pre-filter Multi-Index based on logical mask (for speedup)                                                                                                    
                              objfilt = obj.getSubIndex(maskset);
-                             % replace logical selectors by ':' for subset
+                             % replace logical selectors by ':' for usage in combination with objfilt
                              selectorsetFilt = selectorset;
                              selectorsetLogical = cellfun(@islogical, selectorset);
                              if any(selectorsetLogical) 
@@ -215,7 +214,7 @@ classdef MultiIndex < frames.Index
                 for i=1:NselectorDim
                     if ~iscolonDim(i)
                         % get linear-index selector
-                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector(selectorset{i},positionIndex, allowedSeries, false, true);                        
+                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector_(selectorset{i},positionIndex, allowedSeries, false, true);                        
                     else
                         % special case: handle colon
                         pos{i} = (1:Nindex)';
@@ -914,8 +913,10 @@ classdef MultiIndex < frames.Index
             % combine indices
             for i=1:length(varargin)
                 item = varargin{i};
-                assert(isa(item,'frames.MultiIndex'), "error, can only concatenate MultiIndex objects");
-                assert(all(obj.name==item.name), "error, dimensions not equal");
+                assert(isa(item,'frames.MultiIndex'), 'frames:MultiIndex:vertcat_:onlyMultiIndex', ...
+                    "error, can only concatenate MultiIndex objects");
+                assert(all(obj.name==item.name | item.name==""), 'frames:MultiIndex:vertcat_:dimsNotEqual', ...
+                    "error, dimensions not equal");
                 for j=1:obj.Ndim
                     newvalue{j} = newvalue{j}.vertcat_(item.value_{j});
                 end

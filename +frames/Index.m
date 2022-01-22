@@ -80,7 +80,7 @@ classdef Index
         
         function obj=getSubIndex(obj,selector)
             % get Index object of sub selection based on matlab selector
-            obj.value_ = obj.value_(selector);         
+            obj.value_ = obj.value_(selector);                        
         end
         
         function idx = get.value(obj)
@@ -176,7 +176,7 @@ classdef Index
             len = size(obj.value_,1);
         end
         
-        function [selector, selectorInd] = getSelector(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
+        function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
             % get valid matlab indexer for array operations based on supplied selector
             % supports:
             %    - colon
@@ -185,37 +185,56 @@ classdef Index
             % ----------------            
             % Parameters:
             %    - selector
-            %    - allowedSeries: (string enum: 'all','onlyRowSeries','onlyColSeries')
+            %    - allowedSeries: (string enum: 'all' ,'onlyRowSeries','onlyColSeries') (default 'all')
             %                                   accept only these logical dataframe series
-            %    - positionIndex  (logical):    selector is position index instead of value index
-            %    - userCall       (logical):    perform full validation of selector
+            %    - positionIndex  (logical):    selector is position index instead of value index (default false)
+            %    - userCall       (logical):    perform full validation of selector (default true)
             %    - allowMissing   (logical):    allow selectors with no matches (default error)
             %
             % output:
-            %    - selector:     validated array indexer (colon, logical array or position index array)
-            %    - selectorInd:  (optional) array with for each item in selector corresponding selector entry id
+            %    validated array indexer (colon, logical array or position index array)
             %
             if nargin<5, userCall = true; end
             if nargin<4, allowedSeries = 'all'; end
             if nargin<3, positionIndex = false; end
             if nargin<6, allowMissing=false; end            
-            
+            % call internal function
+            selector = obj.getSelector_(selector, positionIndex, allowedSeries, userCall, allowMissing);
+        end
+        
+
+        
+        
+       function [selector, selectorInd] = getSelector_(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
+            % get valid matlab indexer for array operations based on supplied selector
+            % (internal function with extra optional output, see detailed description getSelector())            
+            %
+            % output:
+            %    - selector:     validated array indexer (colon, logical array or position index array)
+            %    - selectorInd:  (extra optional) array with for each item in selector corresponding selector entry id
+            %             
             if iscolon(selector)
                 % do nothing, just output colon
-                selectorInd = 1;                                
+                if (nargout>1)
+                   selectorInd = 1;
+                end                   
             elseif islogical(selector) || isFrame(selector)
                 %  logical selectors
                 if userCall
                     obj.logicalIndexChecker(selector, allowedSeries);
                 end
-                selector = obj.getValue_from(selector);                
-                selectorInd = find(selector);
+                selector = obj.getValue_from(selector);
+                if (nargout>1)
+                    selectorInd = find(selector);
+                end
             elseif positionIndex
                 % position index selector
                 if userCall
                     obj.positionIndexChecker(selector);
                 end
-                selectorInd = 1:length(selector);
+                if (nargout>1)
+                   selectorInd = 1:length(selector);
+                end
             else
                 %  value selectors
                 selector = obj.getValue_andCheck(selector,userCall);
@@ -233,7 +252,11 @@ classdef Index
                     end
                 end
             end
-        end        
+       end
+        
+        
+        
+        
         
         function pos = positionOf(obj, selector, varargin)
             % output position index array for given selector
