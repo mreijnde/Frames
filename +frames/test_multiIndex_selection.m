@@ -1,4 +1,5 @@
 warning('off', 'frames:Index:notUnique');
+warning('off', 'frames:MultiIndex:notUnique');
 
 index0 = frames.MultiIndex({[ 1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  1,  1,  2], ...
     ["a","b","c","a","b","c","a","b","c","a","b","c","a","a","b"], ...
@@ -8,25 +9,29 @@ index0 = frames.MultiIndex({[ 1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  1,
 
 % example selection7
 selector = {[2,1,2],["b","a","b"],["y","x","z","z","y"]};
-%selector = {[2],["b","a"],["y","x","z"]};
+selector = {':',["b","a","b"],["y","x","z"]};
 
 
 % get filtered sub-selection (for speedup)
 rowsFiltered =  index0.getSelector(selector, false, 'all', true, true);
-indexFilt = index0%.getSubIndex(rowsFiltered);
-
+indexFilt = index0.getSubIndex(rowsFiltered);
 
 Nindex = length(indexFilt);
 NselectorDim = length(selector);
 
 
-
-% get matching MultiIndex rows from selectors
+% get linear-index position selections for every dimension in selector
 pos = cell(1, NselectorDim);
-ind = cell(1, NselectorDim);
-%rowsMask = false(Nindex, NselectorDim);
+indseq = cell(1, NselectorDim);
 for i=1:NselectorDim
-    [pos{i}, ind{i}] = indexFilt.value_{i}.getSelector(selector{i});
+    if ~iscolon(selector{i})
+        % get linear-index selector
+        [pos{i}, indseq{i}] = indexFilt.value_{i}.getSelector(selector{i});        
+    else
+        % special case: handle colon
+        pos{i} = (1:Nindex)'; 
+        indseq{i} = ones(Nindex,1);
+    end
 end
 
 % dimensions to use
@@ -35,38 +40,25 @@ loopDims = [2 3];
 p = pos{rootDim};
 NloopDims = length(loopDims);
 
-
-% for each MultiIndex row get location(s) in selector
-pos_grouped = cell(1,NselectorDim);
-for i=1:NselectorDim
-    pos_grouped{i} = getPosIndicesForEachValue(pos{i}, Nindex);
-end
-
 % align cell array with indexes with selector dim1
-
-pos_align = cell(1,NloopDims);
-ind_align = cell(1,NloopDims);
-c = 0;
+indseq_grouped_aligned = cell(1,NselectorDim );
+indseq_grouped_aligned{1} = num2cell(indseq{rootDim });
 for i=loopDims
-    c = c + 1;
-    % get aligned cell fun
-    tmp = pos_grouped{i};
-    pos_align{c} = tmp(p); 
-    % get cell fun with selector pos
-    tmp2 = ind{i};    
-    ind_align{c} = cellfun(@(x) tmp2(x), pos_align{c}, 'UniformOutput', false);    
+    % get for each MultiIndex row the selector sequence number(s) of values responsible for selection
+    indseq_grouped = getSelectorIndicesForEachValue(pos{i}, indseq{i}, Nindex);
+        
+    % align indices according the main reference dimension
+    indseq_grouped_aligned{i} = indseq_grouped(p);     
 end
-ind_align = [{num2cell(ind{rootDim })} ind_align ];
 
-% combine to 2d cell (for easier manipulation)
-ind_alignAll = horzcat(ind_align{:});
-%ind_alignAll = [num2cell(ind{rootDim }) ind_alignAll ]
+% combine to 2d cell (for further manipulation)
+ind_alignAll = horzcat(indseq_grouped_aligned{:});
 
 % expand rows with all combinations
-[out,outind] = expandCombinationsCell(ind_alignAll)
+[out,outind] = expandCombinationsCell(ind_alignAll);
 
 % get sorted row positions
-[~, sortind] = sortrows(out)
+[~, sortind] = sortrows(out);
 outind_sorted = outind(sortind);
 posout = p(outind_sorted);
 
@@ -92,12 +84,13 @@ indexOut = indexFilt.getSubIndex(posout)
 %%
 
 
-function ind_cell = getPosIndicesForEachValue(x, N)
+function ind_cell = getSelectorIndicesForEachValue(pos, indseq, N)
 % get cell array(N) with cell(i) the position indices of vector x with value i
 % (values of vector x has to be in range 1 to N)
-[~,ix] = sort(x);
-c = histc(x, 1:N); %#ok<HISTC>
-ind_cell = mat2cell(ix(:),c,1);
-%ind_cell( cellfun(@isempty, ind_cell) ) = {NaN}; % convert missing values to NaN
+[~,ix] = sort(pos);
+c = histc(pos, 1:N); %#ok<HISTC>
+ind_cell = mat2cell(indseq(ix),c,1);
 end
+
+
 
