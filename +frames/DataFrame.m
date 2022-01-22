@@ -138,11 +138,13 @@ classdef DataFrame
             
             % if row/columns are specific MultiIndex input, create MultiIndex objects
             % (all cell arrays (except char cell array), 2d arrays, and arrays of multiple Index objects)            
-            if checkMultiIndexinput(rows)                
-                rows = frames.MultiIndex(rows);
+            if checkMultiIndexinput(rows)
+                if isempty(rows) || isequal(rows,{[]}), rows={missingData('double')}; end
+                rows = frames.MultiIndex(rows, Singleton=NameValueArgs.RowSeries);
             end
-            if checkMultiIndexinput(columns)                
-                columns = frames.MultiIndex(columns);
+            if checkMultiIndexinput(columns)
+                if isempty(columns) || isequal(columns,{[]}), columns={missingData('string')}; end
+                columns = frames.MultiIndex(columns, Singleton=NameValueArgs.ColSeries);
             end            
                                       
             % handle column and row series
@@ -202,15 +204,17 @@ classdef DataFrame
             function bool = checkMultiIndexinput(value)
                 % check if input is specific for MultiIndex
                 % (all cell arrays (except char cell array), 2d arrays, and arrays of multiple Index objects)                  
-                if ~isempty(value) && ...
-                   ( ...     
-                       (iscell(value) && ~ischar(value{1})) || ...  % cell array (except char cell array)
-                       ~isvector(value) ||  ...                     % 2d array
-                       (~isscalar(value) && isIndex(value(1)) ) ... % 1d array with more than 1 Index object
+                if (isempty(value) && iscell(value)) || ...          % empty cell array
+                   (~isempty(value) && ...
+                     ( ...     
+                        (iscell(value) && ~ischar(value{1})) || ...  % cell array (except char cell array)
+                        ~isvector(value) ||  ...                     % 2d array
+                        (~isscalar(value) && isIndex(value(1)) ) ... % 1d array with more than 1 Index object
+                     ) ...
                    )
                    bool = true; 
                 else
-                   bool = false;
+                   bool = false; % 1d array or char cell array
                 end
             end
             

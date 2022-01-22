@@ -492,10 +492,10 @@ classdef MultiIndex < frames.Index
                     indices{i} = val;
                 else
                     % convert to linear index
-                    indices{i} = frames.Index(val, Unique=false);
+                    indices{i} = frames.Index(val, Unique=false, Singleton=obj.singleton);
                 end
                 % get default names
-                if indices{i}.name==""
+                if indices{i}.name=="" && ~obj.singleton
                     if numel(obj.value_) >= i && obj.value_{i}.name~=""
                         % use name of existing dimension
                         indices{i}.name = obj.value_{i}.name;
@@ -547,7 +547,14 @@ classdef MultiIndex < frames.Index
         function Ndim = get_Ndim(obj)
             % get number of dimensions
             Ndim = numel(obj.value_);
-        end 
+        end
+        
+        
+        function obj = set_singleton(obj,tf)
+            % set singleton
+            obj = set_singleton@frames.Index(obj, tf);
+            obj.name = ""; % remove name (for MultiIndex keeping name is not consistent in case of multiple dimensions)            
+        end    
         
         function out = getvalue_uniq(obj)
             % get unique values of every dimension (from Index Objects)

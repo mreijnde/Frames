@@ -120,17 +120,8 @@ classdef Index
         end 
         
         function obj = set.singleton(obj,tf)
-            arguments
-                obj, tf (1,1) {mustBeA(tf,'logical')}
-            end
-            if tf
-                assert(obj.length()==1,'frames:Index:setSingleton',...
-                    'Index must contain 1 element to be a singleton')
-                obj.value_ = obj.getMissingData_();
-            elseif ~tf && obj.singleton_
-                obj.value_ = obj.getDefaultValue_();
-            end
-            obj.singleton_ = tf;
+            % seperate method to overcome matlab's limitation on overloading setters/getters
+            obj = set_singleton(obj,tf);
         end        
         
         
@@ -694,7 +685,22 @@ classdef Index
         function Ndim = get_Ndim(obj)
             % get number of dimensions
             Ndim = 1;
-        end 
+        end
+        
+        function obj = set_singleton(obj,tf)
+            % set singleton
+            arguments
+                obj, tf (1,1) {mustBeA(tf,'logical')}
+            end
+            if tf
+                assert(obj.length()==1,'frames:Index:setSingleton',...
+                    'Index must contain 1 element to be a singleton')
+                obj.value_ = obj.getMissingData_();                
+            elseif ~tf && obj.singleton_
+                obj.value_ = obj.getDefaultValue_();
+            end
+            obj.singleton_ = tf;
+        end    
         
         function obj = recalc_unique_cache(obj)
             % recalculate unique cache based on stored value_           
