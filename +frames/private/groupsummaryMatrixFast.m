@@ -1,4 +1,4 @@
-function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, dim, funcAggrDim, apply2single, vectorize)
+function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, dim, funcAggrDim, apply2single, vectorize, convGroupInd)
 % aggregate data in rows or columns of matrix A with function func grouped by groupid
 %
 %  - Similar to "groupsummary(A, groupid, func)" but significant faster (2-20 times) for larger datasets,
@@ -24,6 +24,9 @@ function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, dim, func
 %                     func_aggr_dim, but not in the other dimension.               
 %                    (behavior will be checked, if funciton not compatible, it will be disabled)  
 %
+%   convGroupInd:  boolean, convert output of func, which can be interpreted as a local index position
+%                     within aggregation group to absolute matrix index position (default false)
+%                     (usage to convert the local position output, of 2nd output max() and min(), to matrix index)
 %
 % OUTPUT:
 %    B:     aggregated dataoutput (Ngroups, Ncols), sorted by groupid
@@ -35,6 +38,7 @@ if nargin<4, dim=1; end               % default aggregate rows of matrix A
 if nargin<5, funcAggrDim=1; end     % default func aggregate direction: rows
 if nargin<6, apply2single = true; end % default apply function to groups with single value
 if nargin<7, vectorize=true; end      % default use vectorization
+if nargin<8, convGroupInd=false; end  % default off
 
 % check input
 assert(dim==1 || dim==2, "invalid dim value (%i), should be 1 or 2", dim);
@@ -136,6 +140,16 @@ else
         end
     end    
     
+end
+
+% special case: convert output of func which outputs position index in local aggregation group
+% (eg 2nd output of min() or max()) to absolute index of given matrix dimension
+if convGroupInd
+    if dim==1
+       B_cell = cellfun(@(matrixind, groupind) matrixind(groupind)', ind_cell, B_cell, 'UniformOutput', false);
+    else
+       B_cell = cellfun(@(matrixind, groupind) matrixind(groupind), ind_cell', B_cell, 'UniformOutput', false);
+    end
 end
 
 % convert cell output to a single matrix
