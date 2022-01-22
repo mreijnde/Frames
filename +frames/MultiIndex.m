@@ -349,7 +349,8 @@ classdef MultiIndex < frames.Index
         function dimind = getDimInd(obj, dim)
             % get position index of specified dimension names
             [~, dimind, ~ ] = intersect(obj.name, dim);
-            assert(length(dimind)==length(dim), "error not all dimension are present");
+            assert(length(dimind)==length(dim), 'frames:MultiIndex:getDimInd:notAllDimFound',...
+                "error not all dimension are present");
         end
         
         function out = getvalue_cell(obj, type)
