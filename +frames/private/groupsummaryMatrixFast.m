@@ -1,4 +1,4 @@
-function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, dim, funcAggrDim, apply2single, vectorize, convGroupInd)
+function [B, groupID, groupCount, groupFirstInd] = groupsummaryMatrixFast(A, groupid, func, dim, funcAggrDim, apply2single, vectorize, convGroupInd)
 % aggregate data in rows or columns of matrix A with function func grouped by groupid
 %
 %  - Similar to "groupsummary(A, groupid, func)" but significant faster (2-20 times) for larger datasets,
@@ -29,13 +29,13 @@ function [B, BG, BC, BGind] = groupsummaryMatrixFast(A, groupid, func, dim, func
 %                     (usage to convert the local position output, of 2nd output max() and min(), to matrix index)
 %
 % OUTPUT:
-%    B:     aggregated dataoutput (Ngroups, Ncols), sorted by groupid
-%    BG:    array(Ngroups) of groupids as in used in B
-%    BC:    number of aggregated elements per groupid
-%    BGind: array(Ngroups) with positon index to first occurance of groupid
+%    B:             aggregated dataoutput (Ngroups, Ncols) or (Nrows, Ngroups), sorted by groupid                                       
+%    groupID:       array(Ngroups) of groupids as in used in B
+%    groupCount:    number of aggregated elements per groupid
+%    groupFirstInd: array(Ngroups) with positon index to first occurance of groupid
 %
 if nargin<4, dim=1; end               % default aggregate rows of matrix A
-if nargin<5, funcAggrDim=1; end     % default func aggregate direction: rows
+if nargin<5, funcAggrDim=1; end       % default func aggregate direction: rows
 if nargin<6, apply2single = true; end % default apply function to groups with single value
 if nargin<7, vectorize=true; end      % default use vectorization
 if nargin<8, convGroupInd=false; end  % default off
@@ -79,143 +79,133 @@ else
 end
 
 % get position indices for each group
-[ind_cell, BG, BC, BGind] = getIndicesForEachGroup(groupid);
-
+[groupID, groupCount, groupFirstInd, groupStartRef, indicesList] = getIndicesForEachGroup(groupid);
+Ngroups = length(groupID);
 % shortcut in case of only single values
-if isempty(ind_cell) %sum(mask_multi)==0
-    if dim==1
-       B = A(BGind,:);
+if isempty(groupCount)
+    if ~convGroupInd
+        % sorted vector
+        if dim==1
+           B = A(groupFirstInd,:);
+        else
+           B = A(:,groupFirstInd);
+        end
     else
-       B = A(:,BGind);
+        % index position output
+        B = groupFirstInd;
     end
     return
 end
 
-% calc groups with more than 1 row
-mask_multi = BC>1;
-ind_masksingle = find(~mask_multi);
-ind_maskmulti = find(mask_multi);
+% calc groups with more then 1 row
+maskMulti = groupCount>1;
+ind_maskSingle = find(~maskMulti);
+ind_maskMulti = find(maskMulti);
 
-% allocate output
+% output var
 if dim==1
-   B_cell = cell(length(ind_cell),1);   
+   B = zeros(Ngroups, size(A,2));
 else
-   B_cell = cell(1,length(ind_cell));   
+   B = zeros(size(A,1), Ngroups);
 end
 
-% extract original values for groups with only 1 single value (if option selected)
-if ~apply2single    
-    for i = 1:length(ind_masksingle)
-        ind = ind_masksingle(i);
-        if dim==1
-            B_cell{ind} = A( ind_cell{ind},: );
-        else
-            B_cell{ind} = A( :, ind_cell{ind});
-        end
-    end     
-%     if dim==1
-%        B_cell(~mask_multi) = cellfun(@(ind) A(ind,:), ind_cell(~mask_multi), 'UniformOutput', false);       
-%     else
-%        B_cell(~mask_multi) = cellfun(@(ind) A(:,ind), ind_cell(~mask_multi), 'UniformOutput', false);
-%     end
+% get single values (groups of 1)
+if dim==1
+    Bs = A(groupFirstInd(ind_maskSingle),:);
+else
+    Bs = A(:, groupFirstInd(ind_maskSingle));
+end
+if apply2single
+   for j=1:numel(Bs)       
+       Bs(j)=func_(Bs(j));
+   end
+end
+if dim==1
+   B(ind_maskSingle,:) = Bs;
+else
+   B(:,ind_maskSingle) = Bs;
 end
 
-% calc aggregated data
-if  vectorize
-    % vectorized calc method     
-    for i = 1:length(ind_maskmulti)
-        ind = ind_maskmulti(i);
-        if dim==1
-            B_cell{ind} = func_( A(ind_cell{ind},:) );
-        else
-            B_cell{ind} = func_( A(:,ind_cell{ind}) );
-        end
-    end             
-%     if dim==1                  
-%         B_cell(mask_multi)  = cellfun(@(ind) func_(A(ind,:)), ind_cell(mask_multi), 'UniformOutput', false);
-%     else        
-%         B_cell(mask_multi)  = cellfun(@(ind) func_(A(:,ind)), ind_cell(mask_multi), 'UniformOutput', false);
-%     end
+% calc aggregated data for groups
+for igr = 1:length(ind_maskMulti)
+    grInd = ind_maskMulti(igr);
+    indices = indicesList(groupStartRef(grInd):groupStartRef(grInd)+groupCount(grInd)-1);
     
-    if apply2single
-        % for groups with only single value, apply function to each element separately 
-        % (a workaround as most standard functions like eg. sum(), will aggregate over 2nd dimension
-        % if input is a rowvector)
-%         for i = 1:length(ind_masksingle)
-%             if dim==1 , values = A(ind_cell{ind},:);                
-%             else,       values = A(:,ind_cell{ind});  end            
-%             for j=1:length(values)
-%                values(j)=func_(values(j));
-%             end
-%             B_cell{ind} = values';
-%         end          
-        if dim==1
-            B_cell(~mask_multi) = cellfun(@(ind) arrayfun(func_, A(ind,:)')', ... 
-                                          ind_cell(~mask_multi), 'UniformOutput', false);   
-        else
-            B_cell(~mask_multi) = cellfun(@(ind) arrayfun(func_, A(:,ind)')', ... 
-                                          ind_cell(~mask_multi), 'UniformOutput', false);   
-        end
+    % get values in group to aggregate
+    if dim==1            
+       values =  A(indices,:);
+    else                
+       values =  A(:,indices);
     end
-else
-    % calc individual per column/row (by nested cellfun and storing separate columns/rows in cell array by num2cell)
-    if dim==1
-        B_cell(mask_multi) = cellfun(@(ind) cellfun(func_, num2cell(A(ind,:),1)), ...
-                                    ind_cell(mask_multi), 'UniformOutput', false);        
+    
+    % calc aggregation value
+    if  vectorize
+        % vectorized calc method (for rows/columns in non-aggregation direction)
+        valuesOut = func_( values );
     else
-        B_cell(mask_multi) = cellfun(@(ind) cellfun(func_, num2cell(A(:,ind),2)), ...
-                                    ind_cell(mask_multi), 'UniformOutput', false);        
-    end
-    if apply2single
-        if dim==1      
-            B_cell(~mask_multi) = cellfun(@(ind) cellfun(func_, num2cell(A(ind,:),1)), ...
-                                    ind_cell(~mask_multi), 'UniformOutput', false);
-        else    
-            B_cell(~mask_multi) = cellfun(@(ind) cellfun(func_, num2cell(A(:,ind),2)), ...
-                                    ind_cell(~mask_multi), 'UniformOutput', false);
+        % calc individual per column/row
+        if dim==1
+            valuesOut = values(1,:);
+            for j=1:size(values,2)
+                valuesOut(j)=func_(values(:,j));
+            end
+        else
+            valuesOut = values(:,1);
+            for j=1:size(values,1)
+                valuesOut(j)=func_(values(j,:));
+            end
         end
-    end    
+    end   
     
-end
+    % assign values
+    if dim==1
+        B(grInd,:) = valuesOut;
+    else
+        B(:,grInd) = valuesOut;
+    end
+end           
+
 
 % special case: convert output of func which outputs position index in local aggregation group
 % (eg 2nd output of min() or max()) to absolute index of given matrix dimension
 if convGroupInd
-    if dim==1
-       B_cell = cellfun(@(matrixind, groupind) matrixind(groupind)', ind_cell, B_cell, 'UniformOutput', false);
-    else
-       B_cell = cellfun(@(matrixind, groupind) matrixind(groupind), ind_cell', B_cell, 'UniformOutput', false);
+    for igr = 1:Ngroups      
+        indices = indicesList(groupStartRef(igr):groupStartRef(igr)+groupCount(igr)-1);
+        if dim==1
+           B(igr,:) = indices(B(igr,:));
+        else
+           B(:,igr) = indices(B(:,igr));
+        end
     end
 end
 
-% convert cell output to a single matrix
-B = cell2mat(B_cell);
 end
 
 
 
-function [ind_cell, groups, groupCount, groupInd] = getIndicesForEachGroup(groupid)
-% get all position indices for each unique group in a cell array
-% with a cell for each unique group id
+%function [ind_maskSingle, ind_maskMulti, ind_cell, groups, groupCount, groupInd] = getIndicesForEachGroup(groupid)
+function [groups, groupCount, groupInd, groupStartPos, indicesList] = getIndicesForEachGroup(groupid)
+% get position indices for each unique group required for aggregation
 %
 % input: 
-%    groupid:    vector with groupids (numeric or strings)
+%    groupid: vector with groupids (numeric or strings)
 %
 % output:
-%    ind_cell:    cell array with position indices per group
-%                 or [] is case only single values (no groups found)
-%    groups:      array with groupid for each group
-%    groupcount:  array with number of elements per group
-%    groupind:    array with positon index to first occurance of groupid for each group
+%    groups:         array with groupid for each group 
+%    groupCount:     array with number of elements per group
+%    groupInd:       array with position index to first occurance of groupid for each group
+%    groupStartPos:  array with number of elements per group
+%    indicesList:    array with ordered list of indices to assign in sequence to groups
 %
 [groups, groupInd, id] = unique(groupid,'sorted');
 if length(groups)==length(groupid)
-    % no groups, all single values ==> shortcut for performance
-    groupCount = []; 
-    ind_cell = [];
+    % all single values, no groups ==> shortcut for performance
+    groupCount = [];     
+    groupStartPos = [];
+    indicesList = [];
     return    
 end
-[~,posind] = sort(id);
+[~,indicesList] = sort(id);
 groupCount = histc(id, 1:max(id)); %#ok<HISTC>
-ind_cell = mat2cell(posind(:),groupCount,1);
+groupStartPos = cumsum(groupCount) - groupCount + 1;
 end
