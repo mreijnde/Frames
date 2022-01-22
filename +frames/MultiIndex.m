@@ -178,14 +178,23 @@ classdef MultiIndex < frames.Index
             function posIndex = getSelectorSetPosIndex_(obj,selectorset, positionIndex, allowedSeries)
                 % function gets position index for given selectorset (non-filtered), keep order and duplicates
                 % as specified in selector
+                
+                % shortcut main code (for speedup) in case of just a single dimension specified
+                iscolonDim = cellfun(@iscolon, selectorset);
+                if sum(~iscolonDim)==1
+                    % only a single non-colon dimension
+                    dim = find(~iscolonDim);
+                    posIndex = obj.value_{dim}.getSelector(selectorset{dim},positionIndex, allowedSeries, false, false); 
+                    return
+                end
+                                
+                % get linear-index position selections for every dimension in selector
                 Nindex = length(obj);
                 NselectorDim = length(selectorset);
-                
-                % get linear-index position selections for every dimension in selector
                 pos = cell(1, NselectorDim);
                 indseq = cell(1, NselectorDim);                
                 for i=1:NselectorDim
-                    if ~iscolon(selectorset{i})
+                    if ~iscolonDim(i)
                         % get linear-index selector
                         [pos{i}, indseq{i}] = obj.value_{i}.getSelector(selectorset{i},positionIndex, allowedSeries, false, true);                         
                     else
