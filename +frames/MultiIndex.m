@@ -132,13 +132,19 @@ classdef MultiIndex < frames.Index
                     end
                     
                     if ~asFilter
-                        % pre-filter Multi-Index based on logical mask (for speedup)                                                
-                        maskpos = find(maskset);                       
-                        objfilt = obj.getSubIndex(maskset);                        
-                        % get order of items based on selectorset
-                        posIndexFilt = getSelectorSetPosIndex_(objfilt, selectorset, positionIndex, allowedSeries);
-                        % convert positon to original (unfiltered) positions
-                        posIndex = maskpos(posIndexFilt);
+                        
+                        if ~all(cellfun(@length, selectorset)==1)                            
+                            % pre-filter Multi-Index based on logical mask (for speedup)                                                                                                    
+                            objfilt = obj.getSubIndex(maskset);
+                            % get order of items based on selectorset
+                            posIndexFilt = getSelectorSetPosIndex_(objfilt, selectorset, positionIndex, allowedSeries);
+                            % convert positon to original (unfiltered) positions
+                            maskpos = find(maskset);
+                            posIndex = maskpos(posIndexFilt);
+                        else
+                            % in case of only single indices, skip filtering
+                            posIndex = find(maskset);
+                        end
                     end
                                         
                     % combine masks of different masksets
