@@ -1585,12 +1585,13 @@ function [row_,col_,df] = matrixOpHandler(df1,df2)
 df = df1;
 if isFrame(df2)
     if isFrame(df1)
-        assert(isequal(df1.columns_.value,df2.rows_.value), ...
+        assert((df1.colseries && df2.rowseries) || isequal(df1.columns_.value,df2.rows_.value), ...
             'frames:matrixOpHandler:notAligned','Frames are not aligned!')
         row_ = df1.rows_;
         col_ = df2.columns_;
     else
-        if size(df1,2)>1 && size(df1,2) == length(df2.rows_)
+        if size(df1,2)>1 && size(df1,2) == length(df2.rows_) ...
+                || size(df1,1) > length(df2.rows_) && length(df2.rows_) == 1
             row_ = df2.getRowsObject(df2.defaultRows(size(df1,1)));
         else
             row_ = df2.rows_;
@@ -1600,7 +1601,8 @@ if isFrame(df2)
     end
 else
     row_ = df1.rows_;
-    if size(df2,1)>1 && size(df2,1) == length(df1.columns_)
+    if size(df2,1) == length(df1.columns_) && size(df2,1)>1 ...
+            || size(df2,2) > length(df1.columns_) && length(df1.columns_) == 1
         col_ = df1.getColumnsObject(df1.defaultColumns(size(df2,2)));
     else
         col_ = df1.columns_;
@@ -1647,8 +1649,12 @@ function other = operator(fun,handler,df1,df2)
 [row_,col_,other] = handler(df1,df2);
 [v1,v2] = getData_(df1,df2);
 d = fun(v1,v2);
-other.data_ = d; other.rows_ = row_; other.columns_ = col_;
-other.description = "";
+if row_.singleton && col_.singleton
+    other = d;
+else
+    other.data_ = d; other.rows_ = row_; other.columns_ = col_;
+    other.description = "";
+end
 end
 
 %--------------------------------------------------------------------------
