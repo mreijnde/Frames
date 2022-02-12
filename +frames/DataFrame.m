@@ -861,8 +861,9 @@ classdef DataFrame
             obj.data_ = compoundChange(obj.data_,varargin{:});
         end
         function obj = replaceStartBy(obj,varargin)
-            % replace start values by 'valNew', if start values equal 'valToReplace' (optional)
-            % .replaceStartBy(valNew,valToReplace)
+            % replaceStartBy Replace all consecutive identical values at the beginning of the columns by 'valueNew',
+            % if the values equal 'valueToReplace' (optional,
+            % if not given, it consider the first values of each column)
             obj.data_ = replaceStartBy(obj.data_,varargin{:});
         end
         function obj = emptyStart(obj,window)

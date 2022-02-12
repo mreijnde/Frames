@@ -723,6 +723,10 @@ classdef dataframeTest < AbstractFramesTests
         function replaceStartByTest(t)
             df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1;NaN 2 2 4]');
             t.verifyEqual(df.replaceStartBy(10).data, [10 10 3 1; 10 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10,11,12],[1,1,NaN]).data, [10 10 3 1; NaN 1 NaN 1;12 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10;11;12;13],[1,1,NaN]).data, [10 11 3 1; NaN 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10;11;12;13],NaN).data, [1 1 3 1; 10 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy(repmat([10;11;12;13],1,3),NaN).data, [1 1 3 1; 10 1 NaN 1;10 2 2 4]');
         end
         
         function emptyStart(t)
