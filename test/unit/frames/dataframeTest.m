@@ -896,8 +896,9 @@ classdef dataframeTest < AbstractFramesTests
             df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1;NaN NaN 33 44 55 66]');
             t.verifyEqual(df.firstCommonRow(),4)
             t.verifyEqual(df.firstValidRow(),2)
-            noCommon = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRow();
+            [noCommon, ix] = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRow();
             t.verifyEqual(noCommon,string.empty(0,1));
+            t.verifyEqual(ix,double.empty(0,1));
         end
         
         function relChangeTest(t)

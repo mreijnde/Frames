@@ -870,13 +870,19 @@ classdef DataFrame
             % replace the first 'window' valid data by a missing value
             obj.data_ = emptyStart(obj.data_,window);
         end
-        function row = firstCommonRow(obj)
-            % returns the first rows where data are "all" not missing
+        function [row, ix] = firstCommonRow(obj)
+            % returns the first row where data are "all" not missing
+            % Output:
+            %   - row: the row name
+            %   - ix: the row position
             ix = find(all(~ismissing(obj.data_),2),1);
             row = obj.rows(ix);
         end
-        function row = firstValidRow(obj)
-            % returns the first rows where data are not "all missing"
+        function [row, ix] = firstValidRow(obj)
+            % returns the first row where data are not "all missing"
+            % Output:
+            %   - row: the row name
+            %   - ix: the row position
             ix = find(any(~ismissing(obj.data_),2),1);
             row = obj.rows(ix);
         end
