@@ -977,21 +977,28 @@ classdef DataFrame
             obj.data_ = compoundChange(obj.data_,varargin{:});
         end
         function obj = replaceStartBy(obj,varargin)
-            % replace start values by 'valNew', if start values equal 'valToReplace' (optional)
-            % .replaceStartBy(valNew,valToReplace)
+            % replaceStartBy Replace all consecutive identical values at the beginning of the columns by 'valueNew',
+            % if the values equal 'valueToReplace' (optional,
+            % if not given, it consider the first values of each column)
             obj.data_ = replaceStartBy(obj.data_,varargin{:});
         end
         function obj = emptyStart(obj,window)
             % replace the first 'window' valid data by a missing value
             obj.data_ = emptyStart(obj.data_,window);
         end
-        function row = firstCommonRow(obj)
-            % returns the first rows where data are "all" not missing
+        function [row, ix] = firstCommonRow(obj)
+            % returns the first row where data are "all" not missing
+            % Output:
+            %   - row: the row name
+            %   - ix: the row position
             ix = find(all(~ismissing(obj.data_),2),1);
             row = obj.rows(ix);
         end
-        function row = firstValidRow(obj)
-            % returns the first rows where data are not "all missing"
+        function [row, ix] = firstValidRow(obj)
+            % returns the first row where data are not "all missing"
+            % Output:
+            %   - row: the row name
+            %   - ix: the row position
             ix = find(any(~ismissing(obj.data_),2),1);
             row = obj.rows(ix);
         end
@@ -1295,6 +1302,10 @@ classdef DataFrame
                         % allow custom data access of index values as implemented in Index class subsref                        
                         s(1).subs = "value"; % field to access in Index object is called 'value'
                         [varargout{1:nargout}] = subsref(obj.(field+"_"), s);                        
+                        if field=="columns"
+                            % transpose output in case of columns                            
+                            varargout{1} = varargout{1}';
+                        end
                      else                       
                         [varargout{1:nargout}] = builtin('subsref',obj,s);
                      end    
@@ -2140,12 +2151,13 @@ function [row_,col_,df] = matrixOpHandler(df1,df2)
 df = df1;
 if isFrame(df2)
     if isFrame(df1)
-        assert(isequal(df1.columns_.value,df2.rows_.value), ...
+        assert((df1.colseries && df2.rowseries) || isequal(df1.columns_.value,df2.rows_.value), ...
             'frames:matrixOpHandler:notAligned','Frames are not aligned!')
         row_ = df1.rows_;
         col_ = df2.columns_;
     else
-        if size(df1,2)>1 && size(df1,2) == length(df2.rows_)
+        if size(df1,2)>1 && size(df1,2) == length(df2.rows_) ...
+                || size(df1,1) > length(df2.rows_) && length(df2.rows_) == 1
             row_ = df2.getRowsObject(df2.defaultRows(size(df1,1)));
         else
             row_ = df2.rows_;
@@ -2155,7 +2167,8 @@ if isFrame(df2)
     end
 else
     row_ = df1.rows_;
-    if size(df2,1)>1 && size(df2,1) == length(df1.columns_)
+    if size(df2,1) == length(df1.columns_) && size(df2,1)>1 ...
+            || size(df2,2) > length(df1.columns_) && length(df1.columns_) == 1
         col_ = df1.getColumnsObject(df1.defaultColumns(size(df2,2)));
     else
         col_ = df1.columns_;
