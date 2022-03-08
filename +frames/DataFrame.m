@@ -565,7 +565,7 @@ classdef DataFrame
                 rowNew = rowNew.union(varargin{ii}.rows_);
                 lenIdx(ii+1) = length(varargin{ii}.rows_);
                 col_ = varargin{ii}.columns_.value_;
-                if sameCols && isequal(col,col_)
+                if sameCols && isequaln(col,col_)
                     continue
                 else
                     sameCols = false;

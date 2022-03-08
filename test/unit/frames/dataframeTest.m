@@ -782,6 +782,9 @@ classdef dataframeTest < AbstractFramesTests
             b = frames.DataFrame(2,[2 4],1);
             c = frames.DataFrame(3,3,2);
             t.verifyEqual([a;c;b],frames.DataFrame([1 NaN 2 2; NaN 3 NaN NaN]',[1 3 2 4],[1 2]))
+
+            t.verifyEqual([frames.DataFrame([1;2],[1 3]).asColSeries();frames.DataFrame([3;4],[2 4]).asColSeries()], ...
+                frames.DataFrame([1;2;3;4],[1 3 2 4]).asColSeries())
         end
         
         function vertcatRowsPropsTest(t)
