@@ -1072,6 +1072,14 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(df.any(1).any(2),true);
             t.verifyEqual(df.all(2),frames.DataFrame([false false]',ColSeries=true));
         end
+
+        function idxSelection(t)
+            df = frames.DataFrame([1 2 3; 3 4 5; 5 6 7],[1 2 3],[1 2 3]);
+            t.verifyEqual(df.columns([true false true]), [1 3])
+            t.verifyEqual(df.rows([true false true]), [1 3]')
+            t.verifyEqual(df.columns([false false false]), double.empty(1,0))
+            t.verifyEqual(df.rows([false false false]), double.empty(0,1))
+        end
         
         function selectFromTimeRangeTest(t)
             tf = frames.TimeFrame(1,738318:738318+10); % 11 June 2021 to 21 June 2021
