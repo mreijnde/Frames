@@ -168,7 +168,7 @@ for ii = 1:nargin, dfsdata{ii} = string(varargin{ii}.data(:)); end
 gps = repmat(string(missing),size(gpsNumber));
 nbGrps = max(gpsNumber);
 if ~ismissing(nbGrps)
-    groupNames = join([groupNames{:}]);
+    groupNames = join([groupNames{:}],2);
     for ii = 1:nbGrps
         gps(gpsNumber==ii) = groupNames(ii);
     end
