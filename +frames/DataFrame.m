@@ -1302,6 +1302,10 @@ classdef DataFrame
                         % allow custom data access of index values as implemented in Index class subsref                        
                         s(1).subs = "value"; % field to access in Index object is called 'value'
                         [varargout{1:nargout}] = subsref(obj.(field+"_"), s);                        
+                        if field=="columns"
+                            % transpose output in case of columns                            
+                            varargout{1} = varargout{1}';
+                        end
                      else                       
                         [varargout{1:nargout}] = builtin('subsref',obj,s);
                      end    

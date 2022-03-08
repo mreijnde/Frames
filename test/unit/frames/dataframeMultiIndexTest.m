@@ -567,7 +567,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             dfcs = frames.DataFrame(1,[],frames.MultiIndex([1 2 3 10 20]',UniqueSorted=true));
             df4=dfcs;
             df4.columns([3,1]) = [4,0];
-            t.verifyEqual(df4.columns(:,1),[0 2 4 10 20]')
+            t.verifyEqual(df4.columns(:,1),[0 2 4 10 20])
             t.verifyError(@notSortedCol,'frames:MultiIndex:requireSortedFail')
             function notSortedCol, df4.columns([1,3]) = [4,0]; end
             
@@ -611,10 +611,10 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             function colsNotUniqueWarning(), df.columns=[6 6]; end
             
             df.columns = ["3" "5"];
-            t.verifyEqual(df.columns(:,1),["3" "5"]')
+            t.verifyEqual(df.columns(:,1),["3" "5"])
             
-            df.columns = frames.MultiIndex([3 5]',Unique=true);
-            t.verifyEqual(df.columns(:,1),[3 5]')
+            df.columns = frames.MultiIndex([3 5]',Unique=true); % MultiIndex requires col-vector for seperate items 
+            t.verifyEqual(df.columns(:,1),[3 5]) % output as row-vector
             
             warning('off','frames:Index:subsagnNotUnique');
             t.verifyError(@colsNotUnique,'frames:MultiIndex:requireUniqueFail')
@@ -637,7 +637,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             function cannotBeEmpty(), df.columns(2)=[]; end
             
             df.columns = [3 6];
-            t.verifyEqual(df.columns(:,1),[3 6]') 
+            t.verifyEqual(df.columns(:,1),[3 6]) 
         end
         
         function dataSetterTest1D(t)
@@ -963,7 +963,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             % col mtimes row
             res = frames.DataFrame([1 2 3]',{(2:4)'},{"u"})*frames.DataFrame([1 2 3],{"u"},{["a" "b" "c"]'});
             t.verifyEqual(res.rows(:,1),(2:4)')
-            t.verifyEqual(res.columns(:,1),["a" "b" "c"]')
+            t.verifyEqual(res.columns(:,1),["a" "b" "c"])
             
             % logical operations
             df = frames.DataFrame([true,false;false,true]);
