@@ -723,6 +723,10 @@ classdef dataframeTest < AbstractFramesTests
         function replaceStartByTest(t)
             df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1;NaN 2 2 4]');
             t.verifyEqual(df.replaceStartBy(10).data, [10 10 3 1; 10 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10,11,12],[1,1,NaN]).data, [10 10 3 1; NaN 1 NaN 1;12 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10;11;12;13],[1,1,NaN]).data, [10 11 3 1; NaN 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10;11;12;13],NaN).data, [1 1 3 1; 10 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy(repmat([10;11;12;13],1,3),NaN).data, [1 1 3 1; 10 1 NaN 1;10 2 2 4]');
         end
         
         function emptyStart(t)
@@ -778,6 +782,9 @@ classdef dataframeTest < AbstractFramesTests
             b = frames.DataFrame(2,[2 4],1);
             c = frames.DataFrame(3,3,2);
             t.verifyEqual([a;c;b],frames.DataFrame([1 NaN 2 2; NaN 3 NaN NaN]',[1 3 2 4],[1 2]))
+
+            t.verifyEqual([frames.DataFrame([1;2],[1 3]).asColSeries();frames.DataFrame([3;4],[2 4]).asColSeries()], ...
+                frames.DataFrame([1;2;3;4],[1 3 2 4]).asColSeries())
         end
         
         function vertcatRowsPropsTest(t)
@@ -892,8 +899,9 @@ classdef dataframeTest < AbstractFramesTests
             df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1;NaN NaN 33 44 55 66]');
             t.verifyEqual(df.firstCommonRow(),4)
             t.verifyEqual(df.firstValidRow(),2)
-            noCommon = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRow();
+            [noCommon, ix] = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRow();
             t.verifyEqual(noCommon,string.empty(0,1));
+            t.verifyEqual(ix,double.empty(0,1));
         end
         
         function relChangeTest(t)
@@ -989,6 +997,25 @@ classdef dataframeTest < AbstractFramesTests
             expectedData = df.data * b.data;
             expected = frames.DataFrame(expectedData,df.rows,b.getColumnsObj());
             t.verifyEqual(df*b,expected)
+
+            t.verifyEqual( ...
+                frames.DataFrame([1;2;3],ColSeries=true) * frames.DataFrame([1;2]',[],[10 20],RowSeries=true), ...
+                frames.DataFrame([1 2;2 4;3 6],[1 2 3],[10 20]) )
+            t.verifyEqual(...
+                frames.DataFrame([1;2;3]',[],[1,2,3],RowSeries=true) * frames.DataFrame([1 1;2 2;4 3]), ...
+                frames.DataFrame([17,14],RowSeries=true))
+            t.verifyEqual(...
+                [1;2;3]' * frames.DataFrame([1 1;2 2;4 3]), ...
+                frames.DataFrame([17,14]))
+            t.verifyEqual(...
+                frames.DataFrame([1;2;3]',[],[1,2,3],RowSeries=true) * [1 1;2 2;4 3], ...
+                frames.DataFrame([17,14],RowSeries=true))
+            t.verifyEqual(...
+                frames.DataFrame([1;2;3]) * [1 2], ...
+                frames.DataFrame([1 2;2 4;3 6]))
+            t.verifyEqual(...
+                 [1 2]' * frames.DataFrame([1;2;3]'), ...
+                frames.DataFrame([1 2;2 4;3 6]'))
         end
         
         function mat2seriesTest(t)
