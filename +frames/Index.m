@@ -627,15 +627,15 @@ classdef Index
             % handle equal and singleton cases
             if isequal(obj1.value,obj2.value)
                 objnew = obj1;
-                ind1_new = 1:length(obj1);
+                ind1_new = (1:length(obj1))';
                 ind2_new = ind1_new;                
             elseif ~obj1.singleton && obj2.singleton
                 objnew = obj1;
-                ind1_new = 1:length(obj1);
+                ind1_new = (1:length(obj1))';
                 ind2_new = ones(size(ind1_new));                
             elseif obj1.singleton && ~obj2.singleton
                 objnew = obj2;
-                ind2_new = 1:length(obj2);
+                ind2_new = (1:length(obj2))';
                 ind1_new = ones(size(ind2_new));                
             end            
         end
