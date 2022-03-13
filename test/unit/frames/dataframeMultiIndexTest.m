@@ -833,83 +833,86 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             sol = frames.DataFrame([1 2 3; 2 5 3]', frames.MultiIndex([2 6 1]',Unique=true,Name="dim1")).sortRows();
             t.verifyEqual(sol,frames.DataFrame([3 1 2;3 2 5]',{[1 2 6]}))
         end
-%         
-%         function splitapplyTest(t)
-%             % simple split with cell
-%             df=frames.DataFrame([1 2 3;2 5 3;5 0 1]', [6 2 1], [4 1 3]);
-%             g1 = frames.Groups(cell2struct({[4,3],1}',["d","e"]'));
-%             x1 = df.split(g1).apply(@(x) x);
-%             t.verifyEqual(x1,frames.DataFrame([1 2 3;2 5 3;5 0 1]',[6 2 1],[4 1 3]))
-%             % apply function using group names
-%             ceiler.d = {2.5,4.5};
-%             ceiler.e = {2.6};
-%             x2 = df.split(g1).apply(@(x) x.clip(ceiler.(x.description){:}), 'applyToFrame');
-%             % split with structure
-%             s.d = [4 3]; s.e = 1;
-%             x3 = df.split(frames.Groups(s)).apply(@(x) x.clip(ceiler.(x.description){:}), 'applyToFrame');
-%             % split with a Group
-%             g2 = frames.Groups(s).shrink([1 4 3]);
-%             x4 = df.split(g2).apply(@(x) x.clip(ceiler.(x.description){:}), 'applyToFrame');
-%             expected = frames.DataFrame([2.5 2.5 3;2 2.6 2.6;4.5 2.5 2.5]',[6,2,1],[4 1 3]);
-%             t.verifyEqual(x2,expected)
-%             t.verifyEqual(x3,expected)
-%             t.verifyEqual(x4,expected)
-%             x5 = df.split(g2).aggregate(@(x) x.sum(2), 'applyToFrame');
-%             t.verifyEqual(x5,frames.DataFrame([6 2 4;2 5 3]',[6 2 1],["d","e"]))
-%             x6 = df.split(g2).aggregate(@(x) sum(x.data,2), 'applyToFrame');
-%             t.verifyEqual(x6,x5)
-%             x65 = df.split(g2).aggregate(@(x) sum(x,2),'applyToData');
-%             t.verifyEqual(x65,x5)
-%             x7 = df.split(g2.select(["d","e"])).apply(@(x) x.data, 'applyToFrame');
-%             t.verifyEqual(x7,df)
-% 
-%             % split without group names
-%             splitted = frames.DataFrame(1:5).split(frames.Groups({"Var"+(1:2:5),"Var"+(4:-2:2)}));
-%             t.verifyEqual(splitted.aggregate(@(x) x.sum(2), 'applyToFrame'), frames.DataFrame([9,6],[],["Group1","Group2"]))
-% %             t.verifyEqual(splitted.apply(@(x) x.sum(1)), frames.DataFrame([1,3,5,4,2],NaN,"Var"+[1:2:5,4:-2:2],RowSeries=true))
-%             
-%             % with a group frame
-%             tf = frames.TimeFrame([1 2 3;4 5 6;4 5 6; 7 8 9]);
-%             groups = frames.Groups(frames.TimeFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN]));
-%             g1 = tf.split(groups).apply(@mean,2, 'applyToFrame');
-%             g2 = tf.split(groups).apply(@(x) x.mean(2), 'applyToFrame');
-%             g3 = tf.split(groups).apply(@(x) mean(x.data,2), 'applyToFrame');
-%             t.verifyEqual(g1,frames.TimeFrame([1.5 1.5 3;4.5 4.5 6;5 5 5;7 8 NaN]))
-%             t.verifyEqual(g1,g2)
-%             t.verifyEqual(g1,g3)
-%             groupsRow = frames.Groups(frames.TimeFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN]),'rowGroups');
-%             f1 = tf.split(groupsRow).apply(@mean,1);
-%             t.verifyEqual(f1,frames.TimeFrame([4 4 4 4;3.5 3.5 6.5 6.5;4.5 4.5 6 NaN]'))
-%             
-%             % with flags
-%             nObs = 2;
-%             nVars = 1000;
-%             nGroups = 3;
-%             operatorData = @(x) std(x,1,2,'omitnan');
-%             operatorFrame = @(x) x.std(2,1);
-%             data = frames.DataFrame(rand(nObs,nVars));
-%             groupframe = frames.DataFrame(ceil(nGroups*rand(nObs,nVars)));
-%             groups = frames.Groups(groupframe);
-%             s1 = data.split(groups).apply(operatorData,'applyToData');
-%             s2 = data.split(groups).apply(operatorFrame,'applyToFrame');
-%             t.verifyEqual(s1,s2)
-%             grouprow = frames.Groups(groupframe.row(1));
-%             s3 = data.split(grouprow).apply(@std,1,2,'omitnan','applyToData');
-%             s4 = data.split(grouprow).apply(operatorFrame,'applyToFrame');
-%             t.verifyEqual(s3,s4)
-%             t.verifyEqual(s1{1}.data,s4{1}.data,'AbsTol',t.tol)
-%             
-%             % missing groups
-%             groups = frames.Groups(frames.DataFrame(string([4 NaN 2 4;NaN 3 1 3])));
-%             data = frames.DataFrame([1 2 3 4;5 6 7 8]);
-%             s1 = data.split(groups).apply(@(x) x.sum(2), 'applyToFrame');
-%             s2 = data.split(groups).apply(@(x) sum(x,2),'applyToData');
-%             s3 = data.split(groups).apply(@(x) sum(x.data,2),'applyToFrame');
-%             t.verifyEqual(s1,frames.DataFrame([5 NaN 3 5;NaN 14 7 14]))
-%             t.verifyEqual(s1,s2)
-%             t.verifyEqual(s1,s3)
-%         end
-%         
+        
+        function splitapplyTest(t)
+            % 1D MULTIINDEX CHECKS
+            
+            % simple split with cell
+            df=frames.DataFrame([1 2 3;2 5 3;5 0 1]', {[6 2 1]}, {[4 1 3]});
+            g1 = frames.Groups(cell2struct({[4,3],1}',["d","e"]'));
+            x1 = df.split(g1).apply(@(x) x);
+            t.verifyEqual(x1,frames.DataFrame([1 2 3;2 5 3;5 0 1]',{[6 2 1]},{[4 1 3]}))
+            % apply function using group names
+            ceiler.d = {2.5,4.5};
+            ceiler.e = {2.6};
+            x2 = df.split(g1).apply(@(x) x.clip(ceiler.(x.description){:}), 'applyToFrame');
+            % split with structure
+            s.d = [4 3]; s.e = 1;
+            x3 = df.split(frames.Groups(s)).apply(@(x) x.clip(ceiler.(x.description){:}), 'applyToFrame');
+            % split with a Group
+            g2 = frames.Groups(s).shrink([1 4 3]);
+            x4 = df.split(g2).apply(@(x) x.clip(ceiler.(x.description){:}), 'applyToFrame');
+            expected = frames.DataFrame([2.5 2.5 3;2 2.6 2.6;4.5 2.5 2.5]',{[6,2,1]},{[4 1 3]});
+            t.verifyEqual(x2,expected)
+            t.verifyEqual(x3,expected)
+            t.verifyEqual(x4,expected)
+            x5 = df.split(g2).aggregate(@(x) x.sum(2), 'applyToFrame');
+            t.verifyEqual(x5,frames.DataFrame([6 2 4;2 5 3]',{[6 2 1]},{["d","e"]}))
+            x6 = df.split(g2).aggregate(@(x) sum(x.data,2), 'applyToFrame');
+            t.verifyEqual(x6,x5)
+            x65 = df.split(g2).aggregate(@(x) sum(x,2),'applyToData');
+            t.verifyEqual(x65,x5)
+            x7 = df.split(g2.select(["d","e"])).apply(@(x) x.data, 'applyToFrame');
+            t.verifyEqual(x7,df)
+            
+            % split without group names            
+            splitted = frames.DataFrame(1:5,{},{}).split(frames.Groups({"Var"+(1:2:5),"Var"+(4:-2:2)}));
+            t.verifyEqual(splitted.aggregate(@(x) x.sum(2), 'applyToFrame'), frames.DataFrame([9,6],{},{["Group1","Group2"]}))
+            %t.verifyEqual(splitted.apply(@(x) x.sum(1)), frames.DataFrame([1,3,5,4,2],{NaN},{"Var"+[1:2:5,4:-2:2]},RowSeries=true))
+            
+            % with a group frame
+            tf = frames.TimeFrame([1 2 3;4 5 6;4 5 6; 7 8 9],[],{});
+            groups = frames.Groups(frames.TimeFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN],[],{}));
+            g1 = tf.split(groups).apply(@mean,2, 'applyToFrame');
+            g2 = tf.split(groups).apply(@(x) x.mean(2), 'applyToFrame');
+            g3 = tf.split(groups).apply(@(x) mean(x.data,2), 'applyToFrame');
+            t.verifyEqual(g1,frames.TimeFrame([1.5 1.5 3;4.5 4.5 6;5 5 5;7 8 NaN],[],{}))
+            t.verifyEqual(g1,g2)
+            t.verifyEqual(g1,g3)
+            groupsRow = frames.Groups(frames.TimeFrame([1 1 2;1 1 2; 1 2 1; 1 2 NaN],[],{}),'rowGroups');
+            f1 = tf.split(groupsRow).apply(@mean,1);
+            t.verifyEqual(f1,frames.TimeFrame([4 4 4 4;3.5 3.5 6.5 6.5;4.5 4.5 6 NaN]',[],{}))
+                        
+            % with flags
+            nObs = 2;
+            nVars = 1000;
+            nGroups = 3;
+            operatorData = @(x) std(x,1,2,'omitnan');
+            operatorFrame = @(x) x.std(2,1);            
+            data = frames.DataFrame(rand(nObs,nVars),{},{});
+            groupframe = frames.DataFrame(ceil(nGroups*rand(nObs,nVars)),{},{});
+            groups = frames.Groups(groupframe);
+            s1 = data.split(groups).apply(operatorData,'applyToData');
+            s2 = data.split(groups).apply(operatorFrame,'applyToFrame');
+            t.verifyEqual(s1,s2)
+            
+            grouprow = frames.Groups(groupframe.row(1));
+            s3 = data.split(grouprow).apply(@std,1,2,'omitnan','applyToData');
+            s4 = data.split(grouprow).apply(operatorFrame,'applyToFrame');
+            t.verifyEqual(s3,s4)
+            t.verifyEqual(s1{1}.data,s4{1}.data,'AbsTol',t.tol)
+                       
+            % missing groups
+            groups = frames.Groups(frames.DataFrame(string([4 NaN 2 4;NaN 3 1 3]),{},{}));
+            data = frames.DataFrame([1 2 3 4;5 6 7 8],{},{});
+            s1 = data.split(groups).apply(@(x) x.sum(2), 'applyToFrame');
+            s2 = data.split(groups).apply(@(x) sum(x,2),'applyToData');
+            s3 = data.split(groups).apply(@(x) sum(x.data,2),'applyToFrame');
+            t.verifyEqual(s1,frames.DataFrame([5 NaN 3 5;NaN 14 7 14],{},{}))
+            t.verifyEqual(s1,s2)
+            t.verifyEqual(s1,s3)
+        end
+        
         function firstRowsTest1D(t)
             % WARNING: behavior changed wrt to Index()
             df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1;NaN NaN 33 44 55 66]', {[]});
