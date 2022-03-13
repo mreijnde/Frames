@@ -119,6 +119,26 @@ classdef dataframeTest < AbstractFramesTests
             warning('on','frames:Index:notUnique')
         end
         
+                
+        function initCopyTest(t)
+            df = frames.DataFrame([1,2;3,4], ["a","b"],[1,2] );
+            df1 = df.initCopy([11,22,33;44,55,66], df.getRowsObj(), ["AA","BB","CC"]);
+            t.verifyEqual(df1, frames.DataFrame([11,22,33;44,55,66],["a","b"],["AA","BB","CC"]))
+            df2 = df.initCopy([11,22;33,44;55,66], [1,2,3] , df.columns);
+            t.verifyEqual(df2, frames.DataFrame([11,22;33,44;55,66],[1,2,3],[1,2]))
+            % check datasize
+            t.verifyError(@() df.initCopy([11,22;33,44],[1,2,3],[1,2]), 'frames:initCopy:mismatchrows');
+            t.verifyError(@() df.initCopy([11,22;33,44],[1,3],[1]), 'frames:initCopy:mismatchcolumns');
+            
+            % check timeframe
+            tf = frames.TimeFrame([1,2;3,4], [],[1,2] );
+            tf1 = tf.initCopy([11,22,33;44,55,66], tf.getRowsObj(), ["AA","BB","CC"]);
+            t.verifyEqual(tf1, frames.TimeFrame([11,22,33;44,55,66],[],["AA","BB","CC"]))
+            tf2 = tf.initCopy([11,22;33,44;55,66], [1 2 3], tf.getColumnsObj());
+            t.verifyEqual(tf2, frames.TimeFrame([11,22;33,44;55,66],[],[1,2]))
+        end
+
+                
         function catsIndexSpecTest(t)
             warning('off','frames:Index:notUnique')
             duplicate = frames.Index([1 1 3]);

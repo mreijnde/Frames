@@ -86,6 +86,35 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyError(@() frames.DataFrame([1;2;3], {{1,"a"},{1,"b"},{1,"a"}}), 'frames:MultiIndex:requireUniqueFail');                         
         end
         
+        
+        function initCopyTest(t)
+            % checks MultiIndex dataframe
+            warning('off','frames:Index:subsagnNotUnique');
+            df = frames.DataFrame([1, 2; 3, 4], {{1,"a"},{2,"b"}},{[11,22]});            
+            df1 = df.initCopy([91,92;93,94;95,96], {{33,"aa"},{33,"ab"},{34,"ab"}},df.getColumnsObj());
+            df1_ref = frames.DataFrame([91,92;93,94;95,96], {{33,"aa"},{33,"ab"},{34,"ab"}},{[11,22]});
+            warning('on','frames:Index:subsagnNotUnique');
+            t.verifyEqual(df1, df1_ref)
+            df2 = df.initCopy([91,92,11;93,94,22], df.rows,[11,22,33]);
+            df2_ref = frames.DataFrame([91,92,11;93,94,22], {{1,"a"},{2,"b"}},{[11,22,33]});
+            t.verifyEqual(df2, df2_ref)
+            
+                        
+            % check settings
+            df.settings.alignMethod = "full";
+            df3 = df.initCopy([91,92,11;93,94,22], df.rows,[11,22,33]);
+            df3_ref = df2_ref;
+            df3_ref.settings.alignMethod = "full";
+            t.verifyEqual(df3, df3_ref)
+            
+            % check datasize
+            t.verifyError(@() df.initCopy([11,22;33,44],{{1,"a"},{2,"b"},{3,"c"}},[1,2]), 'frames:initCopy:mismatchrows');
+            t.verifyError(@() df.initCopy([11,22;33,44],{{1,"a"},{2,"b"}},[1,2,3]), 'frames:initCopy:mismatchcolumns');            
+        end
+
+        
+        
+        
         function catsIndexSpecTest1D(t)
             % 1D CHECKS
             warning('off','frames:Index:notUnique')

@@ -225,6 +225,32 @@ classdef DataFrame
         end
         
         %------------------------------------------------------------------
+        
+        function obj = initCopy(obj, data, rows, columns)
+            % initalize a new DataFrame with new data, row and column values,
+            % while keeping settings and same class types of row and column object.
+            %
+            % input:
+            %   - data:     2d matrix with values
+            %   - rows:     input supported by setvalue() of rows index class
+            %   - columns:  input supported by setvalue() of columns index class
+            % 
+            % output:
+            %   dataframe with new values
+            %
+            obj.data_ = data;
+            obj.rows_.value = rows;
+            obj.columns_.value = columns;
+            % validate rows and column size match datasize            
+            assert(obj.rows_.length() == size(data,1),  'frames:initCopy:mismatchrows', ...
+                  "Number of rows not matching data size.");
+            assert(obj.columns_.length() == size(data,2), 'frames:initCopy:mismatchcolumns', ...
+                  "Number of columns not matching data size.");
+        end
+            
+        
+        
+        %------------------------------------------------------------------
         % Setters and Getters
         function obj = set.rows(obj, value)
             obj.rowsValidation(value)
