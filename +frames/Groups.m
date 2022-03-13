@@ -109,10 +109,20 @@ classdef Groups
             if isFrame(g)
                 data = g.data(:)';
                 missingData = ismissing(data);
-                if obj.isColumnGroups, obj.groupless = g.columns(missingData); else, obj.groupless = g.rows(missingData)'; end
+                if obj.isColumnGroups
+                    assert(g.columns_.Ndim<2, "Grouping of columns with more than 1 dimension (currently) not supported");
+                    obj.groupless = g.columns(missingData,1);
+                else
+                    assert(g.rows_.Ndim<2, "Grouping of rows with more than 1 dimension (currently) not supported");
+                    obj.groupless = g.rows(missingData,1)';
+                end
                 [obj.keys,~,ikeys] = unique(data(~missingData),'stable');
                 obj.values = cell(1,length(obj.keys));
-                if obj.isColumnGroups, vals = g.columns; else, vals = g.rows'; end
+                if obj.isColumnGroups 
+                    vals = g.columns(:,1); 
+                else
+                    vals = g.rows(:,1)';
+                end
                 vals = vals(~missingData);
                 for ii = 1:length(obj.keys)
                     obj.values{ii} = vals(ikeys==ii);

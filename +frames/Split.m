@@ -59,9 +59,9 @@ classdef Split
                 end
                 if ~allowNonExhaustive 
                     if groups.isColumnGroups 
-                        toSplit = obj.applyToPotentialCell(df, @(x) x.columns, true); 
+                        toSplit = obj.applyToPotentialCell(df, @(x) x.columns(:,1), true); 
                     else
-                        toSplit = obj.applyToPotentialCell(df, @(x) x.rows, true); 
+                        toSplit = obj.applyToPotentialCell(df, @(x) x.rows(:,1), true); 
                     end
                     allElements = [allElements,groups.groupless];
                     if any(~ismember(toSplit,allElements))
@@ -92,8 +92,7 @@ classdef Split
             out = obj.computeFunction(fun,false,varargin{:});
             rows = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj(), true); 
             cols = obj.applyToPotentialCell(obj.df, @(x) x.getColumnsObj(), true); 
-            constructor = obj.applyToPotentialCell(obj.df, @(x) x.constructor, true); 
-            other = constructor(out, rows, cols);
+            other = obj.getFirstDataFrame().initCopy(out, rows, cols);   
         end
         function other = aggregate(obj,fun,varargin)
             % AGGREGATE apply a function to each sub-Frame, and returns a single Frame. Returns a single vector for each group.
@@ -106,18 +105,27 @@ classdef Split
             %       allows to pass a function that will be applied line by
             %       line instead that on a matrix (by default)
             % e.g. .aggregate(@(x) sum(x,2),'applyToData') vs .aggregate(@(x) x.sum(2),'applyToFrame')
-            out = obj.computeFunction(fun,true,varargin{:});
+            out = obj.computeFunction(fun,true,varargin{:});            
             if obj.groups.isColumnGroups
                 rows = obj.applyToPotentialCell(obj.df, @(x) x.getRowsObj(), true); 
-                constructor = obj.applyToPotentialCell(obj.df, @(x) x.constructor, true); 
-                other = constructor(out, rows, obj.groups.keys);
+                other = obj.getFirstDataFrame().initCopy(out, rows, obj.groups.keys);               
             else
                 cols = obj.applyToPotentialCell(obj.df, @(x) x.getColumnsObj(), true); 
-                other = frames.DataFrame(out, obj.groups.keys, cols);  % not constructor as groups are an ordinary Index
+                other = frames.DataFrame(out, obj.groups.keys, cols);  % init default DataFrame class as groups are an ordinary Index
             end
         end
     end
     methods(Access=protected)
+        
+        function df = getFirstDataFrame(obj)
+            % return first dataframe stored
+            if ~iscell(obj.df)
+                df = obj.df;
+            else
+                df = obj.df{1};
+            end
+        end
+        
         function out = computeFunction(obj,fun,reduceDim,varargin)           
             [applyToFrameFlag,varargin] = parseFlag('applyToFrame',varargin);
             [applyToDataFlag,varargin] = parseFlag('applyToData',varargin);
