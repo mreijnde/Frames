@@ -2019,6 +2019,14 @@ classdef DataFrame
         end
     end
     
+    methods(Static, Hidden)
+        function fh = getPrivateFuncHandle(funcname)
+            % helper function to access private package functions from unit-tester
+            % (not to be used in own code)
+            fh = str2func(funcname);
+        end
+    end
+    
     methods(Hidden)
         function disp(obj)
             maxRows = 100;

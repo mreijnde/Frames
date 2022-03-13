@@ -12,7 +12,7 @@ classdef  privatefuncTest < AbstractFramesTests
             groupid_string = string(groupid);                        
             
             % get handle to private function to test
-            groupsummaryMatrixFast = frames.getPrivateFuncHandle('groupsummaryMatrixFast');
+            groupsummaryMatrixFast = frames.DataFrame.getPrivateFuncHandle('groupsummaryMatrixFast');
             
             % compare results against groupsummary() for @mean and numeric groupid
             [B,BG,BC]    = groupsummaryMatrixFast(dat,groupid, @mean);
