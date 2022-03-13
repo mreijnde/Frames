@@ -1,4 +1,4 @@
-classdef DataFrameSettingsDefault < frames.DataFrameSettings & handle
+classdef DataFrameSettingsDefault < frames.internal.DataFrameSettings & handle
     % default DataFrame settings that are persistent
     
     % (properties, and the defaults inherited from DataFrameSettings)
@@ -6,7 +6,7 @@ classdef DataFrameSettingsDefault < frames.DataFrameSettings & handle
     methods
         function reset(obj)
             % resets stored properties to default 'out-of-the-box' values
-            defaultsettings = frames.DataFrameSettings();
+            defaultsettings = frames.internal.DataFrameSettings();
             % loop over all defined properties
             props = properties(defaultsettings);
             for i= 1:length(props)

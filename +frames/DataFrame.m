@@ -106,10 +106,10 @@ classdef DataFrame
         constructor
     end
     properties (Constant)      
-      settingsDefault = frames.DataFrameSettingsDefault;      
+      settingsDefault = frames.internal.DataFrameSettingsDefault;      
     end
     properties
-        settings frames.DataFrameSettings = frames.DataFrameSettings;
+        settings frames.internal.DataFrameSettings  = frames.internal.DataFrameSettings;
         description = ""  % text description of the object
     end
     properties(Hidden, Access=protected)
@@ -137,7 +137,7 @@ classdef DataFrame
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
             end
             % get DataFrameSettings
-            obj.settings = frames.DataFrameSettings(obj.settingsDefault);
+            obj.settings = frames.internal.DataFrameSettings(obj.settingsDefault);
                                                           
             % get row index 
             useMultiIndexRows = checkMultiIndexinput(rows);

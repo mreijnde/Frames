@@ -8,7 +8,7 @@ classdef (HandleCompatible) DataFrameSettings
     methods
          function obj = DataFrameSettings(settings)             
              % constructor to initialize properties from other DataFrameSettings object (if supplied)
-             if nargin>0 && isa(settings, "frames.DataFrameSettings")                     
+             if nargin>0 && isa(settings, "frames.internal.DataFrameSettings")                     
                  % loop over all defined properties
                  props = properties(settings);
                  for i= 1:length(props)
