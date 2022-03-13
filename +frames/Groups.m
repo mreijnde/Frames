@@ -120,13 +120,13 @@ classdef Groups
             else
                 switch class(g)
                     case 'struct'
-                        obj.keys = fieldnames(g)';
+                        obj.keys = string(fieldnames(g)'); %convert to string
                         obj.values = struct2cell(g)';
                     case 'cell'
                         obj.keys = "Group" + (1:length(g));
                         obj.values = g;
                     case 'containers.Map'
-                        obj.keys = g.keys;
+                        obj.keys = string(g.keys); %convert to string
                         obj.values = g.values;
                     otherwise
                         error('frames:Groups:setKeyVal', 'format must be struct, cell, containers.Map, or DataFrame')
