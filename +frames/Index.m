@@ -653,7 +653,11 @@ classdef Index
                 else
                     b_ = obj.getValue_from(b);
                     val_ = obj.value_;
-                    val_(idxNew) = b_;
+                    if iscolon(idxNew)
+                       val_ = b_;
+                    else
+                        val_(idxNew) = b_;
+                    end
 
                     obj.valueChecker(val_,idxNew,b_);
                     obj.value_ = val_;
@@ -685,8 +689,8 @@ classdef Index
     methods(Access=protected)
         function obj = setvalue(obj,value, userCall)
             if nargin<3, userCall=true; end
-            if isa(value,'frames.Index')
-                error('frames:index:setvalue','value of Index cannot be an Index')
+            if isIndex(value)
+                value = value.value_;                
             end
             if islogical(value)
                 error('frames:index:setvalueLogical','value of Index cannot be a logical')

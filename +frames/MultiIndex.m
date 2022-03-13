@@ -561,9 +561,11 @@ classdef MultiIndex < frames.Index
                 return;
             end
             
+            % flag to create builtup MultiIndices
+            createIndices = true;
+            
             % handle: [frames.Index, frames.Index, ...]
-            %if all( arrayfun(@(x) isa(x,'frames.Index'), value))
-            if isvector(value) && isIndex(value(1))
+            if isvector(value) && isIndex(value(1)) && ~isMultiIndex(value(1))
                 % handle array of Index objects by first converting to cell array
                 value = num2cell(value);
             end
@@ -608,34 +610,44 @@ classdef MultiIndex < frames.Index
                 end
                 
             else
-                % handle: 1d & 2d array(Nrows, Ndim)
-                Ndim = size(value,2);
-                Nrows = size(value,1);
-                value = mat2cell(value, Nrows , ones(1, Ndim));
+                if ~isMultiIndex(value(1))
+                    % handle: 1d & 2d array(Nrows, Ndim)
+                    Ndim = size(value,2);
+                    Nrows = size(value,1);
+                    value = mat2cell(value, Nrows , ones(1, Ndim));                                    
+                else
+                    % handle MultiIndex
+                    assert(numel(value)==1, 'frames:MultiIndex:setvalue:requireSingleMultiIndex', ...
+                        "Only single MultiIndex allowed.")                                        
+                    createIndices = false;
+                    indices = value.value_;  % cell array of Index() objects for each dim
+                end
             end
             
             % create Index objects for all dimensions
-            Ndims = length(value);
-            indices = cell(1,Ndims);
-            for i = 1:Ndims
-                val = value{i};
-                if numel(val)==1 && isIndex(val)
-                    % linear index should not be unique
-                    val.requireUniqueSorted=false;
-                    val.requireUnique=false;
-                    indices{i} = val;
-                else
-                    % convert to linear index
-                    indices{i} = frames.Index(val, Unique=false, Singleton=obj.singleton);
-                end
-                % get default names
-                if indices{i}.name=="" && ~obj.singleton
-                    if numel(obj.value_) >= i && obj.value_{i}.name~=""
-                        % use name of existing dimension
-                        indices{i}.name = obj.value_{i}.name;
+            if (createIndices)
+                Ndims = length(value);
+                indices = cell(1,Ndims);
+                for i = 1:Ndims
+                    val = value{i};
+                    if numel(val)==1 && isIndex(val)
+                        % linear index should not be unique
+                        val.requireUniqueSorted=false;
+                        val.requireUnique=false;
+                        indices{i} = val;
                     else
-                        % use default name
-                        indices{i}.name = "dim"+i;
+                        % convert to linear index
+                        indices{i} = frames.Index(val, Unique=false, Singleton=obj.singleton);
+                    end
+                    % get default names
+                    if indices{i}.name=="" && ~obj.singleton
+                        if numel(obj.value_) >= i && obj.value_{i}.name~=""
+                            % use name of existing dimension
+                            indices{i}.name = obj.value_{i}.name;
+                        else
+                            % use default name
+                            indices{i}.name = "dim"+i;
+                        end
                     end
                 end
             end
@@ -802,8 +814,8 @@ classdef MultiIndex < frames.Index
                     assert((ischar(dimIdx) || isstring(dimIdx)) && dimIdx==":", ...
                         "All dimensions should be selected to delete a multiIndex value.");
                     % loop over dimensions and remove selected items
-                    for i=1:obj.Ndim
-                        obj.value_{i}.value_(rowIdx) = [];
+                    for idim=1:obj.Ndim
+                        obj.value_{idim}.value_(rowIdx) = [];
                     end
                     if obj.singleton_
                         assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
@@ -822,14 +834,16 @@ classdef MultiIndex < frames.Index
                         end                                              
                         assert(size(b_,2)==obj.Ndim, ...
                              "Number of columns in new value (b) not equal to number of dimensions.");
-                        for i=1:size(b_,2)                           
+                        %assert(size(b_,1)==obj.length(), ...
+                        %    "Number of rows in new value (b) not equal to number of rows in object.");
+                        for idim=1:obj.Ndim                           
                            if iscell(b_)
-                               val = [b_{:,i}];
+                               val = [b_{:,idim}];
                            else
-                               val = b_(:,i);
+                               val = b_(:,idim);
                            end                           
                            % call index object subsasgn method to handle custom data formats (eg timeIndex formats)
-                           obj.value_{i}.value(rowIdx) = val; 
+                           obj.value_{idim}.value(rowIdx) = val; 
                         end                    
                     else
                         % assign single dimension
