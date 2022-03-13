@@ -2017,6 +2017,13 @@ classdef DataFrame
             df = frames.DataFrame();
             df.settingsDefault.(name) = value;
         end
+        
+        function restoreDefaultSettings(obj)
+            % restores default settings to 'standard out of the box'
+            % (does not change settings of existing DataFrame objects)
+            df = frames.DataFrame();
+            df.settingsDefault.reset();            
+        end
     end
     
     methods(Static, Hidden)
