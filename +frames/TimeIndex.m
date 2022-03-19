@@ -39,6 +39,7 @@ classdef TimeIndex < frames.Index
                 nameValue.Unique = true
                 nameValue.UniqueSorted = true
                 nameValue.Singleton = false
+                nameValue.warningNonUnique (1,1) {mustBeA(nameValue.warningNonUnique,'logical')} = true
             end
             if ismissing(nameValue.Format)
                 if isdatetime(value)
@@ -52,7 +53,9 @@ classdef TimeIndex < frames.Index
             if ~nameValue.Unique, nameValue.UniqueSorted = false; end
             
             value = getValue_from_local(value,nameValue.Format);
-            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted,Singleton=nameValue.Singleton);
+            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique, ...
+                                         UniqueSorted=nameValue.UniqueSorted, ...
+                                         Singleton=nameValue.Singleton,warningNonUnique=nameValue.warningNonUnique);
             obj.format = nameValue.Format;
         end
         

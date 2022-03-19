@@ -46,7 +46,8 @@ classdef Index
         requireUnique_
         requireUniqueSorted_
         value_uniq_          % cached unique values
-        value_uniqind_       % cached indices to unique values        
+        value_uniqind_       % cached indices to unique values
+        warningNonUnique_    % (logical, default true) produce warning in case index is made non unique
     end
     
     methods
@@ -58,6 +59,7 @@ classdef Index
                 nameValue.Unique (1,1) {mustBeA(nameValue.Unique,'logical')} = false
                 nameValue.UniqueSorted (1,1) {mustBeA(nameValue.UniqueSorted,'logical')} = false
                 nameValue.Singleton (1,1) {mustBeA(nameValue.Singleton,'logical')} = false
+                nameValue.warningNonUnique (1,1) {mustBeA(nameValue.warningNonUnique,'logical')} = true
             end
             name = nameValue.Name;
             singleton = nameValue.Singleton;
@@ -73,6 +75,7 @@ classdef Index
             
             obj.requireUnique_ = requireUnique;
             obj.requireUniqueSorted = requireUniqueSorted;
+            obj.warningNonUnique_ = nameValue.warningNonUnique;
             obj.name = name;
             obj.singleton_ = singleton;
             obj.value = value;
@@ -460,8 +463,8 @@ classdef Index
             ind = (1:obj_new.length())';
             
             if alignMethod=="none"
-                % no aignment, keep all concatenated values (including duplicates)
-                if obj.isunique() && ~obj_new.isunique()
+                % no alignment, keep all concatenated values (including duplicates)
+                if obj.warningNonUnique_ && obj.isunique() && ~obj_new.isunique()
                       warning('frames:Index:notUnique','Index value is not unique.')
                 end
             else 
@@ -768,18 +771,20 @@ classdef Index
                         'Index value is required to be unique.')
                 end
             else
-                if nargin >= 4                    
-                    valTmp = value;
-                    valTmp(fromSubsAsgnIdx) = [];  % this is slow
-                    b_ = value(fromSubsAsgnIdx); % to handle type conversion
-                    if ~isunique(b_) || any(ismember(b_,valTmp))
-                        warning('frames:Index:subsagnNotUnique', ...
-                            'The assigned values make the Index not unique.')
-                    end
-                else
-                    if ~isunique(value) && ~islogical(value)
-                        warning('frames:Index:notUnique', ...
-                            'Index value is not unique.')
+                if obj.warningNonUnique_
+                    if nargin >= 4                    
+                        valTmp = value;
+                        valTmp(fromSubsAsgnIdx) = [];  % this is slow
+                        b_ = value(fromSubsAsgnIdx); % to handle type conversion
+                        if ~isunique(b_) || any(ismember(b_,valTmp))
+                            warning('frames:Index:subsagnNotUnique', ...
+                                'The assigned values make the Index not unique.')
+                        end
+                    else
+                        if ~isunique(value) && ~islogical(value)
+                            warning('frames:Index:notUnique', ...
+                                'Index value is not unique.')
+                        end
                     end
                 end
             end
@@ -809,12 +814,12 @@ classdef Index
                 if allowedSeries=="onlyColSeries"   
                     assert(selector.colseries, 'frames:logicalIndexChecker:onlyColSeries', ...
                            "Indexing of rows only allowed with DataFrame logical colSeries.");
-                    assert( isequal(obj.value_,selector.rows_.value_), 'frames:logicalIndexChecker:differentRows', ...
+                    assert( isequal(obj.value,selector.rows_.value), 'frames:logicalIndexChecker:differentRows', ...
                            "colSeries Selector has different rows");
                 elseif allowedSeries=="onlyRowSeries"                   
                     assert(selector.rowseries, 'frames:logicalIndexChecker:onlyRowSeries', ...
                            "Indexing of columns only allowed with DataFrame logical rowSeries.");
-                    assert( isequal(obj.value_,selector.columns_.value_), 'frames:logicalIndexChecker:differentColumns', ...
+                    assert( isequal(obj.value,selector.columns_.value), 'frames:logicalIndexChecker:differentColumns', ...
                            "rowSeries selector has different columns");                       
                 else
                     error("Unsupported allowedSeries parameter.");
@@ -828,8 +833,8 @@ classdef Index
             assert(islogical(selector), 'frames:logicalIndexChecker:LogicalRequired', ...
                        "Selector is not logical");                    
                                      
-        end    
-                        
+       end 
+                                
         function value = getValue(obj)
             value = obj.value_;
         end

@@ -451,7 +451,7 @@ classdef MultiIndex < frames.Index
                 assert(obj.Ndim==0 || length(values)==obj.length(), ...
                     "Length value not same as existing index length");
                 assert(name~="", "Error no valid name supplied");
-                newIndexObj = frames.Index(values, Name=name);                
+                newIndexObj = frames.Index(values, Name=name, warningNonUnique=false);                
             end
             % append to multiindex
             obj.value = [obj.value_ {newIndexObj}];
@@ -552,7 +552,7 @@ classdef MultiIndex < frames.Index
             if isempty(value)
                 % in case no value, just add empty Index object
                 nameold = obj.name;                
-                obj.value_ = {frames.Index(value)};                
+                obj.value_ = {frames.Index(value, warningNonUnique=false)};                
                 if nameold~=""
                     obj.value_{1}.name = nameold;
                 else
@@ -578,7 +578,7 @@ classdef MultiIndex < frames.Index
                     value_new = cell(Ndims,1);
                     for i=1:Ndims
                         value_array = [value{:,i}];
-                        value_new(i) = {frames.Index(value_array)};
+                        value_new(i) = {frames.Index(value_array, warningNonUnique=false)};
                     end
                     value = value_new;                    
                 elseif all(cellfun(@iscell, value))
@@ -598,7 +598,7 @@ classdef MultiIndex < frames.Index
                             % exception for char, concatenated array should be cell array
                             values_dim = cellfun(@(x) x{i}, value, 'UniformOutput', false);
                         end
-                        value_new{i} = frames.Index(values_dim);
+                        value_new{i} = frames.Index(values_dim, warningNonUnique=false);
                     end
                     value = value_new;                    
                 else
@@ -634,10 +634,16 @@ classdef MultiIndex < frames.Index
                         % linear index should not be unique
                         val.requireUniqueSorted=false;
                         val.requireUnique=false;
+                        val.warningNonUnique_=false;
                         indices{i} = val;
                     else
                         % convert to linear index
-                        indices{i} = frames.Index(val, Unique=false, Singleton=obj.singleton);
+                        indices{i} = frames.Index(val, Unique=false, Singleton=obj.singleton, ...                       
+                                       warningNonUnique=obj.singleton); % no unique warning
+                        %                     (except in case of singleton to produce the same
+                        %                     objects as by DataFrame (by .row, .columns, aggregation etc),
+                        %                     usefull for current defined unit test cases)                                                
+                                                
                     end
                     % get default names
                     if indices{i}.name=="" && ~obj.singleton
@@ -671,7 +677,7 @@ classdef MultiIndex < frames.Index
                 out="";
             end
         end
-        
+                
         function obj = setname(obj, value)
             % set names of every dimension             
             if obj.Ndim > 0
@@ -752,8 +758,20 @@ classdef MultiIndex < frames.Index
             valueOut = value;
         end
         
-        function out = getMissingData_(~),  out = {missingData('frames.Index')};  end
-        function out = getDefaultValue_(~),  out = {defaultValue('frames.Index')};  end 
+        %function out = getMissingData_(~),  out = {missingData('frames.Index')};  end
+        %function out = getDefaultValue_(~),  out = {defaultValue('frames.Index')};  end 
+        
+        function out = getMissingData_(~)
+            val = missingData('frames.Index');
+            val.warningNonUnique_=true;
+            out = {val};
+        end
+        
+        function out = getDefaultValue_(~)
+            val = defaultValue('frames.Index');
+            val.warningNonUnique_=true;
+            out = {val};
+        end 
 
         
         function selector = convertCellSelector(obj, selector, singleItemPerSet)
