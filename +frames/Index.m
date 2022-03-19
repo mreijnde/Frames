@@ -333,8 +333,8 @@ classdef Index
        
         function obj = vertcat(obj,varargin)
             % concatenation
-            obj = obj.vertcat_(varargin{:});
-            obj.setvalue(obj.value_); % check if properties are respected            
+            obj = obj.vertcat_(varargin{:});            
+            obj.valueChecker(obj.value_); % check if properties are respected            
         end
         
         function out = ismember(obj, value)
