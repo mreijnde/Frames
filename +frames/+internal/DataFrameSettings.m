@@ -2,7 +2,7 @@ classdef (HandleCompatible) DataFrameSettings
     % class defines the DataFrame settings that specifies it behavior
     properties
         allowDimExpansion logical = true
-        alignMethod (1,1) string {mustBeMember(alignMethod,["strict", "subset", "keep","full"])} = "strict"
+        alignMethod (1,1) string {mustBeMember(alignMethod,["strict", "inner", "left","full"])} = "strict"
     end
     
     methods

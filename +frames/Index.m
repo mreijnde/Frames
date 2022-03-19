@@ -537,8 +537,8 @@ classdef Index
             %
             %    - method: (string enum) select method
             %           "strict": both need to have same values (else error thrown)
-            %           "subset": remove rows that are not common in both
-            %           "keep":   keep rows as in obj1  (default)            
+            %           "inner":  remove rows that are not common in both
+            %           "left":   keep rows as in obj1  (default)            
             %           "full":   keep all items (allow missing in both obj1 and obj2)
             %
             % output:
@@ -548,7 +548,7 @@ classdef Index
             %      
             
             % default parameters
-            if nargin<3, method="keep"; end                                                
+            if nargin<3, method="left"; end                                                
             
             % call internal alignIndex function
             [objnew, ind1_new, ind2_new] = alignIndex_(obj1, obj2, method, "unique");
@@ -588,9 +588,9 @@ classdef Index
 
             % define row ids in new index based on chosen method
             switch method
-                case "subset"                    
+                case "inner"                    
                     id = id1_raw(mask1);              
-                case "keep"
+                case "left"
                     id = id1_raw;                                                            
                 case "strict"
                     assert( all(mask1) & all(mask2), 'frames:Index:alignIndex:unequalIndex', ...

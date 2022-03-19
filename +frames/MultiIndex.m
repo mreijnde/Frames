@@ -273,8 +273,8 @@ classdef MultiIndex < frames.Index
             %
             %    - method: (string enum) select method for common dimension(s)
             %           "strict": both need to have same values (else error thrown)
-            %           "subset": remove rows that are not common in both
-            %           "keep":   keep rows as in obj1  (default)            
+            %           "inner":  remove rows that are not common in both
+            %           "left":   keep rows as in obj1 (default)            
             %           "full":   keep all items (allow missing in both obj1 and obj2)
             %
             %   - allowDimExpansion (bool) allow expansion to add new dimensions to obj1
@@ -286,7 +286,7 @@ classdef MultiIndex < frames.Index
             %  
             
             % default parameters
-            if nargin<3, method="keep"; end
+            if nargin<3, method="left"; end
             if nargin<5, allowDimExpansion=true; end
             
             % shortcut alignment code in case of equal Indices or singleton (for performance)            
