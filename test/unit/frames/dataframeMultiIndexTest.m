@@ -86,7 +86,67 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyTrue(isa(df.getColumnsObj().value_{2},'frames.TimeIndex') )
             
             % check non-unique error
-            t.verifyError(@() frames.DataFrame([1;2;3], {{1,"a"},{1,"b"},{1,"a"}}), 'frames:MultiIndex:requireUniqueFail');                         
+            t.verifyError(@() frames.DataFrame([1;2;3], {{1,"a"},{1,"b"},{1,"a"}}), 'frames:MultiIndex:requireUniqueFail');
+        end   
+            
+        function constructorTest_forceMultiIndex(t)    
+            % constructor checks with forceMultiIndex enabled            
+            frames.DataFrame.setDefaultSetting("forceMultiIndex", true); 
+            dat = magic(3);
+            
+            % 1d MultiIndex indices
+            df1 = frames.DataFrame(magic(3), [1;2;3], ["a","b","c"]);            % 1d array
+            df1a = frames.DataFrame(dat, {[1;2;3]}, {["a";"b";"c"]});            % cell with array (col vect) per dim 
+            df1b = frames.DataFrame(dat, {[1,2,3]}, {["a","b","c"]});            % cell with array (row vect) per dim  
+            df1c = frames.DataFrame(dat, {1;2;3}, {"a","b","c"});                % 1d cell with single values            
+            df1d = frames.DataFrame(dat, {{1},{2},{3}}, {{"a"},{"b"},{"c"}});    % nested cell with single values
+            df1e = frames.DataFrame(dat, df1.rows, df1.columns);                 % from .rows/.columns
+            df1f = frames.DataFrame(dat, df1.rows(:,:), df1.columns(:,:));       % from .rows(:,:)/.columns(:,:)
+            df1g = frames.DataFrame(dat, df1.rows(:,1), df1.columns(:,1));       % from .rows(:,1)/.columns(:,1)
+            df1h = frames.DataFrame(dat, df1.getRowsObj(), df1.getColumnsObj()); % from rows/columns obj
+            df1i = frames.DataFrame(dat, [], df1.getColumnsObj());               % rows default
+            df1j = frames.DataFrame(dat, {}, df1.getColumnsObj());               % rows default
+            df1k = frames.DataFrame(dat, frames.Index([1,2,3]), ...
+                                         frames.Index(["a","b","c"]));           % convert Index obj to MultiIndex obj                        
+            t.verifyTrue(isa(df1.getColumnsObj(), "frames.MultiIndex"));
+            t.verifyTrue(isa(df1.getRowsObj(), "frames.MultiIndex"));            
+            t.verifyEqual(df1,df1a);
+            t.verifyEqual(df1,df1b);
+            t.verifyEqual(df1,df1c);
+            t.verifyEqual(df1,df1d);
+            t.verifyEqual(df1,df1e);
+            t.verifyEqual(df1,df1f);
+            t.verifyEqual(df1,df1g);
+            t.verifyEqual(df1,df1h);
+            t.verifyEqual(df1,df1i);
+            t.verifyEqual(df1,df1j);
+            t.verifyEqual(df1,df1k);
+            
+            % 2d MultiIndex indices
+            df2  = frames.DataFrame(dat, [1 1; 2 1; 3 2],   ["a","b","c" ; "A","A","B" ]);     % 2d array
+            df2a = frames.DataFrame(dat, {[1;2;3],[1;1;2]}, {["a";"b";"c"],["A";"A";"B"] });   % cell with array per dim
+            df2b = frames.DataFrame(dat, {[1,2,3],[1,1,2]}, {["a","b","c"],["A","A","B"] });   % cell with array per dim
+            df2c = frames.DataFrame(dat, {1 1; 2 1; 3 2}, {"a","b","c" ; "A","A","B" });       % 2d cell            
+            df2d = frames.DataFrame(dat, {{1,1},{2,1},{3,2}}, {{"a","A"},{"b","A"},{"c","B"}});% nested cell                       
+            df2e = frames.DataFrame(dat, df2.rows, df2.columns);                               % from .rows/.columns           
+            df2f = frames.DataFrame(dat, df2.rows(:,:), df2.columns(:,:));                     % from .rows/.columns            
+            df2g = frames.DataFrame(dat, df2.getRowsObj(), df2.getColumnsObj());               % from .rows/.columns obj            
+            warning('off', 'frames:Index:notUnique');
+            df2i = frames.DataFrame(dat, [frames.Index([1,2,3]), frames.Index([1,1,2])], ...   % array of Index obj per dim
+                                         [frames.Index(["a","b","c"]),frames.Index(["A","A","B"])]); 
+            warning('on', 'frames:Index:notUnique');
+            t.verifyTrue(isa(df2.getColumnsObj(), "frames.MultiIndex"));
+            t.verifyTrue(isa(df2.getRowsObj(), "frames.MultiIndex"));            
+            t.verifyEqual(df2,df2a);
+            t.verifyEqual(df2,df2b);
+            t.verifyEqual(df2,df2c);
+            t.verifyEqual(df2,df2d);
+            t.verifyEqual(df2,df2e);
+            t.verifyEqual(df2,df2f);
+            t.verifyEqual(df2,df2g);
+            t.verifyEqual(df2,df2i);
+                        
+            frames.DataFrame.setDefaultSetting("forceMultiIndex", false);           
         end
         
         

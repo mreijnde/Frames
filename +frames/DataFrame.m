@@ -140,7 +140,7 @@ classdef DataFrame
             obj.settings = frames.internal.DataFrameSettings(obj.settingsDefault);
                                                           
             % get row index 
-            useMultiIndexRows = checkMultiIndexinput(rows);
+            useMultiIndexRows = obj.settings.forceMultiIndex || checkMultiIndexinput(rows);
             if checkIsEmpty(rows)                    
                 if NameValueArgs.RowSeries                
                     rows = missingData('double');
@@ -148,7 +148,9 @@ classdef DataFrame
                     rows = obj.defaultRows(size(data,1));                                
                 end
             end            
-            if ~isIndex(rows) || (isIndex(rows) && numel(rows)>1)
+            if ~isIndex(rows) || ...                                          % handle non Index object input
+                 (isIndex(rows) && numel(rows)>1) || ...                      % handle array of Index objects input
+                 (useMultiIndexRows && isIndex(rows) && ~isMultiIndex(rows) ) % handle force conversion from Index to MultiIndex
                 if ~useMultiIndexRows
                    rows = obj.getRowsObject(rows,Singleton=NameValueArgs.RowSeries);
                 else
@@ -160,7 +162,7 @@ classdef DataFrame
             end
             
             % get column index
-            useMultiIndexColumns = checkMultiIndexinput(columns);
+            useMultiIndexColumns = obj.settings.forceMultiIndex || checkMultiIndexinput(columns);
             if checkIsEmpty(columns)
                 if NameValueArgs.ColSeries                                               
                     columns = missingData('string');                 
@@ -168,11 +170,13 @@ classdef DataFrame
                     columns = obj.defaultColumns(size(data,2));                                  
                 end
             end
-            if ~isIndex(columns) || (isIndex(columns) && numel(columns)>1)               
+            if ~isIndex(columns) || ...                                                 % handle non Index object input
+                  (isIndex(columns) && numel(columns)>1) || ...                         % handle array of Index objects input
+                  (useMultiIndexColumns && isIndex(columns) && ~isMultiIndex(columns) ) % handle force conversion from Index to MultiIndex
                 if ~useMultiIndexColumns
                    columns = obj.getColumnsObject(columns,Singleton=NameValueArgs.ColSeries);
                 else
-                   columns = frames.MultiIndex(columns,Singleton=NameValueArgs.ColSeries);
+                   columns = frames.MultiIndex(columns',Singleton=NameValueArgs.ColSeries);
                 end
             else
                 assert(~NameValueArgs.ColSeries || columns.singleton_,'frames:constructor:columnsSingletonFail', ...
@@ -2165,7 +2169,7 @@ classdef DataFrame
             row = defaultValue('double',len)';
         end
         function col = defaultColumns(len)
-            col = defaultValue('string',len)';
+            col = defaultValue('string',len);
         end
     end
 end

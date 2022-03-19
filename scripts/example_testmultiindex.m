@@ -6,6 +6,7 @@ warning('off', 'frames:MultiIndex:notUnique');
 
 frames.DataFrame.setDefaultSetting("alignMethod", "full");
 
+
 %% EXAMPLE 1: aggregation and math operations on multiIndex DataFrame
 
 % dataset with group variables and measure data
@@ -27,4 +28,29 @@ df3 = df2.sum("x")                     % aggregate over (sub)dimension
 df4 = df3 - df3({':',1},["m2","m4"])   % select, math with expansion
 df5 = df4 ./ df4.max("z")              % aggregate, math with expansion
 df6 = df5.std("columns")               % column wise aggregation
+
+
+
+
+
+%% EXAMPLE 2: enable MultiIndex syntax
+frames.DataFrame.setDefaultSetting("forceMultiIndex", true);
+
+% with forceMultiIndex enabled DataFrame constructor requires correct orientation of rows/colums input
+% as rows(Nrow_items, Ndim) and columns(Ndim,Ncolumn_items)
+
+df1  = frames.DataFrame(magic(3), [1 2 3]', ["a","b","c"]) 
+
+df2a = frames.DataFrame(magic(3), [1 1; 2 1; 3 2],   ["a","b","c" ; "A","A","B" ])     % 2d array
+df2b = frames.DataFrame(magic(3), {[1;2;3],[1;1;2]}, {["a";"b";"c"],["A";"A";"B"] })   % cell with array per dim
+df2c = frames.DataFrame(magic(3), {1 1; 2 1; 3 2}, {"a","b","c" ; "A","A","B" })       % 2d cell            
+df2d = frames.DataFrame(magic(3), {{1,1},{2,1},{3,2}}, {{"a","A"},{"b","A"},{"c","B"}})% nested cell    
+
+
+
+%% restore defaults
+frames.DataFrame.restoreDefaultSettings();
+warning('on', 'frames:MultiIndex:notUnique');
+
+
 

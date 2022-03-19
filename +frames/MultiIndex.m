@@ -571,17 +571,8 @@ classdef MultiIndex < frames.Index
             end
             
             % handle different syntax of cell arrays
-            if iscell(value)                    
-                if ~isvector(value)
-                    % handle: 2d cell array (Nrows,Ndim) ==> convert to 1d cell array (Ndim) with Index Objects
-                    Ndims = size(value,2);
-                    value_new = cell(Ndims,1);
-                    for i=1:Ndims
-                        value_array = [value{:,i}];
-                        value_new(i) = {frames.Index(value_array, warningNonUnique=false)};
-                    end
-                    value = value_new;                    
-                elseif all(cellfun(@iscell, value))
+            if iscell(value)                                    
+                if all(cellfun(@iscell, value))
                     % handle: nested cells: {cell_array_row_values1, ..., cell_array_row_valuesM}
                     % interpret every nested cell as a row of MultiIndex, convert to 1d cell array with index objects
                     Ndims = length(value{1});
@@ -600,7 +591,17 @@ classdef MultiIndex < frames.Index
                         end
                         value_new{i} = frames.Index(values_dim, warningNonUnique=false);
                     end
-                    value = value_new;                    
+                    value = value_new;          
+                elseif ~isvector(value) || (numel(value)>1 && length(value{1})==1)
+                    % handle: 1d/2d cell array (Nrows,Ndim) with single elements
+                    %         ==> convert to 1d cell array (Ndim) with Index Objects
+                    Ndims = size(value,2);
+                    value_new = cell(Ndims,1);
+                    for i=1:Ndims
+                        value_array = [value{:,i}];
+                        value_new(i) = {frames.Index(value_array, warningNonUnique=false)};
+                    end
+                    value = value_new;                        
                 else
                     % handle: 1d cell(1:Ndim) with arrays per dimension
                     DimLengths = length(value{1});

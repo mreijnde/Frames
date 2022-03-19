@@ -3,6 +3,9 @@ classdef (HandleCompatible) DataFrameSettings
     properties
         allowDimExpansion logical = true
         alignMethod (1,1) string {mustBeMember(alignMethod,["strict", "inner", "left","full"])} = "strict"
+        forceMultiIndex logical = false   % automatically convert DataFrame indices to MultiIndex
+                                          % in DataFrame constructor. With this option the extra {} are not needed
+                                          % rows and column input to create MultiIndex indices.                                          
     end
     
     methods
