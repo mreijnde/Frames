@@ -2,7 +2,7 @@ classdef multiIndexTest < AbstractFramesTests
     
     methods(Test)
         function constructorTest(t)
-            warning('off','frames:Index:notUnique');
+            %warning('off','frames:Index:notUnique');
             
             t.verifyWarning(@duplicate,'frames:MultiIndex:notUnique')
             function duplicate(), frames.MultiIndex({[1,1],["a","a"]}); end
@@ -14,12 +14,16 @@ classdef multiIndexTest < AbstractFramesTests
             function duplicateError(), frames.MultiIndex({[1,1],["a","a"]},Unique=true); end                        
             
             % specify dimension arrays
+            warning('off','frames:Index:notUnique');
             t.verifyEqual( frames.MultiIndex({[1,1],["a","b"]}), ...
                            frames.MultiIndex({frames.Index([1,1]),frames.Index(["a","b"])},name=["dim1","dim2"])); 
+            warning('on','frames:Index:notUnique');
             
             % specify multi index rows
+            warning('off','frames:Index:notUnique');
             t.verifyEqual( frames.MultiIndex({{1,"a"},{1,"b"}}), ...
-                           frames.MultiIndex({frames.Index([1,1]),frames.Index(["a","b"])},name=["dim1","dim2"])); 
+                           frames.MultiIndex({frames.Index([1,1]),frames.Index(["a","b"])},name=["dim1","dim2"]));
+            warning('on','frames:Index:notUnique');
                                    
             % specify single dimension array
             t.verifyEqual( frames.MultiIndex([1;2;3;4;5],name="test"), ...
@@ -31,10 +35,11 @@ classdef multiIndexTest < AbstractFramesTests
             mi = frames.MultiIndex({[2,3],timeindex,["a","b"]});            
             t.verifyEqual(mi.name,["dim1","Time","dim3"])
             t.verifyEqual(mi.getValue_(), ...
-                         {frames.Index([2,3],name="dim1"), ...
-                         frames.TimeIndex(["24*06*2021","25*06*2021"],Format="dd*MM*yyyy", Unique=false), ...                         
-                         frames.Index(["a","b"],name="dim3") } )           
-            warning('on','frames:Index:notUnique');
+                         {frames.Index([2,3],name="dim1",warningNonUnique=false), ...
+                         frames.TimeIndex(["24*06*2021","25*06*2021"],Format="dd*MM*yyyy", ...
+                                 Unique=false, warningNonUnique=false), ...                         
+                         frames.Index(["a","b"],name="dim3",warningNonUnique=false) } )           
+            %warning('on','frames:Index:notUnique');
         end
         
          function indexGetterTest(t)
@@ -51,7 +56,7 @@ classdef multiIndexTest < AbstractFramesTests
          end
         
         function positionOfTest(t)
-            warning('off','frames:Index:notUnique')
+            %warning('off','frames:Index:notUnique')
             warning('off','frames:MultiIndex:notUnique')
             index = frames.MultiIndex({[30 10 20 30 30],[1 2 1 2 1]});            
             t.verifyEqual(index.positionOf({[30,20],1}),[1 5 3]')
@@ -70,12 +75,12 @@ classdef multiIndexTest < AbstractFramesTests
             t.verifyError(@notallnestedcellselector,'frames:MultiIndex:getSelector:notallnestedcells');
             function notallnestedcellselector(), uniqueindex.positionOf({{10,2},[30,20]}); end        
             
-            warning('off','frames:Index:notUnique')                        
+            %warning('off','frames:Index:notUnique')                        
         end
         
         
         function positionInTest(t)
-            warning('off','frames:Index:notUnique')
+            %warning('off','frames:Index:notUnique')
             warning('off','frames:MultiIndex:notUnique')
             
             % 1D examples
@@ -105,7 +110,7 @@ classdef multiIndexTest < AbstractFramesTests
              t.verifyError( @index2DNotAllInTarget, 'frames:MultiIndex:positionIn:NotWhole');
              function index2DNotAllInTarget(), multiindex.positionIn({{2,6,"bb"},{2,5,"aa"},{3,7,"cc"}}), end
              
-            warning('on','frames:Index:notUnique')
+            %warning('on','frames:Index:notUnique')
             warning('on','frames:MultiIndex:notUnique')              
         end
 %         
@@ -118,8 +123,9 @@ classdef multiIndexTest < AbstractFramesTests
             
             t.verifyWarning(@duplicate,'frames:Index:notUnique')
             function duplicate(), index.union([2 2 30]'); end
-            warning('off','frames:Index:notUnique')
+            warning('off','frames:Index:notUnique') % warning with 'frames:Index' raised instead of 'frames:MultiIndex'
             t.verifyEqual(index.union([2 2 30]').value, {{30} {10} {20} {2} {2} {30}}')
+            warning('on','frames:Index:notUnique') 
             t.verifyEqual(uniqueindex.union([2 2 30]').value,{{30} {10} {20} {2}}')
            
             t.verifyEqual(sortedindex.union([2 2 30]').value,{{2} {10} {20} {30}}')
@@ -127,8 +133,7 @@ classdef multiIndexTest < AbstractFramesTests
   
            durationindex = frames.MultiIndex(frames.TimeIndex(minutes([10 20 30])),UniqueSorted=true);           
            t.verifyEqual(durationindex.union(minutes([2 2 30]')).getValue(), ...
-               { {minutes(2)} {minutes(10)} {minutes(20)} {minutes(30)}}');
-           warning('on','frames:Index:notUnique')
+               { {minutes(2)} {minutes(10)} {minutes(20)} {minutes(30)}}');           
         end
         
         function assignmentTest(t)
@@ -143,7 +148,7 @@ classdef multiIndexTest < AbstractFramesTests
             t.verifyEqual(index.value(:), {{30} {10} {20} {11} {20}}')
             t.verifyEqual(index.value(:), {{30} {10} {20} {11} {20}}')
             
-            warning('off','frames:Index:subsagnNotUnique');
+            %warning('off','frames:Index:subsagnNotUnique');
             
             t.verifyError(@notUnique,'frames:MultiIndex:requireUniqueFail')
             function notUnique, uniqueindex.value(1) = 10; end
@@ -165,7 +170,7 @@ classdef multiIndexTest < AbstractFramesTests
             t.verifyError(@notSorted3,'frames:MultiIndex:requireSortedFail')
             function notSorted3, sortedindex.value(1) = 33; end
             
-            warning('on','frames:Index:subsagnNotUnique');
+            %warning('on','frames:Index:subsagnNotUnique');
             
             % 2D examples
             index = frames.MultiIndex({1:3,["a","b","c"],[10 11 12]});                                    

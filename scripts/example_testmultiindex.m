@@ -2,9 +2,7 @@
 clear all
 clc
 
-warning('off','frames:Index:notUnique');
 warning('off', 'frames:MultiIndex:notUnique');
-warning('off', 'frames:Index:subsagnNotUnique');
 
 frames.DataFrame.setDefaultSetting("alignMethod", "full");
 

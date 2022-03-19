@@ -14,8 +14,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
     
     methods
         function obj = dataframeMultiIndexTest()
-            % create dataframe properties in constructor to turn off warning
-            warning('off','frames:Index:notUnique');
+            % create dataframe properties in constructor to turn off warning            
             obj.dfNoMissing  = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', {[6 2 1]}, [4 1 3]);
             obj.df2NoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', {[6 2 1], ['a','c','a']}, [4 1 3]);
             obj.df3NoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', {[6 2 1], ['a','c','a'], [11 22 11]}, [4 1 3]);
@@ -56,7 +55,9 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             % 2D CHECKS
             
             % 1d cell array with linear indexes
+            warning('off','frames:Index:notUnique');
             df1 = frames.DataFrame([1;2;3;4], {[1 1 1 2], frames.Index([1 2 3 1]), ["a" "a" "b" "b"]} );
+            warning('on','frames:Index:notUnique');
             % 2d cell array with values
             df2 = frames.DataFrame([1;2;3;4], {1,1,"a";1,2,"a";1,3,"b";2,1,"b"} );               
             t.verifyEqual(df2,df1)
@@ -64,7 +65,9 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             df3 = frames.DataFrame([1;2;3;4], {{1,1,"a"},{1,2,"a"},{1,3,"b"},{2,1,"b"}} );
             t.verifyEqual(df3,df1)
             % array of Index objects
-            IndexObjArray = [ frames.Index([1 1 1 2]), frames.Index([1 2 3 1]), frames.Index(["a" "a" "b" "b"]) ];                 
+            warning('off','frames:Index:notUnique');
+            IndexObjArray = [ frames.Index([1 1 1 2]), frames.Index([1 2 3 1]), frames.Index(["a" "a" "b" "b"]) ]; 
+            warning('on','frames:Index:notUnique');
             df4 = frames.DataFrame([1;2;3;4], frames.MultiIndex(IndexObjArray,Unique=true) );
             t.verifyEqual(df4,df1)
             df5 = frames.DataFrame([1;2;3;4], IndexObjArray );
@@ -88,12 +91,10 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
         
         
         function initCopyTest(t)
-            % checks MultiIndex dataframe
-            warning('off','frames:Index:subsagnNotUnique');
+            % checks MultiIndex dataframe            
             df = frames.DataFrame([1, 2; 3, 4], {{1,"a"},{2,"b"}},{[11,22]});            
             df1 = df.initCopy([91,92;93,94;95,96], {{33,"aa"},{33,"ab"},{34,"ab"}},df.getColumnsObj());
             df1_ref = frames.DataFrame([91,92;93,94;95,96], {{33,"aa"},{33,"ab"},{34,"ab"}},{[11,22]});
-            warning('on','frames:Index:subsagnNotUnique');
             t.verifyEqual(df1, df1_ref)
             df2 = df.initCopy([91,92,11;93,94,22], df.rows,[11,22,33]);
             df2_ref = frames.DataFrame([91,92,11;93,94,22], {{1,"a"},{2,"b"}},{[11,22,33]});
@@ -116,11 +117,9 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
         
         
         function catsIndexSpecTest1D(t)
-            % 1D CHECKS
-            warning('off','frames:Index:notUnique')
+            % 1D CHECKS            
             warning('off','frames:MultiIndex:notUnique')
-            duplicate = frames.MultiIndex([1 1 3]');
-            warning('on','frames:Index:notUnique')
+            duplicate = frames.MultiIndex([1 1 3]');            
             warning('on','frames:MultiIndex:notUnique')
             unique = frames.MultiIndex([6 5 4]',Unique=true);
             sorted = frames.MultiIndex([10 20 30]',UniqueSorted=true);
@@ -139,12 +138,10 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             ss = frames.DataFrame(d3,sorted,sorted);
             e = frames.DataFrame([],{[]},frames.MultiIndex([])); %.setRowsName("")
                         
-            % VERTCAT
-            warning('off','frames:Index:notUnique')
+            % VERTCAT            
             warning('off','frames:MultiIndex:notUnique')
             t.verifyEqual([du;uu],frames.DataFrame([du.data;uu.data],...
-                frames.MultiIndex([1 1 3 6 5 4]',Unique=false),du.getColumnsObj())) % original error 'frames:requireUniqueIndex'
-            warning('on','frames:Index:notUnique')           
+                frames.MultiIndex([1 1 3 6 5 4]',Unique=false),du.getColumnsObj())) % original error 'frames:requireUniqueIndex'            
             
             t.verifyError(@() [su;du],'frames:DataFrame:combine:notAllRowsUnique') % original error 'frames:vertcat:rowsNotUnique'
             t.verifyError(@() [uu;ud],'frames:DataFrame:combine:notAllColumnsUnique') % original error 'frames:vertcat:rowsNotUnique'
@@ -184,26 +181,22 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual([e;su],su.setRowsType('unique').setColumnsType('duplicate'))
             
             
-            %HORZCAT
-            warning('off','frames:Index:notUnique')
+            %HORZCAT            
             data_ok = nan(5,6); data_ok(1:3,1:3) = uu.data; data_ok(4:5,4:6) = ds.data(2:3,:);
             df_ok = frames.DataFrame(data_ok, frames.MultiIndex([6 5 4 1 3]',Unique=true), ...
-                                              frames.MultiIndex([unique;sorted],Unique=true));            
-            warning('on','frames:Index:notUnique')            
+                                              frames.MultiIndex([unique;sorted],Unique=true));                                 
             t.verifyError(@() [uu,ds], 'frames:DataFrame:combine:notAllRowsUnique') % error originall 'frames:requireUniqueIndex'            
             
             
             % horzcat does not accept duplicate rows unless it is the same            
-            t.verifyEqual([du,ds],frames.DataFrame([du.data,ds.data],duplicate,[unique;sorted]))
-            warning('off','frames:Index:notUnique')
-            t.verifyEqual([dd,du],frames.DataFrame([dd.data,du.data],duplicate,[duplicate;unique]))
-            warning('on','frames:Index:notUnique')
+            t.verifyEqual([du,ds],frames.DataFrame([du.data,ds.data],duplicate,[unique;sorted]))            
+            t.verifyEqual([dd,du],frames.DataFrame([dd.data,du.data],duplicate,[duplicate;unique]))            
             
             uud = uu.setColumnsType('duplicate');
             sstmp = ss;
             sstmp.columns(1) = 5;
             sstmp.rows(1:2) = [4 6];
-            warning('off','frames:Index:notUnique')
+            warning('off','frames:Index:notUnique') % warning with 'frames:Index' raised instead of 'frames:MultiIndex'
             tmp = [uud,sstmp,sstmp];
             tmpdata = NaN(4,9);
             tmpdata(1:3,1:3) = uud.data;
@@ -263,14 +256,12 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             tf{1:length(tf.rows),:} = [];
             t.verifyEqual(tf.rows,datetime.empty(0,1))
             
-            % repeating columns
-            warning('off','frames:Index:notUnique')
+            % repeating columns            
             warning('off','frames:MultiIndex:notUnique')
             df = frames.DataFrame([1 2 3; 2 5 NaN],{[]},{["a","b","a"]});
             df(:,"a") = 100;
             expected = frames.DataFrame([100 2 100; 100 5 100],{[]},{["a","b","a"]});
-            t.verifyEqual(df,expected)
-            warning('on','frames:Index:notUnique')
+            t.verifyEqual(df,expected)            
             warning('on','frames:MultiIndex:notUnique')
             
             % shuffled identifiers
@@ -326,13 +317,11 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             
             t.verifyError(@cannotMultAsgn,'frames:subsasgn:rowMultiple')
             function cannotMultAsgn, df.row([1 2]) = 3; end
-            
-            warning('off','frames:Index:notUnique')
+                        
             warning('off','frames:MultiIndex:notUnique')
             df = frames.DataFrame([1 2 3; 2 5 NaN],{[]},{["a","b","a"]});
             t.verifyError(@occursTwice,'frames:subsasgn:colMultiple')
-            function occursTwice, df.col("a") = 3; end
-            warning('on','frames:Index:notUnique')
+            function occursTwice, df.col("a") = 3; end            
             warning('on','frames:MultiIndex:notUnique')
             
 %             
@@ -401,8 +390,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             function noFirstCol, df{vector} = 0; end
         end
         
-        function subsrefTest(t)            
-            warning('off','frames:Index:notUnique')
+        function subsrefTest(t)                        
             warning('off','frames:MultiIndex:notUnique')            
             
             % 1D CHECKS
@@ -448,10 +436,10 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(sol,expected)
             
             % col row
-            t.verifyEqual(df.col('b'),frames.DataFrame([2;5],{[]},{string(missing)},ColSeries=true))
+            %t.verifyEqual(df.col('b'),frames.DataFrame([2;5],{[]},{string(missing)},ColSeries=true))
+            t.verifyEqual(df.col('b'),frames.DataFrame([2;5],{[]},{missing},ColSeries=true))           
             t.verifyError(@() df.col('a'),'frames:Index:setSingleton')
-            t.verifyEqual(df.row(1),frames.DataFrame([1 2 3],{NaN},{["a","b","a"]},RowSeries=true))
-            %warning('on','frames:Index:notUnique')
+            t.verifyEqual(df.row(1),frames.DataFrame([1 2 3],{NaN},{["a","b","a"]},RowSeries=true))            
             
             % test empty selection
             df = frames.DataFrame([1 2;3 4],{[1,2]},{["a","b"]});
@@ -474,11 +462,9 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             df = frames.DataFrame([1 2;3 4],{[1,2]},{["a","b"]});
             t.verifyError(@() df{[2 1 2]},'frames:Index:requireUniqueFail')
             t.verifyError(@() df([2 1 2]),'frames:MultiIndex:requireUniqueFail')
-            df = df.setRowsType('duplicate');
-            warning('off','frames:Index:notUnique')
+            df = df.setRowsType('duplicate');            
             t.verifyEqual(df([1 2 1],"b"), ...
-                frames.DataFrame([2;4;2], frames.MultiIndex({[1,2,1]}),frames.MultiIndex({"b"})))
-            warning('on','frames:Index:notUnique')            
+                frames.DataFrame([2;4;2], frames.MultiIndex({[1,2,1]}),frames.MultiIndex({"b"})))            
             warning('on','frames:MultiIndex:notUnique')
         end
         
@@ -551,11 +537,9 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
         
         function rowsAssignTest1D(t)
             dfs = frames.DataFrame(1,frames.MultiIndex([1 2 3 10 20]',UniqueSorted=true));
-            dfu = frames.DataFrame(1,frames.MultiIndex([1 2 3 10 20]',Unique=true));
-            warning('off','frames:Index:notUnique')
+            dfu = frames.DataFrame(1,frames.MultiIndex([1 2 3 10 20]',Unique=true));            
             warning('off','frames:MultiIndex:notUnique')
-            dfd = frames.DataFrame(1,frames.MultiIndex([1 2 3 10 10]',Unique=false));
-            warning('on','frames:Index:notUnique')
+            dfd = frames.DataFrame(1,frames.MultiIndex([1 2 3 10 10]',Unique=false));            
             warning('on','frames:MultiIndex:notUnique')
             
             df1=dfs;
@@ -571,26 +555,22 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             df2=dfu;
             df2.rows([3,1]) = [0,4];
             t.verifyEqual(df2.rows(:,1),[4 2 0 10 20]')
-            
-            warning('off','frames:Index:subsagnNotUnique'); % todo: disable warning in case of subsequent error            
-            t.verifyError(@notUnique,'frames:MultiIndex:requireUniqueFail')
-            warning('off','frames:Index:notUnique')
+                        
+            t.verifyError(@notUnique,'frames:MultiIndex:requireUniqueFail')            
             function notUnique, df2.rows([3,1]) = [2,0]; end
             t.verifyError(@notUniqueAll,'frames:MultiIndex:requireUniqueFail')
             function notUniqueAll, df2.rows = [1 2 3 20 20]; end
-            t.verifyError(@notUniqueAll2,'frames:MultiIndex:requireUniqueFail')
-            warning('on','frames:Index:notUnique')
-            function notUniqueAll2, df1.rows(1:end) = [1 2 3 20 20]; end
-            warning('on','frames:Index:subsagnNotUnique');
+            t.verifyError(@notUniqueAll2,'frames:MultiIndex:requireUniqueFail')            
+            function notUniqueAll2, df1.rows(1:end) = [1 2 3 20 20]; end            
             
             df3=dfd;
             warning('off','frames:MultiIndex:notUnique')
             df3.rows([3,1]) = [0,4];
             warning('on','frames:MultiIndex:notUnique')
             t.verifyEqual(df3.rows(:,1),[4 2 0 10 10]')
-            t.verifyWarning(@duplicate1,'frames:Index:subsagnNotUnique')
+            t.verifyWarning(@duplicate1,'frames:MultiIndex:notUnique') %was frames:Index:subsagnNotUnique
             function duplicate1, df3.rows([3,1]) = [2,0]; end
-            t.verifyWarning(@duplicate2,'frames:Index:subsagnNotUnique')
+            t.verifyWarning(@duplicate2,'frames:MultiIndex:notUnique') %was frames:Index:subsagnNotUnique
             function duplicate2, df3.rows([3,1]) = [6,6]; end
             
             dfcs = frames.DataFrame(1,[],frames.MultiIndex([1 2 3 10 20]',UniqueSorted=true));
@@ -612,15 +592,13 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             
             t.verifyError(@cannotBeEmpty2,'frames:rowsValidation:mustBeNonempty')
             function cannotBeEmpty2(), df.rows=[]; end
-            
-            warning('off','frames:Index:subsagnNotUnique')
+                        
             t.verifyError(@notUnique1,'frames:MultiIndex:requireUniqueFail')
             function notUnique1(), df.rows=[6 6]; end
             
             
             t.verifyError(@notUnique2,'frames:MultiIndex:requireUniqueFail')
             function notUnique2(), df.rows(1)=2; end
-            warning('on','frames:Index:subsagnNotUnique')
 %             
 %             tf = frames.TimeFrame([1 2; 2 5],[738315,738316]);
 %             tf.rows = [738315,738317];
@@ -644,14 +622,12 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             
             df.columns = frames.MultiIndex([3 5]',Unique=true); % MultiIndex requires col-vector for seperate items 
             t.verifyEqual(df.columns(:,1),[3 5]) % output as row-vector
-            
-            warning('off','frames:Index:subsagnNotUnique');
+                        
             t.verifyError(@colsNotUnique,'frames:MultiIndex:requireUniqueFail')
             function colsNotUnique(), df.columns=[6 6]; end            
             
             t.verifyError(@colsNotUnique2,'frames:MultiIndex:requireUniqueFail')
-            function colsNotUnique2(), df.columns(1)=5; end
-            warning('on','frames:Index:subsagnNotUnique');
+            function colsNotUnique2(), df.columns(1)=5; end            
                         
             t.verifyError(@wrongSize,'frames:columnsValidation:wrongSize')
             function wrongSize(), df.columns=3; end
@@ -689,10 +665,8 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(ext.data, [NaN NaN;1 1;2 2;NaN NaN]);
             t.verifyEqual(ext.rows(:,1), [0 1 2 3]');            
             t.verifyEqual(df.extendRows([2 1 2]),df);
-            
-            warning('off','frames:Index:notUnique')
-            dupli = frames.DataFrame([1 3 4 5]',frames.MultiIndex([1 3 4 5]',Unique=false)).extendRows([1 2 4]');
-            warning('on','frames:Index:notUnique')
+                        
+            dupli = frames.DataFrame([1 3 4 5]',frames.MultiIndex([1 3 4 5]',Unique=false)).extendRows([1 2 4]');            
             t.verifyEqual(dupli.data, [1 3 4 5 NaN]');
             t.verifyEqual(dupli.rows(:,1), [1 3 4 5 2]');
         end
@@ -705,14 +679,12 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
         
         function extendColumnsTest1D(t)
             df = frames.DataFrame([1 1;2 2]',{[]},{[1 2]});
-            t.verifyEqual(df.extendColumns([3 1]).data, [1 1;2 2;NaN NaN]');            
-            warning('off','frames:Index:notUnique')
+            t.verifyEqual(df.extendColumns([3 1]).data, [1 1;2 2;NaN NaN]');                        
             warning('off','frames:MultiIndex:notUnique')
             wDuplicates = frames.DataFrame([1 2 3 4 5 6],{[]},{[1 3 1 4 5 4]}).extendColumns([1 2 4 2]');
             warning('on','frames:MultiIndex:notUnique')
             t.verifyEqual(wDuplicates.data, [1 2 3 4 5 6 NaN NaN]);
-            t.verifyEqual(wDuplicates.columns(:,1), [1 3 1 4 5 4 2 2]);
-            warning('on','frames:Index:notUnique')
+            t.verifyEqual(wDuplicates.columns(:,1), [1 3 1 4 5 4 2 2]);            
             sorted = frames.DataFrame([1 3 4 5],{[]},frames.MultiIndex([1 3 4 5]',UniqueSorted=true)).extendColumns([1 2 4]');
             t.verifyEqual(sorted.data, [1 NaN 3 4 5]);
             t.verifyEqual(sorted.columns(:,1), [1 2 3 4 5]);
@@ -721,13 +693,11 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(uniq.columns(:,1), [1 3 4 5 2]);
         end
         
-        function dropColumnsTest(t)
-            warning('off','frames:Index:notUnique')
+        function dropColumnsTest(t)            
             warning('off','frames:MultiIndex:notUnique')
             df = frames.DataFrame([1 1;2 2;3 3;4 4;5 5]',{[]},{[1 2 4 2 5]'});
             t.verifyEqual(df.dropColumns([2 5]').data, [1 1;3 3]');
-            t.verifyEqual(df.dropColumns([false true false true true]).data, [1 1;3 3]');
-            warning('on','frames:Index:notUnique')
+            t.verifyEqual(df.dropColumns([false true false true true]).data, [1 1;3 3]');            
             warning('on','frames:MultiIndex:notUnique')
         end
         
@@ -768,17 +738,22 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             % repeating
             a = frames.DataFrame(1,{1},{"a"});
             b = frames.DataFrame([11 11;22 22],{[1 3]'},{["b1","b2"]'});
-            warning('off','frames:Index:notUnique')
+            
             warning('off','frames:MultiIndex:notUnique')
             expected = frames.DataFrame([1 11 11 1; NaN 22 22 NaN],{[1 3]'},{["a","b1","b2","a"]'});
+            warning('on','frames:MultiIndex:notUnique')
+            warning('off','frames:Index:notUnique') % warning with 'frames:Index' raised instead of 'frames:MultiIndex'
             t.verifyEqual([a b a],expected)
+            warning('on','frames:Index:notUnique')
             
             % disallow concatenation between different classes like [1,'1']
             c = b;
             c.data = char(c.data);
+            warning('off','frames:Index:notUnique') % warning with 'frames:Index' raised instead of 'frames:MultiIndex'
             t.verifyError(@() [b c],'frames:concat:differentDatatype');
             warning('on','frames:Index:notUnique')
-            warning('on','frames:MultiIndex:notUnique')
+            
+            
         end
         
         function vertcatTest(t)
@@ -1126,14 +1101,12 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
              t.verifyEqual(df.sum(2),frames.DataFrame([8 7 4 5 8 5]',df.getRowsObj(),[],ColSeries=true))
              t.verifyEqual(df.sum(':').sum(2,":"),37)
              
-             % 2D checks (aggregate only sub-dimension(s))
-             warning('off','frames:Index:notUnique');
+             % 2D checks (aggregate only sub-dimension(s))             
              dfa = df';
              t.verifyEqual(df.sum("dim1").col("Var2"), ...
                  frames.DataFrame([4 1 8]', ...
                      frames.MultiIndex({{"a",11},{"a",22},{"b",11}},name=["dim2","dim3"],Unique=true), colSeries=true))
-             
-             warning('on','frames:Index:notUnique');    
+                             
              %t.verifyEqual(dfa.sum(2,"dim1").row("Var2"), ...
              %    frames.DataFrame([4 1 8], frames.Index(string(missing), name="", Singleton=true,Unique=true), ...
              %    frames.MultiIndex({{"a",11},{"a",22},{"b",11}},name=["dim2","dim3"]), rowSeries=true))
