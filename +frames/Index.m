@@ -37,10 +37,8 @@ classdef Index
         value_uniq           % (cell array) stores unique values per dimension    
         value_uniqind        % (int array) stores position index to unique value for every value      
     end
-    properties      %TEMPORARY FOR DEBUGGING (NO ACCESS LIMITATIONS)
-        value_               % stores values   
-    end
     properties(Hidden,Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex})  
+        value_               % stores values
         name_                % store name of the index
         singleton_
         requireUnique_
