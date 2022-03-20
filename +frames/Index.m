@@ -710,6 +710,7 @@ classdef Index
         
         function obj = setname(obj, value)
             % set index name
+            assert(length(value)==1, 'frames:Index:setname:invalidcount', "only single dimension name allowed.");
             obj.name_ = value;
         end
 

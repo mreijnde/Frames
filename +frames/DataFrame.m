@@ -132,9 +132,11 @@ classdef DataFrame
                 data (:,:) = []
                 rows = []
                 columns = []
-                NameValueArgs.Name = ""
+                NameValueArgs.Name {mustBeA(NameValueArgs.Name,'string')} = ""
                 NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
+                NameValueArgs.RowDim {mustBeA(NameValueArgs.RowDim,'string')} = ""
+                NameValueArgs.ColDim {mustBeA(NameValueArgs.ColDim,'string')} = ""                
             end
             % get DataFrameSettings
             obj.settings = frames.internal.DataFrameSettings(obj.settingsDefault);
@@ -196,7 +198,10 @@ classdef DataFrame
             obj.data_ = data;
             obj.rows = rows;
             obj.columns = columns;
-            obj.name_ = NameValueArgs.Name;                       
+            obj.name_ = NameValueArgs.Name;
+            if NameValueArgs.RowDim~="", obj.rows_.name = NameValueArgs.RowDim; end
+            if NameValueArgs.ColDim~="", obj.columns_.name = NameValueArgs.ColDim; end
+                
             
             
             function bool = checkMultiIndexinput(value)

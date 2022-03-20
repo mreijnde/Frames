@@ -87,6 +87,20 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             
             % check non-unique error
             t.verifyError(@() frames.DataFrame([1;2;3], {{1,"a"},{1,"b"},{1,"a"}}), 'frames:MultiIndex:requireUniqueFail');
+            
+            % DIM NAME CHECKS        
+            dat = magic(3);
+            %with index obj indices
+            df = frames.DataFrame(dat, [], rowDim="x", colDim="y");   
+            t.verifyEqual(df.getRowsObj().name, "x");
+            t.verifyEqual(df.getColumnsObj().name, "y");
+            t.verifyError(@() frames.DataFrame(dat, [],rowDim=["x","y"]),'frames:Index:setname:invalidcount')
+            t.verifyError(@() frames.DataFrame(dat, [],colDim=["x","y"]),'frames:Index:setname:invalidcount')
+            
+            %with MultiIndex obj indices
+            df = frames.DataFrame(dat, {[]}, {[]}, rowDim="x", colDim="y");   
+            t.verifyEqual(df.getRowsObj().name, "x");
+            t.verifyEqual(df.getColumnsObj().name, "y");             
         end   
             
         function constructorTest_forceMultiIndex(t)    
@@ -145,7 +159,19 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(df2,df2f);
             t.verifyEqual(df2,df2g);
             t.verifyEqual(df2,df2i);
-                        
+            
+            % dim name tests
+            df = frames.DataFrame(dat, [1 1; 2 1; 3 2], rowDim=["x","y"]);
+            t.verifyEqual(df.getRowsObj().name, ["x","y"]);
+            df = frames.DataFrame(dat, [1 1; 2 1; 3 2], colDim="dd");
+            t.verifyEqual(df.getColumnsObj().name, "dd");
+            df  = frames.DataFrame(dat, [1,1;2,1;3,2],["a","b","c";"A","A","B"], rowDim=["x","y"], colDim=["XX","YY"]); 
+            t.verifyEqual(df.getRowsObj().name, ["x","y"]);
+            t.verifyEqual(df.getColumnsObj().name, ["XX","YY"]);
+            t.verifyError(@() frames.DataFrame(dat,[1,1;2,1;3,2],rowDim="x"),'frames:MultiIndex:setname:invalidcount')
+            t.verifyError(@() frames.DataFrame(dat,[1,1;2,1;3,2],colDim=["X","Y"]),'frames:MultiIndex:setname:invalidcount')
+                             
+            % restore settings
             frames.DataFrame.setDefaultSetting("forceMultiIndex", false);           
         end
         
