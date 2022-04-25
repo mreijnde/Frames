@@ -534,14 +534,15 @@ classdef Index
                     % align duplicates between different indices by its order
                     unique_section = cellfun(@(x) x.requireUnique || length(x)==0, [{obj} others_cell]);                                
                     label_dupl = labelDuplicatesInSections(uniqind, objlen, unique_section);
-                    uniqind = [ uniqind label_dupl];
+                    % define new uniq_ind with seperate values for duplicates based on its label
+                    uniqind = uniqind*(length(label_dupl)+1) + label_dupl; 
                 end
                 
                 % align index and update position index accordingly
                 if obj.requireUniqueSorted                    
-                   [~, ia, id] = unique(uniqind, 'rows', 'sorted');                                      
+                   [~, ia, id] = unique(uniqind, 'sorted');
                 else                                                         
-                   [~, ia, id] = unique(uniqind, 'rows', 'stable');                    
+                   [~, ia, id] = unique(uniqind, 'stable');                    
                 end
                 obj_new = obj_new.getSubIndex_(ia,':');  
            
