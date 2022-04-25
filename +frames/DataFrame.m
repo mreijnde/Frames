@@ -2226,28 +2226,6 @@ end
 end
 
 %--------------------------------------------------------------------------
-function [row_,col_,df] = elementWiseHandler(df1,df2)
-df = df1;
-if isFrame(df2)
-    if isFrame(df1)
-        rowsColChecker(df1,df2);
-        
-        row_ = df1.rows_;
-        if size(df2,1)>size(df1,1), row_ = df2.rows_; end
-        col_ = df1.columns_;
-        if size(df2,2)>size(df1,2), col_ = df2.columns_; end
-    else
-        row_ = df2.rows_;
-        col_ = df2.columns_;
-        df = df2;
-    end
-else
-    row_ = df1.rows_;
-    col_ = df1.columns_;
-end
-end
-
-%--------------------------------------------------------------------------
 function rowsColChecker(df1,df2)
 if ~df1.rows_.singleton_ && ~df2.rows_.singleton_
     assert(isequal(df1.rows_.value_,df2.rows_.value_), ...
@@ -2303,14 +2281,5 @@ end
         df.data_ = func( df1, df2.data_);
     end
     df.description = "";
-end
-
-
-%--------------------------------------------------------------------------
-function testUniqueIndex(indexObj)
-% test require unique, and ignore empty index
-if ~indexObj.requireUnique && length(indexObj.value_)>0
-    error('frames:requireUniqueIndex','The function requires an Index of unique values.')
-end
-end
+ end
  
