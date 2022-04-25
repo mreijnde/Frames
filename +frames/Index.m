@@ -683,28 +683,7 @@ classdef Index
             
             % default parameters
             if nargin<3, alignMethod="left"; end
-            if nargin<4, duplicateOption="duplicatesstrict"; end
-            
-            % call internal alignIndex function
-            [objnew, ind1_new, ind2_new] = alignIndex_(obj1, obj2, alignMethod, duplicateOption);                                    
-        end
-        
-               
-        
-        
-    end
-    
-    methods(Hidden)
-        
-         function [objnew, ind1_new, ind2_new] = alignIndex_(obj1, obj2, alignMethod, duplicateOption, ~)
-            % internal function to create new aligned Index of two Index objects            
-            %
-            % see alignIndex() for description
-            %
-            % extra output (wrt alignIndex):                        
-            %   - id1_raw:    array with unique ids of values in obj1 (lenght of obj1)
-            %   - id2_raw:    array with unique ids of values in obj2 (lenght of obj2)
-            %          
+            if nargin<4, duplicateOption="duplicatesstrict"; end                
 
             % handle equal Indices or singleton indices without alignment code (for performance)            
             [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2);                        
@@ -755,11 +734,15 @@ classdef Index
             % only output selected rows in index
             objnew = objnew.getSubIndex_(mask,':');
             ind1_new = ind1_raw(mask);
-            ind2_new = ind2_raw(mask);
+            ind2_new = ind2_raw(mask);                                              
         end
               
+       
+    end
+    
+    methods(Hidden)        
         
-        
+ 
         function [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2)
             % internal function to check and handle simple cases (equal index or singleton)
             %            
@@ -782,8 +765,7 @@ classdef Index
                 ind2_new = (1:length(obj2))';
                 ind1_new = ones(size(ind2_new));                
             end            
-        end
-        
+       end                
         
         function obj = subsasgn(obj,s,b)
             if length(s) == 2 && strcmp([s.type],'.()') && strcmp(s(1).subs,'value')

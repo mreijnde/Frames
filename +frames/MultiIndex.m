@@ -273,42 +273,49 @@ classdef MultiIndex < frames.Index
             NextraDims2 = length(dim_unique_ind2);
             NextraDims1 = length(dim_unique_ind1);
             extraDimsNeeded = NextraDims1>0 || NextraDims2>0;
-            assert(allowDimExpansion | NextraDims2==0, ...
-                          "Dimension expansion disabled, while obj2 has new dimension(s)");                        
+            assert(allowDimExpansion | NextraDims2==0, 'frames:MultiIndex:alignIndex:expansiondisabled', ...
+                          "Dimension expansion disabled, while obj2 has other dimension(s) wrt. obj1.");                        
             
             %<todo: some check that expansion and duplicates in index are not compatible (?) >
             
             if ~isempty(dim_common)
-                 % relax duplication handling (in case of expansion)
-                 if extraDimsNeeded && duplicateOption=="duplicatesstrict"
-                     duplicateOption="duplicates";
+                 % use 'expansion' option in case of adding new dimensions
+                 if extraDimsNeeded
+                     % <TODO> add uniqueness check of input (verify if this is needed or not)
+                     duplicateOption="expand";
                  end                
                  % run alignIndex from Index on common dimensions             
                  obj1_common = obj1.getSubIndex_(':', dim_common_ind1);
                  obj2_common = obj2.getSubIndex_(':', dim_common_ind2);
-                 [objnew, ind1_new , ind2_new] = ...
-                      alignIndex_(obj1_common, obj2_common, alignMethod, duplicateOption);
-                 % create id index
-                 pos=1:length(objnew);
-                 
-                 id1_raw = nan( length(obj1),1);
-                 mask=~isnan(ind1_new);                 
-                 id1_raw(ind1_new(mask))=pos(mask);
-                 
-                 id2_raw = nan( length(obj2),1);
-                 mask=~isnan(ind2_new);                 
-                 id2_raw(ind2_new(mask))=pos(mask);                 
+                 [objnew, ind1_new, ind2_new] = ...
+                     alignIndex@frames.Index(obj1_common, obj2_common, alignMethod, duplicateOption);
+                
+                % add extra dimensions to index (after expansion)
+                assert( (NextraDims1==0 || ~any(isnan(ind1_new)) ) && ...
+                        (NextraDims2==0 || ~any(isnan(ind2_new)) ), 'frames:MultiIndex:alignIndex:invalidexpansion', ...
+                        "Cannot expand dimension(s) if common dimension(s) contain uncommon values between objects.");                 
+                if NextraDims1>0                    
+                    obj1_newdim = obj1.getSubIndex_(ind1_new, dim_unique_ind1);
+                    objnew.value_(end+1:end+obj1_newdim.Ndim) = obj1_newdim.value_;                    
+                end
+                if NextraDims2>0
+                    obj2_newdim = obj2.getSubIndex_(ind2_new, dim_unique_ind2);
+                    objnew.value_(end+1:end+obj2_newdim.Ndim) = obj2_newdim.value_;                                        
+                end                                                                                               
+             
             else
-                % all items same id in case of no common dimensions
-                id1_raw = ones( length(obj1),1);
-                id2_raw = ones( length(obj2),1);                
+                % no common dimensions: no alignment required
+                % create indices with all combinatons using meshgrid               
+                [ind1_new,ind2_new] = meshgrid(1:length(obj1), 1:length(obj2));
+                ind1_new = ind1_new(:);
+                ind2_new = ind2_new(:);                
+                % get expanded obj1 as basis
+                objnew = obj1.getSubIndex_(ind1_new,':');                
+                % add expanded obj2 dimensions
+                obj2_new = obj2.getSubIndex_(ind2_new,':');                
+                objnew.value_(end+1:end+obj2_new.Ndim) = obj2_new.value_;
             end
-                                         
-            % expand index if required
-            if extraDimsNeeded
-                [objnew, ind1_new , ind2_new] = expandIndexWithDim(obj1, obj2, id1_raw, id2_raw);
-            end                 
-            
+                                                     
              % sort if required
             if obj1.requireUniqueSorted
                 % sort output index
@@ -316,70 +323,7 @@ classdef MultiIndex < frames.Index
                 % update position indices accordingly
                 ind1_new = ind1_new(sortindex);
                 ind2_new = ind2_new(sortindex);                
-            end
-            
-            
-            
-            
-           function [objnew, ind1_new, ind2_new] = expandIndexWithDim(obj1, obj2, id1, id2)
-                % internal sub function expand and merge extra dimension in Index  
-                Nunique =  max([id1; id2]);  
-                % get row numbers of aligned index for obj1
-                id2_freq = histc(id2, 1:Nunique); %#ok<HISTC>   
-                replicate_count = max(id2_freq(id1),1); % replicate rows in obj1 with freq obj2, keep minimal 1 copy            
-                ind1_new = repelem(1:length(id1), replicate_count )'; 
-                ind1_new(ind1_new>length(id1))=NaN; 
-
-                if length(ind1_new)<Nunique                    
-                    ind1_new_tmp = ind1_new;                                
-                    ind1_new = NaN(Nunique,1);
-                    ind1_new(1:length(ind1_new_tmp)) = ind1_new_tmp;
-                end
-                
-                % get row numbers of aligned index for obj2            
-                ind2_cell = getPosIndicesForEachValue(id2, Nunique);
-                if length(id1)<length(id2)
-                    id1_missing = setxor(id1,1:Nunique);
-                    id1 =[id1;id1_missing];
-                end
-                ind2_cell_aligned = ind2_cell(id1);                
-                ind2_new = vertcat(ind2_cell_aligned{:});
-                
-                % create new expanded MultiIndex (with dimensions as in obj1)                        
-                assert( (NextraDims1==0 || ~any(isnan(ind1_new)) ) && ...
-                        (NextraDims2==0 || ~any(isnan(ind2_new)) ), ...
-                        "Cannot expand dimensions in case rows exist in output index that are not common in both objects.");                    
-                if ~any(isnan(ind1_new))
-                    % only a combination of rows in ob1
-                    objnew = obj1.getSubIndex_(ind1_new,':');
-                else
-                   % combination of both MultiIndex
-                   mask_rows_from_obj2 = isnan(ind1_new);
-                   objnew1 = obj1.getSubIndex(ind1_new(~mask_rows_from_obj2), dim_common_ind1);
-                   objnew2 = obj2.getSubIndex(ind2_new(mask_rows_from_obj2), dim_common_ind2);
-                   objnew = vertcat_(objnew1, objnew2);
-                end
-
-                % add new dimensions
-                if NextraDims2>0
-                    objnew2 = obj2.getSubIndex_(ind2_new,':');
-                    for i=1:NextraDims2
-                        dimind = dim_unique_ind2(i);
-                        objnew = objnew.addDimension( objnew2.value_{dimind} );
-                    end   
-                end           
-                
-                function ind_cell = getPosIndicesForEachValue(x, N)
-                    % get cell array(N) with cell(i) the position indices of vector x with value i
-                    % (values of vector x has to be in range 1 to N)
-                    [~,ix] = sort(x);
-                    c = histc(x, 1:N); %#ok<HISTC>
-                    ind_cell = mat2cell(ix(:),c,1);
-                    ind_cell( cellfun(@isempty, ind_cell) ) = {NaN}; % convert missing values to NaN
-                end
-            
-           end        
-            
+            end                       
         end
                       
         
