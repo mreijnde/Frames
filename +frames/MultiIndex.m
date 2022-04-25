@@ -1,7 +1,8 @@
 classdef MultiIndex < frames.Index
     % MULTIINDEX: class to create multi dimensional index
+    %  
+    % Copyright 2022 Merijn Reijnders
     %
-    %      
     methods
         function obj = MultiIndex(value, nameValue)
             % constructor for MultiIndex
@@ -275,9 +276,7 @@ classdef MultiIndex < frames.Index
             extraDimsNeeded = NextraDims1>0 || NextraDims2>0;
             assert(allowDimExpansion | NextraDims2==0, 'frames:MultiIndex:alignIndex:expansiondisabled', ...
                           "Dimension expansion disabled, while obj2 has other dimension(s) as obj1.");                        
-            
-            %<todo: some check that expansion and duplicates in index are not compatible (?) >
-            
+                       
             if ~isempty(dim_common)            
                  % get common dimension indices to align on
                  obj1_common = obj1.getSubIndex_(':', dim_common_ind1);
@@ -481,7 +480,26 @@ classdef MultiIndex < frames.Index
         
         
     end
-    methods(Access=protected)
+    methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
+        
+        function obj = vertcat_(obj,varargin)
+            % concatenate multiple MultiIndex objects with same dimensions (limited checks)
+            newvalue=obj.value_;
+            % combine indices
+            for i=1:length(varargin)
+                item = varargin{i};
+                assert(isa(item,'frames.MultiIndex'), 'frames:MultiIndex:vertcat_:onlyMultiIndex', ...
+                    "error, can only concatenate MultiIndex objects");
+                assert(all(obj.name==item.name | item.name==""), 'frames:MultiIndex:vertcat_:dimsNotEqual', ...
+                    "error, dimensions not equal");
+                for j=1:obj.Ndim
+                    newvalue{j} = newvalue{j}.vertcat_(item.value_{j});
+                end
+            end
+            % assign to MultiIndex
+            obj = obj.setvalue(newvalue, false); %skip value checks / unique warning            
+        end        
+        
         
         function obj = setvalue(obj, value, userCall)
             % SETVALUE: store index values of every dimension as Index objects and validate row uniqueness
@@ -777,6 +795,36 @@ classdef MultiIndex < frames.Index
         end
         
         
+        function out = getvalue_uniqind(obj, orderColumnMajor)
+            % get uniqind vector based on all dimensions
+            % 
+            % input:
+            %    column_major_ordering: logical 
+            %             true:  column-major (default)
+            %             false: row-major             
+            if nargin<2, orderColumnMajor=true; end                   
+            if obj.Ndim==1
+                % single linear index
+                out = obj.value_{1}.value_uniqind;
+            elseif obj.Ndim>1                
+                % multiple linear indices
+                uniqind = cell2mat(cellfun(@(x) x.value_uniqind, obj.value_,'UniformOutput',false));  % all uniqind as columns                                                
+                Ndim_uniq = cellfun(@(x) length(x.value_uniq{1}), obj.value_);  % number of unique values per dimension
+                % get multiplication factor per dim
+                if orderColumnMajor
+                    % column-major ordered index
+                    DimMultiplicationFactor = cumprod( [Ndim_uniq(2:end) 1], 'reverse');                                  
+                else
+                    % row-major ordered index
+                    DimMultiplicationFactor = cumprod( [1 Ndim_uniq(1:end-1)] );                               
+                end
+                    % matrix multiplication to calc combined uniqind vector
+                    out = (uniqind-1) * DimMultiplicationFactor' + 1;
+            else
+                out = [];
+            end
+        end                
+        
     end
     
     methods(Hidden)
@@ -876,61 +924,13 @@ classdef MultiIndex < frames.Index
                 [varargout{1:nargout}] = builtin('subsref',obj,s);
             end
         end
-        
-        
-      function out = getvalue_uniqind(obj, orderColumnMajor)
-            % get uniqind vector based on all dimensions
-            % 
-            % input:
-            %    column_major_ordering: logical 
-            %             true:  column-major (default)
-            %             false: row-major             
-            if nargin<2, orderColumnMajor=true; end                   
-            if obj.Ndim==1
-                % single linear index
-                out = obj.value_{1}.value_uniqind;
-            elseif obj.Ndim>1                
-                % multiple linear indices
-                uniqind = cell2mat(cellfun(@(x) x.value_uniqind, obj.value_,'UniformOutput',false));  % all uniqind as columns                                                
-                Ndim_uniq = cellfun(@(x) length(x.value_uniq{1}), obj.value_);  % number of unique values per dimension
-                % get multiplication factor per dim
-                if orderColumnMajor
-                    % column-major ordered index
-                    DimMultiplicationFactor = cumprod( [Ndim_uniq(2:end) 1], 'reverse');                                  
-                else
-                    % row-major ordered index
-                    DimMultiplicationFactor = cumprod( [1 Ndim_uniq(1:end-1)] );                               
-                end
-                    % matrix multiplication to calc combined uniqind vector
-                    out = (uniqind-1) * DimMultiplicationFactor' + 1;
-            else
-                out = [];
-            end
-        end                
+      
         
     end
     
     
     
-    methods                   
-        
-        function obj = vertcat_(obj,varargin)
-            % concatenate multiple MultiIndex objects with same dimensions (limited checks)
-            newvalue=obj.value_;
-            % combine indices
-            for i=1:length(varargin)
-                item = varargin{i};
-                assert(isa(item,'frames.MultiIndex'), 'frames:MultiIndex:vertcat_:onlyMultiIndex', ...
-                    "error, can only concatenate MultiIndex objects");
-                assert(all(obj.name==item.name | item.name==""), 'frames:MultiIndex:vertcat_:dimsNotEqual', ...
-                    "error, dimensions not equal");
-                for j=1:obj.Ndim
-                    newvalue{j} = newvalue{j}.vertcat_(item.value_{j});
-                end
-            end
-            % assign to MultiIndex
-            obj = obj.setvalue(newvalue, false); %skip value checks / unique warning            
-        end
+    methods                                  
         
         function obj = vertcat(obj,varargin)
             % concatenate multiple MultiIndex objects with same dimensions

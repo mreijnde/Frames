@@ -1561,7 +1561,7 @@ classdef DataFrame
          end
     end
          
-    methods(Hidden, Access=protected)
+    methods(Hidden, Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
         
         function tb = getTable(obj)
             row = obj.rows_.getValueForTable();

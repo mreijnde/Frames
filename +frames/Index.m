@@ -218,59 +218,6 @@ classdef Index
 
         
         
-       function [selector, selectorInd] = getSelector_(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
-            % get valid matlab indexer for array operations based on supplied selector
-            % (internal function with extra optional output, see detailed description getSelector())            
-            %
-            % output:
-            %    - selector:     validated array indexer (colon, logical array or position index array)
-            %    - selectorInd:  (extra optional) array with for each item in selector corresponding selector entry id
-            %             
-            if iscolon(selector)
-                % do nothing, just output colon
-                if (nargout>1)
-                   selectorInd = 1;
-                end                   
-            elseif islogical(selector) || isFrame(selector)
-                %  logical selectors
-                if userCall
-                    obj.logicalIndexChecker(selector, allowedSeries);
-                end
-                selector = obj.getValue_from(selector);
-                if (nargout>1)
-                    selectorInd = find(selector);
-                end
-            elseif positionIndex
-                % position index selector
-                if userCall
-                    obj.positionIndexChecker(selector);
-                end
-                if (nargout>1)
-                   selectorInd = 1:length(selector);
-                end
-            else
-                %  value selectors
-                selector = obj.getValue_andCheck(selector,userCall);
-                if obj.requireUnique_
-                    if ~allowMissing
-                        assertFoundIn(selector,obj.value_)
-                    end
-                    [~,selectorInd,selector] = intersect(selector,obj.value_,'stable');
-                else
-                    % for speedup, prevent unnecessary output
-                    if (nargout>1)
-                       [selector,selectorInd] = findPositionIn(selector,obj.value_, allowMissing);
-                    else
-                       [selector] = findPositionIn(selector,obj.value_, allowMissing);
-                    end
-                end
-            end
-       end
-        
-        
-        
-        
-        
         function pos = positionOf(obj, selector, varargin)
             % output position index array for given selector
             %
@@ -307,20 +254,6 @@ classdef Index
             pos = obj.positionIn_(obj.value_, target);
         end
         
-       function pos = positionIn_(obj,objvalue, targetvalue)
-            % internal, find position of the Index into the target            
-            if obj.requireUnique_
-                assertFoundIn(objvalue,targetvalue)
-                if obj.requireUniqueSorted_
-                    pos = ismember(targetvalue,objvalue);
-                else
-                    [~,~,pos] = intersect(objvalue,targetvalue,'stable');
-                end
-            else
-                pos = findPositionIn(objvalue,targetvalue);
-            end
-        end 
-        
              
        function obj = union(obj,index2)
            % unify two indices
@@ -340,14 +273,6 @@ classdef Index
            obj.singleton_ = false;
        end
         
-       
-        function obj = vertcat_(obj,varargin)
-            % internal function for concatenation of multiple indices (no checks)
-            others = [varargin{:}];
-            val = vertcat(obj.value_, others.value_);
-            obj.singleton_ = false;
-            obj.value_ = val;
-        end       
        
         function obj = vertcat(obj,varargin)
             % concatenation
@@ -408,6 +333,139 @@ classdef Index
             obj = obj.getSubIndex(sortindex);            
         end
         
+        
+               
+        
+        function [objnew, ind1_new, ind2_new] = alignIndex(obj1, obj2, alignMethod, duplicateOption, ~)
+            % function to create new aligned Index of two Index objects            
+            %
+            % input:
+            %    - obj1,obj2:    Index objects to be aligned
+            %
+            %    - alignMethod: (string enum) select alignment method
+            %           "strict": both need to have same values (else error thrown)
+            %           "inner":  remove rows that are not common in both
+            %           "left":   keep rows as in obj1  (default)            
+            %           "full":   keep all items (allow missing in both obj1 and obj2)
+            %
+            %    - duplicateOption: (string enum) select method for aligning of indices
+            %           "none":             do not allow duplicates present
+            %           "duplicatesstrict": do not allow duplicates present, except fully equal indices (default)
+            %           "duplicates":       align duplicates in order of appearance
+            %
+            % output:
+            %   - objnew:     Index object with new aligned index (1:N)
+            %   - ind1_new:   position index (1:N) with reference to original item of obj1 (NaN for values of obj2)
+            %   - ind2_new:   position index (1:N) with reference to original item of obj2 (NaN for values of obj1)
+            %      
+            
+            % default parameters
+            if nargin<3, alignMethod="left"; end
+            if nargin<4, duplicateOption="duplicatesstrict"; end                
+
+            % handle equal Indices or singleton indices without alignment code (for performance)            
+            [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2);                        
+            if ~isempty(objnew)
+                assert(duplicateOption~="none" || (obj1.isunique() && obj2.isunique()), ...
+                   'frames:Index:alignIndex:duplicatevalues',...
+                   "No duplicate index values allowed (with duplicateOption 'none')");  
+                return; 
+            end
+
+            %check for duplicates            
+            if duplicateOption=="none"                
+                assert( obj1.isunique() && obj2.isunique(), 'frames:Index:alignIndex:duplicatevalues',...
+                    "No duplicate index values allowed (with duplicateOption 'none')");
+            elseif duplicateOption=="duplicatesstrict"
+                assert(obj1.isunique() && obj2.isunique(), 'frames:Index:alignIndex:duplicatevalues',...                                    
+                    "Duplicate index values not allowed in case of not fully equal indices (with default duplicateOption 'duplicatesstrict')");            
+            end
+            
+            % get matching rows of both Index objects                                 
+            [objnew, ind_cell] = obj1.union_({obj2}, duplicateOption);            
+            [ind1_raw, ind2_raw] = ind_cell{:};
+            
+            % create common masks
+            mask1 = ~isnan(ind1_raw);
+            mask2 = ~isnan(ind2_raw);
+
+            % define row ids in new index based on chosen method
+            switch alignMethod
+                case "inner"
+                    mask = mask1 & mask2;      
+                case "left"
+                    mask = mask1;                    
+                case "strict"
+                    assert( all(mask1) & all(mask2), 'frames:Index:alignIndex:unequalIndex', ...
+                        "Unequal values in dimension not allowed in strict alignMethod");                    
+                    mask = true(size(mask1));
+                case "full"
+                    mask = true(size(mask1));                    
+                case "strictunique"                                                             
+                    mask = true(size(mask1));
+                    assert(isequal(obj1.value_uniq_,obj2.value_uniq_), 'frames:Index:alignIndex:unequalIndex', ...
+                        "Indices contain different unique values, not allowed in strict_withduplicates alignMethod");
+                otherwise 
+                    error("unsupported alignMethod '%s'", alignMethod);
+            end
+
+            % only output selected rows in index
+            objnew = objnew.getSubIndex_(mask,':');
+            ind1_new = ind1_raw(mask);
+            ind2_new = ind2_raw(mask);                                              
+        end
+              
+       
+    end
+    
+    
+    methods(Hidden)        
+         
+        function obj = subsasgn(obj,s,b)
+            if length(s) == 2 && strcmp([s.type],'.()') && strcmp(s(1).subs,'value')
+                idxNew = s(2).subs{1};
+                if isequal(b,[])
+                    obj.value_(idxNew) = [];
+                    if obj.singleton_
+                        assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
+                            'The value of a singleton Index must be missing.')
+                    end
+                else
+                    b_ = obj.getValue_from(b);
+                    val_ = obj.value_;
+                    if iscolon(idxNew)
+                       val_ = b_;
+                    else
+                        val_(idxNew) = b_;
+                    end
+
+                    obj.valueChecker(val_,idxNew,b_);
+                    obj.value_ = val_;
+                end
+            else
+                obj = builtin('subsasgn',obj,s,b);
+            end
+        end
+        
+       
+        
+    end
+    
+    methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
+
+        function pos = positionIn_(obj,objvalue, targetvalue)
+            % internal, find position of the Index into the target            
+            if obj.requireUnique_
+                assertFoundIn(objvalue,targetvalue)
+                if obj.requireUniqueSorted_
+                    pos = ismember(targetvalue,objvalue);
+                else
+                    [~,~,pos] = intersect(objvalue,targetvalue,'stable');
+                end
+            else
+                pos = findPositionIn(objvalue,targetvalue);
+            end
+        end         
         
         function [obj_new, ind_cell] = union_(obj, others_cell, duplicateOption)
             % Internal union function to create combined index of obj and all supplied index objects            
@@ -658,141 +716,64 @@ classdef Index
             end
         end
         
+ 
+
+       function obj = vertcat_(obj,varargin)
+            % internal function for concatenation of multiple indices (no checks)
+            others = [varargin{:}];
+            val = vertcat(obj.value_, others.value_);
+            obj.singleton_ = false;
+            obj.value_ = val;
+        end              
         
-        function [objnew, ind1_new, ind2_new] = alignIndex(obj1, obj2, alignMethod, duplicateOption, ~)
-            % function to create new aligned Index of two Index objects            
-            %
-            % input:
-            %    - obj1,obj2:    Index objects to be aligned
-            %
-            %    - alignMethod: (string enum) select alignment method
-            %           "strict": both need to have same values (else error thrown)
-            %           "inner":  remove rows that are not common in both
-            %           "left":   keep rows as in obj1  (default)            
-            %           "full":   keep all items (allow missing in both obj1 and obj2)
-            %
-            %    - duplicateOption: (string enum) select method for aligning of indices
-            %           "none":             do not allow duplicates present
-            %           "duplicatesstrict": do not allow duplicates present, except fully equal indices (default)
-            %           "duplicates":       align duplicates in order of appearance
+       function [selector, selectorInd] = getSelector_(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
+            % get valid matlab indexer for array operations based on supplied selector
+            % (internal function with extra optional output, see detailed description getSelector())            
             %
             % output:
-            %   - objnew:     Index object with new aligned index (1:N)
-            %   - ind1_new:   position index (1:N) with reference to original item of obj1 (NaN for values of obj2)
-            %   - ind2_new:   position index (1:N) with reference to original item of obj2 (NaN for values of obj1)
-            %      
-            
-            % default parameters
-            if nargin<3, alignMethod="left"; end
-            if nargin<4, duplicateOption="duplicatesstrict"; end                
-
-            % handle equal Indices or singleton indices without alignment code (for performance)            
-            [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2);                        
-            if ~isempty(objnew)
-                assert(duplicateOption~="none" || (obj1.isunique() && obj2.isunique()), ...
-                   'frames:Index:alignIndex:duplicatevalues',...
-                   "No duplicate index values allowed (with duplicateOption 'none')");  
-                return; 
-            end
-
-            %check for duplicates            
-            if duplicateOption=="none"                
-                assert( obj1.isunique() && obj2.isunique(), 'frames:Index:alignIndex:duplicatevalues',...
-                    "No duplicate index values allowed (with duplicateOption 'none')");
-            elseif duplicateOption=="duplicatesstrict"
-                assert(obj1.isunique() && obj2.isunique(), 'frames:Index:alignIndex:duplicatevalues',...                                    
-                    "Duplicate index values not allowed in case of not fully equal indices (with default duplicateOption 'duplicatesstrict')");            
-            end
-            
-            % get matching rows of both Index objects                                 
-            [objnew, ind_cell] = obj1.union_({obj2}, duplicateOption);            
-            [ind1_raw, ind2_raw] = ind_cell{:};
-            
-            % create common masks
-            mask1 = ~isnan(ind1_raw);
-            mask2 = ~isnan(ind2_raw);
-
-            % define row ids in new index based on chosen method
-            switch alignMethod
-                case "inner"
-                    mask = mask1 & mask2;      
-                case "left"
-                    mask = mask1;                    
-                case "strict"
-                    assert( all(mask1) & all(mask2), 'frames:Index:alignIndex:unequalIndex', ...
-                        "Unequal values in dimension not allowed in strict alignMethod");                    
-                    mask = true(size(mask1));
-                case "full"
-                    mask = true(size(mask1));                    
-                case "strictunique"                                                             
-                    mask = true(size(mask1));
-                    assert(isequal(obj1.value_uniq_,obj2.value_uniq_), 'frames:Index:alignIndex:unequalIndex', ...
-                        "Indices contain different unique values, not allowed in strict_withduplicates alignMethod");
-                otherwise 
-                    error("unsupported alignMethod '%s'", alignMethod);
-            end
-
-            % only output selected rows in index
-            objnew = objnew.getSubIndex_(mask,':');
-            ind1_new = ind1_raw(mask);
-            ind2_new = ind2_raw(mask);                                              
-        end
-              
-       
-    end
-    
-    methods(Hidden)        
-        
- 
-        function [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2)
-            % internal function to check and handle simple cases (equal index or singleton)
-            %            
-            % check
-            assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");   
-            % default empty
-            objnew = [];
-            ind1_new = []; ind2_new = [];            
-            % handle equal and singleton cases
-            if isequal(obj1.value_,obj2.value_)
-                objnew = obj1;
-                ind1_new = (1:length(obj1))';
-                ind2_new = ind1_new;                
-            elseif ~obj1.singleton && obj2.singleton
-                objnew = obj1;
-                ind1_new = (1:length(obj1))';
-                ind2_new = ones(size(ind1_new));                
-            elseif obj1.singleton && ~obj2.singleton
-                objnew = obj2;
-                ind2_new = (1:length(obj2))';
-                ind1_new = ones(size(ind2_new));                
-            end            
-       end                
-        
-        function obj = subsasgn(obj,s,b)
-            if length(s) == 2 && strcmp([s.type],'.()') && strcmp(s(1).subs,'value')
-                idxNew = s(2).subs{1};
-                if isequal(b,[])
-                    obj.value_(idxNew) = [];
-                    if obj.singleton_
-                        assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
-                            'The value of a singleton Index must be missing.')
-                    end
-                else
-                    b_ = obj.getValue_from(b);
-                    val_ = obj.value_;
-                    if iscolon(idxNew)
-                       val_ = b_;
-                    else
-                        val_(idxNew) = b_;
-                    end
-
-                    obj.valueChecker(val_,idxNew,b_);
-                    obj.value_ = val_;
+            %    - selector:     validated array indexer (colon, logical array or position index array)
+            %    - selectorInd:  (extra optional) array with for each item in selector corresponding selector entry id
+            %             
+            if iscolon(selector)
+                % do nothing, just output colon
+                if (nargout>1)
+                   selectorInd = 1;
+                end                   
+            elseif islogical(selector) || isFrame(selector)
+                %  logical selectors
+                if userCall
+                    obj.logicalIndexChecker(selector, allowedSeries);
+                end
+                selector = obj.getValue_from(selector);
+                if (nargout>1)
+                    selectorInd = find(selector);
+                end
+            elseif positionIndex
+                % position index selector
+                if userCall
+                    obj.positionIndexChecker(selector);
+                end
+                if (nargout>1)
+                   selectorInd = 1:length(selector);
                 end
             else
-                obj = builtin('subsasgn',obj,s,b);
+                %  value selectors
+                selector = obj.getValue_andCheck(selector,userCall);
+                if obj.requireUnique_
+                    if ~allowMissing
+                        assertFoundIn(selector,obj.value_)
+                    end
+                    [~,selectorInd,selector] = intersect(selector,obj.value_,'stable');
+                else
+                    % for speedup, prevent unnecessary output
+                    if (nargout>1)
+                       [selector,selectorInd] = findPositionIn(selector,obj.value_, allowMissing);
+                    else
+                       [selector] = findPositionIn(selector,obj.value_, allowMissing);
+                    end
+                end
             end
-        end
+        end        
         
         function N = getSelectorCount(obj, selector)
             % get number of elements from matlab compatible selector            
@@ -811,9 +792,31 @@ classdef Index
             out = obj.value_uniqind_;
         end        
         
-    end
-    
-    methods(Access=protected)
+        function [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2)
+            % internal function to check and handle simple cases (equal index or singleton)
+            %
+            % check
+            assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");
+            % default empty
+            objnew = [];
+            ind1_new = []; ind2_new = [];
+            % handle equal and singleton cases
+            if isequal(obj1.value_,obj2.value_)
+                objnew = obj1;
+                ind1_new = (1:length(obj1))';
+                ind2_new = ind1_new;
+            elseif ~obj1.singleton && obj2.singleton
+                objnew = obj1;
+                ind1_new = (1:length(obj1))';
+                ind2_new = ones(size(ind1_new));
+            elseif obj1.singleton && ~obj2.singleton
+                objnew = obj2;
+                ind2_new = (1:length(obj2))';
+                ind1_new = ones(size(ind2_new));
+            end
+        end
+        
+        
         function obj = setvalue(obj,value, userCall)
             if nargin<3, userCall=true; end
             if isIndex(value)
