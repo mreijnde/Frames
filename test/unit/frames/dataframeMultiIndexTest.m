@@ -1224,10 +1224,10 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyError(@() dfXYdup + dfXYZ,  'frames:MultiIndex:alignIndex:invalidduplicatesexpansion');
             df11a = dfXYdup.alignMethod("full","expand") - dfXY;   % obj2 values applied to all duplicate
             t.verifyEqual( df11a({2,':'},"A").data,[ -33 ;-26;-13;-31;-24;-11]);
-            %t.verifyEqual( df11a({2,':'},"B").data,[ -85;-88;-85;-88;-85;-88]); %TODO FIX!!
+            t.verifyEqual( df11a({2,':'},"B").data,[ -85;-88;-85;-85;-88;-85]);
             df11b = dfXYdup.alignMethod("full","duplicates") - dfXY; % obj2 values applied only to first duplicates
             t.verifyEqual( df11b({2,':'},"A").data,[ -33 ;-26; 32;14;24;34]); 
-            %t.verifyEqual( df11b({2,':'},"B").data,[ -85;-88;NaN;NaN;NaN;NaN]); %TODO FIX!!
+            t.verifyEqual( df11b({2,':'},"B").data,[ -85;-88;NaN;NaN;NaN;NaN]);
             warning('on', 'frames:MultiIndex:notUnique');
         end
         
