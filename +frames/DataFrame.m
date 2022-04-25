@@ -1841,7 +1841,6 @@ classdef DataFrame
             % prepare output
             if (dim==1 && obj.columns_.singleton_) || (dim==2 && obj.rows_.singleton_)
                 % returns a scalar if the operation is done on a series
-                %series = res;
             else
                 varargout{1} = obj.df2series(varargout{1},dim);
             end
@@ -2188,10 +2187,11 @@ end
 
 %--------------------------------------------------------------------------
 function varargout = getData_(varargin)
+varargout = cell(1,nargout);
 for ii = 1:nargout
     v = varargin{ii};
     if isFrame(v), v=v.data_; end
-    varargout{ii} = v; %#ok<AGROW>
+    varargout{ii} = v;
 end
 end
 

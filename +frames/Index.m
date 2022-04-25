@@ -383,7 +383,7 @@ classdef Index
             % (in case of non-unique elements, the index of the first occourance is returned)
             %
             % input:
-            %    ordering: (string) 'sorted' or 'stable'
+            %    ordering: (string) 'sorted' (default) or 'stable'
             %
             % output:
             %   obj: new Index object with only unique values
