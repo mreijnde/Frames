@@ -640,7 +640,7 @@ classdef DataFrame
             % The options to combine the row and column indices can be specified with 'duplicateOptionRows' and 
             % 'duplicateOptionCols'.
             % 
-            % duplicateOptionRows and alignMethodCols options are:
+            % duplicateOptionRows and duplicateOptionCols options are:
             %  - 'unique':           only keep unique values in combined index.
             %                        (only option that is allowed for indexes that requireUnique)
             %

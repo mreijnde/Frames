@@ -1134,6 +1134,21 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(dfC2c, frames.DataFrame([16,3,13;9,0,12;4,0,1],dfC2c.rows_, dfC2c.columns_).alignMethod("left"));
         end
         
+%         function mathOperationsAlignTestMultiDim(t)
+%             ftestdat  = @(sx,sy) (1:sx)' + 10*(1:sy);
+%             
+%             % linear axes            
+%             dfX = frames.DataFrame( ftestdat(length(x),2)*1, frames.MultiIndex({1:3},name="x"), ["A","B"]);
+%             dfY = frames.DataFrame( ftestdat(length(y),2)*3, frames.MultiIndex({1:2},name="y"), ["A","B"]);
+%             dfZ = frames.DataFrame( ftestdat(length(z),2)*4, frames.MultiIndex({1:4},name="z"), ["A","B"]);
+%             dfXsubset = dfX{1:end-1};
+%             
+%             % perform operations
+%             dfXY = dfX + dfY
+%             df1 = dfXY + dfX
+%             df2 = dfXY + (100*dfXsubset)
+%             df3 = (dfX+dfY).*dfZ + dfXY
+%         end
         
         function mathOperationsMiscellaneousTest1D(t)
             df = t.dfMissing1;
