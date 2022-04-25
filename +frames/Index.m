@@ -413,7 +413,7 @@ classdef Index
             % Internal union function to create combined index of obj and all supplied index objects            
             %
             % The output index will keep the requireUnique and requireUniqueSorted settings from obj object. 
-            % Different alignment methods can be chosen.
+            % Different option for handling duplicate values are supported.
             %
             % input:
             %   others_cell:  cell array with (one or more) index objects to combine
@@ -432,19 +432,24 @@ classdef Index
             %                        case of exact equal indices (for whicha 1:1 mapping will be used). An
             %                        error will be raised in case of duplicates and not exactly equal.            
             % 
+            %     - 'expand':        align values between different indices. In case of duplicates, all combinations
+            %                        between indices are added.
+            %                        (option only supports union between 2 indices)
             %
             %     - 'none':          no alignment of values, append all values of indices together, even if that
             %                        creates new duplicates.                                
             %
             %
             % output:
-            %   obj_new:  new Index object with new aligned index (1:N)
-            %   ind_cell:  cell array with position index (1:N) with reference to original object
-            %              (or NaN in case no match)           
+            %   obj_new:   new Index object with new aligned index with N values
+            %   ind_cell:  cell array with for each input index object in the union an position index (1:N)
+            %              into original object.
+            %              (position index contain a NaN value if given index value is not present)
             arguments
                 obj
                 others_cell cell
-                duplicateOption {mustBeMember(duplicateOption, ["unique", "duplicates", "duplicatesstrict", "none"])} = "duplicates"   
+                duplicateOption {mustBeMember(duplicateOption, ...
+                                ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"   
             end
                         
             % handle singletons indices
@@ -472,44 +477,63 @@ classdef Index
                 end                
             end
                                   
-            % check uniqueness      
+            % check uniqueness option      
             if obj.requireUnique
                  assert(duplicateOption=="unique", 'frames:Index:union:requireUniqueMethod', ...
                      "Only duplicateOption 'unique' allowed in union for index with requireUnique.");     
             end
                                                                 
-            % concat all inputs
-            lengths = [obj.length() cellfun(@length, others_cell)];            
+            % concat all inputs & get combined unique index
+            objlen = [obj.length() cellfun(@length, others_cell)];            
             obj_new = obj.vertcat_(others_cell{:}); % no error checking on unique yet
-                       
-            % get unique index and row position index            
             uniqind = obj_new.value_uniqind;
             
             if duplicateOption=="none"
-                % no alignment, keep all concatenated values (including duplicates)
+                % no alignment, keep all raw concatenated values (including duplicates)
                 if obj.warningNonUnique_ && obj.isunique() && ~obj_new.isunique()
                       warning('frames:Index:notUnique','Index value is not unique.')
                 end
                 
-                % create simple position index - no alignment - order of 
+                % create simple position index - no alignment
                 Nothers = length(others_cell);
                 ind_cell = cell(Nothers+1,1);               
                 p0 = 1;
-                posref_empty = nan(obj_new.length(),1) 
+                posref_empty = nan(obj_new.length(),1); 
                 for k=1:Nothers+1
                      posref = posref_empty;
-                     p1 = p0+lengths(k);
-                     posref(p0:p1-1) = 1:lengths(k);
+                     p1 = p0+objlen(k);
+                     posref(p0:p1-1) = 1:objlen(k);
                      p0 = p1;
                      ind_cell{k} = posref;                     
-                end                                   
+                end
+                
+             elseif duplicateOption=="expand"
+                    % align values, and expand duplicates
+                    assert(length(others_cell)<2,"expand option only allowed with 2 index objects"); %current implementation limitation
+                    
+                    % create indices per index object
+                    uniqind1 = uniqind(1:objlen(1));
+                    uniqind2 = uniqind(objlen(1)+1:end);
+                    
+                    % get expanded index (outer product of duplicates of both indices)
+                    [posind1_expand, posind2_expand, posind_expand] = expandIndex(uniqind1,uniqind2);
+                                                       
+                    % create new index obj + cell index
+                    if ~obj.requireUniqueSorted
+                        ind_cell = {posind1_expand; posind2_expand};                                                
+                    else                        
+                        % sort by uniqind if required
+                        [~, sortind] = sort(uniqind(posind_expand));
+                        ind_cell = {posind1_expand(sortind); posind2_expand(sortind)};                        
+                    end
+                    obj_new = obj_new.getSubIndex_(posind_expand,':');  
 
             else 
                 % align values
                 if  duplicateOption=="duplicates" && ~obj_new.isunique()
                     % align duplicates between different indices by its order
                     unique_section = cellfun(@(x) x.requireUnique || length(x)==0, [{obj} others_cell]);                                
-                    label_dupl = labelDuplicatesInSections(uniqind, lengths, unique_section);
+                    label_dupl = labelDuplicatesInSections(uniqind, objlen, unique_section);
                     uniqind = [ uniqind label_dupl];
                 end
                 
@@ -530,21 +554,69 @@ classdef Index
                 end            
 
                 % slice full position index for each input index
-                id_cell = mat2cell( id, lengths, 1);
+                id_cell = mat2cell( id, objlen, 1);
 
                 % get for each item in new index a position reference to original line
                 % (if given item does not exist in given object, value is NaN)
                 ind_cell = cell(size(id_cell));
-                Nobj_new = obj_new.length();
+                ind_empty = nan(obj_new.length(),1); 
                 for k=1:length(id_cell)
                     id_s = id_cell{k};                
-                    ind_s = nan(Nobj_new,1);
+                    ind_s = ind_empty;
                     ind_s(flip(id_s))= length(id_s):-1:1; %flipped to keep first occurrence in case of (overlapping) duplicates
                     % assign to cell array
                     ind_cell{k} = ind_s;
                 end
-             end
+            end
             
+             
+            function [posind1_expand, posind2_expand, posind_expand] = expandIndex(uniqind1, uniqind2)
+                % internal function to align both input vectors value, and output position index to the aligned vector.
+                % duplicate values between the vectors will be expanded with all combinations (outer product).
+                %
+                % first focus on values present in obj1
+                mask_obj2 = ismember(uniqind2,uniqind1);
+                uniqind2_common = uniqind2(mask_obj2);                   % selection of obj2 values also present in obj1
+                uniqind2_common_conv = (1:length(mask_obj2))';
+                uniqind2_common_conv = uniqind2_common_conv(mask_obj2);  % to convert pos indices of uniqind2common to to original uniqind2
+
+                % get unique ids (sequential, without missing values as needed for grouping method with histc in next step)
+                [uniqind_seq_val, ~, uniqind_seq]= unique([uniqind1;uniqind2_common],'stable');
+                uniqind1_seq = uniqind_seq(1:length(uniqind1));
+                uniqind2common_seq = uniqind_seq(end-length(uniqind2_common)+1:end);        
+
+                % find position indices in obj2 for each unique id
+                [~,indicesList2common] = sort(uniqind2common_seq);
+                indicesList2 = uniqind2_common_conv(indicesList2common); % convert to pos indices original uniqind2 (compensate for shift in numbering from applying mask_obj2 before)
+                groups = (1:length(uniqind_seq_val))';
+                groupCount2 = histc(uniqind2common_seq, groups);         %#ok<HISTC>
+                posind2_cell = mat2cell(indicesList2, groupCount2, 1);   % cell array with position reference to each unique id in obj2
+                posind2_cell((groupCount2==0)) = {NaN};                  % add NaN position index value if missing from obj2
+
+                % get expanded position index obj1
+                posind1 = (1:length(uniqind1_seq))';
+                groupCount2_nonzero = groupCount2;
+                groupCount2_nonzero(groupCount2==0) = 1;                 % minimal 1 
+                posind1_expandcount = groupCount2_nonzero(uniqind1_seq);                
+                posind1_expand = repelem(posind1, posind1_expandcount);
+                
+                % get expanded position index obj2
+                posind2_expand = cell2mat( posind2_cell(uniqind1_seq) );
+
+                % handle values only in obj2
+                Nmissing_obj1 = sum(~mask_obj2);
+                if Nmissing_obj1>0
+                    posind1_expand = [posind1_expand; nan(Nmissing_obj1,1)];
+                    posind2_exclusive = find(~mask_obj2);
+                    posind2_expand = [posind2_expand; posind2_exclusive ];
+                end
+                
+                % get combined expanded index (without NaN, referencing values of concatented obj_new)
+                posind_expand = posind1_expand;
+                if Nmissing_obj1>0
+                   posind_expand(end-Nmissing_obj1+1:end) = posind2_exclusive + length(uniqind1);
+                end                
+            end
             
             function out = labelDuplicatesInSections(x, L, unique_section)
                 % get label vector for duplicate values of x, per section defined by lengths in L
