@@ -272,15 +272,20 @@ classdef MultiIndex < frames.Index
             [dim_common, dim_common_ind1, dim_common_ind2, dim_unique_ind1, dim_unique_ind2] = obj1.getMatchingDims(obj2);                       
             NextraDims2 = length(dim_unique_ind2);
             NextraDims1 = length(dim_unique_ind1);
+            extraDimsNeeded = NextraDims1>0 || NextraDims2>0;
             assert(allowDimExpansion | NextraDims2==0, ...
                           "Dimension expansion disabled, while obj2 has new dimension(s)");                        
             
             %<todo: some check that expansion and duplicates in index are not compatible (?) >
             
             if ~isempty(dim_common)
+                 % relax duplication handling (in case of expansion)
+                 if extraDimsNeeded && duplicateOption=="duplicatesstrict"
+                     duplicateOption="duplicates";
+                 end                
                  % run alignIndex from Index on common dimensions             
-                 obj1_common = obj1.getSubIndex(':', dim_common_ind1);
-                 obj2_common = obj2.getSubIndex(':', dim_common_ind2);
+                 obj1_common = obj1.getSubIndex_(':', dim_common_ind1);
+                 obj2_common = obj2.getSubIndex_(':', dim_common_ind2);
                  [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = ...
                       alignIndex_(obj1_common, obj2_common, alignMethod, duplicateOption);
                       
@@ -291,7 +296,7 @@ classdef MultiIndex < frames.Index
             end
                                          
             % expand index if required
-            if NextraDims1>0 || NextraDims2>0
+            if extraDimsNeeded
                 [objnew, ind1_new , ind2_new] = expandIndexWithDim(obj1, obj2, id1_raw, id2_raw);
             end                 
             
