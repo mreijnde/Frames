@@ -274,19 +274,22 @@ classdef MultiIndex < frames.Index
             NextraDims1 = length(dim_unique_ind1);
             extraDimsNeeded = NextraDims1>0 || NextraDims2>0;
             assert(allowDimExpansion | NextraDims2==0, 'frames:MultiIndex:alignIndex:expansiondisabled', ...
-                          "Dimension expansion disabled, while obj2 has other dimension(s) wrt. obj1.");                        
+                          "Dimension expansion disabled, while obj2 has other dimension(s) as obj1.");                        
             
             %<todo: some check that expansion and duplicates in index are not compatible (?) >
             
-            if ~isempty(dim_common)
-                 % use 'expansion' option in case of adding new dimensions
-                 if extraDimsNeeded
-                     % <TODO> add uniqueness check of input (verify if this is needed or not)
-                     duplicateOption="expand";
-                 end                
-                 % run alignIndex from Index on common dimensions             
+            if ~isempty(dim_common)            
+                 % get common dimension indices to align on
                  obj1_common = obj1.getSubIndex_(':', dim_common_ind1);
-                 obj2_common = obj2.getSubIndex_(':', dim_common_ind2);
+                 obj2_common = obj2.getSubIndex_(':', dim_common_ind2);                 
+                 % use 'expansion' option in case of adding new dimensions
+                 if extraDimsNeeded && duplicateOption~="expand"
+                     assert(obj1.isunique() && obj2.isunique(), 'frames:MultiIndex:alignIndex:invalidduplicatesexpansion', ...
+                        "Index is not unique. Duplicate values are not supported in case of dimension expansion " + ...
+                        "using duplicateOption " + duplicateOption);                                                                       
+                     duplicateOption="expand";
+                 end                     
+                 % run alignIndex from Index on common dimensions             
                  [objnew, ind1_new, ind2_new] = ...
                      alignIndex@frames.Index(obj1_common, obj2_common, alignMethod, duplicateOption);
                 
