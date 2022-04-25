@@ -95,12 +95,7 @@ classdef Index
             % check if set values are allowed
             obj.valueChecker(obj.value_);
         end
-        
-        function obj=getSubIndex_(obj,selector,~)
-            % get Index object of sub selection based on matlab selector
-            obj.value_ = obj.value_(selector);                        
-        end
-        
+                
         function idx = get.value(obj)
             idx = obj.getValue();
         end
@@ -751,7 +746,12 @@ classdef Index
                 value = value';
             end
             obj.value_ = value;                  
-        end        
+        end  
+        
+        function obj=getSubIndex_(obj,selector,~)
+            % get Index object of sub selection based on matlab selector
+            obj.value_ = obj.value_(selector);                        
+        end
         
         function out = getname(obj)
             % get index name

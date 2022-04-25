@@ -32,26 +32,7 @@ classdef MultiIndex < frames.Index
                 obj.name = "";
             end                        
         end
-                       
-        
-         function obj=getSubIndex_(obj,selector, dimindex)
-            % get Index object of sub selection based on (matlab) selector
-            %
-            % internal use: no validation checks, see details at getSubIndex()
-            %                         
-            % select dimensions            
-            if ~iscolon(dimindex)
-                obj.value_ = obj.value_(dimindex);
-            end
-            % select rows
-            if ~iscolon(selector)
-                for i=1:obj.Ndim
-                  obj.value_{i} = obj.value_{i}.getSubIndex(selector);
-                end
-            end
-        end
-        
-        
+                               
         function out = getSelector(obj,selector, positionIndex, allowedSeries, userCall, asFilter)
             % get valid matlab indexer for array operations based on supplied selector
             %
@@ -671,7 +652,23 @@ classdef MultiIndex < frames.Index
                obj.nameChecker();
             end
         end
-        
+
+        function obj=getSubIndex_(obj,selector, dimindex)
+            % get Index object of sub selection based on (matlab) selector
+            %
+            % internal use: no validation checks, see details at getSubIndex()
+            %                         
+            % select dimensions            
+            if ~iscolon(dimindex)
+                obj.value_ = obj.value_(dimindex);
+            end
+            % select rows
+            if ~iscolon(selector)
+                for i=1:obj.Ndim
+                  obj.value_{i} = obj.value_{i}.getSubIndex(selector);
+                end
+            end
+        end        
         
         function out = getname(obj)
             % get array of names for every dimension (from Index objects)
