@@ -672,8 +672,8 @@ classdef MultiIndex < frames.Index
         end
         
         function Ndim = get_Ndim(obj)
-            % get number of dimensions
-            Ndim = numel(obj.value_);
+            % get number of dimensions            
+            Ndim = size(obj.value_,2);
         end
         
         

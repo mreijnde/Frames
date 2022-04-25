@@ -468,7 +468,7 @@ classdef Index
             % handle equal indices
             if (duplicateOption=="duplicates" || duplicateOption=="duplicatesstrict") || ...
                (duplicateOption=="unique" && obj.isunique())                
-                allsame = all(cellfun(@(x) isequal(x.value,obj.value), others_cell));
+                allsame = all(cellfun(@(x) isequal(x.value_,obj.value_), others_cell));
                 if allsame
                     % shortcut for performance: 1-to-1 mapping of indices
                     obj_new = obj;
@@ -752,7 +752,7 @@ classdef Index
             objnew = [];
             ind1_new = []; ind2_new = [];            
             % handle equal and singleton cases
-            if isequal(obj1.value,obj2.value)
+            if isequal(obj1.value_,obj2.value_)
                 objnew = obj1;
                 ind1_new = (1:length(obj1))';
                 ind2_new = ind1_new;                
