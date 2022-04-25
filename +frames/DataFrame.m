@@ -2421,16 +2421,7 @@ end
                  getAlignedDFs(df1, df2, alignMethod, allowDimExpansion, missingValue1, missingValue2);
             % apply element wise function (to aligned subset of data)
             df = df1_aligned;
-%             if all(rowmask2) && all(colmask2)
-                % assign all data
-                df.data_ = func( df1_aligned.data_, df2_aligned.data_);
-%             else
-%                 % assign sub-selection of data
-%                 data_new = func( df1_aligned.data_(rowmask2,colmask2), df2_aligned.data_(rowmask2,colmask2));                
-%                 assert( isa(data_new, class(df.data_)), 'frames:DataFrame:operatorElementWise:unequalTypes', ...
-%                     "operator output is different type than stored in dataframe. Not allowed to asignment to sub-selection");
-%                 df.data_(rowmask2,colmask2) = data_new;
-%             end
+            df.data_ = func( df1_aligned.data_, df2_aligned.data_);
         else
             % use obj dataframe and directly apply elementwise function
             df = df1;
