@@ -720,21 +720,26 @@ classdef DataFrame
             % assign data from each dataframe in the list
             elements_assigned = false(size(dfnew));            
             for i=dforder
-                % get position indices                
+                % get non NaN position indices
                 rowind = rowsnew_ind{i};
+                rowindMask = ~isnan(rowind);
+                rowindFiltered = rowind(rowindMask);
+                
                 colind = colsnew_ind{i};
+                colindMask = ~isnan(colind);
+                colindFiltered = colind(colindMask);
                 % checks
                 assert(isa(df{i}.data_,type),'frames:concat:differentDatatype', ...
                      'frames do not have the same data type')
-                if any(elements_assigned(rowind,colind),'all')
+                if any(elements_assigned(rowindMask ,colindMask ),'all')
                     if options.order=="keepFirst", ordername="first"; else, ordername="last"; end 
                     warning('frames:concat:overlap', ...
                       "Overlapping values (with same row and column index) between different dataframes detected. " + ...
                       "Value of " + ordername + " dataframe will be used.");                   
                 end
-                elements_assigned(rowind,colind)= true;
+                elements_assigned(rowindMask ,colindMask)= true;
                 % assign values
-                dfnew.data_(rowind,colind) = df{i}.data_;
+                dfnew.data_(rowindMask,colindMask) = df{i}.data_(rowindFiltered, colindFiltered);
             end            
         end
                

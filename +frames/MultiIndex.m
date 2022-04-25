@@ -228,7 +228,7 @@ classdef MultiIndex < frames.Index
         
         
         
-        function [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = alignIndex(obj1, obj2, alignMethod, duplicateOption, allowDimExpansion)
+        function [objnew, ind1_new , ind2_new] = alignIndex(obj1, obj2, alignMethod, duplicateOption, allowDimExpansion)
             % function to create new aligned MultiIndex based on common dimensions 
             % of both MultiIndex objects and implicit expansion of missing dimensions
             %
@@ -260,7 +260,7 @@ classdef MultiIndex < frames.Index
             if nargin<5, allowDimExpansion=true; end            
             
             % shortcut alignment code in case of equal Indices or singleton (for performance)            
-            [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_handle_simple_(obj1, obj2);                        
+            [objnew, ind1_new, ind2_new] = obj1.alignIndex_handle_simple_(obj2);            
             if ~isempty(objnew), return; end
                        
             % convert Index to MultiIndex if required
@@ -286,9 +286,18 @@ classdef MultiIndex < frames.Index
                  % run alignIndex from Index on common dimensions             
                  obj1_common = obj1.getSubIndex_(':', dim_common_ind1);
                  obj2_common = obj2.getSubIndex_(':', dim_common_ind2);
-                 [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = ...
+                 [objnew, ind1_new , ind2_new] = ...
                       alignIndex_(obj1_common, obj2_common, alignMethod, duplicateOption);
-                      
+                 % create id index
+                 pos=1:length(objnew);
+                 
+                 id1_raw = nan( length(obj1),1);
+                 mask=~isnan(ind1_new);                 
+                 id1_raw(ind1_new(mask))=pos(mask);
+                 
+                 id2_raw = nan( length(obj2),1);
+                 mask=~isnan(ind2_new);                 
+                 id2_raw(ind2_new(mask))=pos(mask);                 
             else
                 % all items same id in case of no common dimensions
                 id1_raw = ones( length(obj1),1);
@@ -321,12 +330,21 @@ classdef MultiIndex < frames.Index
                 ind1_new = repelem(1:length(id1), replicate_count )'; 
                 ind1_new(ind1_new>length(id1))=NaN; 
 
+                if length(ind1_new)<Nunique                    
+                    ind1_new_tmp = ind1_new;                                
+                    ind1_new = NaN(Nunique,1);
+                    ind1_new(1:length(ind1_new_tmp)) = ind1_new_tmp;
+                end
+                
                 % get row numbers of aligned index for obj2            
                 ind2_cell = getPosIndicesForEachValue(id2, Nunique);
-                ind2_cell_aligned = ind2_cell(id1);
+                if length(id1)<length(id2)
+                    id1_missing = setxor(id1,1:Nunique);
+                    id1 =[id1;id1_missing];
+                end
+                ind2_cell_aligned = ind2_cell(id1);                
                 ind2_new = vertcat(ind2_cell_aligned{:});
-
-                                                  
+                
                 % create new expanded MultiIndex (with dimensions as in obj1)                        
                 assert( (NextraDims1==0 || ~any(isnan(ind1_new)) ) && ...
                         (NextraDims2==0 || ~any(isnan(ind2_new)) ), ...
@@ -970,30 +988,24 @@ classdef MultiIndex < frames.Index
             obj.setvalue(obj.value_); % check if properties are respected    
         end
         
-        
-        function pos = positionIn(obj,target,userCall)
+
+        function pos = positionIn(obj,target, ~)
             % find position of the Index into the target
-            if nargin < 3, userCall = true; end
             if ~isIndex(target)
                 target=frames.MultiIndex(target);
                 assert(target.Ndim==obj.Ndim, 'frames:MultiIndex:positionIn:unequalDim', ...
                      "Unequal dimensions obj (%i) and target (%i).", obj.Ndim, target.Ndim);
                 target.name = obj.name;
             end
-            % get position indices
-            [~,posall] = target.union_({obj},'unique');
-            pos = posall{2};
-            % check if no new values created in union function            
-            assert(all(pos<=length(target)), 'frames:MultiIndex:positionIn:NotWhole', ...
-                 "Not all obj values found in target.");
-            
-            if obj.requireUniqueSorted_
-                % convert to logical output array (for compatiblility with Index)                
-                mask = false(target.length(),1);
-                mask(pos) = true;
-                pos = mask;                 
-            end            
+            % get common unique index 
+            obj_new = obj.vertcat_(target); % no error checking on unique yet
+            uniqind = obj_new.value_uniqind;
+            uniqind_obj = uniqind(1:length(obj));
+            uniqind_target = uniqind(length(obj)+1:end);
+            % get position index
+            pos = obj.positionIn_(uniqind_obj, uniqind_target);
         end
+                    
         
        function out = ismember(obj, value)
             % check if value(s) is/are present in index

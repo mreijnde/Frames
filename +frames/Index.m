@@ -304,17 +304,23 @@ classdef Index
             % find position of the Index into the target
             if nargin < 3, userCall = true; end
             target = obj.getValue_andCheck(target,userCall);
+            pos = obj.positionIn_(obj.value_, target);
+        end
+        
+       function pos = positionIn_(obj,objvalue, targetvalue)
+            % internal, find position of the Index into the target            
             if obj.requireUnique_
-                assertFoundIn(obj.value_,target)
+                assertFoundIn(objvalue,targetvalue)
                 if obj.requireUniqueSorted_
-                    pos = ismember(target,obj.value_);
+                    pos = ismember(targetvalue,objvalue);
                 else
-                    [~,~,pos] = intersect(obj.value_,target,'stable');
+                    [~,~,pos] = intersect(objvalue,targetvalue,'stable');
                 end
             else
-                pos = findPositionIn(obj.value_,target);
+                pos = findPositionIn(objvalue,targetvalue);
             end
-        end
+        end 
+        
              
        function obj = union(obj,index2)
            % unify two indices
@@ -432,11 +438,9 @@ classdef Index
             %
             %
             % output:
-            %   obj_new:  new Index object
-            %   ind_cell: cell array with position index per supplied index object,
-            %             including obj itself as first item.
-            %             Position index describes the position for each original line in the newly created index            
-            %
+            %   obj_new:  new Index object with new aligned index (1:N)
+            %   ind_cell:  cell array with position index (1:N) with reference to original object
+            %              (or NaN in case no match)           
             arguments
                 obj
                 others_cell cell
@@ -480,16 +484,17 @@ classdef Index
                        
             % get unique index and row position index            
             uniqind = obj_new.value_uniqind;
-            ind = (1:obj_new.length())';
+            id_raw = (1:obj_new.length())';
             
             if duplicateOption=="none"
                 % no alignment, keep all concatenated values (including duplicates)
                 if obj.warningNonUnique_ && obj.isunique() && ~obj_new.isunique()
                       warning('frames:Index:notUnique','Index value is not unique.')
                 end
+                id = id_raw;
             else 
                 % align values
-                if ~obj.requireUnique && duplicateOption=="duplicates" && ~obj_new.isunique()
+                if ~obj_new.isunique() && duplicateOption=="duplicates"
                     % align duplicates between different indices by its order
                     unique_section = cellfun(@(x) x.requireUnique || length(x)==0, [{obj} others_cell]);                                
                     label_dupl = labelDuplicatesInSections(uniqind, lengths, unique_section);
@@ -498,9 +503,9 @@ classdef Index
                 
                 % align index and update position index accordingly
                 if obj.requireUniqueSorted                    
-                   [~, ia, ind] = unique(uniqind, 'rows', 'sorted');                                      
+                   [~, ia, id] = unique(uniqind, 'rows', 'sorted');                                      
                 else                                                         
-                   [~, ia, ind] = unique(uniqind, 'rows', 'stable');                    
+                   [~, ia, id] = unique(uniqind, 'rows', 'stable');                    
                 end
                 obj_new = obj_new.getSubIndex_(ia,':');  
             end
@@ -513,7 +518,20 @@ classdef Index
             end            
                            
             % slice full position index for each input index
-            ind_cell = mat2cell( ind, lengths, 1);
+            id_cell = mat2cell( id, lengths, 1);
+            
+            % get for each item in new index a position reference to original line
+            % (if given item does not exist in given object, value is NaN)
+            ind_cell = cell(size(id_cell));
+            Nobj_new = obj_new.length();
+            for k=1:length(id_cell)
+                id_s = id_cell{k};                
+                ind_s = nan(Nobj_new,1);
+                ind_s(flip(id_s))= length(id_s):-1:1; %flipped to keep first occurrence in case of (overlapping) duplicates
+                % assign to cell array
+                ind_cell{k} = ind_s;
+            end
+            
             
             
             function out = labelDuplicatesInSections(x, L, unique_section)
@@ -594,7 +612,7 @@ classdef Index
     
     methods(Hidden)
         
-         function [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_(obj1, obj2, alignMethod, duplicateOption, ~)
+         function [objnew, ind1_new, ind2_new] = alignIndex_(obj1, obj2, alignMethod, duplicateOption, ~)
             % internal function to create new aligned Index of two Index objects            
             %
             % see alignIndex() for description
@@ -605,7 +623,7 @@ classdef Index
             %          
 
             % handle equal Indices or singleton indices without alignment code (for performance)            
-            [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_handle_simple_(obj1, obj2);                        
+            [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2);                        
             if ~isempty(objnew)
                 assert(duplicateOption~="none" || (obj1.isunique() && obj2.isunique()), ...
                    'frames:Index:alignIndex:duplicatevalues',...
@@ -624,26 +642,26 @@ classdef Index
             
             % get matching rows of both Index objects                                 
             [objnew, ind_cell] = obj1.union_({obj2}, duplicateOption);            
-            [id1_raw, id2_raw] = ind_cell{:};
+            [ind1_raw, ind2_raw] = ind_cell{:};
             
             % create common masks
-            mask1 = ismember(id1_raw, id2_raw);
-            mask2 = ismember(id2_raw, id1_raw);    
+            mask1 = ~isnan(ind1_raw);
+            mask2 = ~isnan(ind2_raw);
 
             % define row ids in new index based on chosen method
             switch alignMethod
-                case "inner"                    
-                    id = id1_raw(mask1);              
+                case "inner"
+                    mask = mask1 & mask2;      
                 case "left"
-                    id = id1_raw;                                                            
+                    mask = mask1;                    
                 case "strict"
                     assert( all(mask1) & all(mask2), 'frames:Index:alignIndex:unequalIndex', ...
-                        "Unequal values in dimension not allowed in strict alignMethod");
-                    id = id1_raw;                    
-                case "full"                                         
-                    id = 1:length(objnew);
-                case "strictunique"                                         
-                    id = 1:length(objnew);          
+                        "Unequal values in dimension not allowed in strict alignMethod");                    
+                    mask = true(size(mask1));
+                case "full"
+                    mask = true(size(mask1));                    
+                case "strictunique"                                                             
+                    mask = true(size(mask1));
                     assert(isequal(obj1.value_uniq_,obj2.value_uniq_), 'frames:Index:alignIndex:unequalIndex', ...
                         "Indices contain different unique values, not allowed in strict_withduplicates alignMethod");
                 otherwise 
@@ -651,30 +669,21 @@ classdef Index
             end
 
             % only output selected rows in index
-            objnew = objnew.getSubIndex_(id,':');
-
-            % get for each item in new index a position reference to original line in obj1 and obj2
-            % (if given item does not exist in given object, value is NaN)
-            ind1_new = nan(length(id),1);
-            [~,pos1_obj,pos1_id] = intersect(id1_raw, id);
-            ind1_new(pos1_id) = pos1_obj;            
-
-            ind2_new = nan(length(id),1);
-            [~,pos2_obj, pos2_id] = intersect(id2_raw, id);
-            ind2_new(pos2_id) = pos2_obj;  
+            objnew = objnew.getSubIndex_(mask,':');
+            ind1_new = ind1_raw(mask);
+            ind2_new = ind2_raw(mask);
         end
               
         
         
-        function [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_handle_simple_(obj1, obj2)
+        function [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2)
             % internal function to check and handle simple cases (equal index or singleton)
             %            
             % check
             assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");   
             % default empty
             objnew = [];
-            ind1_new = []; ind2_new = [];
-            id1_raw = [];  id2_raw = [];            
+            ind1_new = []; ind2_new = [];            
             % handle equal and singleton cases
             if isequal(obj1.value,obj2.value)
                 objnew = obj1;

@@ -91,7 +91,7 @@ classdef multiIndexTest < AbstractFramesTests
             t.verifyError(@indexWrongDims,'frames:MultiIndex:positionIn:unequalDim')
             function indexWrongDims(), index.positionIn([40,30,20]); end
             
-            t.verifyError(@indexNotWhole,'frames:MultiIndex:positionIn:NotWhole')
+            t.verifyError(@indexNotWhole,'frames:assertFoundIn')
             function indexNotWhole(), index.positionIn([40,30,20]'); end
                         
             t.verifyEqual(index.positionIn([40,50,30,20,10]'),[3 5 4 3]')
@@ -107,7 +107,7 @@ classdef multiIndexTest < AbstractFramesTests
              % 2D examples
              multiindex = frames.MultiIndex({[1,2,3],frames.Index([5,6,7],name="test"),["aa","bb","cc"]});
              t.verifyEqual( multiindex.positionIn({{2,6,"bb"},{1,5,"aa"},{3,7,"dd"},{3,7,"cc"}}), [2,1,4]');
-             t.verifyError( @index2DNotAllInTarget, 'frames:MultiIndex:positionIn:NotWhole');
+             t.verifyError( @index2DNotAllInTarget, 'frames:assertFoundIn');
              function index2DNotAllInTarget(), multiindex.positionIn({{2,6,"bb"},{2,5,"aa"},{3,7,"cc"}}), end
              
             %warning('on','frames:Index:notUnique')
