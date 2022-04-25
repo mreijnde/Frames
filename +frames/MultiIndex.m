@@ -296,7 +296,10 @@ classdef MultiIndex < frames.Index
                         "Cannot expand dimension(s) if common dimension(s) contain uncommon values between objects.");                 
                 if NextraDims1>0                    
                     obj1_newdim = obj1.getSubIndex_(ind1_new, dim_unique_ind1);
-                    objnew.value_(end+1:end+obj1_newdim.Ndim) = obj1_newdim.value_;                    
+                    objnew.value_(end+1:end+obj1_newdim.Ndim) = obj1_newdim.value_;
+                    % restore dimension ordering of obj1
+                    [~, dimorderobj1]=intersect(objnew.name, obj1.name);
+                    objnew.value_ = objnew.value_(dimorderobj1);
                 end
                 if NextraDims2>0
                     obj2_newdim = obj2.getSubIndex_(ind2_new, dim_unique_ind2);
@@ -406,7 +409,7 @@ classdef MultiIndex < frames.Index
             %    common_indX:  array with common dimension indices of MultiIndex object X
             %    unique_indX:  array with unique dimension indices of MultiIndex object X
             %
-            [common, common_ind1, common_ind2] = intersect(obj1.name, obj2.name);
+            [common, common_ind1, common_ind2] = intersect(obj1.name, obj2.name, 'stable');
             [~, unique_ind1, unique_ind2] = setxor(obj1.name, obj2.name);
         end
         
