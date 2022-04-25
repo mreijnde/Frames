@@ -2019,6 +2019,126 @@ classdef DataFrame
             df.rows_.name = string(t.Properties.DimensionNames{1});
         end
         
+        
+        function df = fromDataND(dat, dimValues, dimNames, options)
+            % convert NDarray to MultiIndex DataFrame with given dimension names and dimension ordering
+            % 
+            % INPUT:
+            % - dat:       ndarray (Ndim dimensions)
+            % - dimValues: cellarray(Ndim) with every cell a vector with values along corresponding dimension
+            % - dimNames:  string array(Ndim) with dimension names
+            % 
+            % (optional) name-value arguments:
+            % - RowDim: string array with dimension names (and order) for DataFrame rows
+            % - ColDim: string array with dimension names (and order) for DataFrame columns
+            %
+            % OUTPUT:
+            % - df: DataFrame with MultiIndex containing the data
+            %
+            arguments
+                dat
+                dimValues
+                dimNames
+                options.RowDim = string(missing)
+                options.ColDim = string(missing)
+            end
+            Ndim = ndims(dat);            
+            % check input sizes
+            assert(length(dimValues)==Ndim && isequal(size(dat), cellfun(@numel, dimValues)), ...
+                  'frames:DataFrame:fromDataND:invaliddimvalues',...
+                  "Error, number of dimensions in dimValues do not match data(" + strjoin(string(size(dat)),",") +").");
+            assert(length(dimNames)==Ndim, 'frames:DataFrame:fromDataND:invaliddimnames',...
+                  "Error, number of dimensions in dimValues do not match data.");            
+            % get dimension mapping to rows/cols from input
+            RowDim = options.RowDim;
+            ColDim = options.ColDim;
+            missingRows = any(ismissing(RowDim));
+            missingCols = any(ismissing(ColDim));
+            if (missingRows && missingCols)
+                % default colseries df
+                RowDim = dimNames;
+                ColDim = [] ;
+            elseif missingRows
+                % fill dimRows with remaining dims
+                if ~isempty(ColDim)
+                    RowDim = setxor(ColDim,dimNames,'stable');
+                else
+                    RowDim = dimNames;
+                end
+            elseif missingCols
+                % fill dimCols with remaining dims
+                if ~isempty(RowDim)
+                    ColDim = setxor(RowDim,dimNames,'stable');
+                else
+                    ColDim = dimNames;
+                end                
+            end            
+            % get dimension indices
+            dimIndRows = [];
+            dimIndCols = [];
+            if ~isempty(RowDim), [~,~,dimIndRows] = intersect(RowDim, dimNames, 'stable'); end
+            if ~isempty(ColDim), [~,~,dimIndCols] = intersect(ColDim, dimNames, 'stable'); end
+            dimIndAll = [dimIndRows;dimIndCols];            
+            % check dimension indices
+            assert(length(dimIndRows)==length(RowDim), 'frames:DataFrame:fromDataND:invaliddims',...
+                "Error, not all row dimension are present");
+            assert(length(dimIndCols)==length(ColDim), 'frames:DataFrame:fromDataND:invaliddims',...
+                "Error, not all column dimension are present");
+            assert(length(dimIndAll ) == Ndim, 'frames:DataFrame:fromDataND:invaliddims',...
+                "Error, number of dimensions specified for rows and columns not equal to data dimension");
+            assert( length(unique(dimIndAll)) == Ndim, 'frames:DataFrame:fromDataND:invaliddims',...
+                "Error, specified row and column dimension not unique");            
+            % get expanded indices
+            [dimValueRows, Nrows] = getExpandedDimValues(dimValues, dimIndRows);
+            [dimValueCols, Ncols] = getExpandedDimValues(dimValues, dimIndCols);            
+            % reshuffle data dimensions and reshape
+            datNew = permute(dat, dimIndAll);
+            datNew = reshape(datNew, max(Nrows,1), max(Ncols,1));            
+            % create DataFrame
+            colseries = (Ncols==0);
+            rowseries = (Nrows==0);
+            df = frames.DataFrame(datNew, dimValueRows, dimValueCols, ...
+                RowDim=dimNames(dimIndRows), ColDim=dimNames(dimIndCols), ...
+                colseries=colseries, rowseries=rowseries ...
+                );            
+            
+            function [out, Nvalues] = getExpandedDimValues(dimValues, dimInd)
+                Ndim = length(dimInd);
+                % check if expansion is required
+                if Ndim >= 2
+                    % create position indices for elements of selected dims
+                    NelemInd = cell(Ndim,1);
+                    for i=1:Ndim
+                        values = dimValues{dimInd(i)};
+                        NelemInd{i} = 1:numel(values);
+                    end
+                    % create expand position indices
+                    NelemIndExpanded = cell(Ndim,1);
+                    [NelemIndExpanded{:}] = ndgrid( NelemInd {:});
+                    % create expanded dimension value vectors
+                    out = cell(Ndim,1);
+                    for i=1:Ndim
+                        values = dimValues{dimInd(i)};
+                        valuesExpanded = values(NelemIndExpanded{i});
+                        out{i} = valuesExpanded(:);
+                    end                    
+                else
+                    % no expansion required
+                    if Ndim==1
+                        out = dimValues(dimInd);
+                    else
+                        out = [];
+                    end
+                end
+                % get number of values
+                if Ndim>0
+                    Nvalues = length(out{1});
+                else
+                    Nvalues = 0;
+                end
+            end
+        end
+        
         function setDefaultSetting(name, value)
             % change a default (persistent) class settings
             df = frames.DataFrame();

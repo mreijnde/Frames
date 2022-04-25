@@ -1294,8 +1294,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             [datout, dimnames, dimvalues] = df.dataND();
             t.verifyEqual(datout, dat);
             t.verifyEqual(dimnames, ["Row","Col"]);
-            t.verifyEqual(dimvalues{1},[1;2;3;4]);
-            t.verifyEqual(dimvalues{2},["Var1";"Var2";"Var3";"Var4"]);
+            t.verifyEqual(dimvalues,{[1;2;3;4],["Var1";"Var2";"Var3";"Var4"]});
             
             % dataframe with Index indices, non-unique
             warning('off', 'frames:Index:notUnique');
@@ -1308,16 +1307,13 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             [datout, dimnames, dimvalues] = df.dataND();
             t.verifyEqual(datout, cat(3,[2,NaN;7,14;NaN,11],[16,NaN;9,4;NaN,5]));
             t.verifyEqual(dimnames, ["x","y","Col"]);
-            t.verifyEqual(dimvalues{1},[1;2;3]);
-            t.verifyEqual(dimvalues{2},[1;2]);
-            t.verifyEqual(dimvalues{3},["Var1";"Var2"]);
+            t.verifyEqual(dimvalues,{[1;2;3],[1;2],["Var1";"Var2"]});
             
             % colseries
             [datout, dimnames, dimvalues] = df.col("Var1").dataND();
             t.verifyEqual(datout, [2,NaN;7,14;NaN,11]);
             t.verifyEqual(dimnames, ["x","y"]);
-            t.verifyEqual(dimvalues{1},[1;2;3]);
-            t.verifyEqual(dimvalues{2},[1;2]);
+            t.verifyEqual(dimvalues,{[1;2;3],[1;2]});
             
             % dataframe with 2D MultiIndex rows & columns
             df = frames.DataFrame(dat(:,1:2), {[1,3,2,2], [1,2,1,2]}, {["Var2","Var1"],[1,2]}, ...
@@ -1332,6 +1328,55 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(datout, [NaN,11;5,NaN]);
             t.verifyEqual(dimnames, ["B","A"]);
             t.verifyEqual(dimvalues,{["Var1";"Var2"],[1;2]});            
+        end
+        
+        
+        function fromDataNDtest(t)
+            dataND = cat(3,[2,NaN;7,14;NaN,11],[16,NaN;9,4;NaN,5]);
+            % input errors
+            t.verifyError(@() frames.DataFrame.fromDataND( dataND, {["a","b","c"],[1,2]},["x","y","z"]), ...
+                'frames:DataFrame:fromDataND:invaliddimvalues');
+            t.verifyError(@() frames.DataFrame.fromDataND( dataND, {["a","b","c"],[1,2],[1,2,3]},["x","y","z"]), ...
+                'frames:DataFrame:fromDataND:invaliddimvalues');            
+            t.verifyError(@() frames.DataFrame.fromDataND( dataND, {["a","b","c"],[1,2],[1,2]},["x","y"]), ...
+                'frames:DataFrame:fromDataND:invaliddimnames');
+            
+            % dataframe colseries
+            df1a = frames.DataFrame.fromDataND(dataND,{["a","b","c"],[1,2],["A","B"]},["X","Y","Z"]);
+            df1b = frames.DataFrame.fromDataND(dataND,{["a","b","c"],[1,2],["A","B"]},["X","Y","Z"], ColDim=[]);
+            df1c = frames.DataFrame.fromDataND(dataND,{["a","b","c"],[1,2],["A","B"]},["X","Y","Z"], RowDim=["X","Y","Z"]);
+            df1_ref = frames.DataFrame( dataND(:),{["a","b","c","a","b","c","a","b","c","a","b","c"], ...
+                                                  [1 1 1 2 2 2 1 1 1 2 2 2], ...
+                                                  ["A","A","A","A","A","A","B","B","B","B","B","B"]}, ...
+                                                  [],   RowDim=["X","Y","Z"], colseries=true);
+            t.verifyEqual(df1a,df1_ref);
+            t.verifyEqual(df1b,df1_ref);
+            t.verifyEqual(df1c,df1_ref);
+            
+            % dataframe 2 rows, 1 col
+            df2a = frames.DataFrame.fromDataND( dataND, {["a","b","c"],[1,2],["A","B"]}, ["X","Y","Z"], ...
+                                   RowDim=["Y","Z"],ColDim=["X"]);
+            df2b = frames.DataFrame.fromDataND( permute(dataND,[2,3,1]),...
+                                  {[1,2], ["A","B"], ["a","b","c"]}, ["Y","Z","X"], RowDim=["Y","Z"],ColDim=["X"]);
+            df2c = frames.DataFrame.fromDataND( permute(dataND,[2,3,1]),...
+                                  {[1,2], ["A","B"], ["a","b","c"]}, ["Y","Z","X"], ColDim=["X"]);
+            df2d = frames.DataFrame.fromDataND( permute(dataND,[2,3,1]),...
+                                  {[1,2], ["A","B"], ["a","b","c"]}, ["Y","Z","X"], RowDim=["Y","Z"]);                              
+                               
+            df2_ref = frames.DataFrame( reshape(dataND,3,4)', {[1,2,1,2], ["A","A","B","B"]},{["a","b","c"]}, ...
+                                                    RowDim=["Y","Z"], ColDim=["X"]);
+            t.verifyEqual(df2a,df2_ref);
+            t.verifyEqual(df2b,df2_ref);
+            t.verifyEqual(df2c,df2_ref);
+            t.verifyEqual(df2d,df2_ref);
+            
+            % check dim errors
+            t.verifyError(@() frames.DataFrame.fromDataND(dataND,{[1,2,3],[1,2],[1,2]},["X","Y","Z"], ...
+                 RowDim=["Y","Z"],ColDim=["X","Y"]),'frames:DataFrame:fromDataND:invaliddims');
+            t.verifyError(@() frames.DataFrame.fromDataND(dataND,{[1,2,3],[1,2],[1,2]},["X","Y","Z"], ...
+                 RowDim=["Y","Z"],ColDim=["Y"]),'frames:DataFrame:fromDataND:invaliddims');
+            t.verifyError(@() frames.DataFrame.fromDataND(dataND,{[1,2,3],[1,2],[1,2]},["X","Y","Z"], ...
+                 RowDim=["Y","ZZZ"],ColDim=["X"]),'frames:DataFrame:fromDataND:invaliddims');   
         end
         
          
