@@ -72,6 +72,51 @@ classdef  privatefuncTest < AbstractFramesTests
             warning('on', 'groupsummaryMatrixFast:vectorizeNotSupported');
         end
         
-      
+        
+        function mergeSortTest(t)   
+           mergeSort = frames.DataFrame.getPrivateFuncHandle('mergeSort');
+           rng('default'); %fixed random seed
+           
+           v1 = sort(randi(1e6,1,1e4));
+           v2 = sort(randi(1e6,1,1e3));
+           v1_strings = string(v1);
+           v2_strings = string(v2);
+           
+           % row vectors
+           [Va, inda, ind_reva] = mergeSort(v1,v2, true);
+           [Vb, indb, ind_revb] = mergeSort(v1,v2, false);
+           v_comb = [v1,v2];
+           [Vc, indc] = sort(v_comb);
+           t.verifyEqual(Va,Vb);
+           t.verifyEqual(Va,Vc);
+           t.verifyEqual(inda,indb);
+           t.verifyEqual(inda,indc);
+           t.verifyEqual(ind_reva,ind_revb);
+           t.verifyEqual(Va(ind_reva),v_comb);           
+                     
+           % column vectors
+           [Va, inda, ind_reva] = mergeSort(v1',v2', true);
+           [Vb, indb, ind_revb] = mergeSort(v1',v2', false);
+           v_comb = [v1';v2'];
+           [Vc, indc] = sort(v_comb);
+           t.verifyEqual(Va,Vb);
+           t.verifyEqual(Va,Vc);
+           t.verifyEqual(inda,indb);
+           t.verifyEqual(inda,indc);
+           t.verifyEqual(ind_reva,ind_revb);
+           t.verifyEqual(Va(ind_reva),v_comb);
+           
+           % row vectors with string
+           [Va, inda, ind_reva] = mergeSort(v1_strings,v2_strings, true);
+           [Vb, indb, ind_revb] = mergeSort(v1_strings,v2_strings, false);
+           [Vc, indc] = sort([v1_strings,v2_strings]);
+           t.verifyEqual(Va,Vb);
+           t.verifyEqual(Va,Vc);
+           t.verifyEqual(inda,indb);
+           t.verifyEqual(inda,indc);
+           t.verifyEqual(ind_reva,ind_revb);                      
+        end    
+        
+        
     end
 end
