@@ -14,6 +14,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
     
     methods
         function obj = dataframeMultiIndexTest()
+            frames.DataFrame.restoreDefaultSettings();
             % create dataframe properties in constructor to turn off warning            
             obj.dfNoMissing  = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', {[6 2 1]}, [4 1 3]);
             obj.df2NoMissing = frames.DataFrame([1 2 3; 2 5 3;5 1 1]', {[6 2 1], ['a','c','a']}, [4 1 3]);
@@ -1101,18 +1102,23 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             dfd = frames.DataFrame(magic(5),frames.MultiIndex([1 3 2 3 1]',unique=false)); 
             t.verifyEqual(dfd-dfd, frames.DataFrame(zeros(5), dfd.rows_, dfd.columns_)); % exactly same index allowed
             t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:alignIndex:duplicatevalues')
-
-            dfd.settings.duplicateOption = "duplicates";
-            df8a = dfd{1:4,2:4}.alignMethod("full") - dfd{2:3,3:5};
+            
+            df8a = dfd{1:4,2:4}.alignMethod("full").duplicateOption("duplicates") - dfd{2:3,3:5};
             t.verifyEqual(df8a.data, [24,1,8,NaN;5,0,0,16;6,0,0,22;12,19,21,NaN]);
             t.verifyEqual(df8a.rows(:,1),[1;3;2;3]);
-
-            dfd.settings.duplicateOption = "unique";
-            df8b = dfd{1:4,2:4}.alignMethod("full") - dfd{2:3,3:5};
+            
+            df8b = dfd{1:4,2:4}.alignMethod("full").duplicateOption("unique") - dfd{2:3,3:5};
             t.verifyEqual(df8b.data, [24,1,8,NaN;5,0,0,16;6,0,0,22]);
             t.verifyEqual(df8b.rows(:,1),[1;3;2]);
             
+            df8c = dfd{1:4,2:4}.alignMethod("full").duplicateOption("expand") - dfd{2:3,3:5};
+            t.verifyEqual(df8c.data, [24,1,8,NaN;5,0,0,16;6,0,0,22;12,12,7,16]);
+            t.verifyEqual(df8c.rows(:,1),[1;3;2;3]);
+            
             warning('on', 'frames:MultiIndex:notUnique');
+            
+            
+            
             
             % row&column alignment
             dfC = frames.DataFrame(magic(4),{},{}).alignMethod("full");
@@ -1134,21 +1140,101 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(dfC2c, frames.DataFrame([16,3,13;9,0,12;4,0,1],dfC2c.rows_, dfC2c.columns_).alignMethod("left"));
         end
         
-%         function mathOperationsAlignTestMultiDim(t)
-%             ftestdat  = @(sx,sy) (1:sx)' + 10*(1:sy);
-%             
-%             % linear axes            
-%             dfX = frames.DataFrame( ftestdat(length(x),2)*1, frames.MultiIndex({1:3},name="x"), ["A","B"]);
-%             dfY = frames.DataFrame( ftestdat(length(y),2)*3, frames.MultiIndex({1:2},name="y"), ["A","B"]);
-%             dfZ = frames.DataFrame( ftestdat(length(z),2)*4, frames.MultiIndex({1:4},name="z"), ["A","B"]);
-%             dfXsubset = dfX{1:end-1};
-%             
-%             % perform operations
-%             dfXY = dfX + dfY
-%             df1 = dfXY + dfX
-%             df2 = dfXY + (100*dfXsubset)
-%             df3 = (dfX+dfY).*dfZ + dfXY
-%         end
+        function mathOperationsAlignTestMultiDim(t)
+            frames.DataFrame.restoreDefaultSettings();
+            
+            ftestdat  = @(sx,sy) (1:sx)' + 10*(1:sy);
+            % linear axes            
+            x=1:3;
+            y=1:2;
+            z=1:4;
+            k=11:13;
+            dfX = frames.DataFrame( ftestdat(length(x),2)*1, frames.MultiIndex({x},name="x"), ["A","B"]);
+            dfY = frames.DataFrame( ftestdat(length(y),2)*3, frames.MultiIndex({y},name="y"), ["A","B"]);
+            dfZ = frames.DataFrame( ftestdat(length(z),2)*4, frames.MultiIndex({z},name="z"), ["A","B"]);
+            dfK = frames.DataFrame( ftestdat(length(k),2)*4, frames.MultiIndex({k},name="k"), ["A","B"]);
+            
+            % perform operations
+            
+            % no common dimensions            
+            df0 = dfX+dfY;
+            [inddf0_0, inddf0_1] = meshgrid(x,y);
+            t.verifyEqual(df0.rows(:,1), inddf0_0(:))
+            t.verifyEqual(df0.rows(:,2), inddf0_1(:))
+            t.verifyEqual(df0{[1 2 4],2}, frames.DataFrame([84;87;88], ...
+                         frames.MultiIndex({[1 1 2],[1 2 2]}, unique=false), "B", RowDim=["x","y"]) )
+
+            dfX_tmp = dfX; dfX_tmp.settings.allowDimExpansion = false;
+            t.verifyError(@() dfX_tmp .* dfY, 'frames:MultiIndex:alignIndex:expansiondisabled')            
+            df1 = (dfX+dfY)-(dfY+dfX);
+            t.verifyEqual(df1.data, zeros(6,2) )
+            df2 = (dfX{[2 1 3]}+dfY{[2 1]}+dfZ{[4 2 1 3]}) - ((dfY+(dfZ+0.75*dfX))+0.25*dfX);
+            t.verifyEqual(df2.data, zeros(24,2) )
+                         
+            % handle subsets
+            dfXY = dfX + dfY;
+            t.verifyError(@() dfXY{1:5} - dfX([3 1]).col("A"), 'frames:Index:alignIndex:unequalIndex');
+            df3 = dfXY{1:5}.alignMethod("full") - dfX([3 1]).col("A");
+            t.verifyEqual(df3.data, [33,73;36,76;45,85;48,88;33,73] )
+            df4 = (dfX.alignMethod("full")+dfZ{[1 3]}+dfY) ./ (dfY+dfZ(3)+dfX) ./  (dfZ(1)+dfX+dfY);
+            t.verifyEqual(df4.data, ones(12,2 ) )
+            
+            % align common dimension(s) and expand
+            dfXYZ = dfX + dfY + dfZ;
+            dfYK = dfY{[2 1]} + dfK{[2 3 1]};
+            dfYKZ = dfY{[2 1]} + dfK{[2 3 1]} + dfZ{[4 3 1 2]};
+            [k_mat,z_mat,y_mat,x_mat] = ndgrid(dfK.data(:,1), dfZ.data(:,1), dfY.data(:,1), dfX.data(:,1));
+            df5 = dfXYZ .* dfYK; % 1 common dimension + both sides have unique dimension                      
+            t.verifyEqual(df5.rows_.name,["x","y","z","k"]);            
+            t.verifyEqual(df5.col("A").sortRows().data, (x_mat(:)+y_mat(:)+z_mat(:)).*(y_mat(:)+k_mat(:)) )
+            df6 = dfXYZ.*dfYKZ;  % 2 common dimensions + both sides unique dimension 
+            t.verifyEqual(df6.rows_.name,["x","y","z","k"]);            
+            t.verifyEqual(df6.col("A").sortRows().data, (x_mat(:)+y_mat(:)+z_mat(:)).*(y_mat(:)+k_mat(:)+z_mat(:)) )
+            
+            t.verifyError(@() dfXYZ.alignMethod("full") + (dfY(2)+dfK), 'frames:MultiIndex:alignIndex:invalidexpansion');
+            t.verifyError(@() dfXYZ.alignMethod("left") + (dfY(2)+dfK), 'frames:MultiIndex:alignIndex:invalidexpansion');                        
+            df7 = dfXYZ.alignMethod("inner") + (dfY(2)+dfK); % inner removes values from common dimension(s) that are not shared
+            t.verifyEqual(df7.rows_.name,["x","y","z","k"]);            
+            t.verifyEqual(length(df7.rows_), length(df5.rows_)/2); % only half the y values ==> half the length            
+            t.verifyError(@()(dfX.alignMethod("full")+dfY(1)+dfZ) + dfYK, 'frames:MultiIndex:alignIndex:invalidexpansion');
+            df8a = t.verifyWarningFree(@()(dfX.alignMethod("left")+dfY(1)+dfZ) + dfYK);
+            df8b = t.verifyWarningFree(@()(dfX.alignMethod("inner")+dfY(1)+dfZ) + dfYK);
+            t.verifyEqual(  df8a.data, df8b.data);
+            
+            % expansion in columns            
+            df9a = dfXYZ' + dfYKZ';
+            df9b = dfXYZ  + dfYKZ;
+            t.verifyEqual(df9a,df9b')
+            
+            % mix Index and MultiIndex obj in math operation
+            dfXi = frames.DataFrame( dfX.data, frames.Index(x,name="x"), ["A","B"]);
+            dfYi = frames.DataFrame( dfY.data, frames.Index(y,name="y"), ["A","B"]);
+            df10a = dfX + dfY;
+            df10b = dfX + dfYi;
+            df10c = dfXi + dfY;
+            t.verifyEqual(df10a, df10b)
+            t.verifyEqual(df10a, df10c)
+            t.verifyError(@() dfXi + dfYi, 'frames:Index:alignIndex:unequalIndex') %no conversion to MultiIndex in case of only Index obj
+                           
+            % handle duplicates
+            warning('off', 'frames:MultiIndex:notUnique');
+            dfXdup = frames.DataFrame([1 2 3 4 5]' ,frames.MultiIndex([1 2 3 2 3]',unique=false),"A"  ,RowDim="x");
+            dfYdup = frames.DataFrame([10 20 30]'  ,frames.MultiIndex([1 2 1]'    ,unique=false),"A"  ,RowDim="y");
+            dfXYdup =dfXdup + dfYdup;
+            t.verifyEqual(length(dfXYdup.rows), length(dfXdup.rows)*length(dfYdup.rows));
+            t.verifyError(@() dfXdup + dfX, 'frames:Index:alignIndex:duplicatevalues');
+            t.verifyError(@() dfXYdup + dfX.col("A"),  'frames:MultiIndex:alignIndex:invalidduplicatesexpansion');
+            t.verifyError(@() dfXYdup + dfXY, 'frames:Index:alignIndex:duplicatevalues');
+            t.verifyError(@() dfXY + dfXYdup, 'frames:Index:alignIndex:duplicatevalues');
+            t.verifyError(@() dfXYdup + dfXYZ,  'frames:MultiIndex:alignIndex:invalidduplicatesexpansion');
+            df11a = dfXYdup.alignMethod("full","expand") - dfXY;   % obj2 values applied to all duplicate
+            t.verifyEqual( df11a({2,':'},"A").data,[ -33 ;-26;-13;-31;-24;-11]);
+            %t.verifyEqual( df11a({2,':'},"B").data,[ -85;-88;-85;-88;-85;-88]); %TODO FIX!!
+            df11b = dfXYdup.alignMethod("full","duplicates") - dfXY; % obj2 values applied only to first duplicates
+            t.verifyEqual( df11b({2,':'},"A").data,[ -33 ;-26; 32;14;24;34]); 
+            %t.verifyEqual( df11b({2,':'},"B").data,[ -85;-88;NaN;NaN;NaN;NaN]); %TODO FIX!!
+            warning('on', 'frames:MultiIndex:notUnique');
+        end
         
         function mathOperationsMiscellaneousTest1D(t)
             df = t.dfMissing1;
