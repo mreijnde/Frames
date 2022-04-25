@@ -1938,10 +1938,9 @@ classdef DataFrame
             if ~isMultiIndex(df1.columns_) && isMultiIndex(df2.columns_)
                 df1.columns_ = frames.MultiIndex(df1.columns_);
             end            
-            % select suitable duplicateOption                        
-            duplicateOption="duplicatesstrict";
-            duplicateOptionRows = duplicateOption;
-            duplicateOptionCols = duplicateOption;
+            % select suitable duplicateOption                                    
+            duplicateOptionRows = df1.settings.duplicateOption;
+            duplicateOptionCols = df1.settings.duplicateOption;
             if df1.rows_.requireUnique, duplicateOptionRows = "unique"; end            
             if df1.columns_.requireUnique, duplicateOptionCols = "unique"; end
             % get aligned indices            
