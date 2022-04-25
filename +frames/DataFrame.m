@@ -415,10 +415,18 @@ classdef DataFrame
             obj.name_ = "";
             obj.description = "";
         end
+        
+        function obj = duplicateOption(obj, duplicateOption)
+            % change duplicateOption setting
+            obj.settings.duplicateOption = duplicateOption;
+        end
                 
-        function obj = alignMethod(obj, alignMethod)
-            % change alignMethod setting
+        function obj = alignMethod(obj, alignMethod, duplicateOption)
+            % change alignMethod setting (and optional duplicateOption setting)
             obj.settings.alignMethod=alignMethod;
+            if nargin>2
+                obj.settings.duplicateOption = duplicateOption;
+            end
         end
         function obj = autoAlign(obj)
             % change alignMethod setting to 'full'

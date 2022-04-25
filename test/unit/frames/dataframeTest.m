@@ -254,6 +254,30 @@ classdef dataframeTest < AbstractFramesTests
 
         end
         
+        function settingsChangeTest(t)
+            % test changing of DataFrame settings            
+            frames.DataFrame.restoreDefaultSettings();
+            df = frames.DataFrame(magic(3)); % using 'out-of-the-box' default settings
+            t.verifyEqual( df.settings.alignMethod, "strict"); % default
+            t.verifyEqual( df.alignMethod("full").settings.alignMethod, "full");
+            t.verifyEqual( df.duplicateOption("none").settings.duplicateOption, "none");
+            t.verifyEqual( df.alignMethod("left", "expand").settings.alignMethod, "left");
+            t.verifyEqual( df.alignMethod("left", "expand").settings.duplicateOption, "expand");
+            
+            % change defaults
+            frames.DataFrame.setDefaultSetting("alignMethod","full");
+            frames.DataFrame.setDefaultSetting("duplicateOption","expand");
+            df = frames.DataFrame(magic(3)); % using current default settings
+            t.verifyEqual( df.settings.alignMethod, "full");
+            t.verifyEqual( df.settings.duplicateOption, "expand");
+            
+            % restore to 'out-of-box' defaults
+            frames.DataFrame.restoreDefaultSettings();
+            df = frames.DataFrame(magic(3)); % using current default settings
+            t.verifyEqual( df.settings.alignMethod, "strict");
+            t.verifyEqual( df.settings.duplicateOption, "duplicatesstrict");
+        end
+        
         function subsasgnTest(t)
             df = frames.DataFrame([1 2 3 4 5 6; 2 5 NaN 1 3 2]');
             % test removal
