@@ -1899,51 +1899,68 @@ classdef DataFrame
             end
         end
         
-        function df = reorder(obj, rowindex, rowind, colindex, colind )
+        function obj = reorder(obj, rowindex, rowind, colindex, colind )
             % internal function to reordered DF based on new index objects and position index
             % (rowind and colind are allowed to have NaN, the corresponding values are set NaN)
             %
             if nargin<3, error("not enough parameters"); end            
             if nargin==4, error("invalid number of parameters"); end                        
-            if nargin<5, colindex=[]; colind=[]; end            
-            df = obj;            
+            if nargin<5, colindex=[]; colind=[]; end                                 
             % set new indexes
-            if ~isempty(rowindex),  df.rows_ = rowindex;  end
-            if ~isempty(colindex),  df.columns_ = colindex; end            
-            % get selector
-            if ~isempty(rowind)
-                rowmask = ~isnan(rowind);
-                rowind_masked = rowind(rowmask);
-            else
+            if ~isempty(rowindex),  obj.rows_ = rowindex;  end
+            if ~isempty(colindex),  obj.columns_ = colindex; end            
+            % get selector            
+            datsize_new = [length(rowindex) length(colindex)];
+            datsize_old = size(obj.data_);
+            if isempty(rowind) || ( datsize_new(1)==datsize_old(1) && isequal(rowind, (1:length(rowind))') ) 
                 rowmask = ':';
                 rowind_masked = ':';
-            end                        
-            if ~isempty(colind)
-                colmask = ~isnan(colind);
-                colind_masked = colind(colmask);
             else
-                colmask = ':';
-                colind_masked = ':';
+                rowmask = ~isnan(rowind);
+                rowind_masked = rowind(rowmask);                
             end                        
-            % get reordered data and store in dataframe
-            datsize = [length(rowindex) length(colindex)];
-            if isnumeric(obj.data_)
-                dat = nan(datsize);
-            elseif isstring(obj.data_)
-                dat = strings(datsize);
-            elseif iscell(obj.data_)
-                dat = cell(datsize);
+            if isempty(colind) || ( datsize_new(2)==datsize_old(2) && isequal(colind, (1:length(colind))') ) 
+                colmask = ':';
+                colind_masked = ':';                
+            else
+               colmask = ~isnan(colind);
+               colind_masked = colind(colmask);
             end
-            dat(rowmask,colmask) = obj.data_( rowind_masked, colind_masked);
-            df.data_ = dat;
+            
+            % shortcut if ordering no changed 
+            if iscolon(rowmask) && iscolon(colmask)                
+                return
+            end            
+                        
+            % handle missing values
+            if ( (iscolon(rowmask) || all(rowmask)) && (iscolon(colmask) || all(colmask)) )
+                
+                % no missing values, directly store reordered data in dataframe
+                obj.data_ = obj.data_( rowind_masked, colind_masked);
+            else
+                % missing values, start with matrix with missing values                
+                if isnumeric(obj.data_)
+                    dat = nan(datsize_new);                    
+                elseif isstring(obj.data_)
+                    dat = strings(datsize_new);
+                elseif iscell(obj.data_)
+                    dat = cell(datsize_new);
+                end
+                % store ordered values at masked subselection
+                dat(rowmask,colmask) = obj.data_( rowind_masked, colind_masked);
+                obj.data_ = dat;
+            end
+            
         end
                 
-        function [dfnew1,dfnew2, rowmask, colmask] = getAlignedDFs(df1,df2, alignMethod, allowDimExpansion, dofillmissing)
+        function [dfnew1,dfnew2, rowmask2, colmask2] = getAlignedDFs(df1,df2, alignMethod, allowDimExpansion, ... 
+                     missingValue1, missingValue2)
             % internal function to get aligned DF for element wise operation
             %
             if nargin<3, alignMethod="strict"; end
             if nargin<4, allowDimExpansion=true; end
-            if nargin<5, dofillmissing=true; end
+            if nargin<5, missingValue1=NaN; end
+            if nargin<6, missingValue2=NaN; end
             % convert indices of 1st dataframe to multi index if required
             if ~isMultiIndex(df1.rows_) && isMultiIndex(df2.rows_)
                 df1.rows_ = frames.MultiIndex(df1.rows_);
@@ -1959,25 +1976,29 @@ classdef DataFrame
             % get aligned indices            
             [mrow, rowind1, rowind2] = df1.rows_.alignIndex(df2.rows_, alignMethod, duplicateOptionRows, allowDimExpansion);
             [mcol, colind1, colind2] = df1.columns_.alignIndex(df2.columns_, alignMethod, duplicateOptionCols, allowDimExpansion);
-            rowmask = ~isnan(rowind1) & ~isnan(rowind2);
-            colmask = ~isnan(colind1) & ~isnan(colind2);                 
+            rowmask2 = ~isnan(rowind2);
+            colmask2 = ~isnan(colind2);            
             dfnew1 = df1.reorder(mrow, rowind1, mcol, colind1);
             dfnew2 = df2.reorder(mrow, rowind2, mcol, colind2);            
-            if dofillmissing
-                % fill missing rows by values of other dataframe  
-                if any(isnan(rowind1))
-                   dfnew1.data_(isnan(rowind1),~isnan(colind2)) = dfnew2.data_(isnan(rowind1),~isnan(colind2));
-                end
-                if any(isnan(rowind2))
-                   dfnew2.data_(isnan(rowind2),~isnan(colind1)) = dfnew1.data_(isnan(rowind2),~isnan(colind1));                
-                end
-                if any(isnan(colind1))                    
-                   dfnew1.data_(~isnan(rowind2),isnan(colind1)) = dfnew2.data_(~isnan(rowind2),isnan(colind1));
-                end
-                if any(isnan(colind2))
-                   dfnew2.data_(~isnan(rowind1),isnan(colind2)) = dfnew1.data_(~isnan(rowind1),isnan(colind2));                
-                end
+            
+            % fill missing rows by values of other dataframe  
+            masknan_rowind1 = isnan(rowind1);
+            masknan_rowind2 = isnan(rowind2);
+            masknan_colind1 = isnan(colind1);
+            masknan_colind2 = isnan(colind2);                
+            if any(masknan_rowind1)
+               dfnew1.data_(masknan_rowind1,~masknan_colind2) = missingValue1;               
             end
+            if any(masknan_rowind2)
+               dfnew2.data_(masknan_rowind2,~masknan_colind1) = missingValue2;               
+            end
+            if any(masknan_colind1)                    
+               dfnew1.data_(~masknan_rowind2,masknan_colind1) = missingValue1;               
+            end
+            if any(masknan_colind2)                    
+               dfnew2.data_(~masknan_rowind1,masknan_colind2) = missingValue2;               
+            end                
+
         end
                 
        
@@ -2215,31 +2236,31 @@ classdef DataFrame
         function e = end(obj,q,~), e = builtin('end',obj.data_,q,2); end
         
         function other = plus(df1,df2)
-            other = operatorElementWise(@plus,df1,df2);
+            other = operatorElementWise(@plus,df1,df2,0,0);
         end
         function other = mtimes(df1,df2)
             other = operatorMatrix(@mtimes,df1,df2);
         end
         function other = times(df1,df2)
-            other = operatorElementWise(@times,df1,df2);
+            other = operatorElementWise(@times,df1,df2,1,1);
         end
         function other = minus(df1,df2)
-            other = operatorElementWise(@minus,df1,df2);
+            other = operatorElementWise(@minus,df1,df2,0,0);
         end
         function other = mrdivide(df1,df2)
             other = operatorMatrix(@mrdivide,df1,df2);
         end
         function other = rdivide(df1,df2)
-            other = operatorElementWise(@rdivide,df1,df2);
+            other = operatorElementWise(@rdivide,df1,df2,NaN,1);
         end
         function other = mldivide(df1,df2)
             other = operatorMatrix(@mldivide,df1,df2);
         end
         function other = ldivide(df1,df2)
-            other = operatorElementWise(@ldivide,df1,df2);
+            other = operatorElementWise(@ldivide,df1,df2,1,NaN);
         end
         function other = power(df1,df2)
-            other = operatorElementWise(@power,df1,df2);
+            other = operatorElementWise(@power,df1,df2,NaN,1);
         end
         function other = mpower(df1,df2)
             other = operatorMatrix(@mpower,df1,df2);
@@ -2387,26 +2408,29 @@ function df = operatorMatrix(fun, df1, df2)
 end
 
 
- function df = operatorElementWise(func, df1,df2, alignMethod, allowDimExpansion)
+ function df = operatorElementWise(func, df1,df2, missingValue1, missingValue2, alignMethod, allowDimExpansion)
     % internal function to perform element wise operations on two DataFrames               
     if isFrame(df1)
         if isFrame(df2)                    
             % get aligned dataframes
-            if nargin<4, alignMethod=df1.settings.alignMethod; end
-            if nargin<5, allowDimExpansion=df1.settings.allowDimExpansion; end
-            [df1_aligned, df2_aligned, rowmask, colmask] = getAlignedDFs(df1, df2, alignMethod, allowDimExpansion);
+            if nargin<4, missingValue1=NaN; end
+            if nargin<5, missingValue2=NaN; end
+            if nargin<6, alignMethod=df1.settings.alignMethod; end
+            if nargin<7, allowDimExpansion=df1.settings.allowDimExpansion; end            
+            [df1_aligned, df2_aligned, rowmask2, colmask2] = ...
+                 getAlignedDFs(df1, df2, alignMethod, allowDimExpansion, missingValue1, missingValue2);
             % apply element wise function (to aligned subset of data)
             df = df1_aligned;
-            if all(rowmask) && all(colmask)
+%             if all(rowmask2) && all(colmask2)
                 % assign all data
                 df.data_ = func( df1_aligned.data_, df2_aligned.data_);
-            else
-                % assign sub-selection of data
-                data_new = func( df1_aligned.data_(rowmask,colmask), df2_aligned.data_(rowmask,colmask));                
-                assert( isa(data_new, class(df.data_)), 'frames:DataFrame:operatorElementWise:unequalTypes', ...
-                    "operator output is different type than stored in dataframe. Not allowed to asignment to sub-selection");
-                df.data_(rowmask,colmask) = data_new;
-            end
+%             else
+%                 % assign sub-selection of data
+%                 data_new = func( df1_aligned.data_(rowmask2,colmask2), df2_aligned.data_(rowmask2,colmask2));                
+%                 assert( isa(data_new, class(df.data_)), 'frames:DataFrame:operatorElementWise:unequalTypes', ...
+%                     "operator output is different type than stored in dataframe. Not allowed to asignment to sub-selection");
+%                 df.data_(rowmask2,colmask2) = data_new;
+%             end
         else
             % use obj dataframe and directly apply elementwise function
             df = df1;

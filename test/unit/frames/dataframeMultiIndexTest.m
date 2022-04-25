@@ -1097,29 +1097,24 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(df7b, df5a(4).alignMethod("inner") );
 
             % rows with duplicates
-            warning('off', 'frames:MultiIndex:notUnique'); % TODO: fix some unnecessary non-unique warnings            
-            
+            warning('off', 'frames:MultiIndex:notUnique'); % TODO: fix some unnecessary non-unique warnings                        
             dfd = frames.DataFrame(magic(5),frames.MultiIndex([1 3 2 3 1]',unique=false)); 
             t.verifyEqual(dfd-dfd, frames.DataFrame(zeros(5), dfd.rows_, dfd.columns_)); % exactly same index allowed
             t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:alignIndex:duplicatevalues')
             
             df8a = dfd{1:4,2:4}.alignMethod("full").duplicateOption("duplicates") - dfd{2:3,3:5};
-            t.verifyEqual(df8a.data, [24,1,8,NaN;5,0,0,16;6,0,0,22;12,19,21,NaN]);
+            t.verifyEqual(df8a.data, [24,1,8,NaN;5,0,0,-16;6,0,0,-22;12,19,21,NaN]);
             t.verifyEqual(df8a.rows(:,1),[1;3;2;3]);
             
             df8b = dfd{1:4,2:4}.alignMethod("full").duplicateOption("unique") - dfd{2:3,3:5};
-            t.verifyEqual(df8b.data, [24,1,8,NaN;5,0,0,16;6,0,0,22]);
+            t.verifyEqual(df8b.data, [24,1,8,NaN;5,0,0,-16;6,0,0,-22]);
             t.verifyEqual(df8b.rows(:,1),[1;3;2]);
             
             df8c = dfd{1:4,2:4}.alignMethod("full").duplicateOption("expand") - dfd{2:3,3:5};
-            t.verifyEqual(df8c.data, [24,1,8,NaN;5,0,0,16;6,0,0,22;12,12,7,16]);
-            t.verifyEqual(df8c.rows(:,1),[1;3;2;3]);
-            
+            t.verifyEqual(df8c.data, [24,1,8,NaN;5,0,0,-16;6,0,0,-22;12,12,7,-16]);
+            t.verifyEqual(df8c.rows(:,1),[1;3;2;3]);            
             warning('on', 'frames:MultiIndex:notUnique');
-            
-            
-            
-            
+                                    
             % row&column alignment
             dfC = frames.DataFrame(magic(4),{},{}).alignMethod("full");
             dfC1a = dfC + 100*dfC{[1 3 4],[1 3 4]};          % auto align, sub-dataframe is added with less columns
@@ -1130,7 +1125,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(dfC1b, dfC1a{[1,3,4,2],[1,3,4,2]});
             
             dfC2a = dfC{[1 3 4],[1 3 4]} - dfC{[2 3],[2 3]};  % auto align, expand, missing values are NaN
-            t.verifyEqual(dfC2a, frames.DataFrame([16,3,13,NaN;9,0,12,7;4,15,1,NaN;NaN,10,NaN,11],...
+            t.verifyEqual(dfC2a, frames.DataFrame([16,3,13,NaN;9,0,12,-7;4,15,1,NaN;NaN,-10,NaN,-11],...
                  {[1,3,4,2]},  {["Var1","Var3","Var4","Var2"]}).alignMethod("full"));
             
             dfC2b = df{[1 3 4],[1 3 4]}.alignMethod("inner") - df{[2 3 4],[2 3]};  % inner align
