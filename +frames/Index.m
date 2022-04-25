@@ -80,7 +80,23 @@ classdef Index
             obj.value = value;
         end
         
-        function obj=getSubIndex(obj,selector)
+        function obj=getSubIndex(obj,selector, dimindex)
+            % get Index object of sub selection based on (matlab) selector
+            % 
+            % input:
+            %    - selector: valid matlab selector for rows
+            %    - dimindex: position index of dimensions select (default: all dimensions)
+            %
+            % output:
+            %    - MultiIndex object with subselection                        
+            if nargin<3; dimindex=':'; end
+            % select
+            obj = obj.getSubIndex_(selector, dimindex);
+            % check if set values are allowed
+            obj.valueChecker(obj.value_);
+        end
+        
+        function obj=getSubIndex_(obj,selector,~)
             % get Index object of sub selection based on matlab selector
             obj.value_ = obj.value_(selector);                        
         end
@@ -490,7 +506,7 @@ classdef Index
                 else                                                         
                    [~, ia, ind] = unique(uniqind, 'rows', 'stable');                    
                 end
-                obj_new = obj_new.getSubIndex(ia);  
+                obj_new = obj_new.getSubIndex_(ia,':');  
             end
             
             % handle 'duplicatesstrict' error condition
@@ -635,7 +651,7 @@ classdef Index
             end
 
             % only output selected rows in index
-            objnew = objnew.getSubIndex(id);
+            objnew = objnew.getSubIndex_(id,':');
 
             % get for each item in new index a position reference to original line in obj1 and obj2
             % (if given item does not exist in given object, value is NaN)

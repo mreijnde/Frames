@@ -32,24 +32,7 @@ classdef MultiIndex < frames.Index
                 obj.name = "";
             end                        
         end
-        
-        
-        function obj=getSubIndex(obj,selector, dimindex)
-            % get Index object of sub selection based on (matlab) selector
-            % 
-            % input:
-            %    - selector: valid matlab selector for rows
-            %    - dimindex: position index of dimensions select (default: all dimensions)
-            %
-            % output:
-            %    - MultiIndex object with subselection                        
-            if nargin<3; dimindex=':'; end
-            % select
-            obj = obj.getSubIndex_(selector, dimindex);
-            % check if set values are allowed
-            obj.valueChecker();
-        end
-        
+                       
         
          function obj=getSubIndex_(obj,selector, dimindex)
             % get Index object of sub selection based on (matlab) selector
@@ -364,7 +347,7 @@ classdef MultiIndex < frames.Index
                         "Cannot expand dimensions in case rows exist in output index that are not common in both objects.");                    
                 if ~any(isnan(ind1_new))
                     % only a combination of rows in ob1
-                    objnew = obj1.getSubIndex(ind1_new);
+                    objnew = obj1.getSubIndex_(ind1_new,':');
                 else
                    % combination of both MultiIndex
                    mask_rows_from_obj2 = isnan(ind1_new);
@@ -375,7 +358,7 @@ classdef MultiIndex < frames.Index
 
                 % add new dimensions
                 if NextraDims2>0
-                    objnew2 = obj2.getSubIndex(ind2_new);
+                    objnew2 = obj2.getSubIndex_(ind2_new,':');
                     for i=1:NextraDims2
                         dimind = dim_unique_ind2(i);
                         objnew = objnew.addDimension( objnew2.value_{dimind} );
@@ -750,7 +733,7 @@ classdef MultiIndex < frames.Index
             assert(length(obj.name)==length(name_unique), "dimension names not unique");
         end
         
-        function valueChecker(obj,fromSubsAsgnIdx,b)
+        function valueChecker(obj,~,fromSubsAsgnIdx,b)
             % validate current multiIndex values
             %            
             % check if rows are unique
@@ -891,7 +874,7 @@ classdef MultiIndex < frames.Index
                         obj.value_{dimIdx}.value(rowIdx) = b_;                        
                     end
                 end
-                obj.valueChecker(obj.value_); % check if properties are respected                
+                obj.valueChecker(); % check if properties are respected                
             else
                 obj = builtin('subsasgn',obj,s,b);
             end            
