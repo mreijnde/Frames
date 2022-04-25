@@ -999,7 +999,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
 %             t.verifyEqual(tf.relChg('simple',2,false),frames.TimeFrame([NaN 1]',[2 4]));
         end
         
-        function mathOperationsTest(t)
+        function mathOperationsTest1D(t)
             mat1 = frames.DataFrame([1 2;3 4],{[]},{[]});
             mat2 = frames.DataFrame([10 20;30 40],{[]},{["a","b"]});
             vecV = frames.DataFrame([6 7]',{[]},{[]},ColSeries=true);
@@ -1062,6 +1062,78 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             df = frames.DataFrame([true,false;false,true]);
             t.verifyEqual(~df,frames.DataFrame([false,true;true,false]))
         end
+        
+        
+        function mathOperationsAlignTest1D(t)
+            % verify 1D math operations including index alignment
+            dat = magic(4);
+            df = frames.DataFrame(dat,{},{});
+
+            % rows, default alignMethod 'strict'
+            df1a = df + 100*df;
+            df1b = df + 100*df{[2 3 1 4]};   % auto aligned to match order first df
+            t.verifyEqual(df1a,df1b)
+            t.verifyError(@() df + 100*df{[2 3]}, 'frames:Index:alignIndex:unequalIndex')
+            t.verifyEqual( df.iloc(1:2,:) - df.row(3), ...
+                  frames.DataFrame([7,-5,-3,1;-4,4,4,-4],df.rows_.getSubIndex(1:2),df.columns_))
+            t.verifyError(@() df - df{3,1:3}.asRowSeries(), 'frames:Index:alignIndex:unequalIndex')
+
+            % rows with auto-alignment ("full")
+            df5a = df{[1 3 4]}.autoAlign() + 100*df{[4 2]};   % auto align, result is expanded to contain all row values            
+            dfs = df.sortRows().setRowsType("sorted");
+            df5b = dfs{[1 3 4]}.autoAlign() + 100*df{[4 2]};  % auto align+sort, result is expanded to contain all row values
+            t.verifyEqual(df5a.rows(:,1), [1;3;4;2])
+            t.verifyEqual(df5b.rows(:,1), [1;2;3;4]) 
+            t.verifyEqual(df5a(1:4).data, df5b.data)          % compare after making df5a sorted
+
+            df6a = df.autoAlign() - df{3,1:3}.asRowSeries();  % auto align, rowseries with subset
+            t.verifyEqual(df6a.data, dat- repmat([dat(3,1:3), 0],4,1) );
+
+            % rows with other alignment methods available
+            df7a = df{[1 3 4]}.alignMethod("left") + 100*df{[4 2]};  % align method "left", use values from 1st df, ignore others
+            t.verifyEqual(df7a, df5a([1,3,4]).alignMethod("left") );
+            df7b = df{[1 3 4]}.alignMethod("inner") + 100*df{[4 2]}; % align method "inner", keep only common subset
+            t.verifyEqual(df7b, df5a(4).alignMethod("inner") );
+
+            % rows with duplicates
+            warning('off', 'frames:MultiIndex:notUnique'); % TODO: fix some unnecessary non-unique warnings            
+            
+            dfd = frames.DataFrame(magic(5),frames.MultiIndex([1 3 2 3 1]',unique=false)); 
+            t.verifyEqual(dfd-dfd, frames.DataFrame(zeros(5), dfd.rows_, dfd.columns_)); % exactly same index allowed
+            t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:alignIndex:duplicatevalues')
+
+            dfd.settings.duplicateOption = "duplicates";
+            df8a = dfd{1:4,2:4}.alignMethod("full") - dfd{2:3,3:5};
+            t.verifyEqual(df8a.data, [24,1,8,NaN;5,0,0,16;6,0,0,22;12,19,21,NaN]);
+            t.verifyEqual(df8a.rows(:,1),[1;3;2;3]);
+
+            dfd.settings.duplicateOption = "unique";
+            df8b = dfd{1:4,2:4}.alignMethod("full") - dfd{2:3,3:5};
+            t.verifyEqual(df8b.data, [24,1,8,NaN;5,0,0,16;6,0,0,22]);
+            t.verifyEqual(df8b.rows(:,1),[1;3;2]);
+            
+            warning('on', 'frames:MultiIndex:notUnique');
+            
+            % row&column alignment
+            dfC = frames.DataFrame(magic(4),{},{}).alignMethod("full");
+            dfC1a = dfC + 100*dfC{[1 3 4],[1 3 4]};          % auto align, sub-dataframe is added with less columns
+            t.verifyEqual(dfC1a, frames.DataFrame([1616,2,303,1313;5,11,10,8;909,7,606,1212;404,14,1515,101], ...
+                dfC.rows_, dfC.columns_).alignMethod("full"));
+            
+            dfC1b = 100*dfC{[1 3 4],[1 3 4]} + dfC;          % auto align, expand to all rows/columns
+            t.verifyEqual(dfC1b, dfC1a{[1,3,4,2],[1,3,4,2]});
+            
+            dfC2a = dfC{[1 3 4],[1 3 4]} - dfC{[2 3],[2 3]};  % auto align, expand, missing values are NaN
+            t.verifyEqual(dfC2a, frames.DataFrame([16,3,13,NaN;9,0,12,7;4,15,1,NaN;NaN,10,NaN,11],...
+                 {[1,3,4,2]},  {["Var1","Var3","Var4","Var2"]}).alignMethod("full"));
+            
+            dfC2b = df{[1 3 4],[1 3 4]}.alignMethod("inner") - df{[2 3 4],[2 3]};  % inner align
+            t.verifyEqual(dfC2b, frames.DataFrame([0;0],{[3;4]}, {["Var3"]}).alignMethod("inner"));
+            
+            dfC2c = df{[1 3 4],[1 3 4]}.alignMethod("left") - df{[2 3 4],[2 3]};  % left align
+            t.verifyEqual(dfC2c, frames.DataFrame([16,3,13;9,0,12;4,0,1],dfC2c.rows_, dfC2c.columns_).alignMethod("left"));
+        end
+        
         
         function mathOperationsMiscellaneousTest1D(t)
             df = t.dfMissing1;
