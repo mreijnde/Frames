@@ -2,7 +2,7 @@ classdef (HandleCompatible) DataFrameSettings
     % class defines the DataFrame settings that specifies it behavior
     properties
         allowDimExpansion logical = true
-        alignMethod (1,1) string {mustBeMember(alignMethod,["strict", "inner", "left", "full"])} = "strict"
+        alignMethod (1,1) string {mustBeMember(alignMethod,["strict", "inner", "left", "full","strictunique"])} = "strict"
                              % defines how indices are aligned in math operation between DataFrames:
                              % -  "strict":  both need to have same indices (else error thrown)
                              % -  "inner":   remove index values that are not common in both

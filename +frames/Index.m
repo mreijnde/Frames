@@ -457,10 +457,11 @@ classdef Index
             end
             
             % handle equal indices
-            if (duplicateOption=="duplicates" || duplicateOption=="duplicatesstrict")
+            if (duplicateOption=="duplicates" || duplicateOption=="duplicatesstrict") || ...
+               (duplicateOption=="unique" && obj.isunique())                
                 allsame = all(cellfun(@(x) isequal(x.value,obj.value), others_cell));
                 if allsame
-                    % shortcut for performance: 1to1 mapping of indices
+                    % shortcut for performance: 1-to-1 mapping of indices
                     obj_new = obj;
                     ind_cell = repmat({(1:obj.length())'}, length(others_cell)+1,1);
                     return
@@ -640,7 +641,11 @@ classdef Index
                         "Unequal values in dimension not allowed in strict alignMethod");
                     id = id1_raw;                    
                 case "full"                                         
-                    id = 1:length(objnew);                                                      
+                    id = 1:length(objnew);
+                case "strictunique"                                         
+                    id = 1:length(objnew);          
+                    assert(isequal(obj1.value_uniq_,obj2.value_uniq_), 'frames:Index:alignIndex:unequalIndex', ...
+                        "Indices contain different unique values, not allowed in strict_withduplicates alignMethod");
                 otherwise 
                     error("unsupported alignMethod '%s'", alignMethod);
             end
