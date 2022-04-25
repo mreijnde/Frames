@@ -30,7 +30,7 @@ classdef MultiIndex < frames.Index
             % clear name if singleton
             if nameValue.Singleton
                 obj.name = "";
-            end            
+            end                        
         end
         
         
@@ -527,7 +527,20 @@ classdef MultiIndex < frames.Index
        else
           len = obj.value_{1}.length();
        end
-    end   
+     end
+     
+     function bool = isunique(obj)
+         % check if MultiIndex values are unique
+         if obj.requireUnique_
+             bool = true;
+         elseif obj.Ndim<=1
+             % from cache of the single linear index object 
+             bool = obj.value_{1}.value_isuniq_;
+         else
+             % calculate with unique
+             bool = isunique(obj.value_uniqind);
+         end
+     end
         
         
     end

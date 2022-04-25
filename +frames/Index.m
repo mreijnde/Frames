@@ -45,6 +45,7 @@ classdef Index
         requireUniqueSorted_
         value_uniq_          % cached unique values
         value_uniqind_       % cached indices to unique values
+        value_isuniq_        % cached bool if values are unique
         warningNonUnique_    % (logical, default true) produce warning in case index is made non unique
     end
     
@@ -341,16 +342,12 @@ classdef Index
             % check if value is present in index
             out = ismember(value, obj.value_);
         end
-        
-       
-        
+                       
         function bool = isunique(obj)
-            if obj.requireUnique_
-                bool = true;
-            else
-                bool = isunique(obj.value_uniqind);
-            end
+            % check if Index values are unique
+            bool = obj.value_isuniq_;  % use cached value            
         end
+        
         function bool = issorted(obj)
             if obj.requireUniqueSorted_
                 bool = true;
@@ -780,12 +777,15 @@ classdef Index
             % recalculate unique cache based on stored value_           
             if obj.singleton
                 obj.value_uniq_=missing;
-                obj.value_uniqind_=1;                
+                obj.value_uniqind_=1;
+                obj.value_isuniq_ = true;
             elseif obj.length()==0
                 obj.value_uniq_=[];
                 obj.value_uniqind_=[];
+                obj.value_isuniq_ = true;
             else
-                [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_, 'sorted');                
+                [obj.value_uniq_,~ ,obj.value_uniqind_] = unique(obj.value_, 'sorted');
+                obj.value_isuniq_ = (length(obj.value_uniq_)==length(obj.value_));
             end
         end                        
         
