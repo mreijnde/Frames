@@ -1283,6 +1283,57 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             t.verifyEqual(df.ewm(Alpha=0.3).var().data(1,:),[NaN NaN NaN])
             t.verifyEqual(df.ewm(Alpha=0.3).mean().data,df.ewm(Window=2/0.3-1).mean().data,AbsTol=t.tol)
         end
+        
+        
+        function dataNDTest(t)
+            % check dataND function
+            dat = magic(4);
+            
+            % dataframe with Index indices
+            df = frames.DataFrame(dat, [1,2,3,4], ColDim="Col");            
+            [datout, dimnames, dimvalues] = df.dataND();
+            t.verifyEqual(datout, dat);
+            t.verifyEqual(dimnames, ["Row","Col"]);
+            t.verifyEqual(dimvalues{1},[1;2;3;4]);
+            t.verifyEqual(dimvalues{2},["Var1";"Var2";"Var3";"Var4"]);
+            
+            % dataframe with Index indices, non-unique
+            warning('off', 'frames:Index:notUnique');
+            df = frames.DataFrame(dat, frames.Index([1 2 3 2],unique=false) );
+            warning('on', 'frames:Index:notUnique');
+            t.verifyError(@() df.dataND(), 'frames:DataFrame:dataND:rowsIndexNotUnique');
+            
+            % dataframe with 2d MultiIndex rows & 1d column Index
+            df = frames.DataFrame(dat(:,1:2), {[1,3,2,2], [1,2,1,2]}, ["Var2","Var1"], RowDim=["x","y"], ColDim="Col");
+            [datout, dimnames, dimvalues] = df.dataND();
+            t.verifyEqual(datout, cat(3,[2,NaN;7,14;NaN,11],[16,NaN;9,4;NaN,5]));
+            t.verifyEqual(dimnames, ["x","y","Col"]);
+            t.verifyEqual(dimvalues{1},[1;2;3]);
+            t.verifyEqual(dimvalues{2},[1;2]);
+            t.verifyEqual(dimvalues{3},["Var1";"Var2"]);
+            
+            % colseries
+            [datout, dimnames, dimvalues] = df.col("Var1").dataND();
+            t.verifyEqual(datout, [2,NaN;7,14;NaN,11]);
+            t.verifyEqual(dimnames, ["x","y"]);
+            t.verifyEqual(dimvalues{1},[1;2;3]);
+            t.verifyEqual(dimvalues{2},[1;2]);
+            
+            % dataframe with 2D MultiIndex rows & columns
+            df = frames.DataFrame(dat(:,1:2), {[1,3,2,2], [1,2,1,2]}, {["Var2","Var1"],[1,2]}, ...
+                   RowDim=["x","y"], ColDim=["B","A"]);
+            [datout, dimnames, dimvalues] = df.dataND();
+            t.verifyEqual(datout, cat(4,cat(3,NaN(3,2),[16,NaN;9,4;NaN,5]),cat(3,[2,NaN;7,14;NaN,11],NaN(3,2))));
+            t.verifyEqual(dimnames, ["x","y","B","A"]);
+            t.verifyEqual(dimvalues,{[1;2;3],[1;2],["Var1";"Var2"],[1;2]}); 
+             
+            % rowseries
+            [datout, dimnames, dimvalues] = df.row({3,2}).dataND();
+            t.verifyEqual(datout, [NaN,11;5,NaN]);
+            t.verifyEqual(dimnames, ["B","A"]);
+            t.verifyEqual(dimvalues,{["Var1";"Var2"],[1;2]});            
+        end
+        
          
      end
 end

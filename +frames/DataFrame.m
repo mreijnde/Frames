@@ -1464,20 +1464,19 @@ classdef DataFrame
             % based on the (Multi)Index dimensions
             %                   
             % Remark:
-            %  - No duplicate index values are allowed in case of more than 1 dimension.
-            %  - Missing values will be set to NaN. 
+            %  - No duplicate index values are allowed
+            %  - Indices are sorted
+            %  - Missing values will be set to NaN 
             %
             % output:
             %   dat:       NDarray with dimensions as in dataframe
-            %   dimnames:  string array with names of dimensions
-            %   dimvalues: cell array with per dimension the unique values allong the axes
+            %   dimnames:  string array with names of dimensions in NDarray
+            %   dimvalues: cell array with per dimension the unique values along the axes of NDarray
             %
-            assert(obj.rows_.Ndim==1 || obj.rows_.isunique(), ...
-                'frames:DataFrame:dataND:rowsIndexNotUnique', ...      
-                "Rows index not unique. Non-unique index only allowed in case of only single dimension.");
-            assert(obj.columns_.Ndim==1 || obj.columns_.isunique(), ...
-                'frames:DataFrame:dataND:columnsIndexNotUnique', ...      
-                "Columns index not unique. Non-unique index only allowed in case of only single dimension.");                        
+            assert(obj.rows_.isunique(), ...
+                'frames:DataFrame:dataND:rowsIndexNotUnique', "Unique rows index required.");
+            assert(obj.columns_.isunique(), ...
+                'frames:DataFrame:dataND:columnsIndexNotUnique', "Unique columns index required.");                        
             % get dim length and position into NDarray for both dataframe indices
             [Ldim_rows, posind_rows] = getNDposind(obj.rows_);
             [Ldim_cols, posind_cols] = getNDposind(obj.columns_);
@@ -1518,7 +1517,7 @@ classdef DataFrame
                    posind = index.getvalue_uniqind(false); % false=row-major ordering
                 else
                    Ldim = length(index);
-                   posind = (1:Ldim)';
+                   posind = index.value_uniqind;
                 end
             end
         end
