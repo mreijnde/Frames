@@ -185,8 +185,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             df2 = df.initCopy([91,92,11;93,94,22], df.rows,[11,22,33]);
             df2_ref = frames.DataFrame([91,92,11;93,94,22], {{1,"a"},{2,"b"}},{[11,22,33]});
             t.verifyEqual(df2, df2_ref)
-            
-                        
+                                    
             % check settings
             df.settings.alignMethod = "full";
             df3 = df.initCopy([91,92,11;93,94,22], df.rows,[11,22,33]);

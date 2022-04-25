@@ -264,18 +264,23 @@ classdef MultiIndex < frames.Index
         
         
         
-        function [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = alignIndex(obj1, obj2, method, allowDimExpansion)
+        function [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = alignIndex(obj1, obj2, alignMethod, duplicateOption, allowDimExpansion)
             % function to create new aligned MultiIndex based on common dimensions 
             % of both MultiIndex objects and implicit expansion of missing dimensions
             %
             % input:
             %    - obj1,obj2: MultiIndex objects to be aligned
             %
-            %    - method: (string enum) select method for common dimension(s)
+            %    - alignMethod: (string enum) select option for common dimension(s)
             %           "strict": both need to have same values (else error thrown)
             %           "inner":  remove rows that are not common in both
             %           "left":   keep rows as in obj1 (default)            
             %           "full":   keep all items (allow missing in both obj1 and obj2)
+            %
+            %    - duplicateOption: (string enum) select option how to handle duplicates
+            %           "none":             do not allow duplicates present            
+            %           "duplicatesstrict": do not allow duplicates present, except fully equal indices (default)
+            %           "duplicates":       align duplicates in order of appearance
             %
             %   - allowDimExpansion (bool) allow expansion to add new dimensions to obj1
             %
@@ -286,8 +291,9 @@ classdef MultiIndex < frames.Index
             %  
             
             % default parameters
-            if nargin<3, method="left"; end
-            if nargin<5, allowDimExpansion=true; end
+            if nargin<3, alignMethod="left"; end            
+            if nargin<4, duplicateOption="duplicatesstrict"; end
+            if nargin<5, allowDimExpansion=true; end            
             
             % shortcut alignment code in case of equal Indices or singleton (for performance)            
             [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_handle_simple_(obj1, obj2);                        
@@ -312,7 +318,8 @@ classdef MultiIndex < frames.Index
                  obj1_common = obj1.getSubIndex(':', dim_common_ind1);
                  obj2_common = obj2.getSubIndex(':', dim_common_ind2);
                  [objnew, ind1_new , ind2_new, id1_raw, id2_raw] = ...
-                     alignIndex_(obj1_common, obj2_common, method, "unique");                            
+                      alignIndex_(obj1_common, obj2_common, alignMethod, duplicateOption);
+                      
             else
                 % all items same id in case of no common dimensions
                 id1_raw = ones( length(obj1),1);

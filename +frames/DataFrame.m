@@ -637,14 +637,14 @@ classdef DataFrame
             % function to concatenate one or multiple dataframes
             %
             % The requireUnique and requireUniqueSorted settings of obj will be used in the new combined dataframe.
-            % The method to combine the row and column indices can be specified with 'alignMethodRows' and 
-            % 'alignMethodCols'.
+            % The options to combine the row and column indices can be specified with 'duplicateOptionRows' and 
+            % 'duplicateOptionCols'.
             % 
-            % alignMethodRows and alignMethodCols options are:
+            % duplicateOptionRows and alignMethodCols options are:
             %  - 'unique':           only keep unique values in combined index.
             %                        (only option that is allowed for indexes that requireUnique)
             %
-            %  - 'keepDuplicates:    only keep unique values in combined index, but if already indices have
+            %  - 'duplicates':       only keep unique values in combined index, but if already indices have
             %                        duplicate values, keep them in. If multiple dataframes indices have the
             %                        same duplicate values, align them in the same order as they occur in the index.            
             %
@@ -656,7 +656,7 @@ classdef DataFrame
             %    - "keepFirst": first occurance is used
             %            
             % usage: 
-            %   df.combine( df1,df2,df3, alignMethodRows="unique", alignMethodCols="unique", order="keepLast")
+            %   df.combine( df1,df2,df3, duplicateOptionRows="unique", duplicateOptionCols="unique", order="keepLast")
             %        
             % output:
             %    concatenated dataframe
@@ -668,10 +668,10 @@ classdef DataFrame
                 df {mustBeA(df, 'frames.DataFrame')}
             end
             arguments
-                options.alignMethodRows {mustBeMember(options.alignMethodRows, ...
-                                        ["unique","keepDuplicates","none"])} = "unique"
-                options.alignMethodCols {mustBeMember(options.alignMethodCols, ...
-                                        ["unique","keepDuplicates","none"])} = "unique"
+                options.duplicateOptionRows {mustBeMember(options.duplicateOptionRows, ...
+                                        ["unique","duplicates","none"])} = "unique"
+                options.duplicateOptionCols {mustBeMember(options.duplicateOptionCols, ...
+                                        ["unique","duplicates","none"])} = "unique"
                 options.order           {mustBeMember(options.order, ["keepFirst","keepLast"])} = "keepLast"           
             end
             % skip, if nothing to do            
@@ -681,15 +681,15 @@ classdef DataFrame
             end
             % check methods and required uniqueness of indices
             if obj.rows_.requireUnique               
-                assert(options.alignMethodRows=="unique", ...
+                assert(options.duplicateOptionRows=="unique", ...
                     'frames:DataFrame:combine:invalidRowsMethod', ...
-                    "Invalid alignMethodRows option. Row index has requireUnique enabled, only 'unique' allowed.");
+                    "Invalid duplicateOptionRows option. Row index has requireUnique enabled, only 'unique' allowed.");
                 rows_requireUnique = cellfun(@(x) x.rows_.isunique() || length(x.rows_)==0, df);
                 assert(all(rows_requireUnique), 'frames:DataFrame:combine:notAllRowsUnique', ...
                     "Obj rows has requireUnique enabled and not all other df rows are unique.");
             end
             if obj.columns_.requireUnique
-                assert(options.alignMethodCols=="unique", ...
+                assert(options.duplicateOptionCols=="unique", ...
                     'frames:DataFrame:combine:invalidColsMethod', ...
                     "Invalid alignMethodCols option. Column index has requireUnique enabled, only 'unique' allowed.");
                 columns_requireUnique = cellfun(@(x) x.columns_.isunique() || length(x.columns_)==0, df);
@@ -701,8 +701,8 @@ classdef DataFrame
             rowsobj = cellfun(@(x) {x.rows_}, df);
             colsobj = cellfun(@(x) {x.columns_}, df);            
             % get new combined index objects and position index          
-            [rowsnew, rowsnew_ind] = obj.rows_.union_(rowsobj, options.alignMethodRows);
-            [colsnew, colsnew_ind] = obj.columns_.union_(colsobj, options.alignMethodCols);            
+            [rowsnew, rowsnew_ind] = obj.rows_.union_(rowsobj, options.duplicateOptionRows);
+            [colsnew, colsnew_ind] = obj.columns_.union_(colsobj, options.duplicateOptionCols);            
             % get empty dataframe (with same settings)
             dfnew = obj;
             dfnew.rows_ = rowsnew;
@@ -740,22 +740,22 @@ classdef DataFrame
                
         function other = horzcat(obj,varargin)
             % horizontal concatenation (inner join) of frames: [df1,df2,df3,...]
-            alignMethodRows="keepDuplicates";
-            alignMethodCols="none";
-            if obj.rows_.requireUnique, alignMethodRows="unique"; end        
-            if obj.columns_.requireUnique, alignMethodCols="unique"; end
-            other = obj.combine(varargin{:}, alignMethodRows=alignMethodRows, ...
-                                             alignMethodCols=alignMethodCols, order="keepLast");
+            duplicateOptionRows="duplicates";
+            duplicateOptionCols="none";
+            if obj.rows_.requireUnique, duplicateOptionRows="unique"; end        
+            if obj.columns_.requireUnique, duplicateOptionCols="unique"; end
+            other = obj.combine(varargin{:}, duplicateOptionRows=duplicateOptionRows, ...
+                                             duplicateOptionCols=duplicateOptionCols, order="keepLast");
         end
         
         function other = vertcat(obj,varargin)
             % vertical concatenation (outer join) of frames: [df1;df2;df3;...]                                    
-            alignMethodRows="none";
-            alignMethodCols="keepDuplicates";            
-            if obj.rows_.requireUnique, alignMethodRows="unique"; end        
-            if obj.columns_.requireUnique, alignMethodCols="unique"; end            
-            other = obj.combine(varargin{:}, alignMethodRows=alignMethodRows, ...
-                                             alignMethodCols=alignMethodCols, order="keepLast");
+            duplicateOptionRows="none";
+            duplicateOptionCols="duplicates";            
+            if obj.rows_.requireUnique, duplicateOptionRows="unique"; end        
+            if obj.columns_.requireUnique, duplicateOptionCols="unique"; end            
+            other = obj.combine(varargin{:}, duplicateOptionRows=duplicateOptionRows, ...
+                                             duplicateOptionCols=duplicateOptionCols, order="keepLast");
         end
         
         
@@ -1938,9 +1938,15 @@ classdef DataFrame
             if ~isMultiIndex(df1.columns_) && isMultiIndex(df2.columns_)
                 df1.columns_ = frames.MultiIndex(df1.columns_);
             end            
-            % get aligned indices
-            [mrow, rowind1, rowind2] = df1.rows_.alignIndex(df2.rows_, alignMethod, allowDimExpansion);
-            [mcol, colind1, colind2] = df1.columns_.alignIndex(df2.columns_, alignMethod, allowDimExpansion);
+            % select suitable duplicateOption                        
+            duplicateOption="duplicatesstrict";
+            duplicateOptionRows = duplicateOption;
+            duplicateOptionCols = duplicateOption;
+            if df1.rows_.requireUnique, duplicateOptionRows = "unique"; end            
+            if df1.columns_.requireUnique, duplicateOptionCols = "unique"; end
+            % get aligned indices            
+            [mrow, rowind1, rowind2] = df1.rows_.alignIndex(df2.rows_, alignMethod, duplicateOptionRows, allowDimExpansion);
+            [mcol, colind1, colind2] = df1.columns_.alignIndex(df2.columns_, alignMethod, duplicateOptionCols, allowDimExpansion);
             rowmask = ~isnan(rowind1) & ~isnan(rowind2);
             colmask = ~isnan(colind1) & ~isnan(colind2);                 
             dfnew1 = df1.reorder(mrow, rowind1, mcol, colind1);

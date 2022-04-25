@@ -314,11 +314,11 @@ classdef Index
                index2 = obj.setvalue(index2, false); %skip value checks/ unique warning                          
            end           
            if obj.requireUnique
-               method = "unique";
+               duplicateOption = "unique";
            else
-               method = "none";
+               duplicateOption = "none";
            end
-           obj = obj.union_({index2}, method);
+           obj = obj.union_({index2}, duplicateOption);
            obj.singleton_ = false;
        end
         
@@ -395,7 +395,7 @@ classdef Index
         end
         
         
-        function [obj_new, ind_cell] = union_(obj, others_cell, alignMethod)
+        function [obj_new, ind_cell] = union_(obj, others_cell, duplicateOption)
             % Internal union function to create combined index of obj and all supplied index objects            
             %
             % The output index will keep the requireUnique and requireUniqueSorted settings from obj object. 
@@ -404,15 +404,20 @@ classdef Index
             % input:
             %   others_cell:  cell array with (one or more) index objects to combine
             %
-            %   alignMethod:    string enum with the alignment method to use:            
+            %   duplicateOption:    string enum with options:            
             %     - 'unique':        align on unique values only. Output index only contains the unique values of the
             %                        all indices together.
             %                        (only option that is allowed for indexes that requireUnique)
-            %
-            %     - 'keepDuplicates: align values between different indices . If already indices have
+            %            
+            %     - 'duplicates':    align values between different indices. If already indices have
             %                        duplicate values, keep them in. If multiple indices have the
             %                        same duplicate values, align them in the same order as they occur in the
             %                        index. (default option)            
+            %
+            %     - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
+            %                        case of exact equal indices (for whicha 1:1 mapping will be used). An
+            %                        error will be raised in case of duplicates and not exactly equal.            
+            % 
             %
             %     - 'none':          no alignment of values, append all values of indices together, even if that
             %                        creates new duplicates.                                
@@ -427,7 +432,7 @@ classdef Index
             arguments
                 obj
                 others_cell cell
-                alignMethod {mustBeMember(alignMethod, ["unique", "keepDuplicates", "none"])} = "KeepDuplicates"   
+                duplicateOption {mustBeMember(duplicateOption, ["unique", "duplicates", "duplicatesstrict", "none"])} = "duplicates"   
             end
                         
             % handle singletons indices
@@ -443,31 +448,39 @@ classdef Index
                 end
             end
             
+            % handle equal indices
+            if (duplicateOption=="duplicates" || duplicateOption=="duplicatesstrict")
+                allsame = all(cellfun(@(x) isequal(x.value,obj.value), others_cell));
+                if allsame
+                    % shortcut for performance: 1to1 mapping of indices
+                    obj_new = obj;
+                    ind_cell = repmat({(1:obj.length())'}, length(others_cell)+1,1);
+                    return
+                end                
+            end
+                                  
             % check uniqueness      
             if obj.requireUnique
-                 assert(alignMethod=="unique", 'frames:Index:union:requireUniqueMethod', ...
-                     "Only method 'unique' allowed in union for index with requireUnique.");     
-                 %requireUnique_all = cellfun(@(x) x.requireUnique || length(x)==0, others_cell);                   
-                 %assert(all(requireUnique_all), 'frames:Index:union:notAllRequiredUnique', ...
-                 %    "Obj has requireUnique enabled and not all other indices have this enabled.");
+                 assert(duplicateOption=="unique", 'frames:Index:union:requireUniqueMethod', ...
+                     "Only duplicateOption 'unique' allowed in union for index with requireUnique.");     
             end
                                                                 
             % concat all inputs
             lengths = [obj.length() cellfun(@length, others_cell)];            
             obj_new = obj.vertcat_(others_cell{:}); % no error checking on unique yet
-            
+                       
             % get unique index and row position index            
             uniqind = obj_new.value_uniqind;
             ind = (1:obj_new.length())';
             
-            if alignMethod=="none"
+            if duplicateOption=="none"
                 % no alignment, keep all concatenated values (including duplicates)
                 if obj.warningNonUnique_ && obj.isunique() && ~obj_new.isunique()
                       warning('frames:Index:notUnique','Index value is not unique.')
                 end
             else 
                 % align values
-                if ~obj.requireUnique && alignMethod=="keepDuplicates" && ~obj_new.isunique()
+                if ~obj.requireUnique && duplicateOption=="duplicates" && ~obj_new.isunique()
                     % align duplicates between different indices by its order
                     unique_section = cellfun(@(x) x.requireUnique || length(x)==0, [{obj} others_cell]);                                
                     label_dupl = labelDuplicatesInSections(uniqind, lengths, unique_section);
@@ -482,6 +495,13 @@ classdef Index
                 end
                 obj_new = obj_new.getSubIndex(ia);  
             end
+            
+            % handle 'duplicatesstrict' error condition
+            if duplicateOption=="duplicatesstrict"
+                % remark: at this point it is known that the indices are not equal (that is handled above)  
+                assert(obj_new.isunique(), 'frames:Index:union:notUnique', ...
+                    "Duplicates values in (unequal) indices not allowed in combination with duplicateOption 'duplicatesstrict'");                
+            end            
                            
             % slice full position index for each input index
             ind_cell = mat2cell( ind, lengths, 1);
@@ -527,17 +547,22 @@ classdef Index
         end
         
         
-        function [objnew, ind1_new, ind2_new] = alignIndex(obj1, obj2, method, ~)
+        function [objnew, ind1_new, ind2_new] = alignIndex(obj1, obj2, alignMethod, duplicateOption, ~)
             % function to create new aligned Index of two Index objects            
             %
             % input:
             %    - obj1,obj2:    Index objects to be aligned
             %
-            %    - method: (string enum) select method
+            %    - alignMethod: (string enum) select alignment method
             %           "strict": both need to have same values (else error thrown)
             %           "inner":  remove rows that are not common in both
             %           "left":   keep rows as in obj1  (default)            
             %           "full":   keep all items (allow missing in both obj1 and obj2)
+            %
+            %    - duplicateOption: (string enum) select method for aligning of indices
+            %           "none":             do not allow duplicates present
+            %           "duplicatesstrict": do not allow duplicates present, except fully equal indices (default)
+            %           "duplicates":       align duplicates in order of appearance
             %
             % output:
             %   - objnew:     Index object with new aligned index (1:N)
@@ -546,10 +571,11 @@ classdef Index
             %      
             
             % default parameters
-            if nargin<3, method="left"; end                                                
+            if nargin<3, alignMethod="left"; end
+            if nargin<4, duplicateOption="duplicatesstrict"; end
             
             % call internal alignIndex function
-            [objnew, ind1_new, ind2_new] = alignIndex_(obj1, obj2, method, "unique");
+            [objnew, ind1_new, ind2_new] = alignIndex_(obj1, obj2, alignMethod, duplicateOption);                                    
         end
         
                
@@ -559,13 +585,10 @@ classdef Index
     
     methods(Hidden)
         
-         function [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_(obj1, obj2, method, unionMethod)
+         function [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_(obj1, obj2, alignMethod, duplicateOption, ~)
             % internal function to create new aligned Index of two Index objects            
             %
             % see alignIndex() for description
-            %
-            % extra input (wrt alignIndex):
-            %   - unionMethod
             %
             % extra output (wrt alignIndex):                        
             %   - id1_raw:    array with unique ids of values in obj1 (lenght of obj1)
@@ -574,30 +597,44 @@ classdef Index
 
             % handle equal Indices or singleton indices without alignment code (for performance)            
             [objnew, ind1_new, ind2_new, id1_raw, id2_raw] = alignIndex_handle_simple_(obj1, obj2);                        
-            if ~isempty(objnew), return; end
+            if ~isempty(objnew)
+                assert(duplicateOption~="none" || (obj1.isunique() && obj2.isunique()), ...
+                   'frames:Index:alignIndex:duplicatevalues',...
+                   "No duplicate index values allowed (with duplicateOption 'none')");  
+                return; 
+            end
 
-            % get matching rows of both Index objects
-            [objnew, ind_cell] = obj1.union_({obj2}, unionMethod);            
+            %check for duplicates            
+            if duplicateOption=="none"                
+                assert( obj1.isunique() && obj2.isunique(), 'frames:Index:alignIndex:duplicatevalues',...
+                    "No duplicate index values allowed (with duplicateOption 'none')");
+            elseif duplicateOption=="duplicatesstrict"
+                assert(obj1.isunique() && obj2.isunique(), 'frames:Index:alignIndex:duplicatevalues',...                                    
+                    "Duplicate index values not allowed in case of not fully equal indices (with default duplicateOption 'duplicatesstrict')");            
+            end
+            
+            % get matching rows of both Index objects                                 
+            [objnew, ind_cell] = obj1.union_({obj2}, duplicateOption);            
             [id1_raw, id2_raw] = ind_cell{:};
-
+            
             % create common masks
             mask1 = ismember(id1_raw, id2_raw);
             mask2 = ismember(id2_raw, id1_raw);    
 
             % define row ids in new index based on chosen method
-            switch method
+            switch alignMethod
                 case "inner"                    
                     id = id1_raw(mask1);              
                 case "left"
                     id = id1_raw;                                                            
                 case "strict"
                     assert( all(mask1) & all(mask2), 'frames:Index:alignIndex:unequalIndex', ...
-                        "Unequal values in dimension not allowed in strict align method");
+                        "Unequal values in dimension not allowed in strict alignMethod");
                     id = id1_raw;                    
                 case "full"                                         
                     id = 1:length(objnew);                                                      
                 otherwise 
-                    error("unsupported alignMethod '%s'",method);
+                    error("unsupported alignMethod '%s'", alignMethod);
             end
 
             % only output selected rows in index
@@ -611,7 +648,7 @@ classdef Index
 
             ind2_new = nan(length(id),1);
             [~,pos2_obj, pos2_id] = intersect(id2_raw, id);
-            ind2_new(pos2_id) = pos2_obj;                                                                         
+            ind2_new(pos2_id) = pos2_obj;  
         end
               
         
