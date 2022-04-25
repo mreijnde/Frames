@@ -484,17 +484,29 @@ classdef Index
                        
             % get unique index and row position index            
             uniqind = obj_new.value_uniqind;
-            id_raw = (1:obj_new.length())';
             
             if duplicateOption=="none"
                 % no alignment, keep all concatenated values (including duplicates)
                 if obj.warningNonUnique_ && obj.isunique() && ~obj_new.isunique()
                       warning('frames:Index:notUnique','Index value is not unique.')
                 end
-                id = id_raw;
+                
+                % create simple position index - no alignment - order of 
+                Nothers = length(others_cell);
+                ind_cell = cell(Nothers+1,1);               
+                p0 = 1;
+                posref_empty = nan(obj_new.length(),1) 
+                for k=1:Nothers+1
+                     posref = posref_empty;
+                     p1 = p0+lengths(k);
+                     posref(p0:p1-1) = 1:lengths(k);
+                     p0 = p1;
+                     ind_cell{k} = posref;                     
+                end                                   
+
             else 
                 % align values
-                if ~obj_new.isunique() && duplicateOption=="duplicates"
+                if  duplicateOption=="duplicates" && ~obj_new.isunique()
                     % align duplicates between different indices by its order
                     unique_section = cellfun(@(x) x.requireUnique || length(x)==0, [{obj} others_cell]);                                
                     label_dupl = labelDuplicatesInSections(uniqind, lengths, unique_section);
@@ -508,30 +520,30 @@ classdef Index
                    [~, ia, id] = unique(uniqind, 'rows', 'stable');                    
                 end
                 obj_new = obj_new.getSubIndex_(ia,':');  
-            end
+           
             
-            % handle 'duplicatesstrict' error condition
-            if duplicateOption=="duplicatesstrict"
-                % remark: at this point it is known that the indices are not equal (that is handled above)  
-                assert(obj_new.isunique(), 'frames:Index:union:notUnique', ...
-                    "Duplicates values in (unequal) indices not allowed in combination with duplicateOption 'duplicatesstrict'");                
-            end            
-                           
-            % slice full position index for each input index
-            id_cell = mat2cell( id, lengths, 1);
-            
-            % get for each item in new index a position reference to original line
-            % (if given item does not exist in given object, value is NaN)
-            ind_cell = cell(size(id_cell));
-            Nobj_new = obj_new.length();
-            for k=1:length(id_cell)
-                id_s = id_cell{k};                
-                ind_s = nan(Nobj_new,1);
-                ind_s(flip(id_s))= length(id_s):-1:1; %flipped to keep first occurrence in case of (overlapping) duplicates
-                % assign to cell array
-                ind_cell{k} = ind_s;
-            end
-            
+                % handle 'duplicatesstrict' error condition
+                if duplicateOption=="duplicatesstrict"
+                    % remark: at this point it is known that the indices are not equal (that is handled above)  
+                    assert(obj_new.isunique(), 'frames:Index:union:notUnique', ...
+                        "Duplicates values in (unequal) indices not allowed in combination with duplicateOption 'duplicatesstrict'");                
+                end            
+
+                % slice full position index for each input index
+                id_cell = mat2cell( id, lengths, 1);
+
+                % get for each item in new index a position reference to original line
+                % (if given item does not exist in given object, value is NaN)
+                ind_cell = cell(size(id_cell));
+                Nobj_new = obj_new.length();
+                for k=1:length(id_cell)
+                    id_s = id_cell{k};                
+                    ind_s = nan(Nobj_new,1);
+                    ind_s(flip(id_s))= length(id_s):-1:1; %flipped to keep first occurrence in case of (overlapping) duplicates
+                    % assign to cell array
+                    ind_cell{k} = ind_s;
+                end
+             end
             
             
             function out = labelDuplicatesInSections(x, L, unique_section)
