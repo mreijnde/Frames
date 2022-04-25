@@ -10,7 +10,7 @@ classdef (HandleCompatible) DataFrameSettings
                              % -  "full":    keep all indices values (allow missing values in indices in both)
                        
         duplicateOption (1,1) string ...
-                        {mustBeMember(duplicateOption,["none", "unique", "duplicates","duplicatesstrict"])} ...
+                        {mustBeMember(duplicateOption,["none", "unique", "duplicates","duplicatesstrict","expand"])} ...
                         = "duplicatesstrict"
                              % defines how duplicate values in indices are handled in math operation on DataFrames:                             
                              %  - "none":             no operations with duplicates allowed
@@ -18,7 +18,9 @@ classdef (HandleCompatible) DataFrameSettings
                              %  - "duplicatestrict":  only allow duplicates in case of equal indices
                              %  - "duplicates":       align duplicates in order of occurrence between indices
                              %                        (first occurrence duplicate value in one index is matched to 
-                             %                         1st occurence in other, 2nd occurence to 2nd etc)                              
+                             %                         1st occurence in other, 2nd occurence to 2nd etc)
+                             %  - "expand":           create all combinations of matching duplicates between indices
+                             %                        in outputs
         
         forceMultiIndex logical = false
                              % automatically convert DataFrame indices to MultiIndex
