@@ -180,32 +180,3 @@ if convGroupInd
 end
 
 end
-
-
-
-%function [ind_maskSingle, ind_maskMulti, ind_cell, groups, groupCount, groupInd] = getIndicesForEachGroup(groupid)
-function [groups, groupCount, groupInd, groupStartPos, indicesList] = getIndicesForEachGroup(groupid)
-% get position indices for each unique group required for aggregation
-%
-% input: 
-%    groupid: vector with groupids (numeric or strings)
-%
-% output:
-%    groups:         array with groupid for each group 
-%    groupCount:     array with number of elements per group
-%    groupInd:       array with position index to first occurance of groupid for each group
-%    groupStartPos:  array with number of elements per group
-%    indicesList:    array with ordered list of indices to assign in sequence to groups
-%
-[groups, groupInd, id] = unique(groupid,'sorted');
-if length(groups)==length(groupid)
-    % all single values, no groups ==> shortcut for performance
-    groupCount = [];     
-    groupStartPos = [];
-    indicesList = [];
-    return    
-end
-[~,indicesList] = sort(id);
-groupCount = histc(id, 1:max(id)); %#ok<HISTC>
-groupStartPos = cumsum(groupCount) - groupCount + 1;
-end
