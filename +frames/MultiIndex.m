@@ -270,14 +270,14 @@ classdef MultiIndex < frames.Index
             end
             
             % find common dimensions            
-            [dim_common, dim_common_ind1, dim_common_ind2, dim_unique_ind1, dim_unique_ind2] = obj1.getMatchingDims(obj2);                       
+            [dim_common_ind1, dim_common_ind2, dim_unique_ind1, dim_unique_ind2] = obj1.getMatchingDims(obj2);                       
             NextraDims2 = length(dim_unique_ind2);
             NextraDims1 = length(dim_unique_ind1);
             extraDimsNeeded = NextraDims1>0 || NextraDims2>0;
             assert(allowDimExpansion | NextraDims2==0, 'frames:MultiIndex:alignIndex:expansiondisabled', ...
                           "Dimension expansion disabled, while obj2 has other dimension(s) as obj1.");                        
                        
-            if ~isempty(dim_common)            
+            if ~isempty(dim_common_ind1)            
                  % get common dimension indices to align on
                  obj1_common = obj1.getSubIndex_(':', dim_common_ind1);
                  obj2_common = obj2.getSubIndex_(':', dim_common_ind2);                 
@@ -401,7 +401,7 @@ classdef MultiIndex < frames.Index
         end
         
         
-        function [common, common_ind1, common_ind2, unique_ind1, unique_ind2] = getMatchingDims(obj1, obj2)
+        function [common_ind1, common_ind2, unique_ind1, unique_ind2] = getMatchingDims(obj1, obj2)
             % find common and unique dimensions between two MultiIndex
             %
             % input: obj1,obj2: MultiIndex objects
@@ -411,7 +411,7 @@ classdef MultiIndex < frames.Index
             %    common_indX:  array with common dimension indices of MultiIndex object X
             %    unique_indX:  array with unique dimension indices of MultiIndex object X
             %
-            [common, common_ind1, common_ind2] = intersect(obj1.name, obj2.name, 'stable');
+            [~, common_ind1, common_ind2] = intersect(obj1.name, obj2.name, 'stable');
             [~, unique_ind1, unique_ind2] = setxor(obj1.name, obj2.name);
         end
         
