@@ -382,8 +382,9 @@ classdef Index
             end
             
             % get matching rows of both Index objects                                 
-            [objnew, ind_cell] = obj1.union_({obj2}, duplicateOption);            
-            [ind1_raw, ind2_raw] = ind_cell{:};
+            [objnew, ind] = obj1.union_({obj2}, duplicateOption);            
+            ind1_raw = ind(:,1);
+            ind2_raw = ind(:,2);            
             
             % create common masks
             mask1 = ~isnan(ind1_raw);
@@ -467,7 +468,7 @@ classdef Index
             end
         end         
         
-        function [obj_new, ind_cell] = union_(obj, others_cell, duplicateOption, alignMethod)
+        function [obj_new, ind] = union_(obj, others_cell, duplicateOption, alignMethod)
             % Internal union function to create combined index of obj and all supplied index objects            
             %
             % The output index will keep the requireUnique and requireUniqueSorted settings from obj object. 
@@ -508,8 +509,8 @@ classdef Index
             %
             % output:
             %   obj_new:   new Index object with new aligned index with N values
-            %   ind_cell:  cell array with for each input index object in the union an position index (1:N)
-            %              into original object.
+            %   ind:       index array(N,Nobj) with each column the position index into the original object
+            %              for each corresponding input index object.
             %              (position index contain a NaN value if given index value is not present)
             arguments
                 obj
@@ -521,10 +522,11 @@ classdef Index
                         
             % handle singletons indices
             singletons = cellfun(@(x) x.singleton, [{obj}, others_cell]);
+            Nobj = length(others_cell)+1;
             if any(singletons)
                 if all(singletons)
                     obj_new = obj;
-                    ind_cell = repmat({1},length(singletons),1);
+                    ind = ones(1, Nobj);
                     return
                 else
                     error('frames:Index:union:noMixingSingletonAndNonSingleton', ...
@@ -538,8 +540,8 @@ classdef Index
                 allsame = all(cellfun(@(x) isequal(x.value_,obj.value_), others_cell));
                 if allsame
                     % shortcut for performance: 1-to-1 mapping of indices
-                    obj_new = obj;
-                    ind_cell = repmat({(1:obj.length())'}, length(others_cell)+1,1);
+                    obj_new = obj;                    
+                    ind = repmat((1:obj.length())', 1, Nobj);                    
                     return
                 end                
             end
@@ -562,16 +564,12 @@ classdef Index
                 end
                 
                 % create simple position index - no alignment
-                Nothers = length(others_cell);
-                ind_cell = cell(Nothers+1,1);               
-                p0 = 1;
-                posref_empty = nan(obj_new.length(),1); 
-                for k=1:Nothers+1
-                     posref = posref_empty;
-                     p1 = p0+objlen(k);
-                     posref(p0:p1-1) = 1:objlen(k);
-                     p0 = p1;
-                     ind_cell{k} = posref;                     
+                ind = nan(obj_new.length(), Nobj);
+                p0 = 1;                
+                for iobj=1:Nobj                   
+                     p1 = p0+objlen(iobj);
+                     ind(p0:p1-1, iobj) = 1:objlen(iobj);
+                     p0 = p1;                                                               
                 end
                 
              elseif duplicateOption=="expand"
@@ -586,12 +584,12 @@ classdef Index
                     [posind1_expand, posind2_expand, posind_expand] = expandIndex(uniqind1,uniqind2);
                                                        
                     % create new index obj + cell index
-                    if ~obj.requireUniqueSorted
-                        ind_cell = {posind1_expand; posind2_expand};                                                
+                    if ~obj.requireUniqueSorted                        
+                        ind = [posind1_expand posind2_expand];                                                
                     else                        
                         % sort by uniqind if required
-                        [~, sortind] = sort(uniqind(posind_expand));
-                        ind_cell = {posind1_expand(sortind); posind2_expand(sortind)};                        
+                        [~, sortind] = sort(uniqind(posind_expand));                        
+                        ind = [posind1_expand(sortind) posind2_expand(sortind)];                        
                     end
                     obj_new = obj_new.getSubIndex_(posind_expand,':');  
 
@@ -620,45 +618,38 @@ classdef Index
                     assert(obj_new.isunique(), 'frames:Index:union:notUnique', ...
                         "Duplicates values in (unequal) indices not allowed in combination with duplicateOption 'duplicatesstrict'");                
                 end            
-
-                % slice full position index for each input index
-                id_cell = mat2cell( id, objlen, 1);
-
+                
                 % get for each item in new index a position reference to original line
                 % (if given item does not exist in given object, value is NaN)
-                ind_cell = cell(size(id_cell));
-                ind_empty = nan(obj_new.length(),1); 
-                for k=1:length(id_cell)
-                    id_s = id_cell{k};                
-                    ind_s = ind_empty;
-                    ind_s(flip(id_s))= length(id_s):-1:1; %flipped to keep first occurrence in case of (overlapping) duplicates
-                    % assign to cell array
-                    ind_cell{k} = ind_s;
+                ind = nan(obj_new.length(), Nobj); 
+                p0 = 1;
+                for iobj=1:Nobj                    
+                    p1 = p0 + objlen(iobj);
+                    id_slice = id(p0:p1-1);
+                    ind(flip(id_slice),iobj)= objlen(iobj):-1:1; %flipped to keep first occurrence in case of (overlapping) duplicates                    
+                    p0 = p1;
                 end
+                
             end
             
             % filter output based on alignMethods             
-            ind_mat = [ind_cell{:}]; % concat all reference index colvectors 
-            mask = ~isnan(ind_mat);
-            
-            % define row ids in new index based on chosen method
+            maskNaN = ~isnan(ind);
             switch alignMethod
                 case "full"
-                    maskOut = true; % nothing to filter
+                    mask = true; % nothing to filter
                 case "strict"
-                    assert( all(mask,'all'), 'frames:Index:alignIndex:unequalIndex', ...
+                    assert( all(maskNaN,'all'), 'frames:Index:alignIndex:unequalIndex', ...
                         "Unequal values in dimension not allowed in strict alignMethod");
-                    maskOut = true; % nothing to filter
+                    mask = true; % nothing to filter
                 case "inner"
-                    maskOut = all(mask,2);
+                    mask = all(maskNaN,2);
                 case "left"
-                    maskOut = mask(:,1);
-            end
-            
+                    mask = maskNaN(:,1);
+            end            
             % only output selected rows in index
-            if ~all(maskOut)
-                obj_new = obj_new.getSubIndex_(maskOut,':');
-                ind_cell = cellfun(@(x) x(maskOut), ind_cell,UniformOutput=false);                
+            if ~all(mask)
+                obj_new = obj_new.getSubIndex_(mask,':');                
+                ind = ind(mask,:);                
             end
            
              

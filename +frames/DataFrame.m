@@ -729,11 +729,11 @@ classdef DataFrame
             elements_assigned = false(size(dfnew));            
             for i=dforder
                 % get non NaN position indices
-                rowind = rowsnew_ind{i};
+                rowind = rowsnew_ind(:,i);
                 rowindMask = ~isnan(rowind);
                 rowindFiltered = rowind(rowindMask);
                 
-                colind = colsnew_ind{i};
+                colind = colsnew_ind(:,i);
                 colindMask = ~isnan(colind);
                 colindFiltered = colind(colindMask);
                 % checks
