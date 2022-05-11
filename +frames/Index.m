@@ -467,7 +467,7 @@ classdef Index
             end
         end         
         
-        function [obj_new, ind_cell] = union_(obj, others_cell, duplicateOption)
+        function [obj_new, ind_cell] = union_(obj, others_cell, duplicateOption, alignMethod)
             % Internal union function to create combined index of obj and all supplied index objects            
             %
             % The output index will keep the requireUnique and requireUniqueSorted settings from obj object. 
@@ -495,7 +495,15 @@ classdef Index
             %                        (option only supports union between 2 indices)
             %
             %     - 'none':          no alignment of values, append all values of indices together, even if that
-            %                        creates new duplicates.                                
+            %                        creates new duplicates.    
+            %
+            %
+            %   alignMethod: (string enum) select alignment method
+            %           "strict": all need to have same values (if not, error is thrown)
+            %           "inner":  remove rows that are not common among indices
+            %           "left":   keep rows as in obj1  (default)            
+            %           "full":   keep all items (allow missing items)
+            %
             %
             %
             % output:
@@ -507,7 +515,8 @@ classdef Index
                 obj
                 others_cell cell
                 duplicateOption {mustBeMember(duplicateOption, ...
-                                ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"   
+                                ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
+                alignMethod {mustBeMember(alignMethod, ["strict", "inner", "left", "full"])} = "left"  
             end
                         
             % handle singletons indices
@@ -588,9 +597,9 @@ classdef Index
 
             else 
                 % align values
-                if  duplicateOption=="duplicates" && ~obj_new.isunique()
+                if  (duplicateOption=="duplicates" || duplicateOption=="duplicatesstrict")&& ~obj_new.isunique()
                     % align duplicates between different indices by its order
-                    unique_section = cellfun(@(x) x.requireUnique || length(x)==0, [{obj} others_cell]);                                
+                    unique_section = cellfun(@(x) x.requireUnique || x.length()==0, [{obj} others_cell]);                        
                     label_dupl = labelDuplicatesInSections(uniqind, objlen, unique_section);
                     % define new uniq_ind with seperate values for duplicates based on its label
                     uniqind = uniqind*(length(label_dupl)+1) + label_dupl; 
@@ -628,6 +637,30 @@ classdef Index
                 end
             end
             
+            % filter output based on alignMethods             
+            ind_mat = [ind_cell{:}]; % concat all reference index colvectors 
+            mask = ~isnan(ind_mat);
+            
+            % define row ids in new index based on chosen method
+            switch alignMethod
+                case "full"
+                    maskOut = true; % nothing to filter
+                case "strict"
+                    assert( all(mask,'all'), 'frames:Index:alignIndex:unequalIndex', ...
+                        "Unequal values in dimension not allowed in strict alignMethod");
+                    maskOut = true; % nothing to filter
+                case "inner"
+                    maskOut = all(mask,2);
+                case "left"
+                    maskOut = mask(:,1);
+            end
+            
+            % only output selected rows in index
+            if ~all(maskOut)
+                obj_new = obj_new.getSubIndex_(maskOut,':');
+                ind_cell = cellfun(@(x) x(maskOut), ind_cell,UniformOutput=false);                
+            end
+           
              
             function [posind1_expand, posind2_expand, posind_expand] = expandIndex(uniqind1, uniqind2)
                 % internal function to align both input vectors value, and output position index to the aligned vector.
