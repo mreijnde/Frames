@@ -336,7 +336,7 @@ classdef Index
         
                
         
-        function [objnew, ind1, ind2] = alignIndex(obj1, obj2, alignMethod, duplicateOption, ~)
+        function [objnew, ind1, ind2] = alignIndex(obj1, obj2, alignMethod, duplicateOption, allowDimExpansion)
             % function to create new aligned Index of two Index objects            
             %
             % input:
@@ -378,14 +378,10 @@ classdef Index
             if nargin<3, alignMethod="left"; end
             if nargin<4, duplicateOption="duplicatesstrict"; end                
            
-            % handle equal Indices or singleton indices without alignment code (for performance)            
-            [objnew, ind1, ind2] = alignIndex_handle_simple_(obj1, obj2);                        
-            if ~isempty(objnew)                 
-                return; 
-            end
            
             % get matching rows of both Index objects                                 
-            [objnew, ind] = obj1.union_(obj2, duplicateOption=duplicateOption, alignMethod=alignMethod);
+            [objnew, ind] = obj1.union_(obj2, duplicateOption=duplicateOption, alignMethod=alignMethod, ...
+                                              allowDimExpansion=allowDimExpansion);
             ind1 = ind(:,1);
             ind2 = ind(:,2);                                                      
         end
@@ -493,6 +489,7 @@ classdef Index
                    options.duplicateOption {mustBeMember(options.duplicateOption, ...
                                 ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
                    options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
+                   options.allowDimExpansion logical=false; % not used by Index, only MultiIndex
             end
             
             % get index objects
@@ -506,11 +503,12 @@ classdef Index
                  ind = ones(1, Nobj);
                 return
             end
-            objs_nosingleton = objs(~singletons); 
+            objs_nosingleton = objs(~singletons);
+            Nobj_nosingleton = length(objs_nosingleton);
             
             % handle equal indices
             if (options.duplicateOption=="duplicates" || options.duplicateOption=="duplicatesstrict") || ...
-               (options.duplicateOption=="unique" && obj.isunique())                
+               (options.duplicateOption=="unique" && obj.isunique()) || Nobj_nosingleton==1               
                 allsame = all(cellfun(@(x) isequal(x.value_,objs_nosingleton{1}.value_), objs_nosingleton));
                 if allsame
                     % shortcut for performance: 1-to-1 mapping of indices
@@ -798,31 +796,7 @@ classdef Index
             % get index positions to unique values (using cache for speedup)            
             out = obj.value_uniqind_;
         end        
-        
-        function [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2)
-            % internal function to check and handle simple cases (equal index or singleton)
-            %
-            % check
-            assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");
-            % default empty
-            objnew = [];
-            ind1_new = []; ind2_new = [];
-            % handle equal and singleton cases
-            if isequal(obj1.value_,obj2.value_)
-                objnew = obj1;
-                ind1_new = (1:length(obj1))';
-                ind2_new = ind1_new;
-            elseif ~obj1.singleton && obj2.singleton
-                objnew = obj1;
-                ind1_new = (1:length(obj1))';
-                ind2_new = ones(size(ind1_new));
-            elseif obj1.singleton && ~obj2.singleton
-                objnew = obj2;
-                ind2_new = (1:length(obj2))';
-                ind1_new = ones(size(ind2_new));
-            end
-        end
-        
+               
         
         function obj = setvalue(obj,value, userCall)
             if nargin<3, userCall=true; end

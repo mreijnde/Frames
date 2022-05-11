@@ -227,9 +227,14 @@ classdef MultiIndex < frames.Index
         
        
         
+    end
+    
+ 
+   methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})   
+       
+                     
         
-        
-        function [objnew, ind1_new , ind2_new] = alignIndex(obj1, obj2, alignMethod, duplicateOption, allowDimExpansion)
+        function [obj_new, ind] = union_(objs, options)
             % function to create new aligned MultiIndex based on common dimensions 
             % of both MultiIndex objects and implicit expansion of missing dimensions
             %
@@ -254,27 +259,48 @@ classdef MultiIndex < frames.Index
             %   - ind1_new:   position index (1:N) with reference to original item of obj1 (NaN for values of obj2)
             %   - ind2_new:   position index (1:N) with reference to original item of obj2 (NaN for values of obj1)
             %  
-            
-            % default parameters
-            if nargin<3, alignMethod="left"; end            
-            if nargin<4, duplicateOption="duplicatesstrict"; end
-            if nargin<5, allowDimExpansion=true; end            
-            
-            % shortcut alignment code in case of equal Indices or singleton (for performance)            
-            [objnew, ind1_new, ind2_new] = obj1.alignIndex_handle_simple_(obj2);            
-            if ~isempty(objnew), return; end
-                       
-            % convert Index to MultiIndex if required
-            if ~isMultiIndex(obj2)                
-                obj2 = frames.MultiIndex(obj2);
+            arguments(Repeating)
+                objs {isa(objs, 'frames.Index')}
             end
+            arguments
+                   options.duplicateOption {mustBeMember(options.duplicateOption, ...
+                                ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
+                   options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
+                   options.allowDimExpansion logical=true;
+            end           
+                                      
+            % shortcut alignment code in case of equal Indices or singleton (for performance)             
+            [obj_new, ind] = objs{1}.union_handle_simple_(objs);
+            if ~isempty(obj_new), return; end 
+            
+            % convert all Index objects to MultiIndex
+            Nobj = length(objs);
+            for i = 2:Nobj
+               if ~isMultiIndex(objs{i})                        
+                    objs{i} = frames.MultiIndex(objs{i});
+               end
+            end            
+            
+            % handle equal dimensions names (and order)
+            obj1 = objs{1};
+            allSameDim = all( cellfun(@(x) x.singleton || (x.Ndim==obj1.Ndim && isequal(x.name,obj1.name)), objs(2:end)) );
+            if allSameDim
+               % no dimension expansion required, handle by Index.union_() method
+               [obj_new, ind] = union_@frames.Index(objs{:}, duplicateOption=options.duplicateOption, ...
+                     alignMethod=options.alignMethod, allowDimExpansion=options.allowDimExpansion);
+               return;
+            end
+            
+            % check limitations            
+            assert(Nobj<=2, "error, only 2 index objects supported in case of different dimension that require expansion."); 
+            obj2 = objs{2};
             
             % find common dimensions            
             [dim_common_ind1, dim_common_ind2, dim_unique_ind1, dim_unique_ind2] = obj1.getMatchingDims(obj2);                       
             NextraDims2 = length(dim_unique_ind2);
             NextraDims1 = length(dim_unique_ind1);
             extraDimsNeeded = NextraDims1>0 || NextraDims2>0;
-            assert(allowDimExpansion | NextraDims2==0, 'frames:MultiIndex:alignIndex:expansiondisabled', ...
+            assert(options.allowDimExpansion | NextraDims2==0, 'frames:MultiIndex:alignIndex:expansiondisabled', ...
                           "Dimension expansion disabled, while obj2 has other dimension(s) as obj1.");                        
                        
             if ~isempty(dim_common_ind1)            
@@ -282,15 +308,17 @@ classdef MultiIndex < frames.Index
                  obj1_common = obj1.getSubIndex_(':', dim_common_ind1);
                  obj2_common = obj2.getSubIndex_(':', dim_common_ind2);                 
                  % use 'expansion' option in case of adding new dimensions
-                 if extraDimsNeeded && duplicateOption~="expand"
+                 if extraDimsNeeded && options.duplicateOption~="expand"
                      assert(obj1.isunique() && obj2.isunique(), 'frames:MultiIndex:alignIndex:invalidduplicatesexpansion', ...
                         "Index is not unique. Duplicate values are not supported in case of dimension expansion " + ...
-                        "using duplicateOption " + duplicateOption);                                                                       
-                     duplicateOption="expand";
+                        "using duplicateOption " + options.duplicateOption);                                                                       
+                     options.duplicateOption="expand";
                  end                     
                  % run alignIndex from Index on common dimensions             
-                 [objnew, ind1_new, ind2_new] = ...
-                     alignIndex@frames.Index(obj1_common, obj2_common, alignMethod, duplicateOption);
+                 [obj_new, ind_new] = ...
+                     union_@frames.Index(obj1_common, obj2_common, alignMethod=options.alignMethod, duplicateOption=options.duplicateOption);
+                 ind1_new = ind_new(:,1);
+                 ind2_new = ind_new(:,2);
                 
                 % add extra dimensions to index (after expansion)
                 assert( (NextraDims1==0 || ~any(isnan(ind1_new)) ) && ...
@@ -298,14 +326,14 @@ classdef MultiIndex < frames.Index
                         "Cannot expand dimension(s) if common dimension(s) contain uncommon values between objects.");                 
                 if NextraDims1>0                    
                     obj1_newdim = obj1.getSubIndex_(ind1_new, dim_unique_ind1);
-                    objnew.value_(end+1:end+obj1_newdim.Ndim) = obj1_newdim.value_;
+                    obj_new.value_(end+1:end+obj1_newdim.Ndim) = obj1_newdim.value_;
                     % restore dimension ordering of obj1
-                    [~, dimorderobj1]=intersect(objnew.name, obj1.name);
-                    objnew.value_ = objnew.value_(dimorderobj1);
+                    [~, dimorderobj1]=intersect(obj_new.name, obj1.name);
+                    obj_new.value_ = obj_new.value_(dimorderobj1);
                 end
                 if NextraDims2>0
                     obj2_newdim = obj2.getSubIndex_(ind2_new, dim_unique_ind2);
-                    objnew.value_(end+1:end+obj2_newdim.Ndim) = obj2_newdim.value_;                                        
+                    obj_new.value_(end+1:end+obj2_newdim.Ndim) = obj2_newdim.value_;                                        
                 end                                                                                               
              
             else
@@ -315,22 +343,70 @@ classdef MultiIndex < frames.Index
                 ind1_new = ind1_new(:);
                 ind2_new = ind2_new(:);                
                 % get expanded obj1 as basis
-                objnew = obj1.getSubIndex_(ind1_new,':');                
+                obj_new = obj1.getSubIndex_(ind1_new,':');                
                 % add expanded obj2 dimensions
                 obj2_new = obj2.getSubIndex_(ind2_new,':');                
-                objnew.value_(end+1:end+obj2_new.Ndim) = obj2_new.value_;
+                obj_new.value_(end+1:end+obj2_new.Ndim) = obj2_new.value_;
             end
                                                      
              % sort if required
             if obj1.requireUniqueSorted
                 % sort output index
-                [objnew, sortindex] = objnew.sort();
+                [obj_new, sortindex] = obj_new.sort();
                 % update position indices accordingly
                 ind1_new = ind1_new(sortindex);
-                ind2_new = ind2_new(sortindex);                
-            end                       
+                ind2_new = ind2_new(sortindex);
+            end 
+            ind = [ind1_new ind2_new];
         end
-                      
+        
+    function [objnew, ind] = union_handle_simple_(obj, objs)
+            % internal function to check and handle simple cases (equal index or singleton)
+            %
+            % default empty
+            objnew = []; 
+            ind = [];
+            % handle single index case
+            Nobj = length(objs);             
+            if Nobj==1
+                obj_new = objs{1};
+                ind = (1:length(obj_new))';
+                return
+            elseif Nobj>2
+                % not handled by this simple function
+                return
+            end            
+            
+            % handle equal and singleton cases
+            obj1 = objs{1};
+            obj2 = objs{2};
+            assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");
+            if isequal(obj1.value_,obj2.value_)
+                objnew = obj1;
+                ind1 = (1:length(obj1))';
+                ind2 = ind1;
+            elseif ~obj1.singleton && obj2.singleton
+                objnew = obj1;
+                ind1 = (1:length(obj1))';
+                ind2 = ones(size(ind1));
+            elseif obj1.singleton && ~obj2.singleton
+                objnew = obj2;
+                ind2 = (1:length(obj2))';
+                ind1 = ones(size(ind2));
+            else 
+                return
+            end
+            ind = [ind1 ind2];
+        end               
+        
+    end
+        
+
+    
+    
+    methods
+        
+                     
         
         function disp(obj)
             % display MultiIndex values and properties
