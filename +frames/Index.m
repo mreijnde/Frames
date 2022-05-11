@@ -1026,6 +1026,15 @@ classdef Index
         function out = getDefaultValue_(obj),  out = defaultValue( class(obj.value_));  end 
         
         
-    end  
+    end
+    
+    methods(Static, Hidden)
+        function fh = getPrivateFuncHandle(funcname)
+            % helper function to access private methods/package functions from unit-tester
+            % (not to be used in own code)
+            fh = str2func(funcname);
+        end
+    end    
+    
 end
 
