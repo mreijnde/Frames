@@ -269,7 +269,7 @@ classdef Index
            else
                duplicateOption = "none";
            end
-           obj = obj.union_(index2, duplicateOption=duplicateOption);
+           obj = obj.alignIndex(index2, duplicateOption=duplicateOption);
            obj.singleton_ = false;
        end
         
@@ -334,149 +334,49 @@ classdef Index
         end
         
         
-               
-        
-        function [objnew, ind1, ind2] = alignIndex(obj1, obj2, alignMethod, duplicateOption, allowDimExpansion)
-            % function to create new aligned Index of two Index objects            
-            %
-            % input:
-            %    - obj1,obj2:    Index objects to be aligned
-            %
-            %    - alignMethod: (string enum) select alignment method
-            %           "strict": both indices need to have same unique values (else error thrown)
-            %           "inner":  keep only unique values that are common in both indices
-            %           "left":   keep only unique values as in obj1 (default)            
-            %           "full":   keep all values (allow missing in both obj1 and obj2)
-            %
-            %    - duplicateOption: (string enum) select method for aligning of indices
-            %        - 'unique':        align on first occurrence of unique values between indices (removes duplicates). 
-            %                           Output index only contains the unique values of the all indices. 
-            %                           (only option that is allowed for indexes that requireUnique)                      
-            %            
-            %        - 'duplicates':    align values between indices. If multiple indices have the
-            %                           same duplicate values, align them in the same order as they occur in the
-            %                           index. (default option)            
-            %
-            %        - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
-            %                           case of exact equal indices (for which 1:1 mapping will be used). An
-            %                           error will be raised in case of duplicates and not exactly equal.            
-            % 
-            %        - 'expand':        align values between indices. In case of duplicates, all combinations
-            %                           between indices are added.
-            %                           (option currently is limited to union between 2 indices)
-            %
-            %        - 'none':          no alignment of values, append all values of indices together, even if that
-            %                           creates new duplicates.                
-            %
-            % output:
-            %   - objnew:  Index object with new aligned index (1:N)
-            %   - ind1:    position index (1:N) with reference to original item of obj1 (NaN for values of obj2)
-            %   - ind2:    position index (1:N) with reference to original item of obj2 (NaN for values of obj1)
-            %      
-            
-            % default parameters
-            if nargin<3, alignMethod="left"; end
-            if nargin<4, duplicateOption="duplicatesstrict"; end                
-           
-           
-            % get matching rows of both Index objects                                 
-            [objnew, ind] = obj1.union_(obj2, duplicateOption=duplicateOption, alignMethod=alignMethod, ...
-                                              allowDimExpansion=allowDimExpansion);
-            ind1 = ind(:,1);
-            ind2 = ind(:,2);                                                      
-        end
               
-       
-    end
-    
-    
-    methods(Hidden)        
-         
-        function obj = subsasgn(obj,s,b)
-            if length(s) == 2 && strcmp([s.type],'.()') && strcmp(s(1).subs,'value')
-                idxNew = s(2).subs{1};
-                if isequal(b,[])
-                    obj.value_(idxNew) = [];
-                    if obj.singleton_
-                        assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
-                            'The value of a singleton Index must be missing.')
-                    end
-                else
-                    b_ = obj.getValue_from(b);
-                    val_ = obj.value_;
-                    if iscolon(idxNew)
-                       val_ = b_;
-                    else
-                        val_(idxNew) = b_;
-                    end
 
-                    obj.valueChecker(val_,idxNew,b_);
-                    obj.value_ = val_;
-                end
-            else
-                obj = builtin('subsasgn',obj,s,b);
-            end
-        end
-        
-       
-        
-    end
-    
-    methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
-
-        function pos = positionIn_(obj,objvalue, targetvalue)
-            % internal, find position of the Index into the target            
-            if obj.requireUnique_
-                assertFoundIn(objvalue,targetvalue)
-                if obj.requireUniqueSorted_
-                    pos = ismember(targetvalue,objvalue);
-                else
-                    [~,~,pos] = intersect(objvalue,targetvalue,'stable');
-                end
-            else
-                pos = findPositionIn(objvalue,targetvalue);
-            end
-        end         
-        
-        function [obj_new, ind] = union_(objs, options)
-            % Internal union function to create combined index of obj and all supplied index objects            
+      function [obj_new, ind] = alignIndex(objs, options)
+            % ALIGNINDEX create combined index of obj and all supplied index objects            
             %
             % The output index will keep the requireUnique and requireUniqueSorted settings from first object. 
             % Different option for handling duplicate values are supported.
             %
-            % input:
-            %   others_cell:  cell array with (one or more) index objects to combine
+            % INPUT:
+            %   objs:      multiple Index objects to combine
             %
+            %   options:   name-value combinations
             %
-            %   duplicateOption:  string enum with options:            
+            %    - duplicateOption:  string enum with options:            
             %
-            %     - 'unique':        align on first occurrence of unique values between indices (removes duplicates). 
-            %                        Output index only contains the unique values of the all indices. 
-            %                        (only option that is allowed for indexes that requireUnique)                      
+            %       - 'unique':        align on first occurrence of unique values between indices (removes duplicates). 
+            %                          Output index only contains the unique values of the all indices. 
+            %                          (only option that is allowed for indexes that requireUnique)                      
             %            
-            %     - 'duplicates':    align values between indices. If multiple indices have the
-            %                        same duplicate values, align them in the same order as they occur in the
-            %                        index. (default option)            
+            %       - 'duplicates':    align values between indices. If multiple indices have the
+            %                          same duplicate values, align them in the same order as they occur in the
+            %                          index. (default option)            
             %
-            %     - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
-            %                        case of exact equal indices (for which 1:1 mapping will be used). An
-            %                        error will be raised in case of duplicates and not exactly equal.            
+            %       - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
+            %                          case of exact equal indices (for which 1:1 mapping will be used). An
+            %                          error will be raised in case of duplicates and not exactly equal.            
             % 
-            %     - 'expand':        align values between indices. In case of duplicates, all combinations
-            %                        between indices are added.
-            %                        (option currently is limited to union between 2 indices)
+            %       - 'expand':        align values between indices. In case of duplicates, all combinations
+            %                          between indices are added.
+            %                          (option currently is limited to union between 2 indices)
             %
-            %     - 'none':          no alignment of values, append all values of indices together, even if that
-            %                        creates new duplicates.    
+            %       - 'none':          no alignment of values, append all values of indices together, even if that
+            %                          creates new duplicates.    
             %
             %
-            %   alignMethod: (string enum) select alignment method
-            %     - 'strict': both indices need to have same unique values (else error thrown)
-            %     - 'inner':  keep only unique values that are common in both indices
-            %     - 'left':   keep only unique values as in obj1            
-            %     - 'full':   keep all values (allow missing in both obj1 and obj2) (default)            
+            %   - alignMethod: (string enum) select alignment method
+            %       - 'strict': all indices need to have same unique values (else error thrown)
+            %       - 'inner':  keep only unique values that are common in all indices
+            %       - 'left':   keep only unique values as in the first index            
+            %       - 'full':   keep all values (allow values missing in some indices) (default)
+            %            
             %
-            % output:
+            % OUTPUT:
             %   obj_new:   new Index object with new aligned index with N values
             %   ind:       index array(N,Nobj) with each column the position index into the original object
             %              for each corresponding input index object.
@@ -486,10 +386,10 @@ classdef Index
                 objs {isa(objs, 'frames.Index')}
             end
             arguments
-                   options.duplicateOption {mustBeMember(options.duplicateOption, ...
+                options.duplicateOption {mustBeMember(options.duplicateOption, ...
                                 ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
-                   options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
-                   options.allowDimExpansion logical=false; % not used by Index, only MultiIndex
+                options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
+                options.allowDimExpansion logical=false; % not used by Index, only MultiIndex
             end
             
             % get index objects
@@ -720,6 +620,59 @@ classdef Index
                 end
             end
         end
+
+    end
+    
+    
+    methods(Hidden)        
+         
+        function obj = subsasgn(obj,s,b)
+            if length(s) == 2 && strcmp([s.type],'.()') && strcmp(s(1).subs,'value')
+                idxNew = s(2).subs{1};
+                if isequal(b,[])
+                    obj.value_(idxNew) = [];
+                    if obj.singleton_
+                        assert(isSingletonValue(obj.value_),'frames:Index:valueChecker:singleton', ...
+                            'The value of a singleton Index must be missing.')
+                    end
+                else
+                    b_ = obj.getValue_from(b);
+                    val_ = obj.value_;
+                    if iscolon(idxNew)
+                       val_ = b_;
+                    else
+                        val_(idxNew) = b_;
+                    end
+
+                    obj.valueChecker(val_,idxNew,b_);
+                    obj.value_ = val_;
+                end
+            else
+                obj = builtin('subsasgn',obj,s,b);
+            end
+        end
+        
+       
+        
+    end
+    
+    methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
+
+        function pos = positionIn_(obj,objvalue, targetvalue)
+            % internal, find position of the Index into the target            
+            if obj.requireUnique_
+                assertFoundIn(objvalue,targetvalue)
+                if obj.requireUniqueSorted_
+                    pos = ismember(targetvalue,objvalue);
+                else
+                    [~,~,pos] = intersect(objvalue,targetvalue,'stable');
+                end
+            else
+                pos = findPositionIn(objvalue,targetvalue);
+            end
+        end         
+        
+  
         
  
 

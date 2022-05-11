@@ -709,8 +709,8 @@ classdef DataFrame
             rowsobj = cellfun(@(x) {x.rows_}, df);
             colsobj = cellfun(@(x) {x.columns_}, df);            
             % get new combined index objects and position index          
-            [rowsnew, rowsnew_ind] = obj.rows_.union_(rowsobj{:}, duplicateOption=options.duplicateOptionRows);
-            [colsnew, colsnew_ind] = obj.columns_.union_(colsobj{:}, duplicateOption=options.duplicateOptionCols);            
+            [rowsnew, rowsnew_ind] = obj.rows_.alignIndex(rowsobj{:}, duplicateOption=options.duplicateOptionRows);
+            [colsnew, colsnew_ind] = obj.columns_.alignIndex(colsobj{:}, duplicateOption=options.duplicateOptionCols);            
             % get empty dataframe (with same settings)
             dfnew = obj;
             dfnew.rows_ = rowsnew;
@@ -1974,14 +1974,20 @@ classdef DataFrame
             if df1.rows_.requireUnique, duplicateOptionRows = "unique"; end            
             if df1.columns_.requireUnique, duplicateOptionCols = "unique"; end
             % get aligned indices            
-            [mrow, rowind1, rowind2] = df1.rows_.alignIndex(df2.rows_, alignMethod, duplicateOptionRows, allowDimExpansion);
-            [mcol, colind1, colind2] = df1.columns_.alignIndex(df2.columns_, alignMethod, duplicateOptionCols, allowDimExpansion);
+            [mrow, rowind] = df1.rows_.alignIndex(df2.rows_, alignMethod=alignMethod, ...
+                                            duplicateOption=duplicateOptionRows, allowDimExpansion=allowDimExpansion);
+            rowind1 = rowind(:,1);
+            rowind2 = rowind(:,2);            
+            [mcol, colind] = df1.columns_.alignIndex(df2.columns_, alignMethod=alignMethod, ...
+                                           duplicateOption=duplicateOptionCols, allowDimExpansion=allowDimExpansion);
+            colind1 = colind(:,1);
+            colind2 = colind(:,2);
             rowmask2 = ~isnan(rowind2);
             colmask2 = ~isnan(colind2);            
             dfnew1 = df1.reorder(mrow, rowind1, mcol, colind1);
             dfnew2 = df2.reorder(mrow, rowind2, mcol, colind2);            
             
-            % fill missing rows by values of other dataframe  
+            % fill missing rows/columns by supplied missing values
             masknan_rowind1 = isnan(rowind1);
             masknan_rowind2 = isnan(rowind2);
             masknan_colind1 = isnan(colind1);

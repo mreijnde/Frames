@@ -225,39 +225,60 @@ classdef MultiIndex < frames.Index
         end
         
         
-       
         
-    end
-    
- 
-   methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})   
-       
-                     
-        
-        function [obj_new, ind] = union_(objs, options)
-            % function to create new aligned MultiIndex based on common dimensions 
+        function [obj_new, ind] = alignIndex(objs, options)
+            % ALIGNINDEX create new aligned MultiIndex based on common dimensions 
             % of both MultiIndex objects and implicit expansion of missing dimensions
             %
-            % input:
-            %    - obj1,obj2: MultiIndex objects to be aligned
+            % Remarks:            
+            % The output index will keep the requireUnique and requireUniqueSorted settings from first object. 
+            % 
+            % 
             %
-            %    - alignMethod: (string enum) select option for common dimension(s)
-            %           "strict": both need to have same values (else error thrown)
-            %           "inner":  remove rows that are not common in both
-            %           "left":   keep rows as in obj1 (default)            
-            %           "full":   keep all items (allow missing in both obj1 and obj2)
+            % INPUT:
+            %   objs:      multiple Index/MultiIndex objects to combine
             %
-            %    - duplicateOption: (string enum) select option how to handle duplicates
-            %           "none":             do not allow duplicates present            
-            %           "duplicatesstrict": do not allow duplicates present, except fully equal indices (default)
-            %           "duplicates":       align duplicates in order of appearance
+            %   options:   name-value combinations
             %
-            %   - allowDimExpansion (bool) allow expansion to add new dimensions to obj1
+            %    - duplicateOption:  string enum with options:            
             %
-            % output:
-            %   - objnew:     Index object with new aligned index (1:N)
-            %   - ind1_new:   position index (1:N) with reference to original item of obj1 (NaN for values of obj2)
-            %   - ind2_new:   position index (1:N) with reference to original item of obj2 (NaN for values of obj1)
+            %       - 'unique':        align on first occurrence of unique values between indices (removes duplicates). 
+            %                          Output index only contains the unique values of the all indices. 
+            %                          (only option that is allowed for indexes that requireUnique)                      
+            %            
+            %       - 'duplicates':    align values between indices. If multiple indices have the
+            %                          same duplicate values, align them in the same order as they occur in the
+            %                          index. (default option)            
+            %
+            %       - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
+            %                          case of exact equal indices (for which 1:1 mapping will be used). An
+            %                          error will be raised in case of duplicates and not exactly equal.            
+            % 
+            %       - 'expand':        align values between indices. In case of duplicates, all combinations
+            %                          between indices are added.
+            %                          (option currently is limited to union between 2 indices)
+            %
+            %       - 'none':          no alignment of values, append all values of indices together, even if that
+            %                          creates new duplicates.    
+            %
+            %
+            %   - alignMethod: (string enum) select alignment method
+            %       - 'strict': all indices need to have same unique values (else error thrown)
+            %       - 'inner':  keep only unique values that are common in all indices
+            %       - 'left':   keep only unique values as in the first index            
+            %       - 'full':   keep all values (allow values missing in some indices) (default)
+            %            
+            %
+            %   - allowDimExpansion (bool) allow expansion to add new dimensions
+            %                              (expansion currently is limited to union between 2 indices)            
+            %
+            %
+            % OUTPUT:
+            %   obj_new:   new Index object with new aligned index with N values
+            %   ind:       index array(N,Nobj) with each column the position index into the original object
+            %              for each corresponding input index object.
+            %              (position index contain a NaN value if given index value is not present)
+            %                                    
             %  
             arguments(Repeating)
                 objs {isa(objs, 'frames.Index')}
@@ -270,7 +291,7 @@ classdef MultiIndex < frames.Index
             end           
                                       
             % shortcut alignment code in case of equal Indices or singleton (for performance)             
-            [obj_new, ind] = objs{1}.union_handle_simple_(objs);
+            [obj_new, ind] = objs{1}.alignIndex_handle_simple_(objs);
             if ~isempty(obj_new), return; end 
             
             % convert all Index objects to MultiIndex
@@ -285,14 +306,15 @@ classdef MultiIndex < frames.Index
             obj1 = objs{1};
             allSameDim = all( cellfun(@(x) x.singleton || (x.Ndim==obj1.Ndim && isequal(x.name,obj1.name)), objs(2:end)) );
             if allSameDim
-               % no dimension expansion required, handle by Index.union_() method
-               [obj_new, ind] = union_@frames.Index(objs{:}, duplicateOption=options.duplicateOption, ...
+               % no dimension expansion required, handle by Index.alignIndex() method
+               [obj_new, ind] = alignIndex@frames.Index(objs{:}, duplicateOption=options.duplicateOption, ...
                      alignMethod=options.alignMethod, allowDimExpansion=options.allowDimExpansion);
                return;
             end
             
             % check limitations            
-            assert(Nobj<=2, "error, only 2 index objects supported in case of different dimension that require expansion."); 
+            assert(Nobj<=2, 'frames:MultiIndex:alignIndex:unsupportedexpansion', ...
+                "Only 2 index objects supported in case of different dimension that require expansion."); 
             obj2 = objs{2};
             
             % find common dimensions            
@@ -316,7 +338,8 @@ classdef MultiIndex < frames.Index
                  end                     
                  % run alignIndex from Index on common dimensions             
                  [obj_new, ind_new] = ...
-                     union_@frames.Index(obj1_common, obj2_common, alignMethod=options.alignMethod, duplicateOption=options.duplicateOption);
+                     alignIndex@frames.Index(obj1_common, obj2_common, alignMethod=options.alignMethod, ...
+                                                                       duplicateOption=options.duplicateOption);
                  ind1_new = ind_new(:,1);
                  ind2_new = ind_new(:,2);
                 
@@ -360,46 +383,49 @@ classdef MultiIndex < frames.Index
             ind = [ind1_new ind2_new];
         end
         
-    function [objnew, ind] = union_handle_simple_(obj, objs)
-            % internal function to check and handle simple cases (equal index or singleton)
-            %
-            % default empty
-            objnew = []; 
-            ind = [];
-            % handle single index case
-            Nobj = length(objs);             
-            if Nobj==1
-                obj_new = objs{1};
-                ind = (1:length(obj_new))';
-                return
-            elseif Nobj>2
-                % not handled by this simple function
-                return
-            end            
-            
-            % handle equal and singleton cases
-            obj1 = objs{1};
-            obj2 = objs{2};
-            assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");
-            if isequal(obj1.value_,obj2.value_)
-                objnew = obj1;
-                ind1 = (1:length(obj1))';
-                ind2 = ind1;
-            elseif ~obj1.singleton && obj2.singleton
-                objnew = obj1;
-                ind1 = (1:length(obj1))';
-                ind2 = ones(size(ind1));
-            elseif obj1.singleton && ~obj2.singleton
-                objnew = obj2;
-                ind2 = (1:length(obj2))';
-                ind1 = ones(size(ind2));
-            else 
-                return
-            end
-            ind = [ind1 ind2];
-        end               
         
     end
+    methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
+        
+        function [objnew, ind] = alignIndex_handle_simple_(obj, objs)
+                % internal function to check and handle simple cases (equal index or singleton)
+                %
+                % default empty
+                objnew = []; 
+                ind = [];
+                % handle single index case
+                Nobj = length(objs);             
+                if Nobj==1
+                    obj_new = objs{1};
+                    ind = (1:length(obj_new))';
+                    return
+                elseif Nobj>2
+                    % not handled by this simple function
+                    return
+                end            
+
+                % handle equal and singleton cases
+                obj1 = objs{1};
+                obj2 = objs{2};
+                assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");
+                if isequal(obj1.value_,obj2.value_)
+                    objnew = obj1;
+                    ind1 = (1:length(obj1))';
+                    ind2 = ind1;
+                elseif ~obj1.singleton && obj2.singleton
+                    objnew = obj1;
+                    ind1 = (1:length(obj1))';
+                    ind2 = ones(size(ind1));
+                elseif obj1.singleton && ~obj2.singleton
+                    objnew = obj2;
+                    ind2 = (1:length(obj2))';
+                    ind1 = ones(size(ind2));
+                else 
+                    return
+                end
+                ind = [ind1 ind2];
+            end               
+        end
         
 
     
