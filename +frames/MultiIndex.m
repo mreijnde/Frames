@@ -637,6 +637,11 @@ classdef MultiIndex < frames.Index
             % assign new values to object
             obj.value_ = indices;
             
+            % handle singleton case
+            if obj.Ndim==1 && indices{1}.singleton
+                obj.singleton = true;
+            end
+            
             % check dimension names and uniqueness of rows
             if userCall
                obj.valueChecker();
