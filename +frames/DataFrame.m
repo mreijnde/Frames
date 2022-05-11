@@ -709,8 +709,8 @@ classdef DataFrame
             rowsobj = cellfun(@(x) {x.rows_}, df);
             colsobj = cellfun(@(x) {x.columns_}, df);            
             % get new combined index objects and position index          
-            [rowsnew, rowsnew_ind] = obj.rows_.union_(rowsobj, options.duplicateOptionRows);
-            [colsnew, colsnew_ind] = obj.columns_.union_(colsobj, options.duplicateOptionCols);            
+            [rowsnew, rowsnew_ind] = obj.rows_.union_(rowsobj{:}, duplicateOption=options.duplicateOptionRows);
+            [colsnew, colsnew_ind] = obj.columns_.union_(colsobj{:}, duplicateOption=options.duplicateOptionCols);            
             % get empty dataframe (with same settings)
             dfnew = obj;
             dfnew.rows_ = rowsnew;

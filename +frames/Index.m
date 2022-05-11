@@ -269,7 +269,7 @@ classdef Index
            else
                duplicateOption = "none";
            end
-           obj = obj.union_({index2}, duplicateOption);
+           obj = obj.union_(index2, duplicateOption=duplicateOption);
            obj.singleton_ = false;
        end
         
@@ -385,7 +385,7 @@ classdef Index
             end
            
             % get matching rows of both Index objects                                 
-            [objnew, ind] = obj1.union_({obj2}, duplicateOption, alignMethod);
+            [objnew, ind] = obj1.union_(obj2, duplicateOption=duplicateOption, alignMethod=alignMethod);
             ind1 = ind(:,1);
             ind2 = ind(:,2);                                                      
         end
@@ -442,10 +442,10 @@ classdef Index
             end
         end         
         
-        function [obj_new, ind] = union_(obj, others_cell, duplicateOption, alignMethod)
+        function [obj_new, ind] = union_(objs, options)
             % Internal union function to create combined index of obj and all supplied index objects            
             %
-            % The output index will keep the requireUnique and requireUniqueSorted settings from obj object. 
+            % The output index will keep the requireUnique and requireUniqueSorted settings from first object. 
             % Different option for handling duplicate values are supported.
             %
             % input:
@@ -475,64 +475,67 @@ classdef Index
             %
             %
             %   alignMethod: (string enum) select alignment method
-            %           "strict": all need to have same values (if not, error is thrown)
-            %           "inner":  remove rows that are not common among indices
-            %           "left":   keep rows as in obj1           
-            %           "full":   keep all items (allow missing items) (default)
-            %
-            %
+            %     - 'strict': both indices need to have same unique values (else error thrown)
+            %     - 'inner':  keep only unique values that are common in both indices
+            %     - 'left':   keep only unique values as in obj1            
+            %     - 'full':   keep all values (allow missing in both obj1 and obj2) (default)            
             %
             % output:
             %   obj_new:   new Index object with new aligned index with N values
             %   ind:       index array(N,Nobj) with each column the position index into the original object
             %              for each corresponding input index object.
             %              (position index contain a NaN value if given index value is not present)
-            arguments
-                obj
-                others_cell cell
-                duplicateOption {mustBeMember(duplicateOption, ...
-                                ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
-                alignMethod {mustBeMember(alignMethod, ["strict", "inner", "left", "full"])} = "full"  
+
+            arguments(Repeating)
+                objs {isa(objs, 'frames.Index')}
             end
-                        
-            % handle singletons indices
-            singletons = cellfun(@(x) x.singleton, [{obj}, others_cell]);
-            Nobj = length(others_cell)+1;
-            if any(singletons)
-                if all(singletons)
-                    obj_new = obj;
-                    ind = ones(1, Nobj);
-                    return
-                else
-                    error('frames:Index:union:noMixingSingletonAndNonSingleton', ...
-                        "Not all indices are singleton, not allowed to mix singleton and non-singleton.");
-                end
+            arguments
+                   options.duplicateOption {mustBeMember(options.duplicateOption, ...
+                                ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
+                   options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
             end
             
+            % get index objects
+            obj = objs{1};
+            Nobj = length(objs);
+                                   
+            % handle singletons indices
+            singletons = cellfun(@(x) x.singleton, objs);
+            if all(singletons)
+                 obj_new = obj;
+                 ind = ones(1, Nobj);
+                return
+            end
+            objs_nosingleton = objs(~singletons); 
+            
             % handle equal indices
-            if (duplicateOption=="duplicates" || duplicateOption=="duplicatesstrict") || ...
-               (duplicateOption=="unique" && obj.isunique())                
-                allsame = all(cellfun(@(x) isequal(x.value_,obj.value_), others_cell));
+            if (options.duplicateOption=="duplicates" || options.duplicateOption=="duplicatesstrict") || ...
+               (options.duplicateOption=="unique" && obj.isunique())                
+                allsame = all(cellfun(@(x) isequal(x.value_,objs_nosingleton{1}.value_), objs_nosingleton));
                 if allsame
                     % shortcut for performance: 1-to-1 mapping of indices
-                    obj_new = obj;                    
-                    ind = repmat((1:obj.length())', 1, Nobj);                    
+                    obj_new = objs_nosingleton{1};                    
+                    ind = repmat((1:obj_new.length())', 1, Nobj);
+                    if any(singletons)
+                        ind(:,singletons) = 1;
+                    end
                     return
                 end                
             end
                                   
             % check uniqueness option      
             if obj.requireUnique
-                 assert(duplicateOption=="unique", 'frames:Index:union:requireUniqueMethod', ...
+                 assert(options.duplicateOption=="unique", 'frames:Index:union:requireUniqueMethod', ...
                      "Only duplicateOption 'unique' allowed in union for index with requireUnique.");     
             end
                                                                 
-            % concat all inputs & get combined unique index
-            objlen = [obj.length() cellfun(@length, others_cell)];            
-            obj_new = obj.vertcat_(others_cell{:}); % no error checking on unique yet
+            % concat all (no singleton) inputs & get combined unique index
+            objlen = cellfun(@length, objs);  
+            objlen(singletons) = 0;
+            obj_new = objs_nosingleton{1}.vertcat_(objs_nosingleton{2:end}); % no error checking on unique yet
             uniqind = obj_new.value_uniqind;
             
-            if duplicateOption=="none"
+            if options.duplicateOption=="none"
                 % no alignment, keep all raw concatenated values (including duplicates)
                 if obj.warningNonUnique_ && obj.isunique() && ~obj_new.isunique()
                       warning('frames:Index:notUnique','Index value is not unique.')
@@ -547,9 +550,9 @@ classdef Index
                      p0 = p1;                                                               
                 end
                 
-             elseif duplicateOption=="expand"
+             elseif options.duplicateOption=="expand"
                     % align values, and expand duplicates
-                    assert(length(others_cell)<2,"expand option only allowed with 2 index objects"); %current implementation limitation
+                    assert(length(objs)<=2,"expand option only allowed with 2 index objects"); %current implementation limitation
                     
                     % create indices per index object
                     uniqind1 = uniqind(1:objlen(1));
@@ -570,9 +573,9 @@ classdef Index
 
             else 
                 % align values
-                if  (duplicateOption=="duplicates" || duplicateOption=="duplicatesstrict")&& ~obj_new.isunique()
+                if  (options.duplicateOption=="duplicates" || options.duplicateOption=="duplicatesstrict")&& ~obj_new.isunique()
                     % align duplicates between different indices by its order
-                    unique_section = cellfun(@(x) x.requireUnique || x.length()==0, [{obj} others_cell]);                        
+                    unique_section = cellfun(@(x) x.requireUnique || x.length()==0, objs);                        
                     label_dupl = labelDuplicatesInSections(uniqind, objlen, unique_section);
                     % define new uniq_ind with seperate values for duplicates based on its label
                     uniqind = uniqind*(length(label_dupl)+1) + label_dupl; 
@@ -588,7 +591,7 @@ classdef Index
            
             
                 % handle 'duplicatesstrict' error condition
-                if duplicateOption=="duplicatesstrict"
+                if options.duplicateOption=="duplicatesstrict"
                     % remark: at this point it is known that the indices are not equal (that is handled above)  
                     assert(obj_new.isunique(), 'frames:Index:union:notUnique', ...
                         "Duplicates values in (unequal) indices not allowed in combination with duplicateOption 'duplicatesstrict'");                
@@ -598,23 +601,28 @@ classdef Index
                 % (if given item does not exist in given object, value is NaN)
                 ind = nan(obj_new.length(), Nobj); 
                 p0 = 1;
-                for iobj=1:Nobj                    
-                    p1 = p0 + objlen(iobj);
-                    id_slice = id(p0:p1-1);
-                    ind(flip(id_slice),iobj)= objlen(iobj):-1:1; %flipped to keep first occurrence in case of (overlapping) duplicates                    
-                    p0 = p1;
+                for iobj=1:Nobj
+                    if ~singletons(iobj)
+                        p1 = p0 + objlen(iobj);
+                        id_slice = id(p0:p1-1);
+                        ind(flip(id_slice),iobj)= objlen(iobj):-1:1; %flipped to keep first occurrence in case of (overlapping) duplicates                    
+                        p0 = p1;
+                    else
+                        % reference 1st element in case of singleton
+                        ind(:,iobj) = 1;
+                    end 
                 end
                 
             end
             
             % filter output based on alignMethods             
             maskNaN = ~isnan(ind);
-            switch alignMethod
+            switch options.alignMethod
                 case "full"
                     mask = true; % nothing to filter
                 case "strict"
                     assert( all(maskNaN,'all'), 'frames:Index:alignIndex:unequalIndex', ...
-                        "Unequal values in dimension not allowed in strict alignMethod");
+                        "Unequal unique values not allowed in alignMethod 'strict'.");
                     mask = true; % nothing to filter
                 case "inner"
                     mask = all(maskNaN,2);

@@ -42,8 +42,8 @@ classdef seriesTest < AbstractFramesTests
             
             t.verifyError(@notUnique,'frames:Index:setSingleton')
             function notUnique(), idx1.singleton=true; end
-            t.verifyError(@mixSingleton,'frames:Index:union:noMixingSingletonAndNonSingleton')
-            function mixSingleton(), idx2.union(idx1); end
+            t.verifyEqual(idx2.union(idx1), idx1); %behavior changed
+            t.verifyEqual(idx1.union(idx2), idx1); %behavior changed
             
             idx3 = frames.Index(4,Unique=true);
             idx3.singleton = true;
