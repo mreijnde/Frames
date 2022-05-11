@@ -501,8 +501,8 @@ classdef Index
             %   alignMethod: (string enum) select alignment method
             %           "strict": all need to have same values (if not, error is thrown)
             %           "inner":  remove rows that are not common among indices
-            %           "left":   keep rows as in obj1  (default)            
-            %           "full":   keep all items (allow missing items)
+            %           "left":   keep rows as in obj1           
+            %           "full":   keep all items (allow missing items) (default)
             %
             %
             %
@@ -516,7 +516,7 @@ classdef Index
                 others_cell cell
                 duplicateOption {mustBeMember(duplicateOption, ...
                                 ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
-                alignMethod {mustBeMember(alignMethod, ["strict", "inner", "left", "full"])} = "left"  
+                alignMethod {mustBeMember(alignMethod, ["strict", "inner", "left", "full"])} = "full"  
             end
                         
             % handle singletons indices
