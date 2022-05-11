@@ -336,84 +336,58 @@ classdef Index
         
                
         
-        function [objnew, ind1_new, ind2_new] = alignIndex(obj1, obj2, alignMethod, duplicateOption, ~)
+        function [objnew, ind1, ind2] = alignIndex(obj1, obj2, alignMethod, duplicateOption, ~)
             % function to create new aligned Index of two Index objects            
             %
             % input:
             %    - obj1,obj2:    Index objects to be aligned
             %
             %    - alignMethod: (string enum) select alignment method
-            %           "strict": both need to have same values (else error thrown)
-            %           "inner":  remove rows that are not common in both
-            %           "left":   keep rows as in obj1  (default)            
-            %           "full":   keep all items (allow missing in both obj1 and obj2)
+            %           "strict": both indices need to have same unique values (else error thrown)
+            %           "inner":  keep only unique values that are common in both indices
+            %           "left":   keep only unique values as in obj1 (default)            
+            %           "full":   keep all values (allow missing in both obj1 and obj2)
             %
             %    - duplicateOption: (string enum) select method for aligning of indices
-            %           "none":             do not allow duplicates present
-            %           "duplicatesstrict": do not allow duplicates present, except fully equal indices (default)
-            %           "duplicates":       align duplicates in order of appearance
+            %        - 'unique':        align on first occurrence of unique values between indices (removes duplicates). 
+            %                           Output index only contains the unique values of the all indices. 
+            %                           (only option that is allowed for indexes that requireUnique)                      
+            %            
+            %        - 'duplicates':    align values between indices. If multiple indices have the
+            %                           same duplicate values, align them in the same order as they occur in the
+            %                           index. (default option)            
+            %
+            %        - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
+            %                           case of exact equal indices (for which 1:1 mapping will be used). An
+            %                           error will be raised in case of duplicates and not exactly equal.            
+            % 
+            %        - 'expand':        align values between indices. In case of duplicates, all combinations
+            %                           between indices are added.
+            %                           (option currently is limited to union between 2 indices)
+            %
+            %        - 'none':          no alignment of values, append all values of indices together, even if that
+            %                           creates new duplicates.                
             %
             % output:
-            %   - objnew:     Index object with new aligned index (1:N)
-            %   - ind1_new:   position index (1:N) with reference to original item of obj1 (NaN for values of obj2)
-            %   - ind2_new:   position index (1:N) with reference to original item of obj2 (NaN for values of obj1)
+            %   - objnew:  Index object with new aligned index (1:N)
+            %   - ind1:    position index (1:N) with reference to original item of obj1 (NaN for values of obj2)
+            %   - ind2:    position index (1:N) with reference to original item of obj2 (NaN for values of obj1)
             %      
             
             % default parameters
             if nargin<3, alignMethod="left"; end
             if nargin<4, duplicateOption="duplicatesstrict"; end                
-
+           
             % handle equal Indices or singleton indices without alignment code (for performance)            
-            [objnew, ind1_new, ind2_new] = alignIndex_handle_simple_(obj1, obj2);                        
-            if ~isempty(objnew)
-                assert(duplicateOption~="none" || (obj1.isunique() && obj2.isunique()), ...
-                   'frames:Index:alignIndex:duplicatevalues',...
-                   "No duplicate index values allowed (with duplicateOption 'none')");  
+            [objnew, ind1, ind2] = alignIndex_handle_simple_(obj1, obj2);                        
+            if ~isempty(objnew)                 
                 return; 
             end
-
-            %check for duplicates            
-            if duplicateOption=="none"                
-                assert( obj1.isunique() && obj2.isunique(), 'frames:Index:alignIndex:duplicatevalues',...
-                    "No duplicate index values allowed (with duplicateOption 'none')");
-            elseif duplicateOption=="duplicatesstrict"
-                assert(obj1.isunique() && obj2.isunique(), 'frames:Index:alignIndex:duplicatevalues',...                                    
-                    "Duplicate index values not allowed in case of not fully equal indices (with default duplicateOption 'duplicatesstrict')");            
-            end
-            
+           
             % get matching rows of both Index objects                                 
-            [objnew, ind] = obj1.union_({obj2}, duplicateOption);            
-            ind1_raw = ind(:,1);
-            ind2_raw = ind(:,2);            
-            
-            % create common masks
-            mask1 = ~isnan(ind1_raw);
-            mask2 = ~isnan(ind2_raw);
-
-            % define row ids in new index based on chosen method
-            switch alignMethod
-                case "inner"
-                    mask = mask1 & mask2;      
-                case "left"
-                    mask = mask1;                    
-                case "strict"
-                    assert( all(mask1) & all(mask2), 'frames:Index:alignIndex:unequalIndex', ...
-                        "Unequal values in dimension not allowed in strict alignMethod");                    
-                    mask = true(size(mask1));
-                case "full"
-                    mask = true(size(mask1));                    
-                case "strictunique"                                                             
-                    mask = true(size(mask1));
-                    assert(isequal(obj1.value_uniq_,obj2.value_uniq_), 'frames:Index:alignIndex:unequalIndex', ...
-                        "Indices contain different unique values, not allowed in strict_withduplicates alignMethod");
-                otherwise 
-                    error("unsupported alignMethod '%s'", alignMethod);
-            end
-
-            % only output selected rows in index
-            objnew = objnew.getSubIndex_(mask,':');
-            ind1_new = ind1_raw(mask);
-            ind2_new = ind2_raw(mask);                                              
+            [objnew, ind] = obj1.union_({obj2}, duplicateOption, alignMethod);
+            ind1 = ind(:,1);
+            ind2 = ind(:,2);                                                      
         end
               
        
@@ -477,23 +451,24 @@ classdef Index
             % input:
             %   others_cell:  cell array with (one or more) index objects to combine
             %
-            %   duplicateOption:    string enum with options:            
-            %     - 'unique':        align on unique values only. Output index only contains the unique values of the
-            %                        all indices together.
-            %                        (only option that is allowed for indexes that requireUnique)
+            %
+            %   duplicateOption:  string enum with options:            
+            %
+            %     - 'unique':        align on first occurrence of unique values between indices (removes duplicates). 
+            %                        Output index only contains the unique values of the all indices. 
+            %                        (only option that is allowed for indexes that requireUnique)                      
             %            
-            %     - 'duplicates':    align values between different indices. If already indices have
-            %                        duplicate values, keep them in. If multiple indices have the
+            %     - 'duplicates':    align values between indices. If multiple indices have the
             %                        same duplicate values, align them in the same order as they occur in the
             %                        index. (default option)            
             %
             %     - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
-            %                        case of exact equal indices (for whicha 1:1 mapping will be used). An
+            %                        case of exact equal indices (for which 1:1 mapping will be used). An
             %                        error will be raised in case of duplicates and not exactly equal.            
             % 
-            %     - 'expand':        align values between different indices. In case of duplicates, all combinations
+            %     - 'expand':        align values between indices. In case of duplicates, all combinations
             %                        between indices are added.
-            %                        (option only supports union between 2 indices)
+            %                        (option currently is limited to union between 2 indices)
             %
             %     - 'none':          no alignment of values, append all values of indices together, even if that
             %                        creates new duplicates.    

@@ -1100,7 +1100,7 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             warning('off', 'frames:MultiIndex:notUnique'); % TODO: fix some unnecessary non-unique warnings                        
             dfd = frames.DataFrame(magic(5),frames.MultiIndex([1 3 2 3 1]',unique=false)); 
             t.verifyEqual(dfd-dfd, frames.DataFrame(zeros(5), dfd.rows_, dfd.columns_)); % exactly same index allowed
-            t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:alignIndex:duplicatevalues')
+            t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:union:notUnique')
             
             df8a = dfd{1:4,2:4}.alignMethod("full").duplicateOption("duplicates") - dfd{2:3,3:5};
             t.verifyEqual(df8a.data, [24,1,8,NaN;5,0,0,-16;6,0,0,-22;12,19,21,NaN]);
@@ -1217,10 +1217,10 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
             dfYdup = frames.DataFrame([10 20 30]'  ,frames.MultiIndex([1 2 1]'    ,unique=false),"A"  ,RowDim="y");
             dfXYdup =dfXdup + dfYdup;
             t.verifyEqual(length(dfXYdup.rows), length(dfXdup.rows)*length(dfYdup.rows));
-            t.verifyError(@() dfXdup + dfX, 'frames:Index:alignIndex:duplicatevalues');
+            t.verifyError(@() dfXdup + dfX, 'frames:Index:union:notUnique');
             t.verifyError(@() dfXYdup + dfX.col("A"),  'frames:MultiIndex:alignIndex:invalidduplicatesexpansion');
-            t.verifyError(@() dfXYdup + dfXY, 'frames:Index:alignIndex:duplicatevalues');
-            t.verifyError(@() dfXY + dfXYdup, 'frames:Index:alignIndex:duplicatevalues');
+            t.verifyError(@() dfXYdup + dfXY, 'frames:Index:union:notUnique');
+            t.verifyError(@() dfXY + dfXYdup,'frames:Index:union:notUnique');
             t.verifyError(@() dfXYdup + dfXYZ,  'frames:MultiIndex:alignIndex:invalidduplicatesexpansion');
             df11a = dfXYdup.alignMethod("full","expand") - dfXY;   % obj2 values applied to all duplicate
             t.verifyEqual( df11a({2,':'},"A").data,[ -33 ;-26;-13;-31;-24;-11]);
