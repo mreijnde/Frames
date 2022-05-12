@@ -1534,7 +1534,67 @@ classdef DataFrame
                 end
             end
         end
-        
+
+
+        function varargout = alignDFs(dfs, options)
+            % function to align multiple dataframes            
+            arguments(Repeating)
+                dfs frames.DataFrame
+            end
+            arguments
+               options.duplicateOption {mustBeMember(options.duplicateOption, ...
+                                            ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicatesstrict"
+               options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
+               options.allowDimExpansion logical = true
+               options.missingValues = []
+            end          
+            Ndf = length(dfs);
+            
+            % convert all row index objs to MultiIndex in case one is already MultiIndex            
+            dfs_rows_isMultiIndex = cellfun(@(x) isMultiIndex(x.rows_), dfs);
+            if any(dfs_rows_isMultiIndex)              
+                for i = 1:Ndf
+                    if ~dfs_rows_isMultiIndex(i),           
+                        dfs{i}.rows_ =  frames.MultiIndex(dfs{i}.rows_);
+                    end
+                end
+            end
+            
+            % convert all column index objs to MultiIndex in case one is already MultiIndex            
+            dfs_cols_isMultiIndex = cellfun(@(x) isMultiIndex(x.columns_), dfs);
+            if any(dfs_cols_isMultiIndex)               
+                for i = 1:Ndf
+                    if ~dfs_cols_isMultiIndex(i)                        
+                        dfs{i}.columns_ =  frames.MultiIndex(dfs{i}.columns_);
+                    end
+                end
+            end
+
+            % override duplicateOption in case first dataframe has requireUnique index
+            duplicateOptionRows = options.duplicateOption;
+            duplicateOptionCols = options.duplicateOption;
+            if dfs{1}.rows_.requireUnique, duplicateOptionRows = "unique"; end            
+            if dfs{1}.columns_.requireUnique, duplicateOptionCols = "unique"; end            
+            
+            % get aligned row and column indices
+            dfs_rows = cellfun(@(x) {x.rows_}, dfs);
+            dfs_cols = cellfun(@(x) {x.columns_}, dfs);            
+            [mrow, rowind] = dfs_rows{1}.alignIndex(dfs_rows{2:end}, alignMethod=options.alignMethod, ...
+                              duplicateOption=duplicateOptionRows, allowDimExpansion=options.allowDimExpansion);
+            [mcol, colind] = dfs_cols{1}.alignIndex(dfs_cols{2:end}, alignMethod=options.alignMethod, ...
+                              duplicateOption=duplicateOptionCols, allowDimExpansion=options.allowDimExpansion);
+           
+            % get new aligned dataframes
+            dfs_new = dfs;
+            for i = 1:Ndf
+                dfs_new{i} = dfs{i}.reorder(mrow, rowind(:,i), mcol, colind(:,i));
+            end
+            
+            % output
+            varargout = dfs_new;
+            varargout{end+1} = rowind;
+            varargout{end+1} = colind;             
+        end        
       
         
     end
