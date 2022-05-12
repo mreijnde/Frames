@@ -645,6 +645,7 @@ classdef MultiIndex < frames.Index
             if isvector(value) && isIndex(value(1)) && ~isMultiIndex(value(1))
                 % handle array of Index objects by first converting to cell array
                 value = num2cell(value);
+                userCall = false; % prevent check of conversion of already existing index object
             end
             
             % handle different syntax of cell arrays
