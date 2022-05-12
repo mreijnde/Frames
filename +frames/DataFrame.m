@@ -1942,7 +1942,7 @@ classdef DataFrame
                 if isnumeric(obj.data_)
                     dat = nan(datsize_new);                    
                 elseif isstring(obj.data_)
-                    dat = strings(datsize_new);
+                    dat = repmat(string(missing), datsize_new);
                 elseif iscell(obj.data_)
                     dat = cell(datsize_new);
                 end
