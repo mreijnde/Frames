@@ -423,7 +423,7 @@ classdef Index
                                   
             % check uniqueness option      
             if obj.requireUnique
-                 assert(options.duplicateOption=="unique", 'frames:Index:union:requireUniqueMethod', ...
+                 assert(options.duplicateOption=="unique", 'frames:Index:alignIndex:requireUniqueMethod', ...
                      "Only duplicateOption 'unique' allowed in union for index with requireUnique.");     
             end
                                                                 
@@ -450,7 +450,8 @@ classdef Index
                 
              elseif options.duplicateOption=="expand"
                     % align values, and expand duplicates
-                    assert(length(objs)<=2,"expand option only allowed with 2 index objects"); %current implementation limitation
+                    assert(length(objs)<=2,'frames:Index:alignIndex:expandtoomany', ...
+                                            "expand option only allowed with 2 index objects"); %current implementation limitation
                     
                     % create indices per index object
                     uniqind1 = uniqind(1:objlen(1));
@@ -491,7 +492,7 @@ classdef Index
                 % handle 'duplicatesstrict' error condition
                 if options.duplicateOption=="duplicatesstrict"
                     % remark: at this point it is known that the indices are not equal (that is handled above)  
-                    assert(obj_new.isunique(), 'frames:Index:union:notUnique', ...
+                    assert(obj_new.isunique(), 'frames:Index:alignIndex:notUnique', ...
                         "Duplicates values in (unequal) indices not allowed in combination with duplicateOption 'duplicatesstrict'");                
                 end            
                 

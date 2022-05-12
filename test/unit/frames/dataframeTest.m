@@ -1084,7 +1084,7 @@ classdef dataframeTest < AbstractFramesTests
             warning('off', 'frames:Index:notUnique'); % TODO: fix some unnecessary non-unique warnings
             dfd = frames.DataFrame(magic(5),frames.Index([1 3 2 3 1],unique=false)); 
             t.verifyEqual(dfd-dfd, frames.DataFrame(zeros(5), dfd.rows_, dfd.columns_)); % exactly same index allowed
-            t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:union:notUnique')
+            t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:alignIndex:notUnique')
 
             dfd.settings.duplicateOption = "duplicates";
             df8a = dfd{1:4,2:4}.alignMethod("full") - dfd{2:3,3:5};
