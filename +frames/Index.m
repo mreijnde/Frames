@@ -202,7 +202,7 @@ classdef Index
             %                                   accept only these logical dataframe series
             %    - positionIndex  (logical):    selector is position index instead of value index (default false)
             %    - userCall       (logical):    perform full validation of selector (default true)
-            %    - allowMissing   (logical):    allow selectors with no matches (default error)
+            %    - allowMissing   (logical):    allow selectors with no matches (default false)
             %
             % output:
             %    validated array indexer (colon, logical array or position index array)
