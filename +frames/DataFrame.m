@@ -2011,64 +2011,7 @@ classdef DataFrame
                 obj.data_ = dat;
             end
             
-        end
-                
-        function [dfnew1,dfnew2, rowmask2, colmask2] = getAlignedDFs(df1,df2, alignMethod, allowDimExpansion, ... 
-                     missingValue1, missingValue2)
-            % internal function to get aligned DF for element wise operation
-            %
-            if nargin<3, alignMethod="strict"; end
-            if nargin<4, allowDimExpansion=true; end
-            if nargin<5, missingValue1=NaN; end
-            if nargin<6, missingValue2=NaN; end
-            % convert indices of 1st dataframe to multi index if required
-            if ~isMultiIndex(df1.rows_) && isMultiIndex(df2.rows_)
-                df1.rows_ = frames.MultiIndex(df1.rows_);
-            end
-            if ~isMultiIndex(df1.columns_) && isMultiIndex(df2.columns_)
-                df1.columns_ = frames.MultiIndex(df1.columns_);
-            end            
-            % select suitable duplicateOption                                    
-            duplicateOptionRows = df1.settings.duplicateOption;
-            duplicateOptionCols = df1.settings.duplicateOption;
-            if df1.rows_.requireUnique, duplicateOptionRows = "unique"; end            
-            if df1.columns_.requireUnique, duplicateOptionCols = "unique"; end
-            % get aligned indices            
-            [mrow, rowind] = df1.rows_.alignIndex(df2.rows_, alignMethod=alignMethod, ...
-                                            duplicateOption=duplicateOptionRows, allowDimExpansion=allowDimExpansion);
-            rowind1 = rowind(:,1);
-            rowind2 = rowind(:,2);            
-            [mcol, colind] = df1.columns_.alignIndex(df2.columns_, alignMethod=alignMethod, ...
-                                           duplicateOption=duplicateOptionCols, allowDimExpansion=allowDimExpansion);
-            colind1 = colind(:,1);
-            colind2 = colind(:,2);
-            rowmask2 = ~isnan(rowind2);
-            colmask2 = ~isnan(colind2);            
-            dfnew1 = df1.reorder(mrow, rowind1, mcol, colind1);
-            dfnew2 = df2.reorder(mrow, rowind2, mcol, colind2);            
-            
-            % fill missing rows/columns by supplied missing values
-            masknan_rowind1 = isnan(rowind1);
-            masknan_rowind2 = isnan(rowind2);
-            masknan_colind1 = isnan(colind1);
-            masknan_colind2 = isnan(colind2);                
-            if any(masknan_rowind1)
-               dfnew1.data_(masknan_rowind1,~masknan_colind2) = missingValue1;               
-            end
-            if any(masknan_rowind2)
-               dfnew2.data_(masknan_rowind2,~masknan_colind1) = missingValue2;               
-            end
-            if any(masknan_colind1)                    
-               dfnew1.data_(~masknan_rowind2,masknan_colind1) = missingValue1;               
-            end
-            if any(masknan_colind2)                    
-               dfnew2.data_(~masknan_rowind1,masknan_colind2) = missingValue2;               
-            end                
-
-        end
-                
-       
-        
+        end                        
     end
  
     methods(Static)
@@ -2483,8 +2426,31 @@ end
             if nargin<5, missingValue2=NaN; end
             if nargin<6, alignMethod=df1.settings.alignMethod; end
             if nargin<7, allowDimExpansion=df1.settings.allowDimExpansion; end            
-            [df1_aligned, df2_aligned, rowmask2, colmask2] = ...
-                 getAlignedDFs(df1, df2, alignMethod, allowDimExpansion, missingValue1, missingValue2);
+            
+            % get aligned DataFrames
+            [df1_aligned, df2_aligned, rowind, colind] = ...
+                 alignDFs(df1, df2, duplicateOption=df1.settings.duplicateOption, ...
+                 alignMethod=alignMethod, allowDimExpansion=allowDimExpansion);             
+            
+            % replace missing rows/columns by supplied values
+            % (as long they are only missing in one of the DataFrame)
+            masknan_rowind1 = isnan(rowind(:,1));
+            masknan_rowind2 = isnan(rowind(:,2));
+            masknan_colind1 = isnan(colind(:,1));
+            masknan_colind2 = isnan(colind(:,2));                
+            if any(masknan_rowind1)
+               df1_aligned.data_(masknan_rowind1,~masknan_colind2) = missingValue1;               
+            end
+            if any(masknan_rowind2)
+               df2_aligned.data_(masknan_rowind2,~masknan_colind1) = missingValue2;               
+            end
+            if any(masknan_colind1)                    
+               df1_aligned.data_(~masknan_rowind2,masknan_colind1) = missingValue1;               
+            end
+            if any(masknan_colind2)                    
+               df2_aligned.data_(~masknan_rowind1,masknan_colind2) = missingValue2;               
+            end                
+             
             % apply element wise function (to aligned subset of data)
             df = df1_aligned;
             df.data_ = func( df1_aligned.data_, df2_aligned.data_);
