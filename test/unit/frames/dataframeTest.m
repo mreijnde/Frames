@@ -1009,10 +1009,10 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(plusSeries,frames.DataFrame([12;14],vecV2.rows,vecV2.columns,ColSeries=true))
             t.verifyError(@notAligned,'frames:matrixOpHandler:notAligned')
             function notAligned(), mat1*mat2; end %#ok<VUNUS>
-            t.verifyError(@notSameColumns,'frames:Index:alignIndex:unequalIndex')
+            t.verifyError(@notSameColumns,'frames:Index:align:unequalIndex')
             function notSameColumns(), mat1-mat2; end %#ok<VUNUS>
             
-            t.verifyError(@seriesError,'frames:Index:alignIndex:unequalIndex')
+            t.verifyError(@seriesError,'frames:Index:align:unequalIndex')
             function seriesError(), mat1.*mat1(1); end %#ok<VUNUS>
             loc = mat1 .* mat1(1).asRowSeries();
             t.verifyEqual(loc,frames.DataFrame([1 4;3 8],mat1.rows,mat1.columns))
@@ -1058,10 +1058,10 @@ classdef dataframeTest < AbstractFramesTests
             df1a = df + 100*df;
             df1b = df + 100*df{[2 3 1 4]};   % auto aligned to match order first df
             t.verifyEqual(df1a,df1b)
-            t.verifyError(@() df + 100*df{[2 3]}, 'frames:Index:alignIndex:unequalIndex')
+            t.verifyError(@() df + 100*df{[2 3]}, 'frames:Index:align:unequalIndex')
             t.verifyEqual( df.iloc(1:2,:) - df.row(3), ...
                   frames.DataFrame([7,-5,-3,1;-4,4,4,-4],df.rows_.getSubIndex(1:2),df.columns_))
-            t.verifyError(@() df - df{3,1:3}.asRowSeries(), 'frames:Index:alignIndex:unequalIndex')
+            t.verifyError(@() df - df{3,1:3}.asRowSeries(), 'frames:Index:align:unequalIndex')
 
             % rows with auto-alignment ("full")
             df5a = df{[1 3 4]}.autoAlign() + 100*df{[4 2]};   % auto align, result is expanded to contain all row values            
@@ -1084,7 +1084,7 @@ classdef dataframeTest < AbstractFramesTests
             warning('off', 'frames:Index:notUnique'); % TODO: fix some unnecessary non-unique warnings
             dfd = frames.DataFrame(magic(5),frames.Index([1 3 2 3 1],unique=false)); 
             t.verifyEqual(dfd-dfd, frames.DataFrame(zeros(5), dfd.rows_, dfd.columns_)); % exactly same index allowed
-            t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:alignIndex:notUnique')
+            t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:align:notUnique')
 
             dfd.settings.duplicateOption = "duplicates";
             df8a = dfd{1:4,2:4}.alignMethod("full") - dfd{2:3,3:5};
@@ -1191,7 +1191,7 @@ classdef dataframeTest < AbstractFramesTests
             df2=frames.DataFrame([1 2]);
             series=df2.asRowSeries();
             t.verifyEqual(df==series,frames.DataFrame([true true;true true]))
-            t.verifyError(@()df==df2,'frames:Index:alignIndex:unequalIndex')
+            t.verifyError(@()df==df2,'frames:Index:align:unequalIndex')
             
             df1 = frames.DataFrame([1 NaN]);
             t.verifyEqual(df1==df2,frames.DataFrame([true false]));
@@ -1271,7 +1271,7 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(idxmax2min1,2)
             df2 = df;
             df2.rows(end) = 7;
-            t.verifyError(@misaligned,'frames:Index:alignIndex:unequalIndex')
+            t.verifyError(@misaligned,'frames:Index:align:unequalIndex')
             function misaligned(), df.maxOf(df2); end
             
             df = frames.DataFrame([1 10;8 0]);

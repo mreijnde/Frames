@@ -226,8 +226,8 @@ classdef MultiIndex < frames.Index
         
         
         
-        function [obj_new, ind] = alignIndex(objs, options)
-            % ALIGNINDEX create new aligned MultiIndex based on common dimensions 
+        function [obj_new, ind] = align(objs, options)
+            % ALIGN create new aligned MultiIndex based on common dimensions 
             % of both MultiIndex objects and implicit expansion of missing dimensions
             %
             % Remarks:            
@@ -291,7 +291,7 @@ classdef MultiIndex < frames.Index
             end           
                                       
             % shortcut alignment code in case of equal Indices or singleton (for performance)             
-            [obj_new, ind] = objs{1}.alignIndex_handle_simple_(objs);
+            [obj_new, ind] = objs{1}.align_handle_simple_(objs);
             if ~isempty(obj_new), return; end 
             
             % convert all Index objects to MultiIndex
@@ -306,14 +306,14 @@ classdef MultiIndex < frames.Index
             obj1 = objs{1};
             allSameDim = all( cellfun(@(x) x.singleton || (x.Ndim==obj1.Ndim && isequal(x.name,obj1.name)), objs(2:end)) );
             if allSameDim
-               % no dimension expansion required, handle by Index.alignIndex() method
-               [obj_new, ind] = alignIndex@frames.Index(objs{:}, duplicateOption=options.duplicateOption, ...
+               % no dimension expansion required, handle by Index.align() method
+               [obj_new, ind] = align@frames.Index(objs{:}, duplicateOption=options.duplicateOption, ...
                      alignMethod=options.alignMethod, allowDimExpansion=options.allowDimExpansion);
                return;
             end
             
             % check limitations            
-            assert(Nobj<=2, 'frames:MultiIndex:alignIndex:unsupportedexpansion', ...
+            assert(Nobj<=2, 'frames:MultiIndex:align:unsupportedexpansion', ...
                 "Only 2 index objects supported in case of different dimension that require expansion."); 
             obj2 = objs{2};
             
@@ -322,7 +322,7 @@ classdef MultiIndex < frames.Index
             NextraDims2 = length(dim_unique_ind2);
             NextraDims1 = length(dim_unique_ind1);
             extraDimsNeeded = NextraDims1>0 || NextraDims2>0;
-            assert(options.allowDimExpansion | NextraDims2==0, 'frames:MultiIndex:alignIndex:expansiondisabled', ...
+            assert(options.allowDimExpansion | NextraDims2==0, 'frames:MultiIndex:align:expansiondisabled', ...
                           "Dimension expansion disabled, while obj2 has other dimension(s) as obj1.");                        
                        
             if ~isempty(dim_common_ind1)            
@@ -331,21 +331,21 @@ classdef MultiIndex < frames.Index
                  obj2_common = obj2.getSubIndex_(':', dim_common_ind2);                 
                  % use 'expansion' option in case of adding new dimensions
                  if extraDimsNeeded && options.duplicateOption~="expand"
-                     assert(obj1.isunique() && obj2.isunique(), 'frames:MultiIndex:alignIndex:invalidduplicatesexpansion', ...
+                     assert(obj1.isunique() && obj2.isunique(), 'frames:MultiIndex:align:invalidduplicatesexpansion', ...
                         "Index is not unique. Duplicate values are not supported in case of dimension expansion " + ...
                         "using duplicateOption " + options.duplicateOption);                                                                       
                      options.duplicateOption="expand";
                  end                     
-                 % run alignIndex from Index on common dimensions             
+                 % run align from Index on common dimensions             
                  [obj_new, ind_new] = ...
-                     alignIndex@frames.Index(obj1_common, obj2_common, alignMethod=options.alignMethod, ...
+                     align@frames.Index(obj1_common, obj2_common, alignMethod=options.alignMethod, ...
                                                                        duplicateOption=options.duplicateOption);
                  ind1_new = ind_new(:,1);
                  ind2_new = ind_new(:,2);
                 
                 % add extra dimensions to index (after expansion)
                 assert( (NextraDims1==0 || ~any(isnan(ind1_new)) ) && ...
-                        (NextraDims2==0 || ~any(isnan(ind2_new)) ), 'frames:MultiIndex:alignIndex:invalidexpansion', ...
+                        (NextraDims2==0 || ~any(isnan(ind2_new)) ), 'frames:MultiIndex:align:invalidexpansion', ...
                         "Cannot expand dimension(s) if common dimension(s) contain uncommon values between objects.");                 
                 if NextraDims1>0                    
                     obj1_newdim = obj1.getSubIndex_(ind1_new, dim_unique_ind1);
@@ -387,7 +387,7 @@ classdef MultiIndex < frames.Index
     end
     methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
         
-        function [objnew, ind] = alignIndex_handle_simple_(obj, objs)
+        function [objnew, ind] = align_handle_simple_(obj, objs)
                 % internal function to check and handle simple cases (equal index or singleton)
                 %
                 % default empty
@@ -407,7 +407,7 @@ classdef MultiIndex < frames.Index
                 % handle equal and singleton cases
                 obj1 = objs{1};
                 obj2 = objs{2};
-                assert(isIndex(obj2), 'frames:Index:alignIndex:requireIndex', "obj2 is not a Index object.");
+                assert(isIndex(obj2), 'frames:Index:align:requireIndex', "obj2 is not a Index object.");
                 if isequal(obj1.value_,obj2.value_)
                     objnew = obj1;
                     ind1 = (1:length(obj1))';

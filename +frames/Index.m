@@ -269,7 +269,7 @@ classdef Index
            else
                duplicateOption = "none";
            end
-           obj = obj.alignIndex(index2, duplicateOption=duplicateOption);
+           obj = obj.align(index2, duplicateOption=duplicateOption);
            obj.singleton_ = false;
        end
         
@@ -336,8 +336,8 @@ classdef Index
         
               
 
-      function [obj_new, ind] = alignIndex(objs, options)
-            % ALIGNINDEX create combined index of obj and all supplied index objects            
+      function [obj_new, ind] = align(objs, options)
+            % ALIGN create combined index of all supplied index objects            
             %
             % The output index will keep the requireUnique and requireUniqueSorted settings from first object. 
             % Different option for handling duplicate values are supported.
@@ -423,7 +423,7 @@ classdef Index
                                   
             % check uniqueness option      
             if obj.requireUnique
-                 assert(options.duplicateOption=="unique", 'frames:Index:alignIndex:requireUniqueMethod', ...
+                 assert(options.duplicateOption=="unique", 'frames:Index:align:requireUniqueMethod', ...
                      "Only duplicateOption 'unique' allowed in union for index with requireUnique.");     
             end
                                                                 
@@ -450,7 +450,7 @@ classdef Index
                 
              elseif options.duplicateOption=="expand"
                     % align values, and expand duplicates
-                    assert(length(objs)<=2,'frames:Index:alignIndex:expandtoomany', ...
+                    assert(length(objs)<=2,'frames:Index:align:expandtoomany', ...
                                             "expand option only allowed with 2 index objects"); %current implementation limitation
                     
                     % create indices per index object
@@ -492,7 +492,7 @@ classdef Index
                 % handle 'duplicatesstrict' error condition
                 if options.duplicateOption=="duplicatesstrict"
                     % remark: at this point it is known that the indices are not equal (that is handled above)  
-                    assert(obj_new.isunique(), 'frames:Index:alignIndex:notUnique', ...
+                    assert(obj_new.isunique(), 'frames:Index:align:notUnique', ...
                         "Duplicates values in (unequal) indices not allowed in combination with duplicateOption 'duplicatesstrict'");                
                 end            
                 
@@ -520,7 +520,7 @@ classdef Index
                 case "full"
                     mask = true; % nothing to filter
                 case "strict"
-                    assert( all(maskNaN,'all'), 'frames:Index:alignIndex:unequalIndex', ...
+                    assert( all(maskNaN,'all'), 'frames:Index:align:unequalIndex', ...
                         "Unequal unique values not allowed in alignMethod 'strict'.");
                     mask = true; % nothing to filter
                 case "inner"

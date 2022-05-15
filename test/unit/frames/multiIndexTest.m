@@ -216,7 +216,7 @@ classdef multiIndexTest < AbstractFramesTests
         end   
     
         
-        function alignIndexTest(t)
+        function alignTest(t)
             warning('off','frames:Index:notUnique');
             ind1 = frames.Index([1 2 3 3]);
             ind2 = frames.Index([2 3 4 1]);
@@ -227,44 +227,44 @@ classdef multiIndexTest < AbstractFramesTests
 
             % index objects (duplicates + singleton)
             ref0 = [1 4 2 1; 2 2 NaN 1;3 1 3 1; 4 NaN 4 1; NaN 3 1 1];
-            [ind, ref] = alignIndex(ind3, ind4, ind1, inds, alignMethod="full", duplicateOption="duplicates");
+            [ind, ref] = align(ind3, ind4, ind1, inds, alignMethod="full", duplicateOption="duplicates");
             t.verifyEqual(ind.value, [ind3.value;1]);            
             t.verifyEqual(ref, ref0);
             
-            [ind, ref] = alignIndex(ind3, ind4, ind1, inds, alignMethod="left", duplicateOption="duplicates");
+            [ind, ref] = align(ind3, ind4, ind1, inds, alignMethod="left", duplicateOption="duplicates");
             t.verifyEqual(ind.value, ind3.value);            
             t.verifyEqual(ref, ref0(1:4,:));
             
-            [ind, ref] = alignIndex(ind3, ind4, ind1, inds, alignMethod="inner", duplicateOption="duplicates");
+            [ind, ref] = align(ind3, ind4, ind1, inds, alignMethod="inner", duplicateOption="duplicates");
             t.verifyEqual(ind.value, ind3.value([1 3]));            
             t.verifyEqual(ref, ref0([1 3],:));
             
-            [ind, ref] = alignIndex(ind3, ind4, ind1, inds, alignMethod="full", duplicateOption="unique");
+            [ind, ref] = align(ind3, ind4, ind1, inds, alignMethod="full", duplicateOption="unique");
             t.verifyEqual(ind.value, [2;4;3;1]);            
             t.verifyEqual(ref, ref0([1 2 3 5],:));
                       
-            t.verifyError(@() alignIndex(ind3, ind4, ind1, inds, alignMethod="strict", duplicateOption="duplicates"), ...
-                 'frames:Index:alignIndex:unequalIndex')
+            t.verifyError(@() align(ind3, ind4, ind1, inds, alignMethod="strict", duplicateOption="duplicates"), ...
+                 'frames:Index:align:unequalIndex')
              
-            t.verifyError(@() alignIndex(ind3, ind4, ind1, inds, alignMethod="full", duplicateOption="duplicatesstrict"), ...
-                 'frames:Index:alignIndex:notUnique')
+            t.verifyError(@() align(ind3, ind4, ind1, inds, alignMethod="full", duplicateOption="duplicatesstrict"), ...
+                 'frames:Index:align:notUnique')
              
             % index objects, start with singleton
-            [ind, ref] = alignIndex(inds, inds, ind2, alignMethod="full", duplicateOption="duplicates");
+            [ind, ref] = align(inds, inds, ind2, alignMethod="full", duplicateOption="duplicates");
             t.verifyEqual(ind.value, ind2.value);            
             t.verifyEqual(ref, [1 1 1; 1 1 2; 1 1 3;1 1 4]);
             
             % expand
-            [ind, ref] = alignIndex(ind3, ind1, alignMethod="full", duplicateOption="expand");
+            [ind, ref] = align(ind3, ind1, alignMethod="full", duplicateOption="expand");
             t.verifyEqual(ind.value, [2;4;3;3;3;3;1]);            
             t.verifyEqual(ref, [1 2;2 NaN; 3 3; 3 4; 4 3; 4 4;NaN 1]);
             
-            [ind, ref] = alignIndex(ind3, inds, alignMethod="full", duplicateOption="expand");
+            [ind, ref] = align(ind3, inds, alignMethod="full", duplicateOption="expand");
             t.verifyEqual(ind.value, ind3.value);            
             t.verifyEqual(ref, [1 1;2 1;3 1;4 1]);
 
-            t.verifyError(@() alignIndex(ind3, ind1, ind2, alignMethod="full", duplicateOption="expand"), ...
-                 'frames:Index:alignIndex:expandtoomany')
+            t.verifyError(@() align(ind3, ind1, ind2, alignMethod="full", duplicateOption="expand"), ...
+                 'frames:Index:align:expandtoomany')
              
             % MultiIndex 1D mixed
             warning('off','frames:MultiIndex:notUnique');
@@ -274,11 +274,11 @@ classdef multiIndexTest < AbstractFramesTests
             indsM = frames.MultiIndex(missing,singleton=true);
             warning('on','frames:MultiIndex:notUnique');            
             
-            [ind, ref] = alignIndex(ind3M, ind4M, ind1M, indsM, alignMethod="full", duplicateOption="duplicates");
+            [ind, ref] = align(ind3M, ind4M, ind1M, indsM, alignMethod="full", duplicateOption="duplicates");
             t.verifyEqual(ind.value(:,1), [ind3.value;1]);            
             t.verifyEqual(ref, ref0);
             
-            [ind, ref] = alignIndex(ind3M, ind4, ind1, indsM, alignMethod="full", duplicateOption="duplicates");
+            [ind, ref] = align(ind3M, ind4, ind1, indsM, alignMethod="full", duplicateOption="duplicates");
             t.verifyEqual(ind.value(:,1), [ind3.value;1]);            
             t.verifyEqual(ref, ref0);
             
@@ -290,7 +290,7 @@ classdef multiIndexTest < AbstractFramesTests
             indsMM = frames.MultiIndex(missing,singleton=true);
             warning('on','frames:MultiIndex:notUnique');
             
-            [ind, ref] = alignIndex(ind3MM, ind4MM, ind1MM, indsMM, alignMethod="full", duplicateOption="duplicates");
+            [ind, ref] = align(ind3MM, ind4MM, ind1MM, indsMM, alignMethod="full", duplicateOption="duplicates");
             t.verifyEqual(ind.value(:,1), [ind3.value;1]);            
             t.verifyEqual(ind.value(:,1), ind.value(:,2));            
             t.verifyEqual(ref, ref0);

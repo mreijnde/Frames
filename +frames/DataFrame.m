@@ -709,8 +709,8 @@ classdef DataFrame
             rowsobj = cellfun(@(x) {x.rows_}, df);
             colsobj = cellfun(@(x) {x.columns_}, df);            
             % get new combined index objects and position index          
-            [rowsnew, rowsnew_ind] = obj.rows_.alignIndex(rowsobj{:}, duplicateOption=options.duplicateOptionRows);
-            [colsnew, colsnew_ind] = obj.columns_.alignIndex(colsobj{:}, duplicateOption=options.duplicateOptionCols);            
+            [rowsnew, rowsnew_ind] = obj.rows_.align(rowsobj{:}, duplicateOption=options.duplicateOptionRows);
+            [colsnew, colsnew_ind] = obj.columns_.align(colsobj{:}, duplicateOption=options.duplicateOptionCols);            
             % get empty dataframe (with same settings)
             dfnew = obj;
             dfnew.rows_ = rowsnew;
@@ -1536,8 +1536,52 @@ classdef DataFrame
         end
 
 
-        function varargout = alignDFs(dfs, options)
-            % function to align multiple dataframes            
+        function varargout = align(dfs, options)
+            % ALIGN aligns multiple dataframes
+            %
+            % INPUT:
+            %   dfs:       multiple (Ndf) DataFrame objects to align
+            %
+            %   options:   name-value combinations
+            %
+            %    - duplicateOption:  option used for both rows as columns:            
+            %
+            %       - 'unique':        align on first occurrence of unique values between indices (removes duplicates). 
+            %                          Output index only contains the unique values of the all indices. 
+            %                          (only option that is allowed for indexes that requireUnique)                      
+            %            
+            %       - 'duplicates':    align values between indices. If multiple indices have the
+            %                          same duplicate values, align them in the same order as they occur in the
+            %                          index. (default option)            
+            %
+            %       - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
+            %                          case of exact equal indices (for which 1:1 mapping will be used). An
+            %                          error will be raised in case of duplicates and not exactly equal.            
+            % 
+            %       - 'expand':        align values between indices. In case of duplicates, all combinations
+            %                          between indices are added.
+            %                          (option currently is limited to union between 2 indices)
+            %
+            %       - 'none':          no alignment of values, append all values of indices together, even if that
+            %                          creates new duplicates.    
+            %
+            %
+            %   - alignMethod: (string enum) select alignment method for both rows as columns
+            %       - 'strict': all indices need to have same unique values (else error thrown)
+            %       - 'inner':  keep only unique values that are common in all indices
+            %       - 'left':   keep only unique values as in the first index            
+            %       - 'full':   keep all values (allow values missing in some indices) (default)
+            %            
+            %
+            % OUTPUT:
+            %   dfs:       all (N) aligned Dataframes
+            %   ind_rows:  index array(Nrows,Ndf) with each column the position index into the original row
+            %              for each corresponding input dataframe.
+            %   ind_cols:  index array(Ncols,Ndf) with each column the position index into the original column
+            %              for each corresponding input dataframe.
+            %
+            %              (position index contain a NaN value if given index value is not present)            
+            %
             arguments(Repeating)
                 dfs frames.DataFrame
             end
@@ -1546,7 +1590,6 @@ classdef DataFrame
                                             ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicatesstrict"
                options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
                options.allowDimExpansion logical = true
-               options.missingValues = []
             end          
             Ndf = length(dfs);
             
@@ -1554,7 +1597,7 @@ classdef DataFrame
             dfs_rows_isMultiIndex = cellfun(@(x) isMultiIndex(x.rows_), dfs);
             if any(dfs_rows_isMultiIndex)              
                 for i = 1:Ndf
-                    if ~dfs_rows_isMultiIndex(i),           
+                    if ~dfs_rows_isMultiIndex(i)           
                         dfs{i}.rows_ =  frames.MultiIndex(dfs{i}.rows_);
                     end
                 end
@@ -1579,9 +1622,9 @@ classdef DataFrame
             % get aligned row and column indices
             dfs_rows = cellfun(@(x) {x.rows_}, dfs);
             dfs_cols = cellfun(@(x) {x.columns_}, dfs);            
-            [mrow, rowind] = dfs_rows{1}.alignIndex(dfs_rows{2:end}, alignMethod=options.alignMethod, ...
+            [mrow, rowind] = dfs_rows{1}.align(dfs_rows{2:end}, alignMethod=options.alignMethod, ...
                               duplicateOption=duplicateOptionRows, allowDimExpansion=options.allowDimExpansion);
-            [mcol, colind] = dfs_cols{1}.alignIndex(dfs_cols{2:end}, alignMethod=options.alignMethod, ...
+            [mcol, colind] = dfs_cols{1}.align(dfs_cols{2:end}, alignMethod=options.alignMethod, ...
                               duplicateOption=duplicateOptionCols, allowDimExpansion=options.allowDimExpansion);
            
             % get new aligned dataframes
@@ -2429,7 +2472,7 @@ end
             
             % get aligned DataFrames
             [df1_aligned, df2_aligned, rowind, colind] = ...
-                 alignDFs(df1, df2, duplicateOption=df1.settings.duplicateOption, ...
+                 align(df1, df2, duplicateOption=df1.settings.duplicateOption, ...
                  alignMethod=alignMethod, allowDimExpansion=allowDimExpansion);             
             
             % replace missing rows/columns by supplied values
