@@ -1546,6 +1546,44 @@ classdef dataframeMultiIndexTest < AbstractFramesTests
                  RowDim=["Y","ZZZ"],ColDim=["X"]),'frames:DataFrame:fromDataND:invaliddims');   
         end
         
+        function alignTest(t)
+            warning('off','frames:Index:notUnique');
+            ind1 = frames.Index([1 2 3 3]);
+            ind2 = frames.Index([2 3 4 1]);
+            ind3 = frames.Index([2 4 3 3]);                         
+            warning('on','frames:Index:notUnique');
+            
+            dat = reshape(1:12,4,3);
+            df1= frames.DataFrame(dat,        ind1, ["A", "B","C"]);
+            df2= frames.DataFrame(dat,        ind2, ["B", "C","A"]);
+            df3= frames.DataFrame(dat(:,1:2), ind3, ["B", "C"]);
+            dfs = df1.sum(); %singleton row
+            
+            [df2_,df1_,dfs_, df3_, indrows,indcols ] = align(df2,df1,dfs, df3, alignMethod="full", duplicateOption="duplicates");
+            indrows0 = [1 2 1 1;2 3 1 3;3 NaN 1 2;4 1 1 NaN;NaN 4 1 4];
+            indcols0 = [1 2 2 1;2 3 3 2;3 1 1 NaN];
+            df1_dat0 = [6 10 2;7 11 3;NaN NaN NaN;5 9 1;8 12 4];
+            df3_dat0 = [1 5 NaN;3 7 NaN; 2 6 NaN; NaN NaN NaN;4 8 NaN];
+            dfs_dat0 = repmat([26 42 10],5,1);
+            t.verifyEqual(indrows, indrows0);
+            t.verifyEqual(indcols, indcols0);
+            t.verifyEqual(df1_.rows, df2_.rows);
+            t.verifyEqual(df1_.rows, df3_.rows);
+            t.verifyEqual(df1_.rows, dfs_.rows);
+            t.verifyEqual(df1_.columns, df2_.columns);
+            t.verifyEqual(df1_.columns, df3_.columns);
+            t.verifyEqual(df1_.columns, dfs_.columns);
+            t.verifyEqual(df1_.data, df1_dat0);
+            t.verifyEqual(df3_.data, df3_dat0);
+            t.verifyEqual(dfs_.data, dfs_dat0);
+            
+            [df2_,df1_,dfs_, df3_, indrows,indcols ] = align(df2,df1,dfs, df3, alignMethod="left", duplicateOption="duplicates");
+            t.verifyEqual(indrows, indrows0(1:4,:));
+            t.verifyEqual(indcols, indcols0);
+            t.verifyEqual(df1_.data, df1_dat0(1:4,:));
+            t.verifyEqual(df3_.data, df3_dat0(1:4,:));
+            t.verifyEqual(dfs_.data, dfs_dat0(1:4,:));
+        end
          
      end
 end
