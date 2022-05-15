@@ -34,6 +34,9 @@ function [B, groupID, groupCount, groupFirstInd] = groupsummaryMatrixFast(A, gro
 %    groupCount:    number of aggregated elements per groupid
 %    groupFirstInd: array(Ngroups) with positon index to first occurance of groupid
 %
+%
+% Copyright 2021 Merijn Reijnders
+
 if nargin<4, dim=1; end               % default aggregate rows of matrix A
 if nargin<5, funcAggrDim=1; end       % default func aggregate direction: rows
 if nargin<6, apply2single = true; end % default apply function to groups with single value

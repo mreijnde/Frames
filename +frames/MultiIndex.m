@@ -1,8 +1,21 @@
 classdef MultiIndex < frames.Index
-    % MULTIINDEX: class to create multi dimensional index
-    %  
-    % Copyright 2022 Merijn Reijnders
-    %
+% MULTIINDEX: class to create multi dimensional index
+%
+% The MultiIndexs class enables multi-dimensional indexing. It stores the multi-dimensional index by storing a single
+% Index object for each dimension. Methods, internal, as public exist to align these multi-indexes, perform selections
+% and aggregations.
+% 
+% Use:  
+%    frames.MultiIndex( ["a";"b";"c"] )                   % 1d array (limited to single dim)
+%    frames.MultiIndex( ["a","A";"b","A";"c","B"] )       % 2d array (limited to same type per dimension)
+%    frames.MultiIndex( {["a";"b";"c"],["A";"A";"B"]} )   % cell with array per dim
+%    frames.MultiIndex( {"a","b","c" ; "A","A","B"} )     % 2d cell
+%    frames.MultiIndex( {{"a","A"},{"b","A"},{"c","B"}} ) % nested cell   
+% 
+%    frames.MultiIndex( {1:3,5:7}, name=["dimX","dimY"] ) % assign dimension names
+
+% Copyright 2022 Merijn Reijnders
+%
     methods
         function obj = MultiIndex(value, nameValue)
             % constructor for MultiIndex
