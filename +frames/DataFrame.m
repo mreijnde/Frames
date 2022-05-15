@@ -456,7 +456,7 @@ classdef DataFrame
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             if nargin<3, colPosition=':'; end
-            obj = obj.loc_(rowPosition,colPosition,true,true);
+            obj = obj.loc_(rowPosition,colPosition,true,false,true);
         end
         function obj = loc(obj,rowName,colName)
             % selection based on names: df.loc(rowsNames[,columnsNames])
@@ -464,14 +464,14 @@ classdef DataFrame
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
-            obj = obj.loc_(rowName,colName,true,false);
+            obj = obj.loc_(rowName,colName,false,false,true);
         end
         function obj = filt(obj,rowName,colName)
             % selection based on names, interpret as filter criteria of original dataframe
             % (keep original order independent of order in selector, ignore duplicates in selector and
             %  allow not matching selectors)
             if nargin<3, colName=':'; end
-            obj = obj.loc_(rowName,colName,true,false,true);
+            obj = obj.loc_(rowName,colName,false,true,true);
         end
         
         
@@ -1650,10 +1650,10 @@ classdef DataFrame
     
     methods(Hidden)  % Hidden and not protected, so that other classes in the package can use these methods, without the need to explicitly give them access. Not to be used outside.
         
-         function obj = loc_(obj,rowSelector,colSelector,userCall,positionIndex,asFilter)            
-            if nargin < 4, userCall=false; end
-            if nargin < 5, positionIndex=false; end             
-            if nargin < 6, asFilter=false; end
+         function obj = loc_(obj,rowSelector,colSelector,positionIndex,asFilter,userCall)                        
+            if nargin < 4, positionIndex=false; end             
+            if nargin < 5, asFilter=false; end
+            if nargin < 6, userCall=false; end
             rowID = obj.rows_.getSelector(rowSelector, positionIndex, 'onlyColSeries', userCall, asFilter);
             colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall, asFilter);              
             if ~iscolon(rowSelector)
@@ -1666,7 +1666,7 @@ classdef DataFrame
          end
          
          function obj = iloc_(obj,rowPosition,colPosition)
-            obj = obj.loc_(rowPosition, colPosition, false, true); 
+            obj = obj.loc_(rowPosition, colPosition, true); 
          end
     end
          
