@@ -418,11 +418,20 @@ classdef DataFrame
         
         function obj = duplicateOption(obj, duplicateOption)
             % change duplicateOption setting
+             arguments
+                obj
+                duplicateOption frames.enum.duplicateOption 
+             end
             obj.settings.duplicateOption = duplicateOption;
         end
                 
         function obj = alignMethod(obj, alignMethod, duplicateOption)
             % change alignMethod setting (and optional duplicateOption setting)
+            arguments
+                obj
+                alignMethod frames.enum.alignMethod
+                duplicateOption frames.enum.duplicateOption = "none"
+             end
             obj.settings.alignMethod=alignMethod;
             if nargin>2
                 obj.settings.duplicateOption = duplicateOption;
@@ -676,11 +685,9 @@ classdef DataFrame
                 df {mustBeA(df, 'frames.DataFrame')}
             end
             arguments
-                options.duplicateOptionRows {mustBeMember(options.duplicateOptionRows, ...
-                                        ["unique","duplicates","none"])} = "unique"
-                options.duplicateOptionCols {mustBeMember(options.duplicateOptionCols, ...
-                                        ["unique","duplicates","none"])} = "unique"
-                options.order           {mustBeMember(options.order, ["keepFirst","keepLast"])} = "keepLast"           
+                options.duplicateOptionRows frames.enum.duplicateOption = "unique"
+                options.duplicateOptionCols frames.enum.duplicateOption = "unique"
+                options.order frames.enum.order = "keepLast"           
             end
             % skip, if nothing to do            
             if isempty(df)
@@ -1586,9 +1593,8 @@ classdef DataFrame
                 dfs frames.DataFrame
             end
             arguments
-               options.duplicateOption {mustBeMember(options.duplicateOption, ...
-                                            ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicatesstrict"
-               options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
+               options.duplicateOption frames.enum.duplicateOption = "duplicatesstrict"
+               options.alignMethod frames.enum.alignMethod = "full"
                options.allowDimExpansion logical = true
             end          
             Ndf = length(dfs);

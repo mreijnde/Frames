@@ -284,10 +284,9 @@ classdef MultiIndex < frames.Index
                 objs {isa(objs, 'frames.Index')}
             end
             arguments
-                   options.duplicateOption {mustBeMember(options.duplicateOption, ...
-                                ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
-                   options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
-                   options.allowDimExpansion logical=true;
+                options.duplicateOption frames.enum.duplicateOption = "duplicates"
+                options.alignMethod frames.enum.alignMethod = "full"
+                options.allowDimExpansion logical = true;
             end           
                                       
             % shortcut alignment code in case of equal Indices or singleton (for performance)             
@@ -333,7 +332,7 @@ classdef MultiIndex < frames.Index
                  if extraDimsNeeded && options.duplicateOption~="expand"
                      assert(obj1.isunique() && obj2.isunique(), 'frames:MultiIndex:align:invalidduplicatesexpansion', ...
                         "Index is not unique. Duplicate values are not supported in case of dimension expansion " + ...
-                        "using duplicateOption " + options.duplicateOption);                                                                       
+                        "using duplicateOption " + string(options.duplicateOption));                                                                       
                      options.duplicateOption="expand";
                  end                     
                  % run align from Index on common dimensions             

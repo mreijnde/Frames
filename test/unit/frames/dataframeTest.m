@@ -258,24 +258,24 @@ classdef dataframeTest < AbstractFramesTests
             % test changing of DataFrame settings            
             frames.DataFrame.restoreDefaultSettings();
             df = frames.DataFrame(magic(3)); % using 'out-of-the-box' default settings
-            t.verifyEqual( df.settings.alignMethod, "strict"); % default
-            t.verifyEqual( df.alignMethod("full").settings.alignMethod, "full");
-            t.verifyEqual( df.duplicateOption("none").settings.duplicateOption, "none");
-            t.verifyEqual( df.alignMethod("left", "expand").settings.alignMethod, "left");
-            t.verifyEqual( df.alignMethod("left", "expand").settings.duplicateOption, "expand");
+            t.verifyEqual( df.settings.alignMethod, frames.enum.alignMethod.strict); % default
+            t.verifyEqual( df.alignMethod("full").settings.alignMethod, frames.enum.alignMethod.full);
+            t.verifyEqual( df.duplicateOption("none").settings.duplicateOption, frames.enum.duplicateOption.none);
+            t.verifyEqual( df.alignMethod("left", "expand").settings.alignMethod, frames.enum.alignMethod.left);
+            t.verifyEqual( df.alignMethod("left", "expand").settings.duplicateOption, frames.enum.duplicateOption.expand);
             
             % change defaults
-            frames.DataFrame.setDefaultSetting("alignMethod","full");
-            frames.DataFrame.setDefaultSetting("duplicateOption","expand");
+            frames.DataFrame.setDefaultSetting("alignMethod",frames.enum.alignMethod.full);
+            frames.DataFrame.setDefaultSetting("duplicateOption",frames.enum.duplicateOption.expand);
             df = frames.DataFrame(magic(3)); % using current default settings
-            t.verifyEqual( df.settings.alignMethod, "full");
-            t.verifyEqual( df.settings.duplicateOption, "expand");
+            t.verifyEqual( df.settings.alignMethod, frames.enum.alignMethod.full);
+            t.verifyEqual( df.settings.duplicateOption, frames.enum.duplicateOption.expand);
             
             % restore to 'out-of-box' defaults
             frames.DataFrame.restoreDefaultSettings();
             df = frames.DataFrame(magic(3)); % using current default settings
-            t.verifyEqual( df.settings.alignMethod, "strict");
-            t.verifyEqual( df.settings.duplicateOption, "duplicatesstrict");
+            t.verifyEqual( df.settings.alignMethod, frames.enum.alignMethod.strict);
+            t.verifyEqual( df.settings.duplicateOption, frames.enum.duplicateOption.duplicatesstrict);
         end
         
         function subsasgnTest(t)

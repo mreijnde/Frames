@@ -386,10 +386,9 @@ classdef Index
                 objs {isa(objs, 'frames.Index')}
             end
             arguments
-                options.duplicateOption {mustBeMember(options.duplicateOption, ...
-                                ["unique", "duplicates", "duplicatesstrict", "none", "expand"])} = "duplicates"
-                options.alignMethod {mustBeMember(options.alignMethod, ["strict", "inner", "left", "full"])} = "full"  
-                options.allowDimExpansion logical=false; % not used by Index, only MultiIndex
+                options.duplicateOption frames.enum.duplicateOption = "duplicates"
+                options.alignMethod frames.enum.alignMethod = "full"
+                options.allowDimExpansion logical = false; % not used by Index, only MultiIndex
             end
             
             % get index objects

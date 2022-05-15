@@ -2,16 +2,14 @@ classdef (HandleCompatible) DataFrameSettings
     % class defines the DataFrame settings that specifies it behavior
     properties
         allowDimExpansion logical = true
-        alignMethod (1,1) string {mustBeMember(alignMethod,["strict", "inner", "left", "full","strictunique"])} = "strict"
+        alignMethod (1,1) frames.enum.alignMethod = "strict"
                              % defines how indices are aligned in math operation between DataFrames:
                              % -  "strict":  both need to have same indices (else error thrown)
                              % -  "inner":   remove index values that are not common in both
                              % -  "left":    keep indices as in left DataFrame in operation (default)            
                              % -  "full":    keep all indices values (allow missing values in indices in both)
                        
-        duplicateOption (1,1) string ...
-                        {mustBeMember(duplicateOption,["none", "unique", "duplicates","duplicatesstrict","expand"])} ...
-                        = "duplicatesstrict"
+        duplicateOption (1,1) frames.enum.duplicateOption = "duplicatesstrict"
                              % defines how duplicate values in indices are handled in math operation on DataFrames:                             
                              %  - "none":             no operations with duplicates allowed
                              %  - "unique":           removes duplicates, only use first occurrence of duplicate value
@@ -22,7 +20,7 @@ classdef (HandleCompatible) DataFrameSettings
                              %  - "expand":           create all combinations of matching duplicates between indices
                              %                        in outputs
         
-        forceMultiIndex logical = false
+        forceMultiIndex (1,1) logical = false
                              % automatically convert DataFrame indices to MultiIndex
                              % in DataFrame constructor. With this option the extra {} are not needed
                              % rows and column input to create MultiIndex indices.                                          
