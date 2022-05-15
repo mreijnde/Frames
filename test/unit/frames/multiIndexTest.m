@@ -295,8 +295,24 @@ classdef multiIndexTest < AbstractFramesTests
             t.verifyEqual(ind.value(:,1), ind.value(:,2));            
             t.verifyEqual(ref, ref0);
             
-            % <todo: add multiIndex dim expansion test cases>
+            % MultiIndex with expansion
+            indXn = frames.MultiIndex(ind1, name="X");
+            indYn = frames.MultiIndex(ind3, name="Y");
+            indZn = frames.MultiIndex(ind4, name="Z");
             
+            [indXY, refXY] = align(indXn, indYn, duplicateOption="expand");
+            [tmpa,tmpb] = meshgrid(1:4,1:4);
+            refXY0 = [tmpa(:) tmpb(:)];
+            t.verifyEqual(refXY,refXY0);
+            t.verifyEqual(indXY.name,["X","Y"]);
+            
+            [indYZ, refYZ] = align(indYn, indZn, duplicateOption="expand");
+            t.verifyEqual(refYZ,refXY);
+            t.verifyEqual(indYZ.name,["Y","Z"]);
+
+            [indYZX, refZYX] = align(indYZ.unique(), indXY.unique());
+            t.verifyEqual(indYZX.name,["Y","Z","X"]);
+            %<todo: add more checks>            
         end    
 
     end        
