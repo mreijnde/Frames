@@ -650,7 +650,7 @@ classdef DataFrame
         
         
         
-        function dfnew = combine(obj, df, options)
+        function dfnew = combine(df, options)
             % function to concatenate one or multiple dataframes
             %
             % The requireUnique and requireUniqueSorted settings of obj will be used in the new combined dataframe.
@@ -673,14 +673,11 @@ classdef DataFrame
             %    - "keepFirst": first occurance is used
             %            
             % usage: 
-            %   df.combine( df1,df2,df3, duplicateOptionRows="unique", duplicateOptionCols="unique", order="keepLast")
+            %   combine( df1,df2,df3, duplicateOptionRows="unique", duplicateOptionCols="unique", order="keepLast")
             %        
             % output:
             %    concatenated dataframe
             %
-            arguments
-                obj
-            end
             arguments (Repeating)
                 df {mustBeA(df, 'frames.DataFrame')}
             end
@@ -689,6 +686,7 @@ classdef DataFrame
                 options.duplicateOptionCols frames.enum.duplicateOption = "unique"
                 options.order frames.enum.order = "keepLast"           
             end
+            obj = df{1};
             % skip, if nothing to do            
             if isempty(df)
                 dfnew = obj;
@@ -710,23 +708,27 @@ classdef DataFrame
                 columns_requireUnique = cellfun(@(x) x.columns_.isunique(), df);
                 assert(all(columns_requireUnique), 'frames:DataFrame:combine:notAllColumnsUnique', ...
                     "Obj columns has requireUnique enabled and not all other df columns are unique.");                 
-            end            
-            
+            end             
             % get index objects            
             rowsobj = cellfun(@(x) {x.rows_}, df);
             colsobj = cellfun(@(x) {x.columns_}, df);            
+            % check singleton mixing
+            rows_singleton = cellfun(@(x) x.singleton, rowsobj);
+            cols_singleton = cellfun(@(x) x.singleton, colsobj);
+            assert( all(rows_singleton) || ~any(rows_singleton), 'frames:DataFrame:combine:mixedsingleton', ...
+                "Not allowed to mix DataFrames with singleton and non-singleton rows indices.");
+            assert( all(cols_singleton) || ~any(cols_singleton), 'frames:DataFrame:combine:mixedsingleton', ...
+                "Not allowed to mix DataFrames with singleton and non-singleton column indices.");            
             % get new combined index objects and position index          
-            [rowsnew, rowsnew_ind] = obj.rows_.align(rowsobj{:}, duplicateOption=options.duplicateOptionRows);
-            [colsnew, colsnew_ind] = obj.columns_.align(colsobj{:}, duplicateOption=options.duplicateOptionCols);            
-            % get empty dataframe (with same settings)
+            [rowsnew, rowsnew_ind] = align(rowsobj{:}, duplicateOption=options.duplicateOptionRows);
+            [colsnew, colsnew_ind] = align(colsobj{:}, duplicateOption=options.duplicateOptionCols);            
+            % get empty dataframe (with same settings)            
             dfnew = obj;
             dfnew.rows_ = rowsnew;
             dfnew.columns_ = colsnew;
             dfnew.data_ = obj.defaultData(rowsnew.length(), colsnew.length());
             dfnew = resetUserProperties(dfnew);
-            type = class(dfnew.data_);
-            % add object itself to the list
-            df = [{obj} df];            
+            type = class(dfnew.data_);         
             % define order
             dforder = 1:length(df);
             if options.order == "keepFirst"
