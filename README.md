@@ -35,7 +35,8 @@ Use a frame when:
 - you care about simple code, the fewer lines the better (e.g. dataFrame.log().plot() plots the logarithm of your dataFrame with a minimum of code)
 - you need the rows (or columns) to have properties forcing it to be all the time sorted, or unique, or on the contrary allow it to have duplicate values. Tables only allow unique values (except for the rows of timetables which can contain duplicates).
 - you want to use a specific method in frames (e.g. you work with time series and want to access the rolling and ewm computations)
-- you want to work with multi-dimensional indices, including implicit dimension expansion, dimension aggregation and conversion from and to multi-dimensional matrices
+- you want to work with multi-dimensional indices, including implicit dimension expansion, aggregation over dimensions and conversion from and to multi-dimensional matrices
+
 Use a table when:
 - your data is heterogeneous (i.e. variables have mixed types) and needs to stay that way (e.g. for SQL-like operations of joining and grouping)
 - your variables can contain a matrix themselves, and not only a column vector
@@ -44,7 +45,7 @@ Use a table when:
 
 ## Demo and documentation
 A demo is available in [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) and can be also found in the live script format [framesDemo.mlx](framesDemo.mlx).
-An example and description of the multi-dimensional index functionality can be found in [html/framesMultiDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesMultiDemo.html).
+An example of the multi-dimensional index functionality can be found in [html/framesMultiDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesMultiDemo.html).
 
 
 The documentation is available using Matlab's command
