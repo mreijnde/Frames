@@ -46,201 +46,7 @@ classdef MultiIndex < frames.Index
                 obj.name = "";
             end                        
         end
-                            
-        function out = getSelector(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall)
-            % get valid matlab indexer for array operations based on supplied selector
-            %
-            % selector definition:
-            %    - colon
-            %    - logical array/ logical Series
-            %
-            %    - index position array               ***only in case of position indexing***
-            %
-            %    - cell array with 'selector set(s)'  ***only in case of value indexing***
-            %
-            %         A 'selector set' consists of a cell array(1:Ndim).
-            %         The values in the cells are passed to the getSelector function for each dimension.
-            %         If selector has less cells than number of dimensions stored, there will be no
-            %         selection criteria applied for those missing dimensions.
-            %
-            %         Multiple 'selector sets' can be combined by nesting them in a cell array.
-            %
-            % ----------------
-            % Parameters:
-            %    - selector            
-            %    - positionIndex  (logical):    selector is position index instead of value index (default false)
-            %    - allowedSeries: (string enum: 'all','onlyRowSeries','onlyColSeries') (default 'all')
-            %                                   accept only these logical dataframe series            
-            %    - allowedMissing (logical):    allow selectors with no matches (default false)
-            %    - asFilter       (logical):    interpret selector as filter criteria of index (default false)
-            %                                   (keep original order independent of order in selector,
-            %                                    ignore duplicates and allow not matching selector sets)
-            
-            %    - userCall       (logical):    perform full validation of selector (default true)            
-            %
-            % output:
-            %    validated array indexer (colon, logical array or position index array)
-            %
-            if nargin<3, positionIndex = false; end
-            if nargin<4, allowedSeries = 'all'; end
-            if nargin<5, allowMissing=false; end  
-            if nargin<6, asFilter = false; end
-            if nargin<7, userCall = true; end
-            
-            if iscolon(selector)
-                % colon selector
-                out = ':'; % note: this also converts colon in cell to just a colon
-                
-            elseif positionIndex
-                % position index selector (so no selector per dimension allowed)
-                assert(~iscell(selector), 'frames:MultiIndex:noCellAllowedPositionIndex', ...
-                    "No cell selector allowed in combination with position indexing.");
-                out = getSelector@frames.Index(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall);
-                
-            elseif islogical(selector) || isFrame(selector)
-                % value selector (with logicals)
-                out = getSelector@frames.Index(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall);
-                
-            else
-                % value selector (with 'selector set(s)')
-                selector = obj.convertCellSelector(selector); % make sure it is nesdted cell with selector sets
-                % calculate logical mask as selector
-                if asFilter
-                    out = false(obj.length(),1);  % output is a logical array
-                else
-                    out = [];                     % output is a position array
-                end
-                for iset = 1:length(selector)
-                    % get mask of maskset by looping over supplied dimensions
-                    selectorset = selector{iset};
-                    
-                    maskset = getSelectorSetFilterMask_(obj, selectorset, iset, positionIndex, allowedSeries);
-                    if ~any(maskset) && ~isempty(selectorset{1})
-                        if asFilter
-                            warning('frames:MultiIndex:emptySelectorSet',"No matches found for selector set %i.", iset);
-                        else
-                            error( 'frames:MultiIndex:emptySelectorSet', "No matches found for selector set %i.", iset);
-                        end
-                    end
-                    
-                    if ~asFilter
-                        
-                        if ~all(cellfun(@length, selectorset)==1)                            
-                             % pre-filter Multi-Index based on logical mask (for speedup)                                                                                                    
-                             objfilt = obj.getSubIndex(maskset);
-                             % replace logical selectors by ':' for usage in combination with objfilt
-                             selectorsetFilt = selectorset;
-                             selectorsetLogical = cellfun(@islogical, selectorset);
-                             if any(selectorsetLogical) 
-                                selectorsetFilt{selectorsetLogical}= ':';                             
-                             end
-                             % get order of items based on selectorset
-                             posIndexFilt = getSelectorSetPosIndex_(objfilt, selectorsetFilt, positionIndex, allowedSeries);
-                             % convert positon to original (unfiltered) positions
-                             maskpos = find(maskset);
-                             posIndex = maskpos(posIndexFilt);
-                        else
-                            % in case of only single indices, skip filtering
-                            posIndex = find(maskset);
-                        end
-                    end
-                                        
-                    % combine masks of different masksets
-                    if asFilter
-                        out = out | maskset;
-                    else
-                        out = [out ; posIndex]; %#ok<AGROW>
-                    end
-                end
-            end
-            if asFilter && ~any(out)
-                warning('frames:MultiIndex:emptySelection',"No matches found, empty selection");
-            end
-            
-            
-            % sub-helper functions
-            
-            function [mask] = getSelectorSetFilterMask_(obj,selectorset, iset, positionIndex, allowedSeries)
-                % functions gets logical mask for given selectorset filter
-                mask = true(obj.length(),1);
-                assert(length(selectorset)<=obj.Ndim, 'frames:MultiIndex:tooManyDim', ...
-                    "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
-                    length(selectorset), iset, obj.Ndim);
-                for j = 1:length(selectorset)
-                    masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, true, false, false);
-                    mask = mask & masklayer;
-                end
-                
-            end
-            
-            function posIndex = getSelectorSetPosIndex_(obj,selectorset, positionIndex, allowedSeries)
-                % function gets position index for given selectorset (non-filtered), keep order and duplicates
-                % as specified in selector
-                
-                % shortcut main code (for speedup) in case of just a single dimension specified
-                iscolonDim = cellfun(@iscolon, selectorset);
-                if sum(~iscolonDim)==1
-                    % only a single non-colon dimension
-                    dim = find(~iscolonDim);
-                    posIndex = obj.value_{dim}.getSelector(selectorset{dim},positionIndex, allowedSeries, true, false, false); 
-                    return
-                end
-                                
-                % get linear-index position selections for every dimension in selector
-                Nindex = length(obj);
-                NselectorDim = length(selectorset);
-                pos = cell(1, NselectorDim);
-                indseq = cell(1, NselectorDim);                
-                for i=1:NselectorDim
-                    if ~iscolonDim(i)
-                        % get linear-index selector
-                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector_(selectorset{i},positionIndex, allowedSeries, true, false, false);                        
-                    else
-                        % special case: handle colon
-                        pos{i} = (1:Nindex)';
-                        indseq{i} = ones(Nindex,1);                        
-                    end
-                end                               
-                % dimensions to use
-                rootDim = 1;
-                loopDims = 2:NselectorDim; 
-                p = pos{rootDim};
-                
-                % align cell array with indexes with selector dim1
-                indseq_grouped_aligned = cell(1,NselectorDim );
-                indseq_grouped_aligned{1} = num2cell(indseq{rootDim });
-                for i=loopDims
-                    % get for each MultiIndex row the selector sequence number(s) of values responsible for selection
-                    indseq_grouped = getSelectorIndicesForEachValue(pos{i}, indseq{i}, Nindex);                               
-                    % align indices according the main reference dimension
-                    indseq_grouped_aligned{i} = indseq_grouped(p);
-                end
-                
-                % convert nested cell array to 2d cell (required for further manipulation)
-                ind_alignAll = horzcat(indseq_grouped_aligned{:});
-                
-                % expand rows with all combinations
-                [posIndexRaw,outind] = expandCombinationsCell(ind_alignAll);
-                
-                % get sorted row positions
-                [~, sortind] = sortrows(posIndexRaw);
-                outind_sorted = outind(sortind);
-                posIndex = p(outind_sorted);                
-            end
-            
-            function ind_cell = getSelectorIndicesForEachValue(pos, indseq, N)
-                % get cell array(N) with cell(i) the position indices of vector x with value i
-                % (values of vector x has to be in range 1 to N)
-                [~,ix] = sort(pos);
-                c = histc(pos, 1:N); %#ok<HISTC>
-                ind_cell = mat2cell(indseq(ix),c,1);
-            end
-            
-            
-            
-        end
-        
-        
+                                           
         
         function [obj_new, ind] = align(objs, options)
             % ALIGN create new aligned MultiIndex based on common dimensions 
@@ -401,6 +207,202 @@ classdef MultiIndex < frames.Index
         
     end
     methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
+        
+        
+        function out = getSelector_(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall)
+            % get valid matlab indexer for array operations based on supplied selector
+            %
+            % selector definition:
+            %    - colon
+            %    - logical array/ logical Series
+            %
+            %    - index position array               ***only in case of position indexing***
+            %
+            %    - cell array with 'selector set(s)'  ***only in case of value indexing***
+            %
+            %         A 'selector set' consists of a cell array(1:Ndim).
+            %         The values in the cells are passed to the getSelector function for each dimension.
+            %         If selector has less cells than number of dimensions stored, there will be no
+            %         selection criteria applied for those missing dimensions.
+            %
+            %         Multiple 'selector sets' can be combined by nesting them in a cell array.
+            %
+            % ----------------
+            % Parameters:
+            %    - selector            
+            %    - positionIndex  (logical):    selector is position index instead of value index (default false)
+            %    - allowedSeries: (string enum: 'all','onlyRowSeries','onlyColSeries') (default 'all')
+            %                                   accept only these logical dataframe series            
+            %    - allowedMissing (logical):    allow selectors with no matches (default false)
+            %    - asFilter       (logical):    interpret selector as filter criteria of index (default false)
+            %                                   (keep original order independent of order in selector,
+            %                                    ignore duplicates and allow not matching selector sets)
+            
+            %    - userCall       (logical):    perform full validation of selector (default true)            
+            %
+            % output:
+            %    validated array indexer (colon, logical array or position index array)
+            %
+            if nargin<3, positionIndex = false; end
+            if nargin<4, allowedSeries = 'all'; end
+            if nargin<5, allowMissing=false; end  
+            if nargin<6, asFilter = false; end
+            if nargin<7, userCall = true; end
+            
+            if iscolon(selector)
+                % colon selector
+                out = ':'; % note: this also converts colon in cell to just a colon
+                
+            elseif positionIndex
+                % position index selector (so no selector per dimension allowed)
+                assert(~iscell(selector), 'frames:MultiIndex:noCellAllowedPositionIndex', ...
+                    "No cell selector allowed in combination with position indexing.");
+                out = getSelector_@frames.Index(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall);
+                
+            elseif islogical(selector) || isFrame(selector)
+                % value selector (with logicals)
+                out = getSelector_@frames.Index(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall);
+                
+            else
+                % value selector (with 'selector set(s)')
+                selector = obj.convertCellSelector(selector); % make sure it is nesdted cell with selector sets
+                % calculate logical mask as selector
+                if asFilter
+                    out = false(obj.length(),1);  % output is a logical array
+                else
+                    out = [];                     % output is a position array
+                end
+                for iset = 1:length(selector)
+                    % get mask of maskset by looping over supplied dimensions
+                    selectorset = selector{iset};
+                    
+                    maskset = getSelectorSetFilterMask_(obj, selectorset, iset, positionIndex, allowedSeries);
+                    if ~any(maskset) && ~isempty(selectorset{1})
+                        if asFilter
+                            warning('frames:MultiIndex:emptySelectorSet',"No matches found for selector set %i.", iset);
+                        else
+                            error( 'frames:MultiIndex:emptySelectorSet', "No matches found for selector set %i.", iset);
+                        end
+                    end
+                    
+                    if ~asFilter
+                        
+                        if ~all(cellfun(@length, selectorset)==1)                            
+                             % pre-filter Multi-Index based on logical mask (for speedup)                                                                                                    
+                             objfilt = obj.getSubIndex(maskset);
+                             % replace logical selectors by ':' for usage in combination with objfilt
+                             selectorsetFilt = selectorset;
+                             selectorsetLogical = cellfun(@islogical, selectorset);
+                             if any(selectorsetLogical) 
+                                selectorsetFilt{selectorsetLogical}= ':';                             
+                             end
+                             % get order of items based on selectorset
+                             posIndexFilt = getSelectorSetPosIndex_(objfilt, selectorsetFilt, positionIndex, allowedSeries);
+                             % convert positon to original (unfiltered) positions
+                             maskpos = find(maskset);
+                             posIndex = maskpos(posIndexFilt);
+                        else
+                            % in case of only single indices, skip filtering
+                            posIndex = find(maskset);
+                        end
+                    end
+                                        
+                    % combine masks of different masksets
+                    if asFilter
+                        out = out | maskset;
+                    else
+                        out = [out ; posIndex]; %#ok<AGROW>
+                    end
+                end
+            end
+            if asFilter && ~any(out)
+                warning('frames:MultiIndex:emptySelection',"No matches found, empty selection");
+            end
+            
+            
+            % sub-helper functions
+            
+            function [mask] = getSelectorSetFilterMask_(obj,selectorset, iset, positionIndex, allowedSeries)
+                % functions gets logical mask for given selectorset filter
+                mask = true(obj.length(),1);
+                assert(length(selectorset)<=obj.Ndim, 'frames:MultiIndex:tooManyDim', ...
+                    "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
+                    length(selectorset), iset, obj.Ndim);
+                for j = 1:length(selectorset)                    
+                    masklayer = obj.value_{j}.getSelectorMask(selectorset{j}, positionIndex=positionIndex, ...
+                                                              allowedSeries=allowedSeries, allowMissing=true, ...
+                                                              asFilter=false, userCall=false);
+                    mask = mask & masklayer;
+                end
+                
+            end
+            
+            function posIndex = getSelectorSetPosIndex_(obj,selectorset, positionIndex, allowedSeries)
+                % function gets position index for given selectorset (non-filtered), keep order and duplicates
+                % as specified in selector
+                
+                % shortcut main code (for speedup) in case of just a single dimension specified
+                iscolonDim = cellfun(@iscolon, selectorset);
+                if sum(~iscolonDim)==1
+                    % only a single non-colon dimension
+                    dim = find(~iscolonDim);
+                    posIndex = obj.value_{dim}.getSelector_(selectorset{dim},positionIndex, allowedSeries, true, false, false); 
+                    return
+                end
+                                
+                % get linear-index position selections for every dimension in selector
+                Nindex = length(obj);
+                NselectorDim = length(selectorset);
+                pos = cell(1, NselectorDim);
+                indseq = cell(1, NselectorDim);                
+                for i=1:NselectorDim
+                    if ~iscolonDim(i)
+                        % get linear-index selector
+                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector_(selectorset{i},positionIndex, allowedSeries, true, false, false);                        
+                    else
+                        % special case: handle colon
+                        pos{i} = (1:Nindex)';
+                        indseq{i} = ones(Nindex,1);                        
+                    end
+                end                               
+                % dimensions to use
+                rootDim = 1;
+                loopDims = 2:NselectorDim; 
+                p = pos{rootDim};
+                
+                % align cell array with indexes with selector dim1
+                indseq_grouped_aligned = cell(1,NselectorDim );
+                indseq_grouped_aligned{1} = num2cell(indseq{rootDim });
+                for i=loopDims
+                    % get for each MultiIndex row the selector sequence number(s) of values responsible for selection
+                    indseq_grouped = getSelectorIndicesForEachValue(pos{i}, indseq{i}, Nindex);                               
+                    % align indices according the main reference dimension
+                    indseq_grouped_aligned{i} = indseq_grouped(p);
+                end
+                
+                % convert nested cell array to 2d cell (required for further manipulation)
+                ind_alignAll = horzcat(indseq_grouped_aligned{:});
+                
+                % expand rows with all combinations
+                [posIndexRaw,outind] = expandCombinationsCell(ind_alignAll);
+                
+                % get sorted row positions
+                [~, sortind] = sortrows(posIndexRaw);
+                outind_sorted = outind(sortind);
+                posIndex = p(outind_sorted);                
+            end
+            
+            function ind_cell = getSelectorIndicesForEachValue(pos, indseq, N)
+                % get cell array(N) with cell(i) the position indices of vector x with value i
+                % (values of vector x has to be in range 1 to N)
+                [~,ix] = sort(pos);
+                c = histc(pos, 1:N); %#ok<HISTC>
+                ind_cell = mat2cell(indseq(ix),c,1);
+            end
+            
+        end        
+        
+        
         
         function [objnew, ind] = align_handle_simple_(obj, objs)
                 % internal function to check and handle simple cases (equal index or singleton)

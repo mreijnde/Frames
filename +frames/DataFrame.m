@@ -1657,8 +1657,8 @@ classdef DataFrame
             if nargin < 5, allowedMissing=false; end
             if nargin < 6, asFilter=false; end
             if nargin < 7, userCall=false; end
-            rowID = obj.rows_.getSelector(rowSelector, positionIndex, 'onlyColSeries', allowedMissing, asFilter, userCall);
-            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', allowedMissing, asFilter, userCall);              
+            rowID = obj.rows_.getSelector_(rowSelector, positionIndex, 'onlyColSeries', allowedMissing, asFilter, userCall);
+            colID = obj.columns_.getSelector_(colSelector, positionIndex, 'onlyRowSeries', allowedMissing, asFilter, userCall);              
             if ~iscolon(rowSelector)
                 obj.rows_ = obj.rows_.getSubIndex(rowID);
             end
@@ -1703,8 +1703,8 @@ classdef DataFrame
         function obj = modify(obj,data,rows,columns,positionIndex)
             % modify data in selected rows and columns to supplied values
             if nargin<5; positionIndex = false; end
-            row = obj.rows_.getSelector(rows, positionIndex, 'onlyColSeries', false, false, true);
-            col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', false, false, true);                     
+            row = obj.rows_.getSelector_(rows, positionIndex, 'onlyColSeries', false, false, true);
+            col = obj.columns_.getSelector_(columns, positionIndex, 'onlyRowSeries', false, false, true);                     
             % get data from DataFrame
             if isFrame(data)
                 rowsColChecker(obj.iloc_(row,col).asFrame(), data);
