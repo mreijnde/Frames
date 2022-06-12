@@ -46,8 +46,8 @@ classdef MultiIndex < frames.Index
                 obj.name = "";
             end                        
         end
-                               
-        function out = getSelector(obj,selector, positionIndex, allowedSeries, userCall, asFilter)
+                            
+        function out = getSelector(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall)
             % get valid matlab indexer for array operations based on supplied selector
             %
             % selector definition:
@@ -67,22 +67,25 @@ classdef MultiIndex < frames.Index
             %
             % ----------------
             % Parameters:
-            %    - selector
-            %    - allowedSeries: (string enum: 'all','onlyRowSeries','onlyColSeries')
-            %                                   accept only these logical dataframe series
-            %    - positionIndex  (logical):    selector is position index instead of value index
-            %    - userCall       (logical):    perform full validation of selector
-            %    - asFilter       (logical):    interpret selector as filter criteria of index
+            %    - selector            
+            %    - positionIndex  (logical):    selector is position index instead of value index (default false)
+            %    - allowedSeries: (string enum: 'all','onlyRowSeries','onlyColSeries') (default 'all')
+            %                                   accept only these logical dataframe series            
+            %    - allowedMissing (logical):    allow selectors with no matches (default false)
+            %    - asFilter       (logical):    interpret selector as filter criteria of index (default false)
             %                                   (keep original order independent of order in selector,
             %                                    ignore duplicates and allow not matching selector sets)
+            
+            %    - userCall       (logical):    perform full validation of selector (default true)            
             %
             % output:
             %    validated array indexer (colon, logical array or position index array)
             %
             if nargin<3, positionIndex = false; end
-            if nargin<4, allowedSeries = 'all'; end            
-            if nargin<5, userCall = false; end
+            if nargin<4, allowedSeries = 'all'; end
+            if nargin<5, allowMissing=false; end  
             if nargin<6, asFilter = false; end
+            if nargin<7, userCall = true; end
             
             if iscolon(selector)
                 % colon selector
@@ -92,11 +95,11 @@ classdef MultiIndex < frames.Index
                 % position index selector (so no selector per dimension allowed)
                 assert(~iscell(selector), 'frames:MultiIndex:noCellAllowedPositionIndex', ...
                     "No cell selector allowed in combination with position indexing.");
-                out = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
+                out = getSelector@frames.Index(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall);
                 
             elseif islogical(selector) || isFrame(selector)
                 % value selector (with logicals)
-                out = getSelector@frames.Index(obj, selector, positionIndex, allowedSeries, userCall);
+                out = getSelector@frames.Index(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall);
                 
             else
                 % value selector (with 'selector set(s)')
@@ -164,7 +167,7 @@ classdef MultiIndex < frames.Index
                     "More cells (%i) in selector (set %i) than dimensions in MultiIndex (%i).", ...
                     length(selectorset), iset, obj.Ndim);
                 for j = 1:length(selectorset)
-                    masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, false, true);
+                    masklayer = obj.value_{j}.getSelectorMask(selectorset{j},positionIndex, allowedSeries, true, false, false);
                     mask = mask & masklayer;
                 end
                 
@@ -179,7 +182,7 @@ classdef MultiIndex < frames.Index
                 if sum(~iscolonDim)==1
                     % only a single non-colon dimension
                     dim = find(~iscolonDim);
-                    posIndex = obj.value_{dim}.getSelector(selectorset{dim},positionIndex, allowedSeries, false, true); 
+                    posIndex = obj.value_{dim}.getSelector(selectorset{dim},positionIndex, allowedSeries, true, false, false); 
                     return
                 end
                                 
@@ -191,7 +194,7 @@ classdef MultiIndex < frames.Index
                 for i=1:NselectorDim
                     if ~iscolonDim(i)
                         % get linear-index selector
-                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector_(selectorset{i},positionIndex, allowedSeries, false, true);                        
+                        [pos{i}, indseq{i}] = obj.value_{i}.getSelector_(selectorset{i},positionIndex, allowedSeries, true, false, false);                        
                     else
                         % special case: handle colon
                         pos{i} = (1:Nindex)';

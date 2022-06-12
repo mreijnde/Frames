@@ -456,7 +456,7 @@ classdef DataFrame
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             if nargin<3, colPosition=':'; end
-            obj = obj.loc_(rowPosition,colPosition,true,false,true);
+            obj = obj.loc_(rowPosition,colPosition,true,false,false,true);
         end
         function obj = loc(obj,rowName,colName)
             % selection based on names: df.loc(rowsNames[,columnsNames])
@@ -464,14 +464,14 @@ classdef DataFrame
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
-            obj = obj.loc_(rowName,colName,false,false,true);
+            obj = obj.loc_(rowName,colName,false,false,false,true);
         end
         function obj = filt(obj,rowName,colName)
             % selection based on names, interpret as filter criteria of original dataframe
             % (keep original order independent of order in selector, ignore duplicates in selector and
             %  allow not matching selectors)
             if nargin<3, colName=':'; end
-            obj = obj.loc_(rowName,colName,false,true,true);
+            obj = obj.loc_(rowName,colName,false,false,true,true);
         end
         
         
@@ -1652,12 +1652,13 @@ classdef DataFrame
     
     methods(Hidden)  % Hidden and not protected, so that other classes in the package can use these methods, without the need to explicitly give them access. Not to be used outside.
         
-         function obj = loc_(obj,rowSelector,colSelector,positionIndex,asFilter,userCall)                        
+         function obj = loc_(obj, rowSelector, colSelector, positionIndex, allowedMissing, asFilter, userCall)                        
             if nargin < 4, positionIndex=false; end             
-            if nargin < 5, asFilter=false; end
-            if nargin < 6, userCall=false; end
-            rowID = obj.rows_.getSelector(rowSelector, positionIndex, 'onlyColSeries', userCall, asFilter);
-            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall, asFilter);              
+            if nargin < 5, allowedMissing=false; end
+            if nargin < 6, asFilter=false; end
+            if nargin < 7, userCall=false; end
+            rowID = obj.rows_.getSelector(rowSelector, positionIndex, 'onlyColSeries', allowedMissing, asFilter, userCall);
+            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', allowedMissing, asFilter, userCall);              
             if ~iscolon(rowSelector)
                 obj.rows_ = obj.rows_.getSubIndex(rowID);
             end
@@ -1702,8 +1703,8 @@ classdef DataFrame
         function obj = modify(obj,data,rows,columns,positionIndex)
             % modify data in selected rows and columns to supplied values
             if nargin<5; positionIndex = false; end
-            row = obj.rows_.getSelector(rows, positionIndex, 'onlyColSeries', true);
-            col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', true);                     
+            row = obj.rows_.getSelector(rows, positionIndex, 'onlyColSeries', false, false, true);
+            col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', false, false, true);                     
             % get data from DataFrame
             if isFrame(data)
                 rowsColChecker(obj.iloc_(row,col).asFrame(), data);

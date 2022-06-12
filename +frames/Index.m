@@ -189,7 +189,7 @@ classdef Index
             len = size(obj.value_,1);
         end
         
-        function selector = getSelector(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
+        function selector = getSelector(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall)
             % get valid matlab indexer for array operations based on supplied selector
             % supports:
             %    - colon
@@ -197,22 +197,24 @@ classdef Index
             %    - logical array/ logical Series
             % ----------------            
             % Parameters:
-            %    - selector
+            %    - selector            
+            %    - positionIndex  (logical):    selector is position index instead of value index (default false)                        
             %    - allowedSeries: (string enum: 'all' ,'onlyRowSeries','onlyColSeries') (default 'all')
-            %                                   accept only these logical dataframe series
-            %    - positionIndex  (logical):    selector is position index instead of value index (default false)
+            %                                   accept only these logical dataframe series            
+            %    - allowedMissing (logical):    allow selectors with no matches (default false)
+            %    - asFilter       (logical):    not used (for compatiblity with MultiIndex)
             %    - userCall       (logical):    perform full validation of selector (default true)
-            %    - allowMissing   (logical):    allow selectors with no matches (default false)
             %
             % output:
             %    validated array indexer (colon, logical array or position index array)
             %
-            if nargin<5, userCall = true; end
-            if nargin<4, allowedSeries = 'all'; end
-            if nargin<3, positionIndex = false; end
-            if nargin<6, allowMissing=false; end            
+            if nargin<3, positionIndex = false; end            
+            if nargin<4, allowedSeries = 'all'; end            
+            if nargin<5, allowMissing=false; end
+            if nargin<6, asFilter=false; end            
+            if nargin<7, userCall = true; end
             % call internal function
-            selector = obj.getSelector_(selector, positionIndex, allowedSeries, userCall, allowMissing);
+            selector = obj.getSelector_(selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall);
         end
         
 
@@ -684,7 +686,7 @@ classdef Index
             obj.value_ = val;
         end              
         
-       function [selector, selectorInd] = getSelector_(obj,selector, positionIndex, allowedSeries, userCall, allowMissing)
+       function [selector, selectorInd] = getSelector_(obj,selector, positionIndex, allowedSeries, allowMissing, asFilter, userCall)
             % get valid matlab indexer for array operations based on supplied selector
             % (internal function with extra optional output, see detailed description getSelector())            
             %
