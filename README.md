@@ -55,6 +55,8 @@ doc frames.TimeFrame
 ```
 
 ## Contributors
+Benjamin Gaudin
+
 Merijn Reijnders
 
 ## Contact
