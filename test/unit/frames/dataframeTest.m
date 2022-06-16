@@ -119,6 +119,26 @@ classdef dataframeTest < AbstractFramesTests
             warning('on','frames:Index:notUnique')
         end
         
+                
+        function initCopyTest(t)
+            df = frames.DataFrame([1,2;3,4], ["a","b"],[1,2] );
+            df1 = df.initCopy([11,22,33;44,55,66], df.getRowsObj(), ["AA","BB","CC"]);
+            t.verifyEqual(df1, frames.DataFrame([11,22,33;44,55,66],["a","b"],["AA","BB","CC"]))
+            df2 = df.initCopy([11,22;33,44;55,66], [1,2,3] , df.columns);
+            t.verifyEqual(df2, frames.DataFrame([11,22;33,44;55,66],[1,2,3],[1,2]))
+            % check datasize
+            t.verifyError(@() df.initCopy([11,22;33,44],[1,2,3],[1,2]), 'frames:initCopy:mismatchrows');
+            t.verifyError(@() df.initCopy([11,22;33,44],[1,3],[1]), 'frames:initCopy:mismatchcolumns');
+            
+            % check timeframe
+            tf = frames.TimeFrame([1,2;3,4], [],[1,2] );
+            tf1 = tf.initCopy([11,22,33;44,55,66], tf.getRowsObj(), ["AA","BB","CC"]);
+            t.verifyEqual(tf1, frames.TimeFrame([11,22,33;44,55,66],[],["AA","BB","CC"]))
+            tf2 = tf.initCopy([11,22;33,44;55,66], [1 2 3], tf.getColumnsObj());
+            t.verifyEqual(tf2, frames.TimeFrame([11,22;33,44;55,66],[],[1,2]))
+        end
+
+                
         function catsIndexSpecTest(t)
             warning('off','frames:Index:notUnique')
             duplicate = frames.Index([1 1 3]);
@@ -141,17 +161,25 @@ classdef dataframeTest < AbstractFramesTests
             e = frames.DataFrame([],[],frames.Index([])).setRowsName("");
                         
             % VERTCAT
-            % vertcat does not accept duplicate rows
-            t.verifyError(@()[du;uu],'frames:requireUniqueIndex')
-            t.verifyError(@()[su;du],'frames:requireUniqueIndex')
-            t.verifyError(@()[su;su],'frames:vertcat:rowsNotUnique')
-            t.verifyError(@()[uu;ud],'frames:vertcat:rowsNotUnique')
+            warning('off','frames:Index:notUnique')
+            t.verifyEqual([du;uu],frames.DataFrame([du.data;uu.data],...
+                frames.Index([1 1 3 6 5 4],Unique=false),du.getColumnsObj())) % original error 'frames:requireUniqueIndex'
+            warning('on','frames:Index:notUnique')
             
+            t.verifyError(@() [su;du],'frames:DataFrame:combine:notAllRowsUnique') % original error 'frames:vertcat:rowsNotUnique'
+            t.verifyError(@() [uu;ud],'frames:DataFrame:combine:notAllColumnsUnique') % original error 'frames:vertcat:rowsNotUnique'
+            
+            warning_id = 'frames:concat:overlap';
+            t.verifyWarning(@() [su;su] , warning_id );
+            warning('off',warning_id)
+            t.verifyEqual([su;su], su) % original error 'frames:vertcat:rowsNotUnique'
+            warning('on',warning_id)
+                                              
             % can concatenate duplicates if same columns
             t.verifyEqual([ud;sd],frames.DataFrame([ud.data;sd.data],...
                 frames.Index([6 5 4 10 20 30],Unique=true),ud.getColumnsObj()))
             % cannot otherwise
-            t.verifyError(@()[ud;su],'MATLAB:subsassigndimmismatch')
+            %t.verifyError(@()[ud;su],'MATLAB:subsassigndimmismatch') %<== why should this be forbidden???
             
             % sorts if first rows is required sorted
             % and align same columns
@@ -178,9 +206,17 @@ classdef dataframeTest < AbstractFramesTests
             
             
             %HORZCAT
-            % horzcat does not accept duplicate rows unless it is the same
-            t.verifyError(@()[du,us],'frames:requireUniqueIndex')
-            t.verifyError(@()[uu,ds],'MATLAB:subsassigndimmismatch')
+            warning('off','frames:Index:notUnique')
+            data_ok = nan(5,6); data_ok(1:3,1:3) = uu.data; data_ok(4:5,4:6) = ds.data(2:3,:);
+            df_ok = frames.DataFrame(data_ok, frames.Index([6 5 4 1 3],Unique=true), ...
+                                              frames.Index([unique;sorted],Unique=true));            
+            warning('on','frames:Index:notUnique')            
+            t.verifyError(@() [uu,ds], 'frames:DataFrame:combine:notAllRowsUnique') % error originall 'frames:requireUniqueIndex'            
+            
+            
+            
+            
+            % horzcat does not accept duplicate rows unless it is the same            
             t.verifyEqual([du,ds],frames.DataFrame([du.data,ds.data],duplicate,[unique;sorted]))
             warning('off','frames:Index:notUnique')
             t.verifyEqual([dd,du],frames.DataFrame([dd.data,du.data],duplicate,[duplicate;unique]))
@@ -208,7 +244,7 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(tmp,frames.DataFrame(tmpdata,...
                 frames.Index([4 6 10 20 30],UniqueSorted=true),[unique;sorted]))
             
-            t.verifyError(@()[ss,su],'frames:Index:requireSortedFail')
+            %t.verifyError(@()[ss,su],'frames:Index:requireSortedFail') %<== remove? it (now) gives sorted output
             t.verifyEqual([su,ss],frames.DataFrame([su.data,ss.data],sorted,[unique;sorted]))
             
             dur1 = frames.TimeFrame([1 2;3 4],seconds([1 3]),["a","b"]);
@@ -216,6 +252,30 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual([dur1,dur2], ...
                 frames.TimeFrame([1 2 NaN NaN; NaN NaN 10 20;3 4 30 40],seconds([1 2 3]),["a" "b" "c" "d"]))
 
+        end
+        
+        function settingsChangeTest(t)
+            % test changing of DataFrame settings            
+            frames.DataFrame.restoreDefaultSettings();
+            df = frames.DataFrame(magic(3)); % using 'out-of-the-box' default settings
+            t.verifyEqual( df.settings.alignMethod, frames.enum.alignMethod.strict); % default
+            t.verifyEqual( df.alignMethod("full").settings.alignMethod, frames.enum.alignMethod.full);
+            t.verifyEqual( df.duplicateOption("none").settings.duplicateOption, frames.enum.duplicateOption.none);
+            t.verifyEqual( df.alignMethod("left", "expand").settings.alignMethod, frames.enum.alignMethod.left);
+            t.verifyEqual( df.alignMethod("left", "expand").settings.duplicateOption, frames.enum.duplicateOption.expand);
+            
+            % change defaults
+            frames.DataFrame.setDefaultSetting("alignMethod",frames.enum.alignMethod.full);
+            frames.DataFrame.setDefaultSetting("duplicateOption",frames.enum.duplicateOption.expand);
+            df = frames.DataFrame(magic(3)); % using current default settings
+            t.verifyEqual( df.settings.alignMethod, frames.enum.alignMethod.full);
+            t.verifyEqual( df.settings.duplicateOption, frames.enum.duplicateOption.expand);
+            
+            % restore to 'out-of-box' defaults
+            frames.DataFrame.restoreDefaultSettings();
+            df = frames.DataFrame(magic(3)); % using current default settings
+            t.verifyEqual( df.settings.alignMethod, frames.enum.alignMethod.strict);
+            t.verifyEqual( df.settings.duplicateOption, frames.enum.duplicateOption.duplicatesstrict);
         end
         
         function subsasgnTest(t)
@@ -723,6 +783,10 @@ classdef dataframeTest < AbstractFramesTests
         function replaceStartByTest(t)
             df = frames.DataFrame([1 1 3 1; NaN 1 NaN 1;NaN 2 2 4]');
             t.verifyEqual(df.replaceStartBy(10).data, [10 10 3 1; 10 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10,11,12],[1,1,NaN]).data, [10 10 3 1; NaN 1 NaN 1;12 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10;11;12;13],[1,1,NaN]).data, [10 11 3 1; NaN 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy([10;11;12;13],NaN).data, [1 1 3 1; 10 1 NaN 1;10 2 2 4]');
+            t.verifyEqual(df.replaceStartBy(repmat([10;11;12;13],1,3),NaN).data, [1 1 3 1; 10 1 NaN 1;10 2 2 4]');
         end
         
         function emptyStart(t)
@@ -772,12 +836,20 @@ classdef dataframeTest < AbstractFramesTests
             b = frames.TimeFrame(2,[2 4],1);
             c = frames.TimeFrame(3,3,2);
             t.verifyEqual([a;c;b],frames.TimeFrame([1 2 NaN 2; NaN NaN 3 NaN]',[1 2 3 4],[1 2]))
-            t.verifyError(@() [a;a], 'frames:vertcat:rowsNotUnique')
+            
+            warning_id = 'frames:concat:overlap';
+            t.verifyWarning(@() [a;a] , warning_id );
+            warning('off',warning_id)
+            t.verifyEqual([a;a], a) % original error 'frames:vertcat:rowsNotUnique'
+            warning('on',warning_id)                    
             
             a = frames.DataFrame(1,1,1);
             b = frames.DataFrame(2,[2 4],1);
             c = frames.DataFrame(3,3,2);
             t.verifyEqual([a;c;b],frames.DataFrame([1 NaN 2 2; NaN 3 NaN NaN]',[1 3 2 4],[1 2]))
+
+            t.verifyEqual([frames.DataFrame([1;2],[1 3]).asColSeries();frames.DataFrame([3;4],[2 4]).asColSeries()], ...
+                frames.DataFrame([1;2;3;4],[1 3 2 4]).asColSeries())
         end
         
         function vertcatRowsPropsTest(t)
@@ -892,8 +964,9 @@ classdef dataframeTest < AbstractFramesTests
             df = frames.DataFrame([ NaN 2 3 4 NaN 6;NaN NaN NaN 1 NaN 1;NaN NaN 33 44 55 66]');
             t.verifyEqual(df.firstCommonRow(),4)
             t.verifyEqual(df.firstValidRow(),2)
-            noCommon = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRow();
+            [noCommon, ix] = frames.DataFrame([4 NaN 6;NaN 55 NaN]',string([1 2 3])).firstCommonRow();
             t.verifyEqual(noCommon,string.empty(0,1));
+            t.verifyEqual(ix,double.empty(0,1));
         end
         
         function relChangeTest(t)
@@ -936,10 +1009,10 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(plusSeries,frames.DataFrame([12;14],vecV2.rows,vecV2.columns,ColSeries=true))
             t.verifyError(@notAligned,'frames:matrixOpHandler:notAligned')
             function notAligned(), mat1*mat2; end %#ok<VUNUS>
-            t.verifyError(@notSameColumns,'frames:elementWiseHandler:differentColumns')
+            t.verifyError(@notSameColumns,'frames:Index:align:unequalIndex')
             function notSameColumns(), mat1-mat2; end %#ok<VUNUS>
             
-            t.verifyError(@seriesError,'frames:elementWiseHandler:differentRows')
+            t.verifyError(@seriesError,'frames:Index:align:unequalIndex')
             function seriesError(), mat1.*mat1(1); end %#ok<VUNUS>
             loc = mat1 .* mat1(1).asRowSeries();
             t.verifyEqual(loc,frames.DataFrame([1 4;3 8],mat1.rows,mat1.columns))
@@ -976,6 +1049,76 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(~df,frames.DataFrame([false,true;true,false]))
         end
         
+        function mathOperationsAlignTest1D(t)
+            % verify 1D math operations including index alignment
+            dat = magic(4);
+            df = frames.DataFrame(dat,[],[]);
+
+            % rows, default alignMethod 'strict'
+            df1a = df + 100*df;
+            df1b = df + 100*df{[2 3 1 4]};   % auto aligned to match order first df
+            t.verifyEqual(df1a,df1b)
+            t.verifyError(@() df + 100*df{[2 3]}, 'frames:Index:align:unequalIndex')
+            t.verifyEqual( df.iloc(1:2,:) - df.row(3), ...
+                  frames.DataFrame([7,-5,-3,1;-4,4,4,-4],df.rows_.getSubIndex(1:2),df.columns_))
+            t.verifyError(@() df - df{3,1:3}.asRowSeries(), 'frames:Index:align:unequalIndex')
+
+            % rows with auto-alignment ("full")
+            df5a = df{[1 3 4]}.autoAlign() + 100*df{[4 2]};   % auto align, result is expanded to contain all row values            
+            dfs = df.sortRows().setRowsType("sorted");
+            df5b = dfs{[1 3 4]}.autoAlign() + 100*df{[4 2]};  % auto align+sort, result is expanded to contain all row values
+            t.verifyEqual(df5a.rows(:,1), [1;3;4;2])
+            t.verifyEqual(df5b.rows(:,1), [1;2;3;4]) 
+            t.verifyEqual(df5a(1:4).data, df5b.data)          % compare after making df5a sorted
+
+            df6a = df.autoAlign() - df{3,1:3}.asRowSeries();  % auto align, rowseries with subset
+            t.verifyEqual(df6a.data, dat- repmat([dat(3,1:3), 0],4,1) );
+
+            % rows with other alignment methods available
+            df7a = df{[1 3 4]}.alignMethod("left") + 100*df{[4 2]};  % align method "left", use values from 1st df, ignore others
+            t.verifyEqual(df7a, df5a([1,3,4]).alignMethod("left") );
+            df7b = df{[1 3 4]}.alignMethod("inner") + 100*df{[4 2]}; % align method "inner", keep only common subset
+            t.verifyEqual(df7b, df5a(4).alignMethod("inner") );
+
+            % rows with duplicates
+            warning('off', 'frames:Index:notUnique'); % TODO: fix some unnecessary non-unique warnings
+            dfd = frames.DataFrame(magic(5),frames.Index([1 3 2 3 1],unique=false)); 
+            t.verifyEqual(dfd-dfd, frames.DataFrame(zeros(5), dfd.rows_, dfd.columns_)); % exactly same index allowed
+            t.verifyError(@() dfd{1:4}.alignMethod("full") - dfd{2:5}, 'frames:Index:align:notUnique')
+
+            dfd.settings.duplicateOption = "duplicates";
+            df8a = dfd{1:4,2:4}.alignMethod("full") - dfd{2:3,3:5};
+            t.verifyEqual(df8a.data, [24,1,8,NaN;5,0,0,-16;6,0,0,-22;12,19,21,NaN]);
+            t.verifyEqual(df8a.rows(:,1),[1;3;2;3]);
+
+            dfd.settings.duplicateOption = "unique";
+            df8b = dfd{1:4,2:4}.alignMethod("full") - dfd{2:3,3:5};
+            t.verifyEqual(df8b.data, [24,1,8,NaN;5,0,0,-16;6,0,0,-22]);
+            t.verifyEqual(df8b.rows(:,1),[1;3;2]);
+            
+            warning('on', 'frames:Index:notUnique');
+            
+            % row&column alignment
+            dfC = frames.DataFrame(magic(4),[],[]).alignMethod("full");
+            dfC1a = dfC + 100*dfC{[1 3 4],[1 3 4]};          % auto align, sub-dataframe is added with less columns
+            t.verifyEqual(dfC1a, frames.DataFrame([1616,2,303,1313;5,11,10,8;909,7,606,1212;404,14,1515,101], ...
+                dfC.rows_, dfC.columns_).alignMethod("full"));
+            
+            dfC1b = 100*dfC{[1 3 4],[1 3 4]} + dfC;          % auto align, expand to all rows/columns
+            t.verifyEqual(dfC1b, dfC1a{[1,3,4,2],[1,3,4,2]});
+            
+            dfC2a = dfC{[1 3 4],[1 3 4]} - dfC{[2 3],[2 3]};  % auto align, expand, missing values are NaN
+            t.verifyEqual(dfC2a, frames.DataFrame([16,3,13,NaN;9,0,12,-7;4,15,1,NaN;NaN,-10,NaN,-11],...
+                 [1,3,4,2],  ["Var1","Var3","Var4","Var2"]).alignMethod("full"));
+             
+            dfC2b = df{[1 3 4],[1 3 4]}.alignMethod("inner") - df{[2 3 4],[2 3]};  % inner align
+            t.verifyEqual(dfC2b, frames.DataFrame([0;0],[3;4],["Var3"]).alignMethod("inner"));
+            
+            dfC2c = df{[1 3 4],[1 3 4]}.alignMethod("left") - df{[2 3 4],[2 3]};  % left align
+            t.verifyEqual(dfC2c, frames.DataFrame([16,3,13;9,0,12;4,0,1],dfC2c.rows_, dfC2c.columns_).alignMethod("left"));             
+        end
+        
+        
         function mathOperationsMiscellaneousTest(t)
             df = t.dfMissing1;
             t.verifyEqual(df./df,df./df.data)
@@ -989,6 +1132,25 @@ classdef dataframeTest < AbstractFramesTests
             expectedData = df.data * b.data;
             expected = frames.DataFrame(expectedData,df.rows,b.getColumnsObj());
             t.verifyEqual(df*b,expected)
+
+            t.verifyEqual( ...
+                frames.DataFrame([1;2;3],ColSeries=true) * frames.DataFrame([1;2]',[],[10 20],RowSeries=true), ...
+                frames.DataFrame([1 2;2 4;3 6],[1 2 3],[10 20]) )
+            t.verifyEqual(...
+                frames.DataFrame([1;2;3]',[],[1,2,3],RowSeries=true) * frames.DataFrame([1 1;2 2;4 3]), ...
+                frames.DataFrame([17,14],RowSeries=true))
+            t.verifyEqual(...
+                [1;2;3]' * frames.DataFrame([1 1;2 2;4 3]), ...
+                frames.DataFrame([17,14]))
+            t.verifyEqual(...
+                frames.DataFrame([1;2;3]',[],[1,2,3],RowSeries=true) * [1 1;2 2;4 3], ...
+                frames.DataFrame([17,14],RowSeries=true))
+            t.verifyEqual(...
+                frames.DataFrame([1;2;3]) * [1 2], ...
+                frames.DataFrame([1 2;2 4;3 6]))
+            t.verifyEqual(...
+                 [1 2]' * frames.DataFrame([1;2;3]'), ...
+                frames.DataFrame([1 2;2 4;3 6]'))
         end
         
         function mat2seriesTest(t)
@@ -1029,7 +1191,7 @@ classdef dataframeTest < AbstractFramesTests
             df2=frames.DataFrame([1 2]);
             series=df2.asRowSeries();
             t.verifyEqual(df==series,frames.DataFrame([true true;true true]))
-            t.verifyError(@()df==df2,'frames:elementWiseHandler:differentRows')
+            t.verifyError(@()df==df2,'frames:Index:align:unequalIndex')
             
             df1 = frames.DataFrame([1 NaN]);
             t.verifyEqual(df1==df2,frames.DataFrame([true false]));
@@ -1044,6 +1206,14 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(df.any(1),frames.DataFrame([false true],RowSeries=true));
             t.verifyEqual(df.any(1).any(2),true);
             t.verifyEqual(df.all(2),frames.DataFrame([false false]',ColSeries=true));
+        end
+
+        function idxSelection(t)
+            df = frames.DataFrame([1 2 3; 3 4 5; 5 6 7],[1 2 3],[1 2 3]);
+            t.verifyEqual(df.columns([true false true]), [1 3])
+            t.verifyEqual(df.rows([true false true]), [1 3]')
+            t.verifyEqual(df.columns([false false false]), double.empty(1,0))
+            t.verifyEqual(df.rows([false false false]), double.empty(0,1))
         end
         
         function selectFromTimeRangeTest(t)
@@ -1101,7 +1271,7 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(idxmax2min1,2)
             df2 = df;
             df2.rows(end) = 7;
-            t.verifyError(@misaligned,'frames:elementWiseHandler:differentRows')
+            t.verifyError(@misaligned,'frames:Index:align:unequalIndex')
             function misaligned(), df.maxOf(df2); end
             
             df = frames.DataFrame([1 10;8 0]);

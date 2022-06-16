@@ -5,10 +5,12 @@ arguments
 end
 switch type
     case "unique"
-        index = frames.Index(index,Unique=true);
+        index.requireUniqueSorted = false;
+        index.requireUnique = true;        
     case "sorted"
-        index = frames.Index(index,UniqueSorted=true);
+        index.requireUniqueSorted = true;                
     case "duplicate"
-        index = frames.Index(index);
+        index.requireUniqueSorted = false;
+        index.requireUnique = false;                
 end
 end

@@ -39,6 +39,7 @@ classdef TimeIndex < frames.Index
                 nameValue.Unique = true
                 nameValue.UniqueSorted = true
                 nameValue.Singleton = false
+                nameValue.warningNonUnique (1,1) {mustBeA(nameValue.warningNonUnique,'logical')} = true
             end
             if ismissing(nameValue.Format)
                 if isdatetime(value)
@@ -52,7 +53,9 @@ classdef TimeIndex < frames.Index
             if ~nameValue.Unique, nameValue.UniqueSorted = false; end
             
             value = getValue_from_local(value,nameValue.Format);
-            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique,UniqueSorted=nameValue.UniqueSorted,Singleton=nameValue.Singleton);
+            obj = obj@frames.Index(value,Name=nameValue.Name,Unique=nameValue.Unique, ...
+                                         UniqueSorted=nameValue.UniqueSorted, ...
+                                         Singleton=nameValue.Singleton,warningNonUnique=nameValue.warningNonUnique);
             obj.format = nameValue.Format;
         end
         
@@ -63,7 +66,13 @@ classdef TimeIndex < frames.Index
             obj.format = format;
         end
         
-        function pos = getSelector(obj,selector,varargin)
+        
+    end
+    
+    
+    methods(Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
+        
+        function pos = getSelector_(obj,selector,varargin)
             % find position of 'selector' in the Index
             % On can use a timerange to specify which values to select
             % .getSelector(timerange)
@@ -89,12 +98,9 @@ classdef TimeIndex < frames.Index
                 pos = ids(whichRows);
                 return
             end
-            pos = getSelector@frames.Index(obj,selector,varargin{:});
-        end
+            pos = getSelector_@frames.Index(obj,selector,varargin{:});
+        end        
         
-    end
-    
-    methods(Access = protected)
         function value = valueChecker(obj,value,varargin)
             value_ = obj.getValue_from(value);
             valueChecker@frames.Index(obj,value_,varargin{:});

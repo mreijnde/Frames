@@ -160,7 +160,7 @@ classdef TimeFrame < frames.DataFrame
         end
     end
     
-    methods(Hidden, Access=protected)
+    methods(Hidden, Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
         function rowsValidation(obj,value)
             if isa(value,'frames.Index') && ~isa(value,'frames.TimeIndex')
                 error('frames:TimeFrame:rowsObjNotTime', ...
