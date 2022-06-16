@@ -14,9 +14,9 @@ classdef groupTest < AbstractFramesTests
             g3b = frames.Groups(containers.Map({'key2','another'},{[6 3 5],[2 4]})).shrink([2 5 3]);
             t.verifyEqual(g2.keys,["Group1","Group2"])
             t.verifyEqual(g2.values,{[5 3],2})
-            t.verifyEqual(g3.keys,{'key1' 'another'})
+            t.verifyEqual(g3.keys,["key1" "another"]) %changed from cell char array to string array
             t.verifyEqual(g3.values,{[5 3],2})
-            t.verifyEqual(g3b.keys,{'another' 'key2'})
+            t.verifyEqual(g3b.keys,["another" "key2"]) %changed from cell char array to string array
             t.verifyEqual(g3b.values,{2,[5 3]})
             
             rowseries = frames.DataFrame(["grp2" "grp1" "grp2" "grp2"], RowSeries=true);

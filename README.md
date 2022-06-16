@@ -14,7 +14,7 @@ Matlab currently provide matrices and tables, but they do not work well together
    - Matlab (time)tables have row and column names, but do not provide simple operations like addition (`table1+table2` is not possible). 
 
 **DataFrame aims at being both a matrix and a table**, allowing intuitive operations on and between Frames, while applying sanity checks on rows and columns.
-For example, `frame1+frame2` is possible, and it will give an error if the rows or columns are misaligned.
+For example, `frame1+frame2` is possible, and will align the rows or columns if required.
 
 There are many more operations and tools to discover in the package. 
 
@@ -35,6 +35,7 @@ Use a frame when:
 - you care about simple code, the fewer lines the better (e.g. dataFrame.log().plot() plots the logarithm of your dataFrame with a minimum of code)
 - you need the rows (or columns) to have properties forcing it to be all the time sorted, or unique, or on the contrary allow it to have duplicate values. Tables only allow unique values (except for the rows of timetables which can contain duplicates).
 - you want to use a specific method in frames (e.g. you work with time series and want to access the rolling and ewm computations)
+- you want to work with multi-dimensional indices, including implicit dimension expansion, aggregation over dimensions and conversion from and to multi-dimensional matrices
 
 Use a table when:
 - your data is heterogeneous (i.e. variables have mixed types) and needs to stay that way (e.g. for SQL-like operations of joining and grouping)
@@ -44,12 +45,17 @@ Use a table when:
 
 ## Demo and documentation
 A demo is available in [html/framesDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesDemo.html) and can be also found in the live script format [framesDemo.mlx](framesDemo.mlx).
+An example of the multi-dimensional index functionality can be found in [html/framesMultiDemo.html](https://htmlpreview.github.io/?https://github.com/benjamingaudin/Frames/blob/main/html/framesMultiDemo.html).
+
 
 The documentation is available using Matlab's command
 ```Matlab
 doc frames.DataFrame
 doc frames.TimeFrame
 ```
+
+## Contributors
+Merijn Reijnders
 
 ## Contact
 Please send questions, feedback, suggestions, bug reports to <frames.matlab@gmail.com> or open an issue on the [github project](https://github.com/benjamingaudin/Frames/issues). 

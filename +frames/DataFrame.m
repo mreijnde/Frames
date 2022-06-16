@@ -105,7 +105,11 @@ classdef DataFrame
         index
         constructor
     end
+    properties (Constant)      
+      settingsDefault = frames.internal.DataFrameSettingsDefault;      
+    end
     properties
+        settings frames.internal.DataFrameSettings  = frames.internal.DataFrameSettings;
         description = ""  % text description of the object
     end
     properties(Hidden, Access=protected)
@@ -121,51 +125,66 @@ classdef DataFrame
     methods
         function obj = DataFrame(data,rows,columns,NameValueArgs)
             %DATAFRAME frames.DataFrame([data,rows,columns,Name=name,RowSeries=logical,ColSeries=logical])
+            %
+            %remark: if row/columns are specific MultiIndex input, create MultiIndex objects
+            % 
             arguments
                 data (:,:) = []
                 rows = []
                 columns = []
-                NameValueArgs.Name = ""
+                NameValueArgs.Name {mustBeA(NameValueArgs.Name,'string')} = ""
                 NameValueArgs.RowSeries {mustBeA(NameValueArgs.RowSeries,'logical')} = false
                 NameValueArgs.ColSeries {mustBeA(NameValueArgs.ColSeries,'logical')} = false
+                NameValueArgs.RowDim {mustBeA(NameValueArgs.RowDim,'string')} = ""
+                NameValueArgs.ColDim {mustBeA(NameValueArgs.ColDim,'string')} = ""                
             end
-            if NameValueArgs.RowSeries
-                if isa(rows,'frames.Index')
-                    assert(rows.singleton_,'frames:constructor:rowsSingletonFail', ...
-                        'RowSeries needs to have a singleton Index object in rows.')
+            % get DataFrameSettings
+            obj.settings = frames.internal.DataFrameSettings(obj.settingsDefault);
+                                                          
+            % get row index 
+            useMultiIndexRows = obj.settings.forceMultiIndex || checkMultiIndexinput(rows);
+            if checkIsEmpty(rows)                    
+                if NameValueArgs.RowSeries                
+                    rows = missingData('double');
+                else                
+                    rows = obj.defaultRows(size(data,1));                                
+                end
+            end            
+            if ~isIndex(rows) || ...                                          % handle non Index object input
+                 (isIndex(rows) && numel(rows)>1) || ...                      % handle array of Index objects input
+                 (useMultiIndexRows && isIndex(rows) && ~isMultiIndex(rows) ) % handle force conversion from Index to MultiIndex
+                if ~useMultiIndexRows
+                   rows = obj.getRowsObject(rows,Singleton=NameValueArgs.RowSeries);
                 else
-                    if isequal(rows,[])
-                        rows = missingData('double');
-                    end
-                    rows = obj.getRowsObject(rows,Singleton=true);
+                   rows = frames.MultiIndex(rows,Singleton=NameValueArgs.RowSeries,Unique=true);
                 end
             else
-                if ~isa(rows,'frames.Index')
-                    if isequal(rows,[])
-                        rows = obj.defaultRows(size(data,1));
-                    end
-                    rows = obj.getRowsObject(rows,Singleton=false);
-                end
-            end
-            if NameValueArgs.ColSeries
-                if isa(columns,'frames.Index')
-                    assert(columns.singleton_,'frames:constructor:columnsSingletonFail', ...
-                        'ColSeries needs to have a singleton Index object in columns.')
-                else
-                    if isequal(columns,[])
-                        columns = missingData('string');
-                    end
-                    columns = obj.getColumnsObject(columns,Singleton=true);
-                end
-            else
-                if ~isa(columns,'frames.Index')
-                    if isequal(columns,[])
-                        columns = obj.defaultColumns(size(data,2));
-                    end
-                    columns = obj.getColumnsObject(columns,Singleton=false);
-                end
+                assert(~NameValueArgs.RowSeries || (rows.singleton_ && numel(rows)==1), ...
+                   'frames:constructor:rowsSingletonFail', 'RowSeries needs to have a singleton Index object in rows.');
             end
             
+            % get column index
+            useMultiIndexColumns = obj.settings.forceMultiIndex || checkMultiIndexinput(columns);
+            if checkIsEmpty(columns)
+                if NameValueArgs.ColSeries                                               
+                    columns = missingData('string');                 
+                else            
+                    columns = obj.defaultColumns(size(data,2));                                  
+                end
+            end
+            if ~isIndex(columns) || ...                                                 % handle non Index object input
+                  (isIndex(columns) && numel(columns)>1) || ...                         % handle array of Index objects input
+                  (useMultiIndexColumns && isIndex(columns) && ~isMultiIndex(columns) ) % handle force conversion from Index to MultiIndex
+                if ~useMultiIndexColumns
+                   columns = obj.getColumnsObject(columns,Singleton=NameValueArgs.ColSeries);
+                else
+                   columns = frames.MultiIndex(columns',Singleton=NameValueArgs.ColSeries);
+                end
+            else
+                assert(~NameValueArgs.ColSeries || columns.singleton_,'frames:constructor:columnsSingletonFail', ...
+                    'ColumnSeries needs to have a singleton Index object in columns.')
+            end
+                       
             if isempty(data)
                 data = obj.defaultData(length(rows),length(columns),class(data));
             end
@@ -180,7 +199,65 @@ classdef DataFrame
             obj.rows = rows;
             obj.columns = columns;
             obj.name_ = NameValueArgs.Name;
+            if NameValueArgs.RowDim~="", obj.rows_.name = NameValueArgs.RowDim; end
+            if NameValueArgs.ColDim~="", obj.columns_.name = NameValueArgs.ColDim; end
+                
+            
+            
+            function bool = checkMultiIndexinput(value)
+                % check if input is specific for MultiIndex
+                % (all cell arrays (except char cell array), 2d arrays, and arrays of multiple Index objects)                  
+                if (isempty(value) && iscell(value)) || ...          % empty cell array
+                   (~isempty(value) && ...
+                     ( ...     
+                        (iscell(value) && ~ischar(value{1})) || ...  % cell array (except char cell array)
+                        ~isvector(value) ||  ...                     % 2d array
+                        (~isscalar(value) && isIndex(value(1)) ) ... % 1d array with more than 1 Index object
+                     ) ...
+                   )
+                   bool = true; 
+                else
+                   bool = false; % 1d array or char cell array
+                end
+            end
+            
+            function bool = checkIsEmpty(value)
+                % check if input to create empty index
+                bool = isequal(value,[]) || ...
+                         (iscell(value) && ...
+                               (isempty(value) || ...
+                                iscell(value{1}) && ~isempty(value{1}) && ismissing(value{1}{1})) ...
+                               ) || ...                         
+                         isequal(value,{[]});
+            end
+            
         end
+        
+        %------------------------------------------------------------------
+        
+        function obj = initCopy(obj, data, rows, columns)
+            % initalize a new DataFrame with new data, row and column values,
+            % while keeping settings and same class types of row and column object.
+            %
+            % input:
+            %   - data:     2d matrix with values
+            %   - rows:     input supported by setvalue() of rows index class
+            %   - columns:  input supported by setvalue() of columns index class
+            % 
+            % output:
+            %   dataframe with new values
+            %
+            obj.data_ = data;
+            obj.rows_.value = rows;
+            obj.columns_.value = columns;
+            % validate rows and column size match datasize            
+            assert(obj.rows_.length() == size(data,1),  'frames:initCopy:mismatchrows', ...
+                  "Number of rows not matching data size.");
+            assert(obj.columns_.length() == size(data,2), 'frames:initCopy:mismatchcolumns', ...
+                  "Number of columns not matching data size.");
+        end
+            
+        
         
         %------------------------------------------------------------------
         % Setters and Getters
@@ -224,12 +301,16 @@ classdef DataFrame
         function obj = asColSeries(obj,bool)
             % sets .colseries to true if the Frame can be a column series
             if nargin<2, bool=true; end
-            obj.columns_.singleton = bool;
+            if obj.columns_.singleton ~= bool
+               obj.columns_.singleton = bool;
+            end
         end
         function obj = asRowSeries(obj,bool)
             % sets .rowseries to true if the Frame can be a row series
             if nargin<2, bool=true; end
-            obj.rows_.singleton = bool;
+            if obj.rows_.singleton ~= bool
+               obj.rows_.singleton = bool;
+            end
         end
         function obj = asFrame(obj)
             % sets .rowseries and .colseries to false
@@ -302,15 +383,65 @@ classdef DataFrame
         function obj = setColumnsName(obj,name)
             obj.columns_.name = name;
         end
-        function obj = setRows(obj,colName)
+        
+        function obj = setRows(obj,colName, options)
             % set the rows value from the value of a column
-            obj.rows = obj.data(:,ismember(obj.columns,colName));
-            obj = obj.dropColumns(colName);
+            % (multiple columns allowed in case of row MultiIndex)
+            %            
+            arguments
+                obj
+                colName
+                options.keep = false; % keep columns
+            end            
+            colselect = obj.columns_.positionOf(colName);
+            if ~isMultiIndex(obj.rows_)
+               % Index                
+               assert(length(colselect)==1, 'frames.DataFrame.setRows.MultiIndexRequired', ...
+                     "Multiple columns selected, but row is not of type MultiIndex");          
+               obj.rows = obj.data(:,colselect);  
+            else
+               % MultiIndex (number of dimension can change & update dim names from col names)
+               colnames = obj.columns_.getValueForTable();
+               colnames = string(colnames(colselect));
+               obj.rows_ = obj.rows_.setIndex(obj.data(:,colselect), colnames(:));
+            end
+            if ~options.keep
+                % remove selected columns
+               obj = obj.dropColumns(colName);
+            end
         end
+        
         function obj = resetUserProperties(obj)
             obj.name_ = "";
             obj.description = "";
         end
+        
+        function obj = duplicateOption(obj, duplicateOption)
+            % change duplicateOption setting
+             arguments
+                obj
+                duplicateOption frames.enum.duplicateOption 
+             end
+            obj.settings.duplicateOption = duplicateOption;
+        end
+                
+        function obj = alignMethod(obj, alignMethod, duplicateOption)
+            % change alignMethod setting (and optional duplicateOption setting)
+            arguments
+                obj
+                alignMethod frames.enum.alignMethod
+                duplicateOption frames.enum.duplicateOption = "none"
+             end
+            obj.settings.alignMethod=alignMethod;
+            if nargin>2
+                obj.settings.duplicateOption = duplicateOption;
+            end
+        end
+        function obj = autoAlign(obj)
+            % change alignMethod setting to 'full'
+            obj.settings.alignMethod="full";
+        end
+        
         
         function t = head(obj, varargin); t = head(obj.t,varargin{:}); end
         % returns the first rows of the table
@@ -325,7 +456,7 @@ classdef DataFrame
             % df.iloc(:,4) returns the 4th column
             % df.iloc(2,:) or df.iloc(2) returns the 2nd row
             if nargin<3, colPosition=':'; end
-            obj = obj.loc_(rowPosition,colPosition,true,true);
+            obj = obj.loc_(rowPosition,colPosition,true,false,false,true);
         end
         function obj = loc(obj,rowName,colName)
             % selection based on names: df.loc(rowsNames[,columnsNames])
@@ -333,8 +464,16 @@ classdef DataFrame
             % df.loc(:,"a") returns the column named "a"
             % df.loc(2,:) or df.loc(2) returns the row named 2
             if nargin<3, colName=':'; end
-            obj = obj.loc_(rowName,colName,true,false);
+            obj = obj.loc_(rowName,colName,false,false,false,true);
         end
+        function obj = filt(obj,rowName,colName)
+            % selection based on names, interpret as filter criteria of original dataframe
+            % (keep original order independent of order in selector, ignore duplicates in selector and
+            %  allow not matching selectors)
+            if nargin<3, colName=':'; end
+            obj = obj.loc_(rowName,colName,false,false,true,true);
+        end
+        
         
         function obj = replace(obj,valToReplace,valNew)
             % REPLACE replace the a value in the data with another one
@@ -383,7 +522,10 @@ classdef DataFrame
         
         function other = extendRows(obj,rows)
             % extend the rows with the new values
-            valuesToAdd = rows(~ismember(rows,obj.rows));
+            if iscell(rows) && ~iscell(rows{1}) %handle multiIndex syntax
+                rows = {rows};
+            end
+            valuesToAdd = rows(~obj.rows_.ismember(rows));            
             newRows = obj.rows_.union(valuesToAdd);
             newData = obj.defaultData(length(newRows),length(obj.columns_));
             
@@ -406,7 +548,10 @@ classdef DataFrame
         end
         function other = extendColumns(obj,columns)
             % extend the columns with the new values
-            valuesToAdd = columns(~ismember(columns,obj.columns));
+            if iscell(columns) && ~iscell(columns{1}) %handle multiIndex syntax
+                columns = {columns};
+            end
+            valuesToAdd = columns(~obj.columns_.ismember(columns));
             newColumns = obj.columns_.union(valuesToAdd);
             newData = obj.defaultData(length(obj.rows_),length(newColumns));
             
@@ -453,6 +598,9 @@ classdef DataFrame
             if ~obj.rows_.requireUniqueSorted
                 error('Only use resample with a sorted Index (set obj.setRowsType("sorted"))')
             end
+            assert(obj.rows_.Ndim==1,'frames.DataFrame:resample:multipleRowDimsNotSupported', ...
+                "Multiple row dimensions not supported");
+            if isrow(rows), rows=rows'; end %MultiIndex requires column vector
             FirstValueFilling = nameValue.FirstValueFilling;
             if ~iscell(FirstValueFilling)
                 FirstValueFilling = {FirstValueFilling};
@@ -499,114 +647,139 @@ classdef DataFrame
                 end
             end
         end
+        
+        
+        
+        function dfnew = combine(df, options)
+            % function to concatenate one or multiple dataframes
+            %
+            % The requireUnique and requireUniqueSorted settings of obj will be used in the new combined dataframe.
+            % The options to combine the row and column indices can be specified with 'duplicateOptionRows' and 
+            % 'duplicateOptionCols'.
+            % 
+            % duplicateOptionRows and duplicateOptionCols options are:
+            %  - 'unique':           only keep unique values in combined index.
+            %                        (only option that is allowed for indexes that requireUnique)
+            %
+            %  - 'duplicates':       only keep unique values in combined index, but if already indices have
+            %                        duplicate values, keep them in. If multiple dataframes indices have the
+            %                        same duplicate values, align them in the same order as they occur in the index.            
+            %
+            %  - 'none':             append all values of indices together, even if that creates new duplicates.                        
+            %
+            % If multiple dataframes in the conctenation define the same value in the combined dataframe, the 'order'
+            % option specifies which data to keep:
+            %    - "keepLast":  last occurance is used
+            %    - "keepFirst": first occurance is used
+            %            
+            % usage: 
+            %   combine( df1,df2,df3, duplicateOptionRows="unique", duplicateOptionCols="unique", order="keepLast")
+            %        
+            % output:
+            %    concatenated dataframe
+            %
+            arguments (Repeating)
+                df {mustBeA(df, 'frames.DataFrame')}
+            end
+            arguments
+                options.duplicateOptionRows frames.enum.duplicateOption = "unique"
+                options.duplicateOptionCols frames.enum.duplicateOption = "unique"
+                options.order frames.enum.order = "keepLast"           
+            end
+            obj = df{1};
+            % skip, if nothing to do            
+            if isempty(df)
+                dfnew = obj;
+                return
+            end
+            % check methods and required uniqueness of indices
+            if obj.rows_.requireUnique               
+                assert(options.duplicateOptionRows=="unique", ...
+                    'frames:DataFrame:combine:invalidRowsMethod', ...
+                    "Invalid duplicateOptionRows option. Row index has requireUnique enabled, only 'unique' allowed.");
+                rows_requireUnique = cellfun(@(x) x.rows_.isunique(), df);
+                assert(all(rows_requireUnique), 'frames:DataFrame:combine:notAllRowsUnique', ...
+                    "Obj rows has requireUnique enabled and not all other df rows are unique.");
+            end
+            if obj.columns_.requireUnique
+                assert(options.duplicateOptionCols=="unique", ...
+                    'frames:DataFrame:combine:invalidColsMethod', ...
+                    "Invalid alignMethodCols option. Column index has requireUnique enabled, only 'unique' allowed.");
+                columns_requireUnique = cellfun(@(x) x.columns_.isunique(), df);
+                assert(all(columns_requireUnique), 'frames:DataFrame:combine:notAllColumnsUnique', ...
+                    "Obj columns has requireUnique enabled and not all other df columns are unique.");                 
+            end             
+            % get index objects            
+            rowsobj = cellfun(@(x) {x.rows_}, df);
+            colsobj = cellfun(@(x) {x.columns_}, df);            
+            % check singleton mixing
+            rows_singleton = cellfun(@(x) x.singleton, rowsobj);
+            cols_singleton = cellfun(@(x) x.singleton, colsobj);
+            assert( all(rows_singleton) || ~any(rows_singleton), 'frames:DataFrame:combine:mixedsingleton', ...
+                "Not allowed to mix DataFrames with singleton and non-singleton rows indices.");
+            assert( all(cols_singleton) || ~any(cols_singleton), 'frames:DataFrame:combine:mixedsingleton', ...
+                "Not allowed to mix DataFrames with singleton and non-singleton column indices.");            
+            % get new combined index objects and position index          
+            [rowsnew, rowsnew_ind] = align(rowsobj{:}, duplicateOption=options.duplicateOptionRows);
+            [colsnew, colsnew_ind] = align(colsobj{:}, duplicateOption=options.duplicateOptionCols);            
+            % get empty dataframe (with same settings)            
+            dfnew = obj;
+            dfnew.rows_ = rowsnew;
+            dfnew.columns_ = colsnew;
+            dfnew.data_ = obj.defaultData(rowsnew.length(), colsnew.length());
+            dfnew = resetUserProperties(dfnew);
+            type = class(dfnew.data_);         
+            % define order
+            dforder = 1:length(df);
+            if options.order == "keepFirst"
+                dforder = flip(dforder);
+            end
+            % assign data from each dataframe in the list
+            elements_assigned = false(size(dfnew));            
+            for i=dforder
+                % get non NaN position indices
+                rowind = rowsnew_ind(:,i);
+                rowindMask = ~isnan(rowind);
+                rowindFiltered = rowind(rowindMask);
+                
+                colind = colsnew_ind(:,i);
+                colindMask = ~isnan(colind);
+                colindFiltered = colind(colindMask);
+                % checks
+                assert(isa(df{i}.data_,type),'frames:concat:differentDatatype', ...
+                     'frames do not have the same data type')
+                if any(elements_assigned(rowindMask ,colindMask ),'all')
+                    if options.order=="keepFirst", ordername="first"; else, ordername="last"; end 
+                    warning('frames:concat:overlap', ...
+                      "Overlapping values (with same row and column index) between different dataframes detected. " + ...
+                      "Value of " + ordername + " dataframe will be used.");                   
+                end
+                elements_assigned(rowindMask ,colindMask)= true;
+                % assign values
+                dfnew.data_(rowindMask,colindMask) = df{i}.data_(rowindFiltered, colindFiltered);
+            end            
+        end
+               
         function other = horzcat(obj,varargin)
-            % horizontal concatenation (outer join) of frames: [df1,df2,df3,...]
-            row = obj.rows_;
-            sameRows = true;  % compute a merged rows, only in case they are not the same
-            columnsNewVal = obj.columns_.value_;
-            lenCols = zeros(length(varargin)+1,1);
-            lenCols(1) = length(obj.columns_);
-            for ii = 1:nargin-1
-                columnsNewVal = [columnsNewVal;varargin{ii}.columns_.value_]; %#ok<AGROW>
-                lenCols(ii+1) = length(varargin{ii}.columns_);
-                row_ = varargin{ii}.rows_.value_;
-                if sameRows && isequaln(row.value_,row_)
-                    continue
-                else
-                    sameRows = false;
-                end
-                row = row.union(row_);
-            end
-            
-            % replace missing values from column series by default values
-            ism = ismissing(columnsNewVal);
-            if ism, columnsNewVal(ism) = defaultValue(class(columnsNewVal)); end
-            
-            columnsNew = obj.columns_;
-            columnsNew.singleton_ = false;
-            columnsNew.value = columnsNewVal;
-
-            % expand each DF with the new row, and merge their data_
-            sizeColumns = cumsum(lenCols);
-            dataH = obj.defaultData(length(row),sizeColumns(end));
-            
-            rowVal = row.value;
-            function df = getExtendedRowsDF(df)
-                % Expand DF, keeping the order of row
-                if ~sameRows
-                    testUniqueIndex(row);
-                    df = df.extendRows(rowVal).loc_(rowVal,':');
-                end
-            end
-            other = getExtendedRowsDF(obj);
-            dataH(:,1:lenCols(1)) = other.data_;
-            type = class(obj.data_);
-            for ii = 1:nargin-1
-                extendedDF = getExtendedRowsDF(varargin{ii});
-                assert(isa(extendedDF.data_,type),'frames:concat:differentDatatype', ...
-                    'frames do not have the same data type')
-                dataH(:,sizeColumns(ii)+1:sizeColumns(ii+1)) = extendedDF.data_;
-            end
-            other.data_ = dataH;
-            other.columns_ = columnsNew;
-            other = other.resetUserProperties();
+            % horizontal concatenation (inner join) of frames: [df1,df2,df3,...]
+            duplicateOptionRows="duplicates";
+            duplicateOptionCols="none";
+            if obj.rows_.requireUnique, duplicateOptionRows="unique"; end        
+            if obj.columns_.requireUnique, duplicateOptionCols="unique"; end
+            other = obj.combine(varargin{:}, duplicateOptionRows=duplicateOptionRows, ...
+                                             duplicateOptionCols=duplicateOptionCols, order="keepLast");
         end
+        
         function other = vertcat(obj,varargin)
-            % vertical concatenation (outer join) of frames: [df1;df2;df3;...]
-            % frames must each have unique columns
-            col = obj.columns_.value_;
-            sameCols = true;  % compute a merged columns, only in case they are not the same
-            rowNew = obj.rows_;
-            testUniqueIndex(obj.rows_);
-            lenIdx = zeros(length(varargin),1);
-            lenIdx(1) = length(obj.rows_);
-            for ii = 1:nargin-1
-                testUniqueIndex(varargin{ii}.rows_);
-                rowNew = rowNew.union(varargin{ii}.rows_);
-                lenIdx(ii+1) = length(varargin{ii}.rows_);
-                col_ = varargin{ii}.columns_.value_;
-                if sameCols && isequaln(col,col_)
-                    continue
-                else
-                    sameCols = false;
-                end
-                col = union(col,col_,'stable');  % requires unique columns
-            end
-            if obj.columns_.requireUniqueSorted
-                col = sort(col);
-            end
-            
-            sizeRows = cumsum(lenIdx);
-            dataV = obj.defaultData(sizeRows(end),length(col));
-            
-            if length(rowNew) ~= sizeRows(end)
-                error('frames:vertcat:rowsNotUnique', ...
-                    'There must be no overlap in the rows of the Frames.')
-            end
-            
-            function df = getExtendedColsDF(df)
-                % Expand DF, keeping the order of col
-                if ~sameCols
-                    df = df.extendColumns(col).loc_(':',col);
-                end
-            end
-            
-            other = getExtendedColsDF(obj);
-            
-            idData = other.rows_.positionIn(rowNew,false);
-            dataV(idData,:) = other.data_;
-            type = class(obj.data_);
-            for ii = 1:nargin-1
-                extendedDF = getExtendedColsDF(varargin{ii});
-                assert(isa(extendedDF.data_,type),'frames:concat:differentDatatype', ...
-                    'frames do not have the same data type')
-                idData = extendedDF.rows_.positionIn(rowNew,false);
-                dataV(idData,:) = extendedDF.data_;
-            end
-            other.data_ = dataV;
-            other.rows_ = rowNew;
-            other = other.resetUserProperties();
+            % vertical concatenation (outer join) of frames: [df1;df2;df3;...]                                    
+            duplicateOptionRows="none";
+            duplicateOptionCols="duplicates";            
+            if obj.rows_.requireUnique, duplicateOptionRows="unique"; end        
+            if obj.columns_.requireUnique, duplicateOptionCols="unique"; end            
+            other = obj.combine(varargin{:}, duplicateOptionRows=duplicateOptionRows, ...
+                                             duplicateOptionCols=duplicateOptionCols, order="keepLast");
         end
+        
         
         %==================================================================
         % table related functions
@@ -692,7 +865,7 @@ classdef DataFrame
         end
         function [obj,sortedID] = sortRows(obj)
             % sort frame from the rows
-            [obj.rows_.value_,sortedID] = sort(obj.rows_.value_);
+            [obj.rows_, sortedID] = obj.rows_.sort();            
             obj.data_ = obj.data_(sortedID,:);
         end
         
@@ -847,7 +1020,7 @@ classdef DataFrame
             % * overlapping : (logical), default true
             %       whether to return the frame with all the indices (true) or only the indices at n*lag (false)
             [obj.data_,row] = relativeChange(obj.data_,varargin{:});
-            obj.rows_.value_ = obj.rows_.value_(row);
+            obj.rows_= obj.rows_.getSubIndex(row);
         end
         function obj = compoundChange(obj,varargin)
             % compound relative changes
@@ -943,16 +1116,81 @@ classdef DataFrame
         end
         
         % these function overloads are to make chaining possible
-        % e.g. df.abs().sqrt()
-        function obj = abs(obj), obj.data_ = abs(obj.data_); end
+        % e.g. df.abs().sqrt()   [or without chaining, e.g. sqrt(abs(df)) ]
+        
+        % exponents and logarithms
         function obj = exp(obj), obj.data_ = exp(obj.data_); end
+        function obj = expm1(obj), obj.data_ = expm1(obj.data_); end       
         function obj = log(obj), obj.data_ = log(obj.data_); end
+        function obj = log10(obj), obj.data_ = log10(obj.data_); end
+        function obj = log1p(obj), obj.data_ = log1p(obj.data_); end
+        function obj = log2(obj), obj.data_ = log2(obj.data_); end
+        function obj = nextpow2(obj), obj.data_ = nextpow2(obj.data_); end
+        function obj = pow2(obj), obj.data_ = pow2(obj.data_); end
+        function obj = reallog(obj), obj.data_ = reallog(obj.data_); end
+        function obj = realsqrt(obj), obj.data_ = realsqrt(obj.data_); end
+        function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
+        
+        % trigonometric functions
+        function obj = sin(obj), obj.data_ = sin(obj.data_); end
+        function obj = sind(obj), obj.data_ = sind(obj.data_); end
+        function obj = sinpi(obj), obj.data_ = sinpi(obj.data_); end
+        function obj = asin(obj), obj.data_ = asin(obj.data_); end
+        function obj = asind(obj), obj.data_ = asind(obj.data_); end
+        function obj = sinh(obj), obj.data_ = sinh(obj.data_); end
+        function obj = asinh(obj), obj.data_ = asinh(obj.data_); end
+        
+        function obj = cos(obj), obj.data_ = cos(obj.data_); end
+        function obj = cosd(obj), obj.data_ = cosd(obj.data_); end
+        function obj = cospi(obj), obj.data_ = cospi(obj.data_); end
+        function obj = acos(obj), obj.data_ = acos(obj.data_); end
+        function obj = acosd(obj), obj.data_ = acosd(obj.data_); end
+        function obj = cosh(obj), obj.data_ = cosh(obj.data_); end
+        function obj = acosh(obj), obj.data_ = acosh(obj.data_); end
+        
+        function obj = tan(obj), obj.data_ = tan(obj.data_); end
+        function obj = tand(obj), obj.data_ = tand(obj.data_); end
+        function obj = atan(obj), obj.data_ = atan(obj.data_); end
+        function obj = atand(obj), obj.data_ = atand(obj.data_); end        
         function obj = tanh(obj), obj.data_ = tanh(obj.data_); end
+        function obj = atanh(obj), obj.data_ = atanh(obj.data_); end
+        
+        function obj = csc(obj), obj.data_ = csc(obj.data_); end
+        function obj = cscd(obj), obj.data_ = cscd(obj.data_); end
+        function obj = acsc(obj), obj.data_ = acsc(obj.data_); end
+        function obj = acscd(obj), obj.data_ = acscd(obj.data_); end        
+        function obj = csch(obj), obj.data_ = csch(obj.data_); end
+        function obj = acsch(obj), obj.data_ = acsch(obj.data_); end
+                 
+        % complex number functions
+        function obj = abs(obj), obj.data_ = abs(obj.data_); end
+        function obj = angle(obj), obj.data_ = angle(obj.data_); end
+        function obj = conj(obj), obj.data_ = conj(obj.data_); end
+        function obj = imag(obj), obj.data_ = imag(obj.data_); end        
+        function obj = real(obj), obj.data_ = real(obj.data_); end
+        function obj = sign(obj), obj.data_ = sign(obj.data_); end
+        function obj = unwrap(obj), obj.data_ = unwrap(obj.data_); end
+        
+        % error functions
+        function obj = erf(obj), obj.data_ = erf(obj.data_); end
+        function obj = erfc(obj), obj.data_ = erfc(obj.data_); end
+        function obj = erfcinv(obj), obj.data_ = erfcinv(obj.data_); end
+        function obj = erfcx(obj), obj.data_ = erfcx(obj.data_); end
+        function obj = erfinv(obj), obj.data_ = erfinv(obj.data_); end
+        
+        % test functions
+        function obj = isinf(obj), obj.data_ = isinf(obj.data_); end
+        function obj = isfinite(obj), obj.data_ = isfinite(obj.data_); end
+        function obj = isnan(obj), obj.data_ = isnan(obj.data_); end
+        function obj = ismissing(obj,varargin), obj.data_ = ismissing(obj.data_,varargin{:}); end
+        
+        % rounding
         function obj = floor(obj), obj.data_ = floor(obj.data_); end
         function obj = ceil(obj), obj.data_ = ceil(obj.data_); end
-        function obj = sign(obj), obj.data_ = sign(obj.data_); end
-        function obj = sqrt(obj), obj.data_ = sqrt(obj.data_); end
-        function obj = ismissing(obj,varargin), obj.data_ = ismissing(obj.data_,varargin{:}); end
+        function obj = fix(obj), obj.data_ = fix(obj.data_); end
+        function obj = round(obj), obj.data_ = round(obj.data_); end
+        
+        % other functions        
         function obj = oneify(obj)
         % replace non missing values by a default value (1 for double, "" for strings)
             switch class(obj.data_)
@@ -966,49 +1204,28 @@ classdef DataFrame
             obj.data_(~ismissing(obj.data_)) = v;
         end
         
-        function other = sum(obj,varargin), other=obj.matrix2series(@sum,true,varargin{:}); end
+        function other = sum(obj,varargin), other=obj.aggregateMatrix(@sum,true,1,false,varargin{:}); end
         % SUM sum through the desired dimension, returns a series
-        function other = mean(obj,varargin), other=obj.matrix2series(@mean,true,varargin{:}); end
+        function other = mean(obj,varargin), other=obj.aggregateMatrix(@mean,true,1,false,varargin{:}); end
         % MEAN mean through the desired dimension, returns a series
-        function other = median(obj,varargin), other=obj.matrix2series(@median,true,varargin{:}); end
+        function other = median(obj,varargin), other=obj.aggregateMatrix(@median,false,1,false,varargin{:}); end
         % MEDIAN median through the desired dimension, returns a series
-        function other = std(obj,varargin)
-            % STD standard deviation through the desired dimension, returns a series
-            % The remaining optional arguments of std come after the dimension
-        if length(varargin) >= 2
-            varargin([1,2]) = varargin([2,1]);
-        elseif length(varargin) == 1
-            varargin = {[],varargin{1}};
-        else
-            varargin = {[],1};
-        end
-            other=obj.matrix2series(@std,true,varargin{:});
-        end
-        function other = var(obj,varargin)
-            % VAR variance through the desired dimension, returns a series
-            % The remaining optional arguments of std come after the dimension
-            if length(varargin) >= 2
-                varargin([1,2]) = varargin([2,1]);
-            elseif length(varargin) == 1
-                varargin = {[],varargin{1}};
-            else
-                varargin = {[],1};
-            end
-            other=obj.matrix2series(@var,true,[],varargin{:});
-        end
-        function other = any(obj,varargin), other=obj.matrix2series(@any,false,varargin{:}); end
+        function other = std(obj,varargin), other=obj.aggregateMatrix(@std,true,2,true,varargin{:}); end
+        % STD standard deviation through the desired dimension, returns a series
+        function other = var(obj,varargin), other=obj.aggregateMatrix(@var,true,2,true,varargin{:}); end
+        % VAR variance through the desired dimension, returns a series
+        function other = any(obj,varargin), other=obj.aggregateMatrix(@any,false,1,true,varargin{:}); end
         % ANY 'any' function through the desired dimension, returns a series
-        function other = all(obj,varargin), other=obj.matrix2series(@all,false,varargin{:}); end
-        % ALL 'all' function through the desired dimension, returns a series
-        
-        function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@max,varargin{:}); end
-        % MAX maximum through the desired dimension, returns a series
-        function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.maxmin(@min,varargin{:}); end
+        function other = all(obj,varargin), other=obj.aggregateMatrix(@all,false,1,true,varargin{:}); end
+        % ALL 'all' function through the desired dimension, returns a series                      
+        function varargout = max(obj,varargin), [varargout{1:nargout}]=obj.aggregateMatrixMaxMin(@max,true,2,true, varargin{:}); end
+        % MAX maximum through the desired dimension, returns a series        
+        function varargout = min(obj,varargin), [varargout{1:nargout}]=obj.aggregateMatrixMaxMin(@min,true,2,true, varargin{:}); end        
         % MIN minimum through the desired dimension, returns a series
-        function other = maxOf(df1,df2), other=operator(@max,@elementWiseHandler,df1,df2); end
+        function other = maxOf(df1,df2), other=operatorElementWise(@max,df1,df2); end
         % maximum of the elements of the two input arguments
         % maxOf(df1,df2), where df2 can be a frame or a matrix
-        function other = minOf(df1,df2), other=operator(@min,@elementWiseHandler,df1,df2); end
+        function other = minOf(df1,df2), other=operatorElementWise(@min,df1,df2); end
         % minimum of the elements of the two input arguments
         % minOf(df1,df2), where df2 can be a frame or a matrix
         
@@ -1032,14 +1249,58 @@ classdef DataFrame
                     assert(isequal(size(obj),size(v)), ...
                         'frames:nansum:differentSize','Data must be of the same size.')
                     d{i} = v;
-                end
-                
+                end                
             end
             d = cat(3,obj.data,d{:});
             s = sum(d,3,'omitnan');
             isn = all(isnan(d),3);
             s(isn) = NaN;
             obj.data_ = s;
+        end
+                               
+        function obj = groupDuplicate(obj, func, indexType, funcAggrDim, apply2single, convGroupInd) 
+            % combine duplicate index values by aggregation function
+            %
+            %  input: 
+            %    indexType:     select index: "rows", 1,  "columns", 2, "both", 3
+            %    func:          function handler (default @mean)
+            %    funcAggrDim:   aggregation dimensions of func: 1 (default, rows), 2 (columns)
+            %    apply2single:  logical, apply function to groups with only single value (default false)
+            %    convGroupInd:  convert output of func which is local group position index to absolute pos index
+            %
+            %  output:
+            %     dataframe/series with duplicate index values aggregated
+            %            
+            if nargin<2, func=@mean; end            
+            if nargin<3, indexType="rows"; end
+            if nargin<4, funcAggrDim=1; end
+            if nargin<5, apply2single=false; end  
+            if nargin<6, convGroupInd=false; end
+            if isnumeric(indexType) && ismember(indexType,[1,2,3]), dim=indexType;
+            elseif indexType=="rows", dim=1;
+            elseif indexType=="columns", dim=2;
+            elseif indexType=="both", dim=3;
+            else
+                error("Invalid indexType parameter. Allowed 'rows', 1,'columns', 2, or 'both',3."); 
+            end                    
+            % aggregate rows
+            if dim==1 || dim==3
+                groupid = obj.rows_.value_uniqind;
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, dim, ...
+                                                                  funcAggrDim, apply2single, true, convGroupInd);                
+                indexnew = obj.rows_.getSubIndex(groupInd);
+                obj.data_ = datnew;
+                obj.rows_ = indexnew;
+            end            
+            % aggregate columns
+            if dim==2 || dim==3
+                groupid = obj.columns_.value_uniqind;
+                [datnew, ~, ~, groupInd] = groupsummaryMatrixFast(obj.data_, groupid, func, dim, ...
+                                                                  funcAggrDim, apply2single, true, convGroupInd);                
+                indexnew = obj.columns_.getSubIndex(groupInd);
+                obj.data_ = datnew;
+                obj.columns_ = indexnew;            
+            end
         end
         
         function obj = rolling(obj,window)
@@ -1093,7 +1354,19 @@ classdef DataFrame
         function varargout = subsref(obj,s)
             if length(s)>1  % when there are several subsref
                 if strcmp(s(1).type,'.')
-                    [varargout{1:nargout}] = builtin('subsref',obj,s);
+                     field = string(s(1).subs);                                        
+                     if ismember(field, ["rows","columns"])
+                        % allow custom data access of index values as implemented in Index class subsref                        
+                        s(1).subs = "value"; % field to access in Index object is called 'value'
+                        [varargout{1:nargout}] = subsref(obj.(field+"_"), s);                        
+                        if field=="columns"
+                            % transpose output in case of columns                            
+                            varargout{1} = varargout{1}';
+                        end
+                     else                       
+                        [varargout{1:nargout}] = builtin('subsref',obj,s);
+                     end    
+
                 else  % to handle the () and {} cases (Matlab struggles otherwise).
                     other = subsref(obj,s(1));
                     [varargout{1:nargout}] = subsref(other,s(2:end));
@@ -1136,8 +1409,8 @@ classdef DataFrame
                             "assignment of %s not allowed to be empty", field);                        
                         if length(s)==1
                             obj.(field) = b;
-                        else
-                            obj.(field+"_").value(s(2).subs{1}) = b;
+                        else                            
+                            obj.(field+"_").value(s(2).subs{:}) = b;
                         end
                         
                     elseif isprop(obj,field)
@@ -1157,19 +1430,21 @@ classdef DataFrame
                     elseif ismember(field, ["row","col"])
                         % assign to row/col series
                         selector = s(2).subs{1};
-                        if strcmp(field, "row")
-                            if ~ismember(selector,obj.rows)
+                        if strcmp(field, "row")                            
+                            if ~obj.rows_.ismember(selector)
                                 obj = obj.extendRows(selector);
                             end
                             assert(length(obj.rows_.positionOf(selector))==1, ...
-                                'frames:subsasgn:rowMultiple','assigning with row expected to change a unique row');
-                            obj = obj.modify(b,selector,':',false);
+                                'frames:subsasgn:rowMultiple', ...
+                                'assignment with .row requires to change only a single unique row.');
+                            obj = obj.modify(b,selector,':',false);                            
                         else
-                            if ~ismember(selector,obj.columns)
+                            if ~obj.columns_.ismember(selector)
                                 obj = obj.extendColumns(selector);
                             end
                             assert(length(obj.columns_.positionOf(selector))==1, ...
-                                'frames:subsasgn:colMultiple','assigning with col expected to change a unique column');
+                                'frames:subsasgn:colMultiple', ...
+                                'assignment with .col requires to change only a single unique column.');
                             obj = obj.modify(b,':',selector,false);
                         end
                         
@@ -1199,49 +1474,218 @@ classdef DataFrame
                 
         function toFile(obj,filePath,varargin)
             % write the frame into a file
+            assert(~isMultiIndex(obj.rows_) && ~isMultiIndex(obj.columns_), ...
+                'frames:DataFrame:toFile:MultiIndexNotSupported', "DataFrame with MultiIndex (currently) not supported");               
             writetable(obj.t,filePath, ...
                 'WriteRowNames',true,'WriteVariableNames',true,varargin{:});
+        end   
+        
+        
+        function [dat, dimnames, dimvalues] = dataND(obj)
+            % function to convert dataframe data to matlab NDarray
+            % based on the (Multi)Index dimensions
+            %                   
+            % Remark:
+            %  - No duplicate index values are allowed
+            %  - Indices are sorted
+            %  - Missing values will be set to NaN 
+            %
+            % output:
+            %   dat:       NDarray with dimensions as in dataframe
+            %   dimnames:  string array with names of dimensions in NDarray
+            %   dimvalues: cell array with per dimension the unique values along the axes of NDarray
+            %
+            assert(obj.rows_.isunique(), ...
+                'frames:DataFrame:dataND:rowsIndexNotUnique', "Unique rows index required.");
+            assert(obj.columns_.isunique(), ...
+                'frames:DataFrame:dataND:columnsIndexNotUnique', "Unique columns index required.");                        
+            % get dim length and position into NDarray for both dataframe indices
+            [Ldim_rows, posind_rows] = getNDposind(obj.rows_);
+            [Ldim_cols, posind_cols] = getNDposind(obj.columns_);
+            % create empty data vector of full length
+            Nelem_rows = prod(Ldim_rows);            
+            Nelem_cols = prod(Ldim_cols);
+            dat = obj.defaultData(Nelem_rows*Nelem_cols,1);
+            % get row-major position index (of both row and column index combined)                                                
+            posind = posind_rows + (posind_cols'-1) * Nelem_rows; % use implicit expansion
+            % assign values to 'NDarray  vector'
+            dat(posind) = obj.data_;
+            % reshape vector to ND array
+            Ndims_rows = length(Ldim_rows);
+            Ndims_cols = length(Ldim_cols);            
+            Ndims = Ndims_rows + Ndims_cols;
+            if Ndims>1                
+               dat = reshape(dat, [Ldim_rows, Ldim_cols]);
+            end
+            % get dimension meta data
+            dimnames = [];            
+            dimvalues = [];
+            if ~obj.rows_.singleton
+                dimnames = [dimnames obj.rows_.name];
+                dimvalues = [dimvalues obj.rows_.value_uniq];                
+            end
+            if ~obj.columns_.singleton
+                dimnames = [dimnames obj.columns_.name];
+                dimvalues = [dimvalues obj.columns_.value_uniq];
+            end            
+            
+            function [Ldim, posind] = getNDposind(index)
+                % helper function to get length of each dimension and position index into NDarray
+                if index.singleton
+                   Ldim = [];
+                   posind = 1;
+                elseif index.Ndim > 1
+                   Ldim = cellfun( @(x) length(x), index.value_uniq);               
+                   posind = index.getvalue_uniqind(false); % false=row-major ordering
+                else
+                   Ldim = length(index);
+                   posind = index.value_uniqind;
+                end
+            end
         end
+
+
+        function varargout = align(dfs, options)
+            % ALIGN aligns multiple dataframes
+            %
+            % INPUT:
+            %   dfs:       multiple (Ndf) DataFrame objects to align
+            %
+            %   options:   name-value combinations
+            %
+            %    - duplicateOption:  option used for both rows as columns:            
+            %
+            %       - 'unique':        align on first occurrence of unique values between indices (removes duplicates). 
+            %                          Output index only contains the unique values of the all indices. 
+            %                          (only option that is allowed for indexes that requireUnique)                      
+            %            
+            %       - 'duplicates':    align values between indices. If multiple indices have the
+            %                          same duplicate values, align them in the same order as they occur in the
+            %                          index. (default option)            
+            %
+            %       - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
+            %                          case of exact equal indices (for which 1:1 mapping will be used). An
+            %                          error will be raised in case of duplicates and not exactly equal.            
+            % 
+            %       - 'expand':        align values between indices. In case of duplicates, all combinations
+            %                          between indices are added.
+            %                          (option currently is limited to union between 2 indices)
+            %
+            %       - 'none':          no alignment of values, append all values of indices together, even if that
+            %                          creates new duplicates.    
+            %
+            %
+            %   - alignMethod: (string enum) select alignment method for both rows as columns
+            %       - 'strict': all indices need to have same unique values (else error thrown)
+            %       - 'inner':  keep only unique values that are common in all indices
+            %       - 'left':   keep only unique values as in the first index            
+            %       - 'full':   keep all values (allow values missing in some indices) (default)
+            %            
+            %
+            % OUTPUT:
+            %   dfs:       all (N) aligned Dataframes
+            %   ind_rows:  index array(Nrows,Ndf) with each column the position index into the original row
+            %              for each corresponding input dataframe.
+            %   ind_cols:  index array(Ncols,Ndf) with each column the position index into the original column
+            %              for each corresponding input dataframe.
+            %
+            %              (position index contain a NaN value if given index value is not present)            
+            %
+            arguments(Repeating)
+                dfs frames.DataFrame
+            end
+            arguments
+               options.duplicateOption frames.enum.duplicateOption = "duplicatesstrict"
+               options.alignMethod frames.enum.alignMethod = "full"
+               options.allowDimExpansion logical = true
+            end          
+            Ndf = length(dfs);
+            
+            % convert all row index objs to MultiIndex in case one is already MultiIndex            
+            dfs_rows_isMultiIndex = cellfun(@(x) isMultiIndex(x.rows_), dfs);
+            if any(dfs_rows_isMultiIndex)              
+                for i = 1:Ndf
+                    if ~dfs_rows_isMultiIndex(i)           
+                        dfs{i}.rows_ =  frames.MultiIndex(dfs{i}.rows_);
+                    end
+                end
+            end
+            
+            % convert all column index objs to MultiIndex in case one is already MultiIndex            
+            dfs_cols_isMultiIndex = cellfun(@(x) isMultiIndex(x.columns_), dfs);
+            if any(dfs_cols_isMultiIndex)               
+                for i = 1:Ndf
+                    if ~dfs_cols_isMultiIndex(i)                        
+                        dfs{i}.columns_ =  frames.MultiIndex(dfs{i}.columns_);
+                    end
+                end
+            end
+
+            % override duplicateOption in case first dataframe has requireUnique index
+            duplicateOptionRows = options.duplicateOption;
+            duplicateOptionCols = options.duplicateOption;
+            if dfs{1}.rows_.requireUnique, duplicateOptionRows = "unique"; end            
+            if dfs{1}.columns_.requireUnique, duplicateOptionCols = "unique"; end            
+            
+            % get aligned row and column indices
+            dfs_rows = cellfun(@(x) {x.rows_}, dfs);
+            dfs_cols = cellfun(@(x) {x.columns_}, dfs);            
+            [mrow, rowind] = dfs_rows{1}.align(dfs_rows{2:end}, alignMethod=options.alignMethod, ...
+                              duplicateOption=duplicateOptionRows, allowDimExpansion=options.allowDimExpansion);
+            [mcol, colind] = dfs_cols{1}.align(dfs_cols{2:end}, alignMethod=options.alignMethod, ...
+                              duplicateOption=duplicateOptionCols, allowDimExpansion=options.allowDimExpansion);
+           
+            % get new aligned dataframes
+            dfs_new = dfs;
+            for i = 1:Ndf
+                dfs_new{i} = dfs{i}.reorder(mrow, rowind(:,i), mcol, colind(:,i));
+            end
+            
+            % output
+            varargout = dfs_new;
+            varargout{end+1} = rowind;
+            varargout{end+1} = colind;             
+        end        
+      
         
     end
     
     methods(Hidden)  % Hidden and not protected, so that other classes in the package can use these methods, without the need to explicitly give them access. Not to be used outside.
         
-         function obj = loc_(obj,rowSelector,colSelector,userCall,positionIndex)            
-            if nargin < 4, userCall=false; end
-            if nargin < 5, positionIndex=false; end             
-            rowID = obj.rows_.getSelector(rowSelector, positionIndex, 'onlyColSeries', userCall);
-            colID = obj.columns_.getSelector(colSelector, positionIndex, 'onlyRowSeries', userCall);              
+         function obj = loc_(obj, rowSelector, colSelector, positionIndex, allowedMissing, asFilter, userCall)                        
+            if nargin < 4, positionIndex=false; end             
+            if nargin < 5, allowedMissing=false; end
+            if nargin < 6, asFilter=false; end
+            if nargin < 7, userCall=false; end
+            rowID = obj.rows_.getSelector_(rowSelector, positionIndex, 'onlyColSeries', allowedMissing, asFilter, userCall);
+            colID = obj.columns_.getSelector_(colSelector, positionIndex, 'onlyRowSeries', allowedMissing, asFilter, userCall);              
             if ~iscolon(rowSelector)
-                obj.rows_.value_ = obj.rows_.value_(rowID);
+                obj.rows_ = obj.rows_.getSubIndex(rowID);
             end
-            if ~iscolon(colSelector)                
-                obj.columns_.value_ = obj.columns_.value_(colID);
+            if ~iscolon(colSelector)                                
+                obj.columns_ = obj.columns_.getSubIndex(colID);
             end
             obj.data_ = obj.data_(rowID,colID);
          end
          
          function obj = iloc_(obj,rowPosition,colPosition)
-            obj = obj.loc_(rowPosition, colPosition, false, true); 
+            obj = obj.loc_(rowPosition, colPosition, true); 
          end
     end
          
-    methods(Hidden, Access=protected)
+    methods(Hidden, Access={?frames.TimeIndex,?frames.DataFrame,?frames.MultiIndex,?frames.Index})
         
         function tb = getTable(obj)
             row = obj.rows_.getValueForTable();
             col = obj.columns_.getValueForTable();
             tb = array2table(obj.data,RowNames=row,VariableNames=col);
-            if ~isempty(obj.rows_.name) && ~strcmp(obj.rows_.name,"")
-                tb.Properties.DimensionNames{1} = char(obj.rows_.name);
-            end
         end
         function d = defaultData(obj,lengthRows,lengthColumns,type)
             if nargin<4; type = class(obj.data); end
             d = repmat(missingData(type),lengthRows,lengthColumns);
         end
         function rowsValidation(obj,value)
-            assert(length(value) == size(obj.data,1), 'frames:rowsValidation:wrongSize', ...
+            assert(iscell(value) || length(value) == size(obj.data,1), 'frames:rowsValidation:wrongSize', ...
                 'rows does not have the same size as data')
         end
         function columnsValidation(obj,value)
@@ -1259,8 +1703,8 @@ classdef DataFrame
         function obj = modify(obj,data,rows,columns,positionIndex)
             % modify data in selected rows and columns to supplied values
             if nargin<5; positionIndex = false; end
-            row = obj.rows_.getSelector(rows, positionIndex, 'onlyColSeries', true);
-            col = obj.columns_.getSelector(columns, positionIndex, 'onlyRowSeries', true);                     
+            row = obj.rows_.getSelector_(rows, positionIndex, 'onlyColSeries', false, false, true);
+            col = obj.columns_.getSelector_(columns, positionIndex, 'onlyRowSeries', false, false, true);                     
             % get data from DataFrame
             if isFrame(data)
                 rowsColChecker(obj.iloc_(row,col).asFrame(), data);
@@ -1286,9 +1730,9 @@ classdef DataFrame
                          % same class, while vector(:) returns []
                          row = true(length(obj.rows_),1);
                     end
-                    obj.rows_.value_(row) = [];
+                    obj.rows_.value(row) = [];
                 else
-                    obj.columns_.value_(col) = [];
+                    obj.columns_.value(col) = [];
                 end
             end
         end
@@ -1311,28 +1755,222 @@ classdef DataFrame
             else
                 error('Unsupported first selector type: need logical DataFrame or logical matrix');                             
             end
-        end        
-                       
-        function series = matrix2series(obj,fun,canOmitNaNs,varargin)
-            if ~isempty(varargin)
-                dim = varargin{end};  % end because std takes dimension value as argument after the weighting scheme, cf doc std versus doc sum
+        end 
+        
+        function [out, ind] = aggregateMatrixMaxMin(obj, func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin)
+            % internal wrapper function around aggregateMatrix() to support min() and max() index outputs            
+            if nargout <2
+                % only aggregated output, no position index
+                out = obj.aggregateMatrix(func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin{:});
             else
+                % both aggregated as position index output
+                [out, dim, indpos] = obj.aggregateMatrix(func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin{:});               
+                if dim == 1
+                    dimindex = obj.rows;
+                else
+                    dimindex = obj.columns;
+                end
+                if isFrame(indpos)
+                   ind = dimindex(indpos.data);
+                else
+                   ind = dimindex(indpos);
+                end                                        
+            end                
+        end
+        
+        function varargout = aggregateMatrix(obj, func, addOmitNaNflag, funcDimPos, apply2singleValue, varargin)
+            % internal wrapper function to support aggregation by standard matlab function (eg. mean) 
+            % using multiple syntax options. 
+            % 
+            % call syntax (<>=optional): 
+            %    funcname( <dim>, <dimname>) or
+            %    funcname( dim, <dimname>, <numeric function argument> ) 
+            %
+            % syntax examples with std():
+            %    df.std():             aggregate rows
+            %    df.std(1):            aggregate rows
+            %    df.std("rows"):       aggregate rows
+            %    df.std(2):            aggregate columns
+            %    df.std("columns"):    aggregate columns
+            %    df.std("x"):          aggregate subdim "x" in rows (default)
+            %    df.std(1,"x"):        aggregate subdim "x" in rows
+            %    df.std("rows","x"):   aggregate subdim "x" in rows
+            %    df.std("rows","x",1): aggregate subdim "x" in rows with extra std() option 1
+            %    df.std(2,1):          aggregate columns with extra std() parameter 1
+            %
+            % input:
+            %   func:               function handle to aggregation function
+            %   addOmitNaNflag:     boolean to select addtion of 'omitnan' parameter to function
+            %   funcDimPos:         position of dimension parameter of function: 1 (eg mean) or 2 (eg std)
+            %   apply2singleValue:  boolean to select if function is applied to groups with a single values
+            %   varargin:           other additional function parameters (only non string paramters supported)
+            %
+            % output:
+            %    aggregated data:
+            %        dataframe with aggregated data and reduced dimensions or
+            %        series/scalar (in case aggregation over full index) or            
+            %    dim:  
+            %         int, dimension of aggregation (1=rows,2=cols)
+            %    varargout:
+            %         additional outputs from function  func() (eg. pos index in case of min() or max())
+            %             
+            dimname = [];
+            if isempty(varargin), varargin = {1}; end % default dim is rows            
+            
+            % parse 1st input argument (dim or row dimname)
+            p1 = varargin{1};
+            if isequal(p1,1) || isequal(p1,"rows")
                 dim = 1;
-            end
-            assert(ismember(dim,[1,2]),'dimension value must be in [1,2]')
-            if canOmitNaNs
-                res = fun(obj.data_,varargin{:},'omitnan');
-                res(all(isnan(obj.data_),dim)) = NaN;  % puts NaN instead of zero when all entries are NaNs
+            elseif isequal(p1,2) || isequal(p1,"columns")
+                dim = 2;
+            elseif isstring(p1) || ischar(p1)
+                % interpret it as specific row dimension name
+                dim = 1;
+                dimname = p1;                
             else
-                res = fun(obj.data_,varargin{:});
+                error('frames:aggregateMatrix:invalidsyntax', "invalid first argument '%s'.", p1);
             end
+            % parse 2nd input argument (dimname or extra function param)
+            if length(varargin)>=2
+                p2 = varargin{2};
+                if  istext(p2)
+                    % interpret it as row or column dimension name
+                    assert(isempty(dimname), 'frames:aggregateMatrix:invalidsyntax', ...
+                       "invalid 2nd parameter. First parameter ('%s') already defined row dimname, " + ... 
+                       "second string parameter ('%s') not allowed.",p1, p2);
+                    dimname = p2;                    
+                    varargin(2) = []; %remove item: only keep (optional) function parameters
+                end
+                if length(varargin)>=3
+                    assert( ~any(cellfun(@istext,varargin(3:end))), 'frames:aggregateMatrix:invalidsyntax', ...
+                       "error, no string parameters are allowed as function arguments (to avoid ambiguous syntax).");
+                end                
+            end
+            varargin(1) = []; %remove item: only keep (optional) function parameters
+            
+            % in case of colon operator, do not specify a dimname
+            if ~isempty(dimname) && iscolon(dimname)                
+                dimname = [];
+            end
+            
+            % get function params (to force selected dimension) + NaNsettings
+            if funcDimPos==1
+                params = [dim varargin];
+            elseif funcDimPos==2
+                if ~isempty(varargin)
+                    params = { varargin{1} dim varargin{2:end} };
+                else
+                    params = { [] dim};
+                end
+            end
+            if addOmitNaNflag
+                params{end+1} = 'omitnan';
+            end
+            
+            % get function including params
+            if isempty(params)
+                func_ = func;
+            else
+                func_ = @(x) func(x, params{:});
+            end
+            
+            % call function to apply aggregation
+            nargout_func = max(1,nargout-1); % number of functions output to collect
+            if isempty(dimname)                                
+                [out{1:nargout_func}] = obj.matrix2series_(dim, func_, dim);                    
+            else
+                [out{1:nargout_func}] = obj.aggregateIndexDim_(dim, dimname, func_, dim, apply2singleValue);
+            end
+            
+            % collect variable outputs
+            varargout{1} = out{1};
+            if nargout>1, varargout{2} = dim; end
+            if nargout>2, varargout{3:3+nargout_func-2} = out{2:nargout_func}; end
+        end
+        
+        
+        function varargout = aggregateIndexDim_(obj, dim, dimname, func, funcAggrDim, apply2singleValue)
+            % internal function to aggregate data over given sub-dimension (in case of MultiIndex)            
+            %
+            % input:
+            %    dim:          dimensions to aggregate: 1 (default, rows), 2 (columns)
+            %    dimname:      string (or string array) of sub-dimensions to aggregate
+            %    func:         function handle to aggregation function      
+            %    funcAggrDim:  dimension in which function func aggregates (1:rows default, 2=columns)
+            %    apply2single: boolean to select if function is applied to groups with a single values (default true)             
+            %
+            % output:
+            %    - dataframe/series with aggregated data and reduced (MultiIndex) dimensions
+            %    - (optional) dataframe/series with index position from 2nd func output (eg func min() or max())
+            %                               
+            if nargin<5, funcAggrDim=1; end
+            if nargin<6, apply2singleValue=true; end
+            assert(dim==1 || dim==2,'dimension value must be in [1,2]');
+            assert(nargout<3, "only up to 2 function outputs supported.");
+            
+            % get index and dimension to keep
+            indexfields = ["rows_", "columns_"];
+            indexobj = obj.(indexfields(dim));
+            assert(isMultiIndex(indexobj), "Only MultiIndex supported, selected index is not a MultiIndex.");
+            dimind = indexobj.getDimInd(dimname);
+            dimind_other = setxor( 1:indexobj.Ndim, dimind);
+            
+            if ~isempty(dimind_other)
+                % df with removed dimension
+                indexobj_raw = indexobj.getSubIndex_(:,dimind_other);
+                obj.(indexfields(dim)) = indexobj_raw;
+                
+                % get aggregated df
+                varargout{1} = obj.groupDuplicate(func, dim, funcAggrDim, apply2singleValue);
+                % extra func outputs not supported by groupDuplicate(), workaround by running multiple times                
+                if nargout==2
+                    % 2nd output is assumed to be position index
+                    varargout{2} = obj.groupDuplicate(@func_out2, dim, funcAggrDim, apply2singleValue, true);                
+                end
+                
+            else
+                % no sub-dimensions left, use function that aggregates full dimension
+                [varargout{1:nargout}] = obj.matrix2series_(dim, func, funcAggrDim);
+            end
+            
+            function out = func_out2(varargin)
+                % get 2nd output argument of function func
+                [~, out] = func(varargin{:});
+            end            
+        end
+        
+        
+        function varargout = matrix2series_(obj, dim, func, funcAggrDim)
+            % internal function to handle aggregation over full index
+            % (convert dataframe to series, or series to scalar)
+            % 
+            % input:
+            %    dim:         dimensions to aggregate: 1 (default, rows), 2 (columns)
+            %    func:        function handle to aggregation function      
+            %    funcAggrDim: dimension in which function func aggregates (1:rows default, 2=columns)
+            %
+            % output:
+            %    series (in case of dataframe input) or
+            %    scalar (in case of series input)
+            %
+            if nargin<4, funcAggrDim=1; end
+            assert(dim==1 || dim==2,'dimension value must be in [1,2]');               
+            
+            % aggregate over selected dimension
+            if dim==funcAggrDim
+               [varargout{1:nargout}] = func(obj.data_);
+            else
+               [varargout{1:nargout}] = func(obj.data_')';
+            end
+            
+            % prepare output
             if (dim==1 && obj.columns_.singleton_) || (dim==2 && obj.rows_.singleton_)
                 % returns a scalar if the operation is done on a series
-                series = res;
             else
-                series = obj.df2series(res,dim);
+                varargout{1} = obj.df2series(varargout{1},dim);
             end
         end
+                
         
         function obj = df2series(obj,data,dim)
             if dim == 1
@@ -1340,29 +1978,16 @@ classdef DataFrame
                     obj = data;
                 else
                     obj.data_ = data;
-                    obj.rows_.value_ = obj.rows_.value_(1);
+                    obj.rows_ = obj.rows_.getSubIndex(1);
                     obj.rows_.singleton = true;
                 end
             else
                 if obj.rowseries
                     obj = data;
                 else
-                    obj.data_ = data;
-                    obj.columns_.value_ = obj.columns_.value_(1);
+                    obj.data_ = data;                    
+                    obj.columns_ = obj.columns_.getSubIndex(1);
                     obj.columns_.singleton = true;
-                end
-            end
-        end
-        
-        function varargout = maxmin(obj,fun,dim)
-            if nargin < 3, dim = 1; end
-            [d, ii] = fun(obj.data_,[],dim);
-            varargout{1} = df2series(obj,d,dim);
-            if nargout == 2
-                if dim == 1
-                    varargout{2} = obj.rows(ii);
-                else
-                    varargout{2} = obj.columns(ii);
                 end
             end
         end
@@ -1385,6 +2010,60 @@ classdef DataFrame
                 end
             end
         end
+        
+        function obj = reorder(obj, rowindex, rowind, colindex, colind )
+            % internal function to reordered DF based on new index objects and position index
+            % (rowind and colind are allowed to have NaN, the corresponding values are set NaN)
+            %
+            if nargin<3, error("not enough parameters"); end            
+            if nargin==4, error("invalid number of parameters"); end                        
+            if nargin<5, colindex=[]; colind=[]; end                                 
+            % set new indexes
+            if ~isempty(rowindex),  obj.rows_ = rowindex;  end
+            if ~isempty(colindex),  obj.columns_ = colindex; end            
+            % get selector            
+            datsize_new = [length(rowindex) length(colindex)];
+            datsize_old = size(obj.data_);
+            if isempty(rowind) || ( datsize_new(1)==datsize_old(1) && isequal(rowind, (1:length(rowind))') ) 
+                rowmask = ':';
+                rowind_masked = ':';
+            else
+                rowmask = ~isnan(rowind);
+                rowind_masked = rowind(rowmask);                
+            end                        
+            if isempty(colind) || ( datsize_new(2)==datsize_old(2) && isequal(colind, (1:length(colind))') ) 
+                colmask = ':';
+                colind_masked = ':';                
+            else
+               colmask = ~isnan(colind);
+               colind_masked = colind(colmask);
+            end
+            
+            % shortcut if ordering no changed 
+            if iscolon(rowmask) && iscolon(colmask)                
+                return
+            end            
+                        
+            % handle missing values
+            if ( (iscolon(rowmask) || all(rowmask)) && (iscolon(colmask) || all(colmask)) )
+                
+                % no missing values, directly store reordered data in dataframe
+                obj.data_ = obj.data_( rowind_masked, colind_masked);
+            else
+                % missing values, start with matrix with missing values                
+                if isnumeric(obj.data_)
+                    dat = nan(datsize_new);                    
+                elseif isstring(obj.data_)
+                    dat = repmat(string(missing), datsize_new);
+                elseif iscell(obj.data_)
+                    dat = cell(datsize_new);
+                end
+                % store ordered values at masked subselection
+                dat(rowmask,colmask) = obj.data_( rowind_masked, colind_masked);
+                obj.data_ = dat;
+            end
+            
+        end                        
     end
  
     methods(Static)
@@ -1439,6 +2118,147 @@ classdef DataFrame
             df.rows_.requireUnique = nameValue.Unique;
             df.rows_.name = string(t.Properties.DimensionNames{1});
         end
+        
+        
+        function df = fromDataND(dat, dimValues, dimNames, options)
+            % convert NDarray to MultiIndex DataFrame with given dimension names and dimension ordering
+            % 
+            % INPUT:
+            % - dat:       ndarray (Ndim dimensions)
+            % - dimValues: cellarray(Ndim) with every cell a vector with values along corresponding dimension
+            % - dimNames:  string array(Ndim) with dimension names
+            % 
+            % (optional) name-value arguments:
+            % - RowDim: string array with dimension names (and order) for DataFrame rows
+            % - ColDim: string array with dimension names (and order) for DataFrame columns
+            %
+            % OUTPUT:
+            % - df: DataFrame with MultiIndex containing the data
+            %
+            arguments
+                dat
+                dimValues
+                dimNames
+                options.RowDim = string(missing)
+                options.ColDim = string(missing)
+            end
+            Ndim = ndims(dat);            
+            % check input sizes
+            assert(length(dimValues)==Ndim && isequal(size(dat), cellfun(@numel, dimValues)), ...
+                  'frames:DataFrame:fromDataND:invaliddimvalues',...
+                  "Error, number of dimensions in dimValues do not match data(" + strjoin(string(size(dat)),",") +").");
+            assert(length(dimNames)==Ndim, 'frames:DataFrame:fromDataND:invaliddimnames',...
+                  "Error, number of dimensions in dimValues do not match data.");            
+            % get dimension mapping to rows/cols from input
+            RowDim = options.RowDim;
+            ColDim = options.ColDim;
+            missingRows = any(ismissing(RowDim));
+            missingCols = any(ismissing(ColDim));
+            if (missingRows && missingCols)
+                % default colseries df
+                RowDim = dimNames;
+                ColDim = [] ;
+            elseif missingRows
+                % fill dimRows with remaining dims
+                if ~isempty(ColDim)
+                    RowDim = setxor(ColDim,dimNames,'stable');
+                else
+                    RowDim = dimNames;
+                end
+            elseif missingCols
+                % fill dimCols with remaining dims
+                if ~isempty(RowDim)
+                    ColDim = setxor(RowDim,dimNames,'stable');
+                else
+                    ColDim = dimNames;
+                end                
+            end            
+            % get dimension indices
+            dimIndRows = [];
+            dimIndCols = [];
+            if ~isempty(RowDim), [~,~,dimIndRows] = intersect(RowDim, dimNames, 'stable'); end
+            if ~isempty(ColDim), [~,~,dimIndCols] = intersect(ColDim, dimNames, 'stable'); end
+            dimIndAll = [dimIndRows;dimIndCols];            
+            % check dimension indices
+            assert(length(dimIndRows)==length(RowDim), 'frames:DataFrame:fromDataND:invaliddims',...
+                "Error, not all row dimension are present");
+            assert(length(dimIndCols)==length(ColDim), 'frames:DataFrame:fromDataND:invaliddims',...
+                "Error, not all column dimension are present");
+            assert(length(dimIndAll ) == Ndim, 'frames:DataFrame:fromDataND:invaliddims',...
+                "Error, number of dimensions specified for rows and columns not equal to data dimension");
+            assert( length(unique(dimIndAll)) == Ndim, 'frames:DataFrame:fromDataND:invaliddims',...
+                "Error, specified row and column dimension not unique");            
+            % get expanded indices
+            [dimValueRows, Nrows] = getExpandedDimValues(dimValues, dimIndRows);
+            [dimValueCols, Ncols] = getExpandedDimValues(dimValues, dimIndCols);            
+            % reshuffle data dimensions and reshape
+            datNew = permute(dat, dimIndAll);
+            datNew = reshape(datNew, max(Nrows,1), max(Ncols,1));            
+            % create DataFrame
+            colseries = (Ncols==0);
+            rowseries = (Nrows==0);
+            df = frames.DataFrame(datNew, dimValueRows, dimValueCols, ...
+                RowDim=dimNames(dimIndRows), ColDim=dimNames(dimIndCols), ...
+                colseries=colseries, rowseries=rowseries ...
+                );            
+            
+            function [out, Nvalues] = getExpandedDimValues(dimValues, dimInd)
+                Ndim = length(dimInd);
+                % check if expansion is required
+                if Ndim >= 2
+                    % create position indices for elements of selected dims
+                    NelemInd = cell(Ndim,1);
+                    for i=1:Ndim
+                        values = dimValues{dimInd(i)};
+                        NelemInd{i} = 1:numel(values);
+                    end
+                    % create expand position indices
+                    NelemIndExpanded = cell(Ndim,1);
+                    [NelemIndExpanded{:}] = ndgrid( NelemInd {:});
+                    % create expanded dimension value vectors
+                    out = cell(Ndim,1);
+                    for i=1:Ndim
+                        values = dimValues{dimInd(i)};
+                        valuesExpanded = values(NelemIndExpanded{i});
+                        out{i} = valuesExpanded(:);
+                    end                    
+                else
+                    % no expansion required
+                    if Ndim==1
+                        out = dimValues(dimInd);
+                    else
+                        out = [];
+                    end
+                end
+                % get number of values
+                if Ndim>0
+                    Nvalues = length(out{1});
+                else
+                    Nvalues = 0;
+                end
+            end
+        end
+        
+        function setDefaultSetting(name, value)
+            % change a default (persistent) class settings
+            df = frames.DataFrame();
+            df.settingsDefault.(name) = value;
+        end
+        
+        function restoreDefaultSettings(obj)
+            % restores default settings to 'standard out of the box'
+            % (does not change settings of existing DataFrame objects)
+            df = frames.DataFrame();
+            df.settingsDefault.reset();            
+        end
+    end
+    
+    methods(Static, Hidden)
+        function fh = getPrivateFuncHandle(funcname)
+            % helper function to access private package functions from unit-tester
+            % (not to be used in own code)
+            fh = str2func(funcname);
+        end
     end
     
     methods(Hidden)
@@ -1449,6 +2269,13 @@ classdef DataFrame
                 try
                     % show content
                     disp(obj.t);               
+                    % show row index dimension names
+                    if ~obj.rows_.singleton
+                       fprintf("row index name(s): %s\n", join(obj.rows_.name,", ") )
+                    end
+                    if isMultiIndex(obj.columns_) && ~obj.columns_.singleton
+                        fprintf("column index name(s): %s\n\n", join(obj.columns_.name,", ") )
+                    end
                     % description line
                     line = class(obj);
                     if obj.colseries
@@ -1456,7 +2283,7 @@ classdef DataFrame
                     elseif obj.rowseries
                         line = line + " - RowSeries";                        
                     end
-                    disp(line);
+                    disp(line);                    
                 catch
                     warning('Table cannot be displayed')
                     details(obj);
@@ -1470,47 +2297,47 @@ classdef DataFrame
         function e = end(obj,q,~), e = builtin('end',obj.data_,q,2); end
         
         function other = plus(df1,df2)
-            other = operator(@plus,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@plus,df1,df2,0,0);
         end
         function other = mtimes(df1,df2)
-            other = operator(@mtimes,@matrixOpHandler,df1,df2);
+            other = operatorMatrix(@mtimes,df1,df2);
         end
         function other = times(df1,df2)
-            other = operator(@times,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@times,df1,df2,1,1);
         end
         function other = minus(df1,df2)
-            other = operator(@minus,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@minus,df1,df2,0,0);
         end
         function other = mrdivide(df1,df2)
-            other = operator(@mrdivide,@matrixOpHandler,df1,df2);
+            other = operatorMatrix(@mrdivide,df1,df2);
         end
         function other = rdivide(df1,df2)
-            other = operator(@rdivide,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@rdivide,df1,df2,NaN,1);
         end
         function other = mldivide(df1,df2)
-            other = operator(@mldivide,@matrixOpHandler,df1,df2);
+            other = operatorMatrix(@mldivide,df1,df2);
         end
         function other = ldivide(df1,df2)
-            other = operator(@ldivide,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@ldivide,df1,df2,1,NaN);
         end
         function other = power(df1,df2)
-            other = operator(@power,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@power,df1,df2,NaN,1);
         end
         function other = mpower(df1,df2)
-            other = operator(@mpower,@matrixOpHandler,df1,df2);
+            other = operatorMatrix(@mpower,df1,df2);
         end
         
         function other = lt(df1,df2)
-            other = operator(@lt,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@lt,df1,df2);
         end
         function other = gt(df1,df2)
-            other = operator(@gt,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@gt,df1,df2);
         end
         function other = le(df1,df2)
-            other = operator(@le,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@le,df1,df2);
         end
         function other = ge(df1,df2)
-            other = operator(@ge,@elementWiseHandler,df1,df2);
+            other = operatorElementWise(@ge,df1,df2);
         end
         function bool = eq(df1,df2)
             if isFrame(df1) && istext(df1.data)
@@ -1518,7 +2345,7 @@ classdef DataFrame
             elseif istext(df1)
                 df1 = string(df1);
             end
-            bool = operator(@eq,@elementWiseHandler,df1,df2);
+            bool = operatorElementWise(@eq,df1,df2);
         end
         function bool = ne(df1,df2)
             if isFrame(df1) && istext(df1.data)
@@ -1526,13 +2353,13 @@ classdef DataFrame
             elseif istext(df1)
                 df1 = string(df1);
             end
-            bool = operator(@ne,@elementWiseHandler,df1,df2);
+            bool = operatorElementWise(@ne,df1,df2);
         end
         function other = and(df1,df2)
-            other=operator(@and,@elementWiseHandler,df1,df2);
+            other=operatorElementWise(@and,df1,df2);
         end
         function other = or(df1,df2)
-            other=operator(@or,@elementWiseHandler,df1,df2);
+            other=operatorElementWise(@or,df1,df2);
         end
         
         function other = ctranspose(obj)
@@ -1580,10 +2407,11 @@ end
 
 %--------------------------------------------------------------------------
 function varargout = getData_(varargin)
+varargout = cell(1,nargout);
 for ii = 1:nargout
     v = varargin{ii};
     if isFrame(v), v=v.data_; end
-    varargout{ii} = v; %#ok<AGROW>
+    varargout{ii} = v;
 end
 end
 
@@ -1618,28 +2446,6 @@ end
 end
 
 %--------------------------------------------------------------------------
-function [row_,col_,df] = elementWiseHandler(df1,df2)
-df = df1;
-if isFrame(df2)
-    if isFrame(df1)
-        rowsColChecker(df1,df2);
-        
-        row_ = df1.rows_;
-        if size(df2,1)>size(df1,1), row_ = df2.rows_; end
-        col_ = df1.columns_;
-        if size(df2,2)>size(df1,2), col_ = df2.columns_; end
-    else
-        row_ = df2.rows_;
-        col_ = df2.columns_;
-        df = df2;
-    end
-else
-    row_ = df1.rows_;
-    col_ = df1.columns_;
-end
-end
-
-%--------------------------------------------------------------------------
 function rowsColChecker(df1,df2)
 if ~df1.rows_.singleton_ && ~df2.rows_.singleton_
     assert(isequal(df1.rows_.value_,df2.rows_.value_), ...
@@ -1652,21 +2458,65 @@ end
 end
 
 %--------------------------------------------------------------------------
-function other = operator(fun,handler,df1,df2)
-[row_,col_,other] = handler(df1,df2);
-[v1,v2] = getData_(df1,df2);
-d = fun(v1,v2);
-if row_.singleton && col_.singleton
-    other = d;
-else
-    other.data_ = d; other.rows_ = row_; other.columns_ = col_;
-    other.description = "";
-end
+
+function df = operatorMatrix(fun, df1, df2)
+   % internal function to perform matrix operations between on two DataFrames
+   [row_,col_,df] = matrixOpHandler(df1,df2);
+   [v1,v2] = getData_(df1,df2);
+   d = fun(v1,v2);
+   df.data_ = d; df.rows_ = row_; df.columns_ = col_;
+   df.description = "";
 end
 
-%--------------------------------------------------------------------------
-function testUniqueIndex(indexObj)
-if ~indexObj.requireUnique
-    error('frames:requireUniqueIndex','The function requires an Index of unique values.')
-end
-end
+
+ function df = operatorElementWise(func, df1,df2, missingValue1, missingValue2, alignMethod, allowDimExpansion)
+    % internal function to perform element wise operations on two DataFrames               
+    if isFrame(df1)
+        if isFrame(df2)                    
+            % get aligned dataframes
+            if nargin<4, missingValue1=NaN; end
+            if nargin<5, missingValue2=NaN; end
+            if nargin<6, alignMethod=df1.settings.alignMethod; end
+            if nargin<7, allowDimExpansion=df1.settings.allowDimExpansion; end            
+            
+            % get aligned DataFrames
+            [df1_aligned, df2_aligned, rowind, colind] = ...
+                 align(df1, df2, duplicateOption=df1.settings.duplicateOption, ...
+                 alignMethod=alignMethod, allowDimExpansion=allowDimExpansion);             
+            
+            % replace missing rows/columns by supplied values
+            % (as long they are only missing in one of the DataFrame)
+            masknan_rowind1 = isnan(rowind(:,1));
+            masknan_rowind2 = isnan(rowind(:,2));
+            masknan_colind1 = isnan(colind(:,1));
+            masknan_colind2 = isnan(colind(:,2));                
+            if any(masknan_rowind1)
+               df1_aligned.data_(masknan_rowind1,~masknan_colind2) = missingValue1;               
+            end
+            if any(masknan_rowind2)
+               df2_aligned.data_(masknan_rowind2,~masknan_colind1) = missingValue2;               
+            end
+            if any(masknan_colind1)                    
+               df1_aligned.data_(~masknan_rowind2,masknan_colind1) = missingValue1;               
+            end
+            if any(masknan_colind2)                    
+               df2_aligned.data_(~masknan_rowind1,masknan_colind2) = missingValue2;               
+            end                
+             
+            % apply element wise function (to aligned subset of data)
+            df = df1_aligned;
+            df.data_ = func( df1_aligned.data_, df2_aligned.data_);
+        else
+            % use obj dataframe and directly apply elementwise function
+            df = df1;
+            df.data_ = func( df1.data_, df2);
+        end
+    else
+        % use df2 dataframe and directly apply elementwise function
+        assert( isFrame(df2), "One of inputs has to be a DataFrame");                
+        df = df2;
+        df.data_ = func( df1, df2.data_);
+    end
+    df.description = "";
+ end
+ 

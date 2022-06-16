@@ -23,7 +23,7 @@ classdef seriesTest < AbstractFramesTests
         function operationTest(t)
             plusV = t.df + t.colseries;
             t.verifyEqual(plusV.data,[2 3;6 7])
-            t.verifyError(@() t.df+t.noSeries,'frames:elementWiseHandler:differentColumns')
+            t.verifyError(@() t.df+t.noSeries,'frames:Index:align:unequalIndex')
             plusH = t.df + t.rowseries;
             t.verifyEqual(plusH.data,[2 4;4 6])
             plusU = t.df + t.useries;
@@ -42,7 +42,8 @@ classdef seriesTest < AbstractFramesTests
             
             t.verifyError(@notUnique,'frames:Index:setSingleton')
             function notUnique(), idx1.singleton=true; end
-            t.verifyFalse(idx2.union(idx1).singleton)
+            t.verifyEqual(idx2.union(idx1), idx1); %behavior changed
+            t.verifyEqual(idx1.union(idx2), idx1); %behavior changed
             
             idx3 = frames.Index(4,Unique=true);
             idx3.singleton = true;
@@ -65,7 +66,7 @@ classdef seriesTest < AbstractFramesTests
         
         function testOperation(t)
             t.verifyEqual(t.df-t.df.iloc(1).asRowSeries(),frames.DataFrame([0 0;2 2]))
-            t.verifyError(@() t.df-t.df.iloc(1),'frames:elementWiseHandler:differentRows')
+            t.verifyError(@() t.df-t.df.iloc(1),'frames:Index:align:unequalIndex')
         end
     end
 end
