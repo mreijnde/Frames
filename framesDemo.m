@@ -57,6 +57,17 @@ df = frames.DataFrame([1 2;3 4],[1 2],["col1","col2"])
 
 tf = frames.TimeFrame([1 2;3 4],[738336,738337],["ts1","ts2"])
 %% 
+% Other constructors are available:
+% 
+% |frames.DataFrame.fromFile(filename[,varargin])|, to construct a Data(Time)Frame 
+% from a file (.txt, .csv, etc.)
+% 
+% |frames.DataFrame.fromTable(table[,varargin])|, to construct a Data(Time)Frame 
+% from a (time)table
+% 
+% |frames.DataFrame.empty(indexType[,varargin]), frames.TimeFrame.empty()|, 
+% to create an empty Data(Time)Frame
+%% 
 % To view the properties of the object, type
 
 details(df)
@@ -341,7 +352,7 @@ priceSmoothers.columns = ["original", "rolling", "smooth"];  % assign new column
 priceSmoothers.name = "smoothers";  % assign the name (it appears as the plot title)
 priceSmoothers.plot(Log=true)
 %%
-tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
+tf.ewm(Halflife=20).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
 % One can apply a function to groups of columns in a Frame using the method  
 % _.split(groups).<apply,aggregate>(@<function>)_.
