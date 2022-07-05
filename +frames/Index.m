@@ -289,7 +289,7 @@ classdef Index
         
         function out = ismember(obj, value)
             % check if value is present in index
-            out = ismember(value, obj.value_);
+            out = ismember(obj.getValue_from(value), obj.value_);
         end
                        
         function bool = isunique(obj)
