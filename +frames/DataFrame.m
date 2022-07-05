@@ -2067,16 +2067,16 @@ classdef DataFrame
     end
  
     methods(Static)
-        function df = empty(type,varargin)
+        function df = empty(rowType,varargin)
             % constructor for an empty frame, specifying the data type of
             % the rows. 'type' takes a value in ["double","string","datetime"]
             arguments
-                type {mustBeTextScalar, mustBeMember(type,["double","string","datetime"])} = 'double'
+                rowType {mustBeTextScalar, mustBeMember(rowType,["double","string","datetime"])} = 'double'
             end
             arguments(Repeating)
                 varargin
             end
-            switch type
+            switch rowType
                 case 'double'
                     row = double.empty(0,1);
                 case 'string'

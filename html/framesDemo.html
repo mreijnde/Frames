@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Frames package</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-10-11"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
+      --><title>Frames package</title><meta name="generator" content="MATLAB 9.11"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2022-07-05"><meta name="DC.source" content="framesDemo.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -67,7 +67,7 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h1><b>Frames</b> package</h1><!--introduction--><p>The <b>frames</b> package contains a class to store and do operations on data matrices that are referenced by column and row identifiers.</p><p>Matlab currently provide matrices and tables, but they do not work well together:</p><p>- Matlab native matrices are not aware of row and column names; when data represents observations of variables, it is always tricky to make sure the data is not misaligned (i.e. how to make sure that the ith row in matrices A and B represents the same observation).</p><p>- Matlab (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible).</p><p><b>Frames</b> aims at being both a table and a matrix, allowing matrix operations while being aware of row and column names.</p><p>The package currently requires a version of <b>Matlab R2021a</b> or later.</p><p>Author: Benjamin Gaudin</p><p>Email: <a href="mailto:frames.matlab@gmail.com">frames.matlab@gmail.com</a></p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frame classes</a></li><li><a href="#5">Constructor</a></li><li><a href="#10">Properties Access and Modification</a></li><li><a href="#14">Sub-Frame Access and Modification</a></li><li><a href="#21">Operations</a></li><li><a href="#29">Concatenation</a></li><li><a href="#31">Index Object</a></li><li><a href="#40">Methods Chaining</a></li><li><a href="#44">Rolling and Ewm</a></li><li><a href="#50">Split Apply</a></li><li><a href="#56">Other Methods</a></li></ul></div><h2 id="1">Frame classes</h2><p>The class <b>DataFrame</b> and its child class <b>TimeFrame</b> provide a data type suitable when working with <i>matrices</i> that have <i>column and row names.</i> They make operations on and between Frames simple and robust. The distinction between the two is similar to that between Matlab native <i>table</i> and <i>timetable</i>; basically, the properties and methods are the same, but there are a few additional tools to handle time series in TimeFrame.</p><p>The main properties of these classes are:</p><div><ul><li>data: TxN, data matrix</li><li>rows: Tx1</li><li>columns: 1xN</li><li>t: dependent table built on the properties above.</li></ul></div><p>The Frames are displayed as a table (DataFrame) or as a timetable (TimeFrame).</p><p>For the documentation, run</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
+  </style></head><body><div class="content"><h1><b>Frames</b> package</h1><!--introduction--><p>The <b>frames</b> package contains a class to store and do operations on data matrices that are referenced by column and row identifiers.</p><p>Matlab currently provide matrices and tables, but they do not work well together:</p><p>- Matlab native matrices are not aware of row and column names; when data represents observations of variables, it is always tricky to make sure the data is not misaligned (i.e. how to make sure that the ith row in matrices A and B represents the same observation).</p><p>- Matlab (time)tables have row and column names, but do not provide simple operations like addition (table1+table2 is not possible).</p><p><b>Frames</b> aims at being both a table and a matrix, allowing matrix operations while being aware of row and column names.</p><p>The package currently requires a version of <b>Matlab R2021a</b> or later.</p><p>Author: Benjamin Gaudin</p><p>Email: <a href="mailto:frames.matlab@gmail.com">frames.matlab@gmail.com</a></p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Frame classes</a></li><li><a href="#5">Constructor</a></li><li><a href="#11">Properties Access and Modification</a></li><li><a href="#15">Sub-Frame Access and Modification</a></li><li><a href="#22">Operations</a></li><li><a href="#30">Concatenation</a></li><li><a href="#32">Index Object</a></li><li><a href="#41">Methods Chaining</a></li><li><a href="#45">Rolling and Ewm</a></li><li><a href="#51">Split Apply</a></li><li><a href="#57">Other Methods</a></li></ul></div><h2 id="1">Frame classes</h2><p>The class <b>DataFrame</b> and its child class <b>TimeFrame</b> provide a data type suitable when working with <i>matrices</i> that have <i>column and row names.</i> They make operations on and between Frames simple and robust. The distinction between the two is similar to that between Matlab native <i>table</i> and <i>timetable</i>; basically, the properties and methods are the same, but there are a few additional tools to handle time series in TimeFrame.</p><p>The main properties of these classes are:</p><div><ul><li>data: TxN, data matrix</li><li>rows: Tx1</li><li>columns: 1xN</li><li>t: dependent table built on the properties above.</li></ul></div><p>The Frames are displayed as a table (DataFrame) or as a timetable (TimeFrame).</p><p>For the documentation, run</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
 doc <span class="string">frames.TimeFrame</span>
 </pre><h2 id="5">Constructor</h2><p>Construct a Frame as follows:</p><pre>df = frames.DataFrame([data,rows,columns,Name=name,RowSeries=logical,ColSeries=logical])</pre><pre class="codeinput"><span class="comment">% Example:</span>
 df = frames.DataFrame([1 2;3 4],[1 2],[<span class="string">"col1"</span>,<span class="string">"col2"</span>])
@@ -80,6 +80,7 @@ df =
     1     1       2  
     2     3       4  
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>or with a TimeFrame</p><pre class="codeinput">tf = frames.TimeFrame([1 2;3 4],[738336,738337],[<span class="string">"ts1"</span>,<span class="string">"ts2"</span>])
 </pre><pre class="codeoutput">
@@ -91,8 +92,9 @@ tf =
     29-Jun-2021     1      2 
     30-Jun-2021     3      4 
 
+row index name(s): Time
 frames.TimeFrame
-</pre><p>To view the properties of the object, type</p><pre class="codeinput">details(df)
+</pre><p>Other constructors are available:</p><p><tt>frames.DataFrame.fromFile(filename[,varargin])</tt>, to construct a Data(Time)Frame from a file (.txt, .csv, etc.)</p><p><tt>frames.DataFrame.fromTable(table[,varargin])</tt>, to construct a Data(Time)Frame from a (time)table</p><p><tt>frames.DataFrame.empty(indexType[,varargin]), frames.TimeFrame.empty()</tt>, to create an empty Data(Time)Frame</p><p>To view the properties of the object, type</p><pre class="codeinput">details(df)
 </pre><pre class="codeoutput">
   2&times;2 frames.DataFrame array with properties:
 
@@ -104,10 +106,12 @@ frames.TimeFrame
                rowseries: 0
                colseries: 0
     identifierProperties: [1&times;1 struct]
+         settingsDefault: [1&times;1 frames.internal.DataFrameSettingsDefault]
+                settings: [1&times;1 frames.internal.DataFrameSettings]
              description: ""
 
 
-</pre><p>One can see the properties we have just set in the constructor. The other properties (some of which can be set in the constructor with named arguments) are presented further below.</p><h2 id="10">Properties Access and Modification</h2><p>The properties can be accessed simply by</p><pre class="codeinput">df.data
+</pre><p>One can see the properties we have just set in the constructor. The other properties (some of which can be set in the constructor with named arguments) are presented further below.</p><h2 id="11">Properties Access and Modification</h2><p>The properties can be accessed simply by</p><pre class="codeinput">df.data
 df.columns
 </pre><pre class="codeoutput">
 ans =
@@ -133,6 +137,7 @@ df =
     1    10    2
     2     3    4
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>Frame will throw an error if the data entered are not coherent, e.g. the size is the matching the rest of the data:</p><pre class="codeinput"><span class="keyword">try</span>
     df.columns = [<span class="string">"a"</span>,<span class="string">"b"</span>,<span class="string">"c"</span>]
@@ -146,7 +151,7 @@ frames.DataFrame
     disp(me.message)
 <span class="keyword">end</span>
 </pre><pre class="codeoutput">Index value is required to be unique.
-</pre><h2 id="14">Sub-Frame Access and Modification</h2><pre>Select and modify based on row/column names with () or the loc method:
+</pre><h2 id="15">Sub-Frame Access and Modification</h2><pre>Select and modify based on row/column names with () or the loc method:
  * df(rowsNames,columnsNames)
  * df.loc(rowsNames,columnsNames)
  * df(rowsNames,columnsNames) = newData
@@ -164,6 +169,7 @@ ans =
 
     1    10    2
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>Modification</p><pre class="codeinput">df(1,:) = 11
 <span class="comment">% Or df.loc(1,:) = 11</span>
@@ -176,6 +182,7 @@ df =
     1    11    11
     2     3     4
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>One can also drop a column/row with the empty assignment</p><pre class="codeinput">tmp = df;
 tmp(:,<span class="string">"b"</span>) = []
@@ -188,6 +195,7 @@ tmp =
     1    11
     2     3
 
+row index name(s): Row
 frames.DataFrame
 </pre><pre>Select and modify based on position with {} or the iloc method:
  *  df{rowsPosition,columnsPosition}
@@ -206,6 +214,7 @@ ans =
     1    11
     2     4
 
+row index name(s): Row
 frames.DataFrame
 </pre><pre class="codeinput">df{2,1} = 20
 <span class="comment">% or df.iloc(2,1) = 20</span>
@@ -218,9 +227,10 @@ df =
     1    11    11
     2    20     4
 
+row index name(s): Row
 frames.DataFrame
 </pre><pre class="codeinput">df.data = [1 2;3 4];  <span class="comment">% reset data to original example</span>
-</pre><h2 id="21">Operations</h2><p>Frames can be used like matrices for operations.</p><p>element-wise operation</p><pre class="codeinput">df + df
+</pre><h2 id="22">Operations</h2><p>Frames can be used like matrices for operations.</p><p>element-wise operation</p><pre class="codeinput">df + df
 </pre><pre class="codeoutput">
 ans = 
 
@@ -230,6 +240,7 @@ ans =
     1    2    4
     2    6    8
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>Contrast this with Matlab table:</p><pre class="codeinput">tb = table([1;3],[2;4],<span class="string">'VariableNames'</span>,{<span class="string">'a'</span>,<span class="string">'b'</span>},<span class="string">'RowNames'</span>,{<span class="string">'1'</span>,<span class="string">'2'</span>});
 tb;
@@ -250,6 +261,7 @@ ans =
     1    2    3
     2    4    5
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>transpose and matrix operation</p><pre class="codeinput">df' * df
 </pre><pre class="codeoutput">
@@ -261,6 +273,7 @@ ans =
     a    10    14
     b    14    20
 
+row index name(s): 
 frames.DataFrame
 </pre><pre class="codeinput">vector = frames.DataFrame([1;2],[<span class="string">"a"</span>,<span class="string">"b"</span>],<span class="string">"vectorColumn"</span>);
 df * vector
@@ -273,6 +286,7 @@ ans =
     1          5     
     2         11     
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>If Frames are not aligned, an element-wise operation will return an error:</p><pre class="codeinput">df2 = frames.DataFrame(1,[1 2],[<span class="string">"noMatch1"</span>,<span class="string">"noMatch2"</span>]);
 <span class="keyword">try</span>
@@ -280,14 +294,14 @@ frames.DataFrame
 <span class="keyword">catch</span> me
     disp(me.message)
 <span class="keyword">end</span>
-</pre><pre class="codeoutput">Frames have different columns!
+</pre><pre class="codeoutput">Unequal unique values not allowed in alignMethod 'strict'.
 </pre><p>For element-wise vector operations, only one dimension is needed to be checked for right or wrong alignement.</p><p>To do so, one needs to set the <i>series property</i> of the vector Frame to true. There are two series properties available, <i>.rowseries</i>, and <i>.colseries</i>, depending on whether the Frame is a row or column vector.</p><p>If the property is not set, the operation fails:</p><pre class="codeinput">seriesBad = frames.DataFrame([1;2],[1 2],<span class="string">"seriesColumn"</span>);
 <span class="keyword">try</span>
     df .* seriesBad
 <span class="keyword">catch</span> me
     disp(me.message)
 <span class="keyword">end</span>
-</pre><pre class="codeoutput">Frames have different columns!
+</pre><pre class="codeoutput">Unequal unique values not allowed in alignMethod 'strict'.
 </pre><p>Make it work by making the Frame a Series</p><pre class="codeinput">series = seriesBad.asColSeries();
 <span class="comment">% or series = frames.DataFrame([1;2],[1 2],"seriesColumn",ColSeries=true);</span>
 df .* series
@@ -300,8 +314,9 @@ ans =
     1    1    2
     2    6    8
 
+row index name(s): Row
 frames.DataFrame
-</pre><h2 id="29">Concatenation</h2><p>One can concatenate different Frames into one with the operator [].</p><p>The concatenation can be horizontal or vertical. The operation will align the Frames by expanding (unifying) their rows or columns if they are not equal, inserting missing values in the expansion.</p><pre class="codeinput">tf1 = frames.TimeFrame(1,[<span class="string">"25-Jun-2021"</span>,<span class="string">"27-Jun-2021"</span>,<span class="string">"28-Jun-2021"</span>],[<span class="string">"ts1"</span>,<span class="string">"ts2"</span>]);
+</pre><h2 id="30">Concatenation</h2><p>One can concatenate different Frames into one with the operator [].</p><p>The concatenation can be horizontal or vertical. The operation will align the Frames by expanding (unifying) their rows or columns if they are not equal, inserting missing values in the expansion.</p><pre class="codeinput">tf1 = frames.TimeFrame(1,[<span class="string">"25-Jun-2021"</span>,<span class="string">"27-Jun-2021"</span>,<span class="string">"28-Jun-2021"</span>],[<span class="string">"ts1"</span>,<span class="string">"ts2"</span>]);
 tf2 = frames.TimeFrame(2,[<span class="string">"26-Jun-2021"</span>,<span class="string">"27-Jun-2021"</span>,<span class="string">"30-Jun-2021"</span>],<span class="string">"ts3"</span>);
 [tf1, tf2]
 </pre><pre class="codeoutput">
@@ -316,6 +331,7 @@ ans =
     28-Jun-2021      1      1    NaN
     30-Jun-2021    NaN    NaN      2
 
+row index name(s): Time
 frames.TimeFrame
 </pre><pre class="codeinput">tf3 = frames.TimeFrame(2,frames.TimeIndex([<span class="string">"29.06.2021"</span>,<span class="string">"30.06.2021"</span>],Format=<span class="string">"dd.MM.yyyy"</span>),[<span class="string">"ts2"</span>,<span class="string">"ts3"</span>]);
 [tf1; tf3]
@@ -331,18 +347,20 @@ ans =
     29-Jun-2021    NaN     2       2
     30-Jun-2021    NaN     2       2
 
+row index name(s): Time
 frames.TimeFrame
-</pre><h2 id="31">Index Object</h2><p>The <i>rows</i> and <i>columns</i> properties can be assigned some properties themselves, namely whether they are required to have unique elements, and whether these are required to be sorted.</p><p>By default, the <i>columns</i> allow duplicates, while the <i>rows</i> require unique elements. For TimeFrame, the <i>rows</i> also requires sorted elements.</p><p>These can be changed by explicitely using the <i>Index</i> object that underlies the <i>rows</i> and <i>columns</i> properties.</p><p>Here is an example of an Index:</p><pre>frames.Index(value,Unique=false,UniqueSorted=false,Singleton=false,Name="")</pre><pre class="codeinput">frames.Index([1,2])
+</pre><h2 id="32">Index Object</h2><p>The <i>rows</i> and <i>columns</i> properties can be assigned some properties themselves, namely whether they are required to have unique elements, and whether these are required to be sorted.</p><p>By default, the <i>columns</i> allow duplicates, while the <i>rows</i> require unique elements. For TimeFrame, the <i>rows</i> also requires sorted elements.</p><p>These can be changed by explicitely using the <i>Index</i> object that underlies the <i>rows</i> and <i>columns</i> properties.</p><p>Here is an example of an Index:</p><pre>frames.Index(value,Unique=false,UniqueSorted=false,Singleton=false,Name="")</pre><pre class="codeinput">frames.Index([1,2])
 </pre><pre class="codeoutput">
 ans = 
 
   Index with properties:
 
-                   name: ""
                   value: [2&times;1 double]
               singleton: 0
           requireUnique: 0
     requireUniqueSorted: 0
+                   name: ""
+                   Ndim: 1
 
 </pre><div><ul><li>The <i>singleton</i> property is related to the series property of the DataFrame. If the Frame is set to be a <i>rowseries</i>, the Index object underlying the <i>rows</i> will be a <i>singleton</i>. If the Frame is set to be a <i>colseries</i>, then it will be that underlying the <i>columns</i>.</li><li>If <i>requireUnique</i> is set to <i>true</i>, then <i>value</i> is required to have unique elements (otherwise it throws an error).</li><li>If <i>requireUniqueSorted</i> is set to <i>true</i>, then <i>value</i> is required to have unique and sorted elements.</li></ul></div><p>These properties impact the operations of selection, modification, and alignment/concatenation.</p><pre class="codeinput"><span class="comment">% Selection</span>
 df.getRowsObj()  <span class="comment">% gets the underlying Index object</span>
@@ -352,11 +370,12 @@ ans =
 
   Index with properties:
 
-                   name: "Row"
                   value: [2&times;1 double]
               singleton: 0
           requireUnique: 1
     requireUniqueSorted: 0
+                   name: "Row"
+                   Ndim: 1
 
 
 ans = 
@@ -367,6 +386,7 @@ ans =
     2    3    4
     1    1    2
 
+row index name(s): Row
 frames.DataFrame
 </pre><pre class="codeinput">dfSorted = df.setRowsType(<span class="string">"sorted"</span>);
 <span class="comment">% or df.rows = frames.Index([1 2],UniqueSorted=true)</span>
@@ -381,11 +401,12 @@ ans =
 
   Index with properties:
 
-                   name: "Row"
                   value: [2&times;1 double]
               singleton: 0
           requireUnique: 1
     requireUniqueSorted: 1
+                   name: "Row"
+                   Ndim: 1
 
 Index value is required to be sorted and unique.
 </pre><p>Alignment</p><pre class="codeinput">df1 = frames.DataFrame([1 3]',[1 3],1);
@@ -404,6 +425,7 @@ unsortedConcatenation =
     3      3      3
     2    NaN      2
 
+row index name(s): Row
 frames.DataFrame
 
 sortedConcatenation = 
@@ -415,6 +437,7 @@ sortedConcatenation =
     2    NaN      2
     3      3      3
 
+row index name(s): 
 frames.DataFrame
 </pre><p>For TimeFrame, the Index object for <i>rows</i> is a <b>TimeIndex</b>.</p><p>TimeIndex can read several kinds of arguments: datenum, datetime, and strings/cell together with a Format</p><pre>frames.TimeIndex(value,Unique=false,UniqueSorted=false,Singleton=false,Name="Time",Format="dd-MMM-yyyy")</pre><pre class="codeinput">frames.TimeIndex(738336)
 frames.TimeIndex(datetime(738336,<span class="string">'ConvertFrom'</span>,<span class="string">'datenum'</span>,Format=<span class="string">'dd-MMM-yyyy'</span>));
@@ -425,11 +448,12 @@ ans =
   TimeIndex with properties:
 
                  format: "dd-MMM-yyyy"
-                   name: "Time"
                   value: 29-Jun-2021
               singleton: 0
           requireUnique: 1
     requireUniqueSorted: 1
+                   name: "Time"
+                   Ndim: 1
 
 </pre><p>When used in a Frame (used by default in a TimeFrame), one can select a sub-Frame using a <i>timerange</i></p><pre class="codeinput">tf = frames.TimeFrame((1:6)',738331:738336)  <span class="comment">% the constructor turns 738331:738336 into a TimeIndex</span>
 tf(timerange(-inf,datetime(738333,<span class="string">'ConvertFrom'</span>,<span class="string">'datenum'</span>),<span class="string">'closed'</span>));
@@ -452,6 +476,7 @@ tf =
     28-Jun-2021     5  
     29-Jun-2021     6  
 
+row index name(s): Time
 frames.TimeFrame
 
 ans = 
@@ -463,8 +488,9 @@ ans =
     25-Jun-2021     2  
     26-Jun-2021     3  
 
+row index name(s): Time
 frames.TimeFrame
-</pre><h2 id="40">Methods Chaining</h2><p>Several methods are available. Again, please refer to the documentation for the full list</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
+</pre><h2 id="41">Methods Chaining</h2><p>Several methods are available. Again, please refer to the documentation for the full list</p><pre class="codeinput">doc <span class="string">frames.DataFrame</span>
 doc <span class="string">frames.TimeFrame</span>
 </pre><p>Methods can be chained to apply them one after the other.</p><pre class="codeinput"><span class="comment">% Example: build random correlated data and apply functions to the TimeFrame.</span>
 s = rng(2021);
@@ -487,7 +513,7 @@ correlation =
 
 </pre><pre class="codeinput">tf.cumsum().plot()  <span class="comment">% apply a cumulative sum and then plot the result</span>
 </pre><img vspace="5" hspace="5" src="framesDemo_01.png" alt=""> <pre class="codeinput">tf.corr().heatmap(CellLabelFormat=<span class="string">'%.2f'</span>)  <span class="comment">% compute the correlation matrix and plot it as a heatmap</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <h2 id="44">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
+</pre><img vspace="5" hspace="5" src="framesDemo_02.png" alt=""> <h2 id="45">Rolling and Ewm</h2><p>Computation on a rolling basis are available with the <i>.rolling()</i> and the <i>.ewm()</i> methods. <i>.rolling()</i> applies computations on a rolling window basis. <i>.ewm()</i> applies computations by weighting observations with exponentially decaying weights.</p><pre>Use:
  * .rolling(window[,windowNaN]).&lt;method&gt;
  * .ewm(&lt;DecayType&gt;=value).&lt;method&gt;</pre><p>Please refer to the documentation for details on arguments and methods.</p><pre class="codeinput">doc <span class="string">frames.DataFrame.rolling</span>
 <span class="comment">% or</span>
@@ -503,8 +529,8 @@ priceSmoothers.columns = [<span class="string">"original"</span>, <span class="s
 priceSmoothers.name = <span class="string">"smoothers"</span>;  <span class="comment">% assign the name (it appears as the plot title)</span>
 priceSmoothers.plot(Log=true)
 </pre><pre class="codeoutput">Warning: Index value is not unique. 
-</pre><img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=10).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
-</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <h2 id="50">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).&lt;apply,aggregate&gt;(@&lt;function&gt;)</i>.</p><pre>The groups are frames.Groups, an object that provide a uniform object for key-value groups. They can be expressed in different ways.
+</pre><img vspace="5" hspace="5" src="framesDemo_03.png" alt=""> <pre class="codeinput">tf.ewm(Halflife=20).std().plot(Title=<span class="string">'ewmstd'</span>)  <span class="comment">% exponentially weighted moving standard deviation</span>
+</pre><img vspace="5" hspace="5" src="framesDemo_04.png" alt=""> <h2 id="51">Split Apply</h2><p>One can apply a function to groups of columns in a Frame using the method <i>.split(groups).&lt;apply,aggregate&gt;(@&lt;function&gt;)</i>.</p><pre>The groups are frames.Groups, an object that provide a uniform object for key-value groups. They can be expressed in different ways.
    - struct: keys and values are resp. fields and values of the struct
    - containers.Map: keys and values are resp. keys and values of the containers.Map
    - cell: keys are generic ["Group1","Group2",...] and values are the elements in the cell
@@ -521,6 +547,7 @@ df =
     2    2    5    0
     3    3    3    1
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>simple example with cell apply a sum horizontally in each group and aggregate data by group</p><pre class="codeinput">g1 = frames.Groups({[<span class="string">"a"</span> <span class="string">"c"</span>],<span class="string">"b"</span>});
 x1 = df.split(g1).aggregate(@(x) sum(x,2))
@@ -534,6 +561,7 @@ x1 =
     2      2         5   
     3      4         3   
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>apply function using group names multiply each group by 10 and 1 respectively</p><pre class="codeinput">multiplier.Group1 = 10;
 multiplier.Group2 = 1;
@@ -548,6 +576,7 @@ x2 =
     2    20    5     0
     3    30    3    10
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>split with a structure cap each group at 1.5 and 2.5 respectively</p><pre class="codeinput">s = struct();
 s.group1 = [<span class="string">"a"</span> <span class="string">"c"</span>];
@@ -566,6 +595,7 @@ x3 =
     2    1.5    2.5      0
     3    1.5    2.5      1
 
+row index name(s): Row
 frames.DataFrame
 </pre><p>split with a Group take the maximum of each groups at each row</p><pre class="codeinput">x4 = df.split(g3).aggregate(@(x) x.max(2),<span class="string">'applyToFrame'</span>)
 </pre><pre class="codeoutput">
@@ -578,50 +608,72 @@ x4 =
     2      2         5   
     3      3         3   
 
+row index name(s): Row
 frames.DataFrame
-</pre><h2 id="56">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (test/unit/frames/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
+</pre><h2 id="57">Other Methods</h2><p>We list here all the methods available in the DataFrame. We provided a demo above for some of them.</p><p>Refer to the documentation for detailed information. You can also refer to the unit tests (test/unit/frames/) for some examples.</p><pre class="codeinput">methods(<span class="string">'frames.DataFrame'</span>)
 </pre><pre class="codeoutput">
 Methods for class frames.DataFrame:
 
-DataFrame            getRowsObj           resample             
-abs                  groupcounts          resetUserProperties  
-all                  groupfilter          rolling              
-any                  groupsummary         row                  
-asColSeries          grouptransform       setColumnsName       
-asFrame              head                 setColumnsType       
-asRowSeries          heatmap              setRows              
-bfill                height               setRowsName          
-ceil                 horzcat              setRowsType          
-clip                 iloc                 setdiff              
-col                  innerjoin            setxor               
-compoundChange       intersect            shift                
-corr                 isempty              sign                 
-cov                  ismember             size                 
-cumprod              ismissing            sortBy               
-cumsum               issortedrows         sortRows             
-diff                 join                 sortrows             
-dropColumns          loc                  split                
-dropMissing          log                  splitapply           
-dropRows             max                  sqrt                 
-emptyStart           maxOf                std                  
-equals               mean                 subsasgn             
-ewm                  median               subsref              
-exp                  min                  sum                  
-extendColumns        minOf                tail                 
-extendRows           nansum               tanh                 
-ffill                oneify               toFile               
-findgroups           outerjoin            union                
-firstCommonRow       plot                 var                  
-firstValidRow        relChg               vertcat              
-floor                replace              width                
-getColumnsObj        replaceStartBy       
+DataFrame               erfcx                   oneify                  
+abs                     erfinv                  outerjoin               
+acos                    ewm                     plot                    
+acosd                   exp                     pow2                    
+acosh                   expm1                   real                    
+acsc                    extendColumns           reallog                 
+acscd                   extendRows              realsqrt                
+acsch                   ffill                   relChg                  
+align                   filt                    replace                 
+alignMethod             findgroups              replaceStartBy          
+all                     firstCommonRow          resample                
+angle                   firstValidRow           resetUserProperties     
+any                     fix                     rolling                 
+asColSeries             floor                   round                   
+asFrame                 getColumnsObj           row                     
+asRowSeries             getRowsObj              setColumnsName          
+asin                    groupDuplicate          setColumnsType          
+asind                   groupcounts             setRows                 
+asinh                   groupfilter             setRowsName             
+atan                    groupsummary            setRowsType             
+atand                   grouptransform          setdiff                 
+atanh                   head                    setxor                  
+autoAlign               heatmap                 shift                   
+bfill                   height                  sign                    
+ceil                    horzcat                 sin                     
+clip                    iloc                    sind                    
+col                     imag                    sinh                    
+combine                 initCopy                sinpi                   
+compoundChange          innerjoin               size                    
+conj                    intersect               sortBy                  
+corr                    isaligned               sortRows                
+cos                     isempty                 sortrows                
+cosd                    isfinite                split                   
+cosh                    isinf                   splitapply              
+cospi                   ismember                sqrt                    
+cov                     ismissing               std                     
+csc                     isnan                   subsasgn                
+cscd                    issortedrows            subsref                 
+csch                    join                    sum                     
+cumprod                 loc                     tail                    
+cumsum                  log                     tan                     
+dataND                  log10                   tand                    
+diff                    log1p                   tanh                    
+dropColumns             log2                    toFile                  
+dropMissing             max                     union                   
+dropRows                maxOf                   unwrap                  
+duplicateOption         mean                    var                     
+emptyStart              median                  vertcat                 
+equals                  min                     width                   
+erf                     minOf                   
+erfc                    nansum                  
+erfcinv                 nextpow2                
 
 Static methods:
 
-empty                fromTable            
-fromFile             
+empty                   fromTable               
+fromDataND              restoreDefaultSettings  
+fromFile                setDefaultSetting       
 
-</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2021a</a><br></p></div><!--
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2021b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 %% *Frames* package
 % The *frames* package contains a class to store and do operations on data matrices 
@@ -681,6 +733,17 @@ df = frames.DataFrame([1 2;3 4],[1 2],["col1","col2"])
 % or with a TimeFrame
 
 tf = frames.TimeFrame([1 2;3 4],[738336,738337],["ts1","ts2"])
+%% 
+% Other constructors are available:
+% 
+% |frames.DataFrame.fromFile(filename[,varargin])|, to construct a Data(Time)Frame 
+% from a file (.txt, .csv, etc.)
+% 
+% |frames.DataFrame.fromTable(table[,varargin])|, to construct a Data(Time)Frame 
+% from a (time)table
+% 
+% |frames.DataFrame.empty(indexType[,varargin]), frames.TimeFrame.empty()|, 
+% to create an empty Data(Time)Frame
 %% 
 % To view the properties of the object, type
 
@@ -966,7 +1029,7 @@ priceSmoothers.columns = ["original", "rolling", "smooth"];  % assign new column
 priceSmoothers.name = "smoothers";  % assign the name (it appears as the plot title)
 priceSmoothers.plot(Log=true)
 %%
-tf.ewm(Halflife=10).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
+tf.ewm(Halflife=20).std().plot(Title='ewmstd')  % exponentially weighted moving standard deviation
 %% Split Apply
 % One can apply a function to groups of columns in a Frame using the method  
 % _.split(groups).<apply,aggregate>(@<function>)_.

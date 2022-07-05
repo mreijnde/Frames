@@ -68,6 +68,16 @@ classdef indexTest < AbstractFramesTests
             a = frames.TimeIndex(seconds(1):seconds(2):seconds(4),Unique=false);
             t.verifyEqual(a.positionIn(seconds([5 1 3])),[2 3]')
         end
+
+        function ismemberTest(t)
+            index = frames.TimeIndex([30000 100000 200000]);
+            date = 100000;
+            dateM = datetime(date,"ConvertFrom",'datenum');
+            index2 = frames.TimeIndex(date);
+            t.verifyTrue(index.ismember(date))
+            t.verifyTrue(index.ismember(dateM))
+            t.verifyTrue(index.ismember(index2))
+        end
         
         function unionTest(t)
             index = frames.Index([30 10 20]);
