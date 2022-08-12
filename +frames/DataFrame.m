@@ -1597,43 +1597,61 @@ classdef DataFrame
             arguments
                options.duplicateOption frames.enum.duplicateOption = "duplicatesstrict"
                options.alignMethod frames.enum.alignMethod = "full"
+               options.dimension frames.enum.dimension = "both"
                options.allowDimExpansion logical = true
             end          
             Ndf = length(dfs);
-            
-            % convert all row index objs to MultiIndex in case one is already MultiIndex            
-            dfs_rows_isMultiIndex = cellfun(@(x) isMultiIndex(x.rows_), dfs);
-            if any(dfs_rows_isMultiIndex)              
-                for i = 1:Ndf
-                    if ~dfs_rows_isMultiIndex(i)           
-                        dfs{i}.rows_ =  frames.MultiIndex(dfs{i}.rows_);
-                    end
-                end
-            end
-            
-            % convert all column index objs to MultiIndex in case one is already MultiIndex            
-            dfs_cols_isMultiIndex = cellfun(@(x) isMultiIndex(x.columns_), dfs);
-            if any(dfs_cols_isMultiIndex)               
-                for i = 1:Ndf
-                    if ~dfs_cols_isMultiIndex(i)                        
-                        dfs{i}.columns_ =  frames.MultiIndex(dfs{i}.columns_);
-                    end
-                end
-            end
 
-            % override duplicateOption in case first dataframe has requireUnique index
-            duplicateOptionRows = options.duplicateOption;
-            duplicateOptionCols = options.duplicateOption;
-            if dfs{1}.rows_.requireUnique, duplicateOptionRows = "unique"; end            
-            if dfs{1}.columns_.requireUnique, duplicateOptionCols = "unique"; end            
+            alignRows = ismember(options.dimension, ["both", "rows"]);
+            alignCols = ismember(options.dimension, ["both", "columns"]);
             
-            % get aligned row and column indices
-            dfs_rows = cellfun(@(x) {x.rows_}, dfs);
-            dfs_cols = cellfun(@(x) {x.columns_}, dfs);            
-            [mrow, rowind] = dfs_rows{1}.align(dfs_rows{2:end}, alignMethod=options.alignMethod, ...
-                              duplicateOption=duplicateOptionRows, allowDimExpansion=options.allowDimExpansion);
-            [mcol, colind] = dfs_cols{1}.align(dfs_cols{2:end}, alignMethod=options.alignMethod, ...
-                              duplicateOption=duplicateOptionCols, allowDimExpansion=options.allowDimExpansion);
+            if alignRows
+                % convert all row index objs to MultiIndex in case one is already MultiIndex            
+                dfs_rows_isMultiIndex = cellfun(@(x) isMultiIndex(x.rows_), dfs);
+                if any(dfs_rows_isMultiIndex)              
+                    for i = 1:Ndf
+                        if ~dfs_rows_isMultiIndex(i)           
+                            dfs{i}.rows_ =  frames.MultiIndex(dfs{i}.rows_);
+                        end
+                    end
+                end
+
+                % override duplicateOption in case first dataframe has requireUnique index
+                duplicateOptionRows = options.duplicateOption;
+                if dfs{1}.rows_.requireUnique, duplicateOptionRows = "unique"; end            
+                
+                % get aligned row indices
+                dfs_rows = cellfun(@(x) {x.rows_}, dfs);
+                [mrow, rowind] = dfs_rows{1}.align(dfs_rows{2:end}, alignMethod=options.alignMethod, ...
+                duplicateOption=duplicateOptionRows, allowDimExpansion=options.allowDimExpansion);
+            else
+                mrow = [];
+                rowind = double.empty(0,Ndf);
+            end
+            
+            if alignCols
+                % convert all column index objs to MultiIndex in case one is already MultiIndex            
+                dfs_cols_isMultiIndex = cellfun(@(x) isMultiIndex(x.columns_), dfs);
+                if any(dfs_cols_isMultiIndex)               
+                    for i = 1:Ndf
+                        if ~dfs_cols_isMultiIndex(i)                        
+                            dfs{i}.columns_ =  frames.MultiIndex(dfs{i}.columns_);
+                        end
+                    end
+                end
+    
+                % override duplicateOption in case first dataframe has requireUnique index
+                duplicateOptionCols = options.duplicateOption;
+                if dfs{1}.columns_.requireUnique, duplicateOptionCols = "unique"; end            
+                
+                % get aligned column indices
+                dfs_cols = cellfun(@(x) {x.columns_}, dfs);            
+                [mcol, colind] = dfs_cols{1}.align(dfs_cols{2:end}, alignMethod=options.alignMethod, ...
+                                  duplicateOption=duplicateOptionCols, allowDimExpansion=options.allowDimExpansion);
+            else
+                mcol = [];
+                colind = double.empty(0,Ndf);
+            end
            
             % get new aligned dataframes
             dfs_new = dfs;
@@ -2019,18 +2037,18 @@ classdef DataFrame
             if nargin==4, error("invalid number of parameters"); end                        
             if nargin<5, colindex=[]; colind=[]; end                                 
             % set new indexes
-            if ~isempty(rowindex),  obj.rows_ = rowindex;  end
-            if ~isempty(colindex),  obj.columns_ = colindex; end            
-            % get selector            
-            datsize_new = [length(rowindex) length(colindex)];
+            if ~isempty(rowindex), obj.rows_ = rowindex; end
+            if ~isempty(colindex), obj.columns_ = colindex; end            
+            % get selector
+            datsize_new = [length(obj.rows_) length(obj.columns_)];
             datsize_old = size(obj.data_);
             if isempty(rowind) || ( datsize_new(1)==datsize_old(1) && isequal(rowind, (1:length(rowind))') ) 
                 rowmask = ':';
                 rowind_masked = ':';
             else
                 rowmask = ~isnan(rowind);
-                rowind_masked = rowind(rowmask);                
-            end                        
+                rowind_masked = rowind(rowmask);
+            end
             if isempty(colind) || ( datsize_new(2)==datsize_old(2) && isequal(colind, (1:length(colind))') ) 
                 colmask = ':';
                 colind_masked = ':';                
@@ -2048,18 +2066,11 @@ classdef DataFrame
             if ( (iscolon(rowmask) || all(rowmask)) && (iscolon(colmask) || all(colmask)) )
                 
                 % no missing values, directly store reordered data in dataframe
-                obj.data_ = obj.data_( rowind_masked, colind_masked);
+                obj.data_ = obj.data_(rowind_masked, colind_masked);
             else
-                % missing values, start with matrix with missing values                
-                if isnumeric(obj.data_)
-                    dat = nan(datsize_new);                    
-                elseif isstring(obj.data_)
-                    dat = repmat(string(missing), datsize_new);
-                elseif iscell(obj.data_)
-                    dat = cell(datsize_new);
-                end
-                % store ordered values at masked subselection
-                dat(rowmask,colmask) = obj.data_( rowind_masked, colind_masked);
+                % missing values, start with matrix with missing values      
+                dat = obj.defaultData(datsize_new(1), datsize_new(2));
+                dat(rowmask,colmask) = obj.data_(rowind_masked, colind_masked);
                 obj.data_ = dat;
             end
             
