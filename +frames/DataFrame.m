@@ -1561,11 +1561,11 @@ classdef DataFrame
             %            
             %       - 'duplicates':    align values between indices. If multiple indices have the
             %                          same duplicate values, align them in the same order as they occur in the
-            %                          index. (default option)            
+            %                          index.           
             %
             %       - 'duplicatesstrict': align values between different indices. Only duplicate values allowed in
             %                          case of exact equal indices (for which 1:1 mapping will be used). An
-            %                          error will be raised in case of duplicates and not exactly equal.            
+            %                          error will be raised in case of duplicates and not exactly equal. (default option)            
             % 
             %       - 'expand':        align values between indices. In case of duplicates, all combinations
             %                          between indices are added.
@@ -1654,15 +1654,18 @@ classdef DataFrame
             end
            
             % get new aligned dataframes
-            dfs_new = dfs;
-            for i = 1:Ndf
+            nOut = min(Ndf,max(1,nargout));
+            dfs_new = dfs(1:nOut);
+            for i = 1:nOut
                 dfs_new{i} = dfs{i}.reorder(mrow, rowind(:,i), mcol, colind(:,i));
             end
             
             % output
             varargout = dfs_new;
-            varargout{end+1} = rowind;
-            varargout{end+1} = colind;             
+            if nargout > Ndf
+                varargout{end+1} = rowind;
+                varargout{end+1} = colind;  
+            end
         end        
       
         
