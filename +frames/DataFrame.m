@@ -1654,14 +1654,13 @@ classdef DataFrame
             end
            
             % get new aligned dataframes
-            nOut = min(Ndf,max(1,nargout));
-            dfs_new = dfs(1:nOut);
+            nOut = min(Ndf, max(1, nargout));
+            varargout = cell(1, nOut);
             for i = 1:nOut
-                dfs_new{i} = dfs{i}.reorder(mrow, rowind(:,i), mcol, colind(:,i));
+                varargout{i} = dfs{i}.reorder(mrow, rowind(:,i), mcol, colind(:,i));
             end
             
             % output
-            varargout = dfs_new;
             if nargout > Ndf
                 varargout{end+1} = rowind;
                 varargout{end+1} = colind;  
