@@ -45,8 +45,9 @@ classdef singletonTest < AbstractFramesTests
         
         function assignEmptyTest(t)
             id = frames.Index([3 4]);
-            t.verifyError(@assignEmtpyVal,"frames:validators:mustBeFullVector")
-            function assignEmtpyVal, id.value = []; end
+            id.value = [];
+            t.verifyEqual(id.value,double.empty(0,1))
+            id = frames.Index([3 4]);
             id.value([1 2]) = [];
             t.verifyEqual(id.value,double.empty(0,1))
             
