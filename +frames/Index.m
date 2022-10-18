@@ -68,8 +68,6 @@ classdef Index
                 singleton = value.singleton;
                 name = value.name;
                 value = value.value;
-            elseif isequal(value,[])
-                value = double.empty(0,1);
             end
             
             obj.requireUnique_ = requireUnique;
@@ -775,7 +773,7 @@ classdef Index
         
         function obj=getSubIndex_(obj,selector,~)
             % get Index object of sub selection based on matlab selector
-            obj.value_ = obj.value_(selector);                        
+            obj.value_ = obj.value_(selector, :);                        
         end
         
         function out = getname(obj)
@@ -920,6 +918,8 @@ classdef Index
                 value = value.value_;
             elseif isFrame(value)
                 value = value.data_;
+            elseif isequal(value,[])
+                value = double.empty(0,1);
             end
             if isrow(value)
                 value = value';

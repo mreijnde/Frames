@@ -313,6 +313,21 @@ classdef dataframeTest < AbstractFramesTests
             tf=t.tfMissing1;
             tf{1:length(tf.rows),:} = [];
             t.verifyEqual(tf.rows,datetime.empty(0,1))
+
+            % void selection
+            tf_1 = frames.TimeFrame(1,1,1);
+            tf_void1 = tf_1([], []);
+            tf_void2 = tf_1(false, false);
+            tf_void3 = tf_1{[], []};
+            tf_void4 = tf_1{false, false};
+            t.verifyEqual(size(tf_void1.rows), [0 1])
+            t.verifyEqual(size(tf_void2.rows), [0 1])
+            t.verifyEqual(size(tf_void3.rows), [0 1])
+            t.verifyEqual(size(tf_void4.rows), [0 1])
+            t.verifyEqual(size(tf_void1.columns), [1 0])
+            t.verifyEqual(size(tf_void1.data), [0 0])
+            t.verifyEqual(size(tf_1{[]}.data), [0 1])
+            t.verifyEqual(size(tf_1(:, false).data), [1 0])
             
             % repeating columns
             warning('off','frames:Index:notUnique')
