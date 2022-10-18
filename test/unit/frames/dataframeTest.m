@@ -328,6 +328,14 @@ classdef dataframeTest < AbstractFramesTests
             t.verifyEqual(size(tf_void1.data), [0 0])
             t.verifyEqual(size(tf_1{[]}.data), [0 1])
             t.verifyEqual(size(tf_1(:, false).data), [1 0])
+
+            % allow empty rows/columns
+            df_void = frames.DataFrame();
+            df2_void = df_void;
+            df2_void.rows = df2_void.rows;
+            df2_void.columns = df2_void.columns;
+            t.verifyEqual(df_void.rows, df2_void.rows)
+            t.verifyEqual(df_void.columns, df2_void.columns)
             
             % repeating columns
             warning('off','frames:Index:notUnique')
