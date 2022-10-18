@@ -848,7 +848,7 @@ classdef DataFrame
             [tb,row] = sortrows(obj.t,varargin{:});
             obj.data = tb.Variables;
             obj.rows_.requireUniqueSorted = false;
-            obj.rows_.value_ = obj.rows_.value_(row);
+            obj.rows_.value_ = obj.rows_.value_(row, :);
         end
         function bool = issortedrows(obj,varargin)
             % cf table issortedrows
