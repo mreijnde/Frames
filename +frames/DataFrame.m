@@ -1405,7 +1405,7 @@ classdef DataFrame
                         if length(s)>2
                             error("Nested assign of .%s in combination with () indexing not supported", field)
                         end
-                        assert(~isempty(b), 'frames:rowsValidation:mustBeNonempty', ...
+                        assert(~isequal(b,[]), 'frames:rowsValidation:mustBeNonempty', ...
                             "assignment of %s not allowed to be empty", field);                        
                         if length(s)==1
                             obj.(field) = b;
